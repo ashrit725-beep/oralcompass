@@ -1,0 +1,11 @@
+{
+  "plan_code": "HB26",
+  "label": "Sam Rivera (fictional) — Harborview statement dated 2026-09-15 — entered by the user",
+  "remaining_deductible": {"value": 5000, "status": "USER", "note": "statement 2026-09-15"},
+  "remaining_max": {"value": 80000, "status": "USER", "note": "statement 2026-09-15"},
+  "network": {"value": "in", "status": "USER"},
+  "enrolled_months": {"value": 30, "status": "USER"},
+  "history": {"cleaning": ["2026-03-10"]},
+  "allowed_overrides": {},
+  "tooth_overrides": {}
+}

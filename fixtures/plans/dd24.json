@@ -1,0 +1,70 @@
+{
+  "plan_code": "DD24",
+  "title": "Delta Dental PPO — High Plan, Mississippi State University (Group 01125), EOC effective 1/1/2024",
+  "carrier_text": "Delta Dental Insurance Company",
+  "is_fictional": false,
+  "catalog": {
+    "carrier": "Delta Dental Insurance Company",
+    "plan_name": "Delta Dental PPO (Evidence of Coverage form PPO-ENT-MS-E-R23)",
+    "option": "High Plan",
+    "plan_year": 2024,
+    "benefit_year_type": "calendar",
+    "where_offered": {"text": "Group plan for Mississippi State University (Group 01125) — Mississippi", "cite": {"doc": "DD24", "page": 1, "quote": "Group 01125"}},
+    "eligibility": {"text": "MSU benefits-eligible employees and their dependents enrolled under the Contract (as the EOC defines Enrollee). Listed here means the document is public — not that you are eligible to enroll.", "cite": null},
+    "verification": {
+      "date": "2026-10-03",
+      "method": "fields re-read against the public PDF via fetch on 2026-10-03 (seven passages); PDF page indexes to be confirmed at seeding (page numbers below are attachment page numbers)",
+      "fields_verified": ["deductible_individual", "deductible_waived_classes", "classes", "class_of.crown", "class_of.composite", "annual_max", "waiting_months", "frequency.cleaning", "alternate_benefit", "oon_rule", "benefit_year_start_month", "excluded.implant"],
+      "fields_unknown": ["allowed_amounts", "alternate allowance amount", "premium_monthly", "missing_tooth (not found)", "dos_rule for claim payment (EOC 'incurred' rule governs termination liability only)"]
+    }
+  },
+  "source_document": {
+    "title": "Delta Dental PPO Evidence of Coverage — Mississippi State University, effective January 1, 2024",
+    "publisher": "Mississippi State University Human Resources Management (posting of Delta Dental Insurance Company document)",
+    "url": "https://www.hrm.msstate.edu/sites/www.hrm.msstate.edu/files/2024-03/Delta%20Dental%20Evidence%20of%20Coverage.pdf",
+    "retrieved_at": "2026-10-03",
+    "sha256": "",
+    "sha256_note": "compute at seeding: tools/seed_presets.py downloads the PDF, records SHA-256 and verifies each quote on its page",
+    "pages": null,
+    "version_label": "DD24"
+  },
+  "benefit_year_start_month": {"value": 1, "status": "DOC", "cite": {"page": 2, "quote": "Calendar Year: the 12 months of the year from January 1 through December 31.", "page_note": "Definitions p.2"}},
+  "deductible_individual": {"value": 5000, "status": "DOC", "cite": {"page": 1, "quote": "$50 per Enrollee each Calendar Year", "page_note": "Attachment A p.1; family $150; 'Deductibles waived for Diagnostic & Preventive and Orthodontic Services'"}},
+  "deductible_waived_classes": ["Diagnostic & Preventive"],
+  "annual_max": {"value": 150000, "status": "DOC", "cite": {"page": 1, "quote": "$1,500 per Enrollee per Calendar Year", "page_note": "Attachment A p.1 (High Plan)"}},
+  "classes": [
+    {"name": "Diagnostic & Preventive", "plan_share_bp_in": {"value": 10000, "status": "DOC", "cite": {"page": 2, "quote": "Diagnostic & Preventive 100%", "page_note": "Attachment A p.2 — same for PPO, Premier and Non-Delta dentists"}}, "procedures_text": ["oral examinations", "cleanings", "x-rays"]},
+    {"name": "Basic", "plan_share_bp_in": {"value": 8000, "status": "DOC", "cite": {"page": 2, "quote": "Basic 80%", "page_note": "Attachment A p.2"}}, "procedures_text": ["Oral Surgery", "Restorative: amalgam and resin-based composite restorations (fillings) and prefabricated crowns", "Sealants", "Palliative", "Denture Repairs"], "cite": {"page": 1, "quote": "Restorative: amalgam and resin-based composite restorations (fillings) and prefabricated crowns", "page_note": "Attachment B pp.1-2"}},
+    {"name": "Major", "plan_share_bp_in": {"value": 5000, "status": "DOC", "cite": {"page": 2, "quote": "Major 50%", "page_note": "Attachment A p.2"}}, "procedures_text": ["Crowns and Inlays/Onlays", "Prosthodontics", "Endodontics", "Periodontics"], "cite": {"page": 2, "quote": "Endodontics: treatment of diseases and injuries of the tooth pulp. Periodontics: treatment of gums and bones supporting teeth.", "page_note": "Attachment B pp.1-2 — listed under Major Services"}}
+  ],
+  "class_of": {
+    "crown": {"value": "Major", "status": "DOC", "cite": {"page": 2, "quote": "Crowns and Inlays/Onlays", "page_note": "Attachment B, Major Services"}},
+    "composite": {"value": "Basic", "status": "DOC", "cite": {"page": 1, "quote": "resin-based composite restorations (fillings)", "page_note": "Attachment B, Basic Services"}},
+    "cleaning": {"value": "Diagnostic & Preventive", "status": "DOC", "cite": {"page": 1, "quote": "cleanings", "page_note": "Attachment B, Diagnostic & Preventive"}},
+    "root_canal": {"value": "Major", "status": "DOC", "cite": {"page": 2, "quote": "Endodontics: treatment of diseases and injuries of the tooth pulp.", "page_note": "Attachment B, Major Services"}}
+  },
+  "allowed_amounts": {
+    "crown": {"value": null, "status": "UNKNOWN", "note": "Payment is 'calculated based on the lesser of the Dentist's Submitted Fee or the Maximum Allowance'; the fee schedule is not part of this document"},
+    "composite": {"value": null, "status": "UNKNOWN", "note": "same"}
+  },
+  "alternate_benefit": {
+    "status": "DOC",
+    "cite": {"page": 1, "quote": "porcelain, resin or similar materials for crowns placed on a maxillary second or third molar, or on any mandibular molar", "page_note": "Attachment B, Limitations 1 'Optional Services'"},
+    "conditions": [{"procedure_key": "crown", "condition": "mandibular_molar", "basis_key": null}],
+    "note": "The alternate allowance ('the lower cost of the customary service or standard practice') is not stated as a dollar amount in this document."
+  },
+  "waiting_months": {"value": {"Basic": 12, "Major": 12}, "status": "DOC", "cite": {"page": 2, "quote": "Restorative, Endodontics, Periodontics, and Prosthodontics are limited to Enrollees who have been enrolled in the Contract for 12 consecutive months.", "page_note": "Attachment A p.2 'Waiting Periods'"}},
+  "frequency": [
+    {"procedure_key": "cleaning", "clock": "calendar_count", "n": 2, "cite": {"page": 1, "quote": "no more than twice in a Calendar Year", "page_note": "Attachment B Limitations"}},
+    {"procedure_key": "crown", "clock": "per_tooth_months", "n": 60, "cite": {"page": 1, "quote": "not more often than once in any 60 month period", "page_note": "Attachment B Limitations (crowns/inlays/onlays, age 12 and older)"}}
+  ],
+  "excluded": {"implant": {"value": true, "status": "DOC", "cite": {"page": 3, "quote": "We will not pay for implants", "page_note": "Attachment B Exclusion 34; credit toward a pontic or standard denture is described"}}},
+  "missing_tooth": {"present": null, "status": "UNKNOWN", "note": "not found in the pages read"},
+  "oon_rule": {"value": {"in": "Delta Dental PPO dentists accept Delta Dental's allowance (contracted); amounts above it are not billed", "out": "Payment for covered services provided by a Non-Delta Dental Dentist is calculated based on the lesser of the Dentist's Submitted Fee or the Maximum Allowance. Because these Dentists are not contracted, We cannot limit the amount charged to You. A Non-Delta Dental Dentist can bill You the difference"}, "status": "DOC", "cite": {"page": 6, "quote": "A Non-Delta Dental Dentist can bill You the difference", "page_note": "main document pp.6-7"}},
+  "dos_rule": {"value": "completion", "status": "UNKNOWN", "note": "The EOC's 'incurred' rule (crown 'at the time the tooth or teeth are prepared') sits under Continuation of Benefits and governs termination liability; the claim-payment date rule is not stated in this document. Computed with completion date and labeled as an assumption."},
+  "premium_monthly": {"employee_only": {"value": null, "status": "UNKNOWN", "note": "premiums are not in the Evidence of Coverage"}},
+  "unsupported_rules": [
+    {"quote": "$1,200 per dependent child Enrollee to age 26 per lifetime", "page": 1, "reason": "orthodontic lifetime maximum — not modeled in this prototype; shown as a Limitation if an orthodontic line is entered"},
+    {"quote": "Pre-Treatment Estimate requests are not required", "page": 5, "reason": "pre-treatment estimates are described (valid 365 days; 'does not guarantee payment') — informational only"}
+  ]
+}

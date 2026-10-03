@@ -1,0 +1,10 @@
+{
+  "label": "Treatment estimate — Northside Dental Group (fictional) — dated 2026-10-03 — member Sam Rivera (fictional)",
+  "source": "typed",
+  "estimate_date": "2026-10-03",
+  "lines": [
+    {"key": "crown", "label": "Porcelain/ceramic crown", "tooth": "30", "charge_cents": 120000, "prep": "2026-11-03", "completion": "2026-11-20", "listed_fees": []},
+    {"key": "composite", "label": "Two-surface posterior composite", "tooth": "19", "charge_cents": 30000, "completion": "2026-10-20", "listed_fees": []}
+  ],
+  "note": "The estimate is plan-independent: it describes the dentist's proposal. It is applied to each plan with that plan's own inputs."
+}

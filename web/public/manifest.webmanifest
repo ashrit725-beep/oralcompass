@@ -1,0 +1,10 @@
+{
+  "name": "FinePrint",
+  "short_name": "FinePrint",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#faf8f3",
+  "theme_color": "#1f2a37",
+  "description": "Your plan's fine print, stitched to your estimate. Information only.",
+  "icons": []
+}

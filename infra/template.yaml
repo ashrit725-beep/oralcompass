@@ -1,0 +1,120 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: FinePrint prototype — Cognito + HTTP API (JWT authorizer) + Lambda (FastAPI/Mangum) + S3 (SSE-KMS, per-user prefixes) + DynamoDB + KMS. Skeleton: review before deploying.
+
+Parameters:
+  BedrockModelId: { Type: String, Description: "Anthropic Claude model id in zero-data-retention mode (named on the Privacy Panel)" }
+
+Resources:
+  UserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: fineprint-users
+      AutoVerifiedAttributes: [email]
+      MfaConfiguration: OPTIONAL
+      EnabledMfas: [SOFTWARE_TOKEN_MFA]
+      Policies: { PasswordPolicy: { MinimumLength: 12 } }
+  UserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties: { UserPoolId: !Ref UserPool, GenerateSecret: false, AllowedOAuthFlowsUserPoolClient: true, AllowedOAuthFlows: [code], AllowedOAuthScopes: [openid, email], CallbackURLs: ["https://localhost:5173/"], SupportedIdentityProviders: [COGNITO] }
+
+  DataKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: FinePrint user data key (encryption context tenant=<sub> required by the application layer)
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: Root
+            Effect: Allow
+            Principal: { AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root" }
+            Action: "kms:*"
+            Resource: "*"
+
+  DocumentsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "fineprint-docs-${AWS::AccountId}"
+      PublicAccessBlockConfiguration: { BlockPublicAcls: true, BlockPublicPolicy: true, IgnorePublicAcls: true, RestrictPublicBuckets: true }
+      BucketEncryption: { ServerSideEncryptionConfiguration: [ { ServerSideEncryptionByDefault: { SSEAlgorithm: "aws:kms", KMSMasterKeyID: !Ref DataKey }, BucketKeyEnabled: true } ] }
+      VersioningConfiguration: { Status: Enabled }
+      LifecycleConfiguration: { Rules: [ { Id: expire-user-docs, Status: Enabled, Prefix: users/, ExpirationInDays: 1, NoncurrentVersionExpirationInDays: 1 } ] }
+  DocumentsBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref DocumentsBucket
+      PolicyDocument:
+        Statement:
+          - Sid: DenyUnencryptedPuts
+            Effect: Deny
+            Principal: "*"
+            Action: s3:PutObject
+            Resource: !Sub "${DocumentsBucket.Arn}/*"
+            Condition: { StringNotEquals: { "s3:x-amz-server-side-encryption": "aws:kms" } }
+          - Sid: DenyInsecureTransport
+            Effect: Deny
+            Principal: "*"
+            Action: "s3:*"
+            Resource: [ !GetAtt DocumentsBucket.Arn, !Sub "${DocumentsBucket.Arn}/*" ]
+            Condition: { Bool: { "aws:SecureTransport": "false" } }
+
+  Table:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: fineprint
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions: [ { AttributeName: pk, AttributeType: S }, { AttributeName: sk, AttributeType: S } ]
+      KeySchema: [ { AttributeName: pk, KeyType: HASH }, { AttributeName: sk, KeyType: RANGE } ]
+      SSESpecification: { SSEEnabled: true, SSEType: KMS, KMSMasterKeyId: !Ref DataKey }
+      PointInTimeRecoverySpecification: { PointInTimeRecoveryEnabled: true }
+
+  Api:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      Auth:
+        DefaultAuthorizer: CognitoJwt
+        Authorizers:
+          CognitoJwt:
+            JwtConfiguration: { issuer: !Sub "https://cognito-idp.${AWS::Region}.amazonaws.com/${UserPool}", audience: [ !Ref UserPoolClient ] }
+            IdentitySource: "$request.header.Authorization"
+      CorsConfiguration: { AllowOrigins: ["https://localhost:5173"], AllowHeaders: ["authorization", "content-type"], AllowMethods: ["GET", "POST", "DELETE", "PUT", "PATCH"] }
+
+  ApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../api
+      Handler: app.lambda_handler.handler   # Mangum wrapper: `handler = Mangum(app)` in api/app/lambda_handler.py (add in M3)
+      Runtime: python3.12
+      Timeout: 60
+      MemorySize: 1024
+      Environment:
+        Variables:
+          FINEPRINT_TABLE: !Ref Table
+          FINEPRINT_BUCKET: !Ref DocumentsBucket
+          FINEPRINT_KMS_KEY: !Ref DataKey
+          FINEPRINT_BEDROCK_MODEL_ID: !Ref BedrockModelId
+          FINEPRINT_COGNITO_JWKS_URL: !Sub "https://cognito-idp.${AWS::Region}.amazonaws.com/${UserPool}/.well-known/jwks.json"
+          FINEPRINT_COGNITO_AUDIENCE: !Ref UserPoolClient
+      Policies:
+        - DynamoDBCrudPolicy: { TableName: !Ref Table }
+        - Statement:
+            - Effect: Allow
+              Action: [ s3:PutObject, s3:GetObject, s3:DeleteObject, s3:ListBucket ]
+              Resource: [ !GetAtt DocumentsBucket.Arn, !Sub "${DocumentsBucket.Arn}/users/*", !Sub "${DocumentsBucket.Arn}/presets/*" ]
+            - Effect: Allow
+              Action: [ kms:Encrypt, kms:Decrypt, kms:GenerateDataKey ]
+              Resource: !GetAtt DataKey.Arn
+            - Effect: Allow
+              Action: [ bedrock:InvokeModel, bedrock:Converse ]
+              Resource: "*"
+      Events:
+        Proxy: { Type: HttpApi, Properties: { ApiId: !Ref Api, Path: "/{proxy+}", Method: ANY } }
+
+Outputs:
+  ApiUrl: { Value: !Sub "https://${Api}.execute-api.${AWS::Region}.amazonaws.com" }
+  UserPoolId: { Value: !Ref UserPool }
+  UserPoolClientId: { Value: !Ref UserPoolClient }
+
+# Not in this skeleton (document as production requirements, do not claim): WAF/rate limiting, CloudTrail org trail, log redaction subscription,
+# EventBridge Scheduler + web-push Lambda (M6), per-user KMS key policy conditions on encryption context (application-enforced here), BAA for PHI.
