@@ -30,6 +30,8 @@ BANNED = [
 IMPERATIVE_OPENERS = [
     "schedule", "book", "use", "consider", "choose", "pick", "select the", "spend", "save", "hurry", "act", "call your", "ask your",
     "switch", "wait until", "delay", "postpone", "avoid", "try the", "go with", "enroll", "upgrade", "downgrade", "get the", "take the",
+    # master prompt §1: no suggestions to book, schedule, call, consult, contact, visit, submit or obtain anything
+    "contact", "consult", "submit", "obtain", "visit your", "request", "see your", "talk to", "follow up", "rest", "rinse", "take ibuprofen",
 ]
 STEERING_MODALS = [r"\byou (can|could|will|'ll|would) save\b", r"\byou (should|need to|must|ought to|had better)\b", r"\bwe (recommend|advise|suggest)\b"]
 UI_EXEMPT_MAX_WORDS = 4

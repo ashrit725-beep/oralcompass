@@ -11,7 +11,11 @@
       "Bash(git status*)",
       "Bash(git diff*)",
       "Bash(git add*)",
-      "Bash(git commit*)"
+      "Bash(git commit*)",
+      "Bash(python3 -m uvicorn*)",
+      "Bash(bash scripts/*)",
+      "Bash(npx vite preview*)",
+      "Bash(python3 tools/screenshots.py*)"
     ],
     "deny": [
       "Bash(curl*fairhealth*)",

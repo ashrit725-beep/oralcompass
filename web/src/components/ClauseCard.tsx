@@ -36,7 +36,7 @@ export function ClauseCard({ stitch, lines, onClose, onOpenOnPage }: Props) {
         </figure>
       )}
       <footer>
-        <button type="button" onClick={() => onOpenOnPage(stitch)}>{UI.openOnPage}</button>
+        <button type="button" onClick={() => onOpenOnPage(stitch)}>{UI.showInDocuments}</button>
       </footer>
     </aside>
   );

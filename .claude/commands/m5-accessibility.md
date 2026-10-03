@@ -5,7 +5,7 @@ Build milestone M5 (spec §3.7, §4.6).
 
 1. Keyboard model: Tab moves between stitches in page order (Page) and between rows (Ledger); Enter pulls the thread; keys 1/2/3 set the depth in an
    open Clause card; Esc closes the card and restores focus to the stitch that opened it. In comparison, Tab moves across a row before moving down.
-2. Live region: announce recalculations ("Scenario updated: estimated patient payment $965, changed because HB26 ⑫") and comparison column states
+2. Live region: announce recalculations ("Scenario updated: estimated patient payment $940, changed because HB26 ⑫") and comparison column states
    ("Delta Dental column: unresolved — four inputs not provided"). Keep announcements factual.
 3. Rule Table: a `/rules` view listing Rule · Plain English · Applies when · Effect in this scenario · Source (document, page) · Evidence, with a Plan column in
    comparison mode; printable; every acceptance check must be passable from the table alone.

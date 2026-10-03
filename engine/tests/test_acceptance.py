@@ -1,7 +1,7 @@
 """Acceptance example from the design brief (synthetic, fictional plan) + processing-order check. Exact cents."""
 from datetime import date
 
-from fineprint_engine import (AlternateBenefit, ClassRule, Evidence, EstimateLine, MemberState, PlanModel, V, compute_ledger)
+from oralcompass_engine import (AlternateBenefit, ClassRule, Evidence, EstimateLine, MemberState, PlanModel, V, compute_ledger)
 
 
 def fictional_plan():

@@ -1,100 +1,210 @@
-import { useEffect, useMemo, useState } from "react";
-import { api, SAM_LINES, SAM_STATE } from "./lib/api";
-import { FOOTER, UI } from "./lib/copy";
-import { buildStitches } from "./lib/stitches";
-import type { ComparisonResponse, EstimateResponse, PlanFixture, Stitch } from "./lib/types";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { api } from "./lib/api";
+import { FOOTER, LANDMARKS, NAV, TAGLINE, UI, type LandmarkId } from "./lib/copy";
+import { currentStageId } from "./lib/journey";
+import { money, stitchesFromClauses } from "./lib/stitches";
+import type { Benefits, CoverageRule, JourneyView, PlanEvidence, PlanFixture, PlanSummary, SavedEstimate, Stitch, TreatmentItem } from "./lib/types";
+import { JourneyMap, JourneyVertical, type Selection } from "./components/atlas/JourneyMap";
+import { PlanAtlas } from "./components/atlas/PlanAtlas";
 import { ClauseCard } from "./components/ClauseCard";
-import { ComparisonGrid } from "./components/ComparisonGrid";
-import { LedgerView } from "./components/LedgerView";
-import { PageView } from "./components/PageView";
+import { CompareView } from "./components/CompareView";
+import { CostTrail, MissingInputs } from "./components/CostTrail";
+import { DetailPanel } from "./components/DetailPanel";
+import { DocumentsView } from "./components/DocumentsView";
+import { LandmarkContent } from "./components/LandmarkContent";
+import { OverviewList } from "./components/OverviewList";
+import { EvidenceBadge } from "./components/Primitives";
 
-type Tab = "ledger" | "page" | "compare";
+type Tab = keyof typeof NAV;
+
+function useMobile() {
+  const [m, setM] = useState(() => typeof window !== "undefined" && window.matchMedia("(max-width: 760px)").matches);
+  useEffect(() => { const q = window.matchMedia("(max-width: 760px)"); const f = () => setM(q.matches); q.addEventListener("change", f); return () => q.removeEventListener("change", f); }, []);
+  return m;
+}
 
 /**
- * M1 demo shell: Harborview (fictional) preset + Sam's typed estimate → Page with stitches + receipt Ledger joined by stitches.
- * Phone: two panes with a draggable divider (Ledger above, Page below). Desktop: Page left, Ledger right.
- * Everything here is informational; copy comes from lib/copy.ts (linted).
+ * OralCompass — "Your care journey. Your coverage. Clearly mapped."
+ * Two connected views (My journey ↔ My plan) plus Compare and Documents. Journey data comes from the API; the map layout is derived from it.
+ * Everything shown is information: what the documents say, what your records say, what the arithmetic yields.
  */
 export default function App() {
-  const [plan, setPlan] = useState<PlanFixture | null>(null);
-  const [plans, setPlans] = useState<Record<string, PlanFixture>>({});
-  const [estimate, setEstimate] = useState<EstimateResponse | null>(null);
-  const [comparison, setComparison] = useState<ComparisonResponse | null>(null);
-  const [selected, setSelected] = useState<Stitch | undefined>();
-  const [tab, setTab] = useState<Tab>("ledger");
-  const [network, setNetwork] = useState<"in" | "out">("in");
-  const [dedKnown, setDedKnown] = useState(true);
-  const [split, setSplit] = useState(58);
+  const mobile = useMobile();
+  const [tab, setTab] = useState<Tab>("journey");
+  const [plans, setPlans] = useState<PlanSummary[]>([]);
+  const [journeys, setJourneys] = useState<JourneyView[] | null>(null);
+  const [view, setView] = useState<JourneyView | null>(null);
+  const [selection, setSelection] = useState<Selection | null>(null);
+  const [overview, setOverview] = useState(false);
+  const [planCode, setPlanCode] = useState<string>("");
+  const [planModel, setPlanModel] = useState<PlanFixture | null>(null);
+  const [rules, setRules] = useState<CoverageRule[]>([]);
+  const [evidence, setEvidence] = useState<PlanEvidence | null>(null);
+  const [items, setItems] = useState<TreatmentItem[]>([]);
+  const [benefits, setBenefits] = useState<Benefits[]>([]);
+  const [estimate, setEstimate] = useState<SavedEstimate | null>(null);
+  const [landmark, setLandmark] = useState<LandmarkId | null>(null);
+  const [stitch, setStitch] = useState<Stitch | undefined>();
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState<string | null>("Connecting…");
+  const [busy, setBusy] = useState(false);
+  const [samples, setSamples] = useState<{ id: string; label: string; plan_ref: string | null }[]>([]);
+
+  const stitches = useMemo(() => (evidence ? stitchesFromClauses(evidence.clauses) : []), [evidence]);
+  const summary = plans.find((p) => p.plan_code === planCode) ?? null;
+  const benefitsFor = benefits.find((b) => b.plan_code === planCode) ?? null;
+  const realCount = plans.filter((p) => !p.is_fictional).length;
+
+  // ---- loading ----
+  const loadBase = useCallback(async () => {
+    setError(null); setLoading("Connecting…");
+    try {
+      const [pl, js, sm] = await Promise.all([api.plans(), api.journeys(), api.journeySamples()]);
+      setPlans(pl.items); setJourneys(js.items); setSamples(sm.items);
+      const first = js.items[0] ?? null;
+      setView(first);
+      if (first) { setPlanCode(first.journey.plan_ref ?? pl.items[0]?.plan_code ?? ""); setSelection({ stageId: currentStageId(first.journey) ?? first.journey.stages[0].id }); }
+      else setPlanCode(pl.items.find((p) => !p.is_fictional)?.plan_code ?? pl.items[0]?.plan_code ?? "");
+    } catch (e: any) { setError(`${UI.errorTitle}: ${e.message}. The API runs on :8000 with ORALCOMPASS_DEV_AUTH=1.`); }
+    finally { setLoading(null); }
+  }, []);
+  useEffect(() => { loadBase(); }, [loadBase]);
+
+  const loadRecords = useCallback(async () => {
+    try { const [it, bf] = await Promise.all([api.treatmentItems(), api.benefits()]); setItems(it); setBenefits(bf); } catch (e: any) { setError(`${UI.errorTitle}: ${e.message}`); }
+  }, []);
+  useEffect(() => { if (view) loadRecords(); }, [view?.id, loadRecords]);
 
   useEffect(() => {
+    if (!planCode) return;
+    let cancelled = false;
+    setLoading(UI.processing);
     (async () => {
       try {
-        const [hb, dd, ml] = await Promise.all([api.fixturePlan("HB26"), api.fixturePlan("DD24"), api.fixturePlan("ML26")]);
-        setPlan(hb); setPlans({ HB26: hb, DD24: dd, ML26: ml });
-      } catch (e: any) { setError(`fixtures: ${e.message}`); }
+        const [pm, ru, ev] = await Promise.all([api.plan(planCode), api.rules(planCode), api.evidence(planCode)]);
+        if (cancelled) return;
+        setPlanModel(pm.model); setRules(ru.rules); setEvidence(ev);
+        const planned = items.filter((i) => i.status === "planned" || i.status === "scheduled");
+        if (planned.length) { const est = await api.estimateFromRecords(planCode); if (!cancelled) setEstimate(est); }
+        else setEstimate(null);
+      } catch (e: any) { if (!cancelled) setError(`${UI.errorTitle}: ${e.message}`); }
+      finally { if (!cancelled) setLoading(null); }
     })();
-  }, []);
+    return () => { cancelled = true; };
+  }, [planCode, items]);
 
-  useEffect(() => {
-    if (!plan) return;
-    const state = { ...SAM_STATE, network: { value: network, status: "USER" }, remaining_deductible: dedKnown ? SAM_STATE.remaining_deductible : { value: null, status: "UNKNOWN" } };
-    api.estimate({ plan_ref: "HB26", lines: SAM_LINES, state }).then(setEstimate).catch((e) => setError(`api: ${e.message} — is the API running on :8000 with FINEPRINT_DEV_AUTH=1?`));
-  }, [plan, network, dedKnown]);
-
-  const stitches = useMemo(() => (plan ? buildStitches(plan) : []), [plan]);
-
-  async function loadComparison() {
-    setTab("compare");
-    if (comparison) return;
-    try { setComparison(await api.comparison({ plan_refs: ["HB26", "DD24", "ML26"], lines: SAM_LINES, states: { HB26: SAM_STATE } })); }
-    catch (e: any) { setError(`api: ${e.message}`); }
+  async function startJourney(from: string) {
+    setBusy(true); setError(null);
+    try { const v = await api.createJourney(from); setView(v); setJourneys((j) => [...(j ?? []), v]); setSelection({ stageId: currentStageId(v.journey) ?? v.journey.stages[0].id }); if (v.journey.plan_ref) setPlanCode(v.journey.plan_ref); setTab("journey"); }
+    catch (e: any) { setError(`${UI.errorTitle}: ${e.message}`); } finally { setBusy(false); }
   }
+  async function patch(cpId: string, body: Parameters<typeof api.patchCheckpoint>[2]) {
+    if (!view || !selection) return;
+    setBusy(true);
+    try { const v = await api.patchCheckpoint(view.id, cpId, body); setView(v); } catch (e: any) { setError(`${UI.errorTitle}: ${e.message}`); } finally { setBusy(false); }
+  }
+  async function instructions(stageId: string, text: string, source: string, givenOn?: string) {
+    if (!view) return;
+    setBusy(true);
+    try { const v = await api.putInstructions(view.id, stageId, { text, source, given_on: givenOn }); setView(v); } catch (e: any) { setError(`${UI.errorTitle}: ${e.message}`); } finally { setBusy(false); }
+  }
+  function openLandmark(id: LandmarkId) { setLandmark(id); setTab("plan"); }
+  function openDocuments() { setTab("documents"); }
+  function onStitch(s: Stitch) { setStitch(s); }
 
-  const pdfUrl = "/fixtures/documents/harborview_certificate.pdf";
+  const landmarkSummary = useMemo(() => {
+    if (!planModel) return {} as Partial<Record<LandmarkId, string>>;
+    const fmt = (v: { value: number | null; unlimited?: boolean } | undefined) => (!v ? "—" : v.unlimited ? "unlimited" : v.value == null ? UI.notStated : money(v.value));
+    return {
+      harbor: `${summary?.option ?? ""}${planModel.is_fictional ? " · fictional" : ""}`,
+      bridge: fmt(planModel.deductible_individual),
+      cove: planModel.classes.map((c) => `${c.plan_share_bp_in.value != null ? c.plan_share_bp_in.value / 100 : "?"}%`).join(" / "),
+      lookout: fmt(planModel.annual_max),
+      lighthouse: estimate ? (estimate.status === "estimate" ? `you pay ${money(estimate.user_estimated_payment_cents)}` : "waiting for information") : "no planned procedures",
+    } as Partial<Record<LandmarkId, string>>;
+  }, [planModel, estimate, summary]);
+
+  const newUser = journeys !== null && journeys.length === 0 && !view;
 
   return (
     <div className="app">
       <header className="appbar">
-        <h1>{UI.appName}</h1>
-        <span className="doc-title">{plan?.title ?? "…"}{plan?.is_fictional && <span className="ribbon">{UI.fictional}</span>}</span>
-        <nav className="scenario" aria-label="Scenario inputs (entered by you)">
-          <label><input type="radio" name="net" checked={network === "in"} onChange={() => setNetwork("in")} /> In-network</label>
-          <label><input type="radio" name="net" checked={network === "out"} onChange={() => setNetwork("out")} /> Out-of-network</label>
-          <label><input type="checkbox" checked={dedKnown} onChange={(e) => setDedKnown(e.target.checked)} /> Remaining deductible entered ($50)</label>
+        <div className="brand"><h1>{UI.appName}</h1><p className="tagline">{TAGLINE}</p></div>
+        <nav className="topnav" aria-label="Views">
+          {(Object.keys(NAV) as Tab[]).map((t) => <button key={t} type="button" aria-current={tab === t ? "page" : undefined} onClick={() => setTab(t)}>{NAV[t]}</button>)}
         </nav>
+        {view?.is_sample && <span className="ribbon" role="note">{UI.sampleRibbon}</span>}
       </header>
-      {error && <p className="error" role="alert">{error}</p>}
+      {error && <div className="error" role="alert"><p>{error}</p><button type="button" onClick={() => { setError(null); loadBase(); }}>{UI.retry}</button></div>}
+      {loading && <p className="processing" role="status" aria-live="polite"><span className="spinner" aria-hidden="true" /> {loading}</p>}
 
-      <main className={`panes ${tab}`} style={{ ["--split" as any]: `${split}%` }}>
-        {tab !== "compare" && (
-          <>
-            <div className="pane pane-ledger">
-              {estimate && <LedgerView ledger={estimate.ledger} movers={estimate.movers} stitches={stitches} selected={selected} onSelect={(s) => { setSelected(s); }} />}
+      <main className={`view view-${tab} ${mobile ? "is-mobile" : ""}`}>
+        {tab === "journey" && (
+          newUser || !view ? (
+            <section className="start" aria-labelledby="start-h">
+              <h2 id="start-h">{UI.newUserTitle}</h2>
+              <p>{UI.newUserBody}</p>
+              <div className="start-actions">
+                <button type="button" disabled={busy} onClick={() => startJourney("empty")}>Start my journey (no documents yet)</button>
+                {samples.map((s) => <button key={s.id} type="button" className="secondary" disabled={busy} onClick={() => startJourney(s.id)}>{UI.loadSample}: {s.label.replace("Sample journey — ", "")}</button>)}
+              </div>
+              <p className="muted small">Plan presets: {plans.length} ({realCount} from public plan documents, {plans.length - realCount} fictional demonstration plans). {UI.availabilityBanner}</p>
+            </section>
+          ) : (
+            <div className="journey-layout">
+              <div className="journey-main">
+                <div className="journey-head">
+                  <h2>{view.journey.label}</h2>
+                  <p className="progress-line"><strong className="num">{view.progress.label}</strong> <span className="muted">· {view.progress.note}</span></p>
+                  <div className="toggles">
+                    <button type="button" aria-pressed={!overview} onClick={() => setOverview(false)}>{UI.mapView}</button>
+                    <button type="button" aria-pressed={overview} onClick={() => setOverview(true)}>{UI.overview}</button>
+                    {journeys && journeys.length > 0 && samples.length > 0 && <select aria-label="Journey" value={view.id} onChange={(e) => { const v = journeys.find((j) => j.id === e.target.value); if (v) { setView(v); setSelection({ stageId: currentStageId(v.journey) ?? v.journey.stages[0].id }); if (v.journey.plan_ref) setPlanCode(v.journey.plan_ref); } }}>
+                      {journeys.map((j) => <option key={j.id} value={j.id}>{j.journey.label}</option>)}</select>}
+                    <select aria-label="Add a journey" value="" onChange={(e) => e.target.value && startJourney(e.target.value)}><option value="">Add another journey…</option><option value="empty">Empty (no documents yet)</option>{samples.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}</select>
+                  </div>
+                </div>
+                {overview ? <OverviewList journey={view.journey} onSelect={(s) => { setSelection(s); setOverview(false); }} />
+                  : mobile ? <JourneyVertical journey={view.journey} selected={selection} onSelect={setSelection} currentStageId={currentStageId(view.journey)} />
+                  : <JourneyMap journey={view.journey} selected={selection} onSelect={setSelection} currentStageId={currentStageId(view.journey)} />}
+              </div>
+              {selection && <DetailPanel view={view} selection={selection} onSelect={setSelection} onOpenLandmark={openLandmark} onOpenDocuments={openDocuments} onPatch={patch} onInstructions={instructions} busy={busy} mobile={mobile} onClose={() => setSelection(null)} />}
             </div>
-            <div className="divider" role="separator" aria-orientation="horizontal" aria-valuenow={split} tabIndex={0}
-                 onKeyDown={(e) => { if (e.altKey && e.key === "ArrowUp") setSplit((v) => Math.max(20, v - 5)); if (e.altKey && e.key === "ArrowDown") setSplit((v) => Math.min(90, v + 5)); }}
-                 onPointerDown={(e) => {
-                   const startY = e.clientY, start = split, h = (e.currentTarget.parentElement as HTMLElement).clientHeight;
-                   const move = (ev: PointerEvent) => setSplit(Math.min(90, Math.max(20, start + ((ev.clientY - startY) / h) * 100)));
-                   const up = () => { window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", up); };
-                   window.addEventListener("pointermove", move); window.addEventListener("pointerup", up);
-                 }}>≡</div>
-            <div className="pane pane-page">
-              {plan && <PageView url={pdfUrl} stitches={stitches} selected={selected} onSelect={(s) => setSelected(s)} />}
-            </div>
-          </>
+          )
         )}
-        {tab === "compare" && comparison && <ComparisonGrid data={comparison} plans={plans} />}
+
+        {tab === "plan" && (
+          <div className="plan-layout">
+            <div className="plan-main">
+              <div className="plan-head">
+                <label className="plan-pick">Plan <select value={planCode} onChange={(e) => { setPlanCode(e.target.value); setStitch(undefined); }}>
+                  {plans.map((p) => <option key={p.plan_code} value={p.plan_code}>{p.title}{p.is_fictional ? " (fictional)" : ""}</option>)}</select></label>
+                {summary && <p className="muted small">{summary.is_fictional ? UI.fictional : UI.realPlan}{summary.currency_note ? ` · ${UI.outdated}` : ""} · {UI.availabilityBanner}</p>}
+              </div>
+              <PlanAtlas selected={landmark} onSelect={setLandmark} summary={landmarkSummary} compact={mobile} />
+              {!landmark && <p className="hint">Each landmark opens one part of the plan. Familiar terms first; the place names are only the map's.</p>}
+            </div>
+            <aside className={`detail ${mobile ? "sheet" : "side"} ${landmark ? "" : "is-empty"}`} aria-label="Landmark details">
+              {landmark && planModel && summary && (
+                <>
+                  <div className="detail-bar"><p className="crumbs">{LANDMARKS.find((l) => l.id === landmark)?.place}</p><button type="button" className="close" aria-label="Close details" onClick={() => setLandmark(null)}>×</button></div>
+                  <div className="detail-body">
+                    <LandmarkContent landmark={landmark} plan={planModel} summary={summary} benefits={benefitsFor} rules={rules} estimate={estimate} stitches={stitches} selected={stitch} onSelect={onStitch} prominentScope onOpenDocuments={openDocuments} />
+                    {landmark === "lighthouse" && (estimate ? <CostTrail estimate={estimate} stitches={stitches} selected={stitch} onSelect={onStitch} prominentScope /> : <p className="muted"><EvidenceBadge status="UNKNOWN" /> No planned procedures are recorded. Add a treatment plan on My journey.</p>)}
+                    {landmark !== "lighthouse" && estimate?.status === "unresolved" && <MissingInputs estimate={estimate} compact />}
+                  </div>
+                </>
+              )}
+            </aside>
+          </div>
+        )}
+
+        {tab === "compare" && <CompareView plans={plans} items={items} benefits={benefits} initial={[planCode, ...plans.map((p) => p.plan_code).filter((c) => c !== planCode)].slice(0, 3)} />}
+
+        {tab === "documents" && <DocumentsView planCode={planCode} plans={plans} onPlan={setPlanCode} evidence={evidence} stitches={stitches} selected={stitch} onSelect={onStitch} onRetry={() => { setJourneys(null); setView(null); setSelection(null); loadBase(); }} />}
       </main>
 
-      {selected && estimate && <ClauseCard stitch={selected} lines={estimate.ledger.lines} onClose={() => setSelected(undefined)} onOpenOnPage={(s) => { setSelected(s); setTab("page"); }} />}
-
-      <nav className="bottom" aria-label="Views">
-        <button type="button" aria-current={tab === "ledger"} onClick={() => setTab("ledger")}>Ledger · Page</button>
-        <button type="button" aria-current={tab === "compare"} onClick={loadComparison}>Compare</button>
-        <a href="/fixtures/plans/hb26.json" target="_blank" rel="noreferrer">Rules (JSON)</a>
-      </nav>
+      {stitch && <ClauseCard stitch={stitch} lines={estimate?.ledger.lines ?? []} onClose={() => setStitch(undefined)} onOpenOnPage={(s) => { setStitch(s); setTab("documents"); }} />}
       <footer className="footer">{FOOTER}</footer>
     </div>
   );

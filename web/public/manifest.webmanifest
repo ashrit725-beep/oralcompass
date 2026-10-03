@@ -1,6 +1,6 @@
 {
-  "name": "FinePrint",
-  "short_name": "FinePrint",
+  "name": "OralCompass",
+  "short_name": "OralCompass",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#faf8f3",

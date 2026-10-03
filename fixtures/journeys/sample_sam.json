@@ -1,0 +1,306 @@
+{
+  "id": "sample-sam",
+  "label": "Sample journey \u2014 Sam Rivera (fictional)",
+  "is_sample": true,
+  "plan_ref": "HB26",
+  "estimate_ref": "sam_estimate",
+  "note": "Stages and checkpoints come from information supplied by the user and the dental team. Nothing here is a clinical timeline; completion describes recorded activity only. Fictional sample.",
+  "stages": [
+    {
+      "id": "start",
+      "title": "Starting point",
+      "island": "Harbor of Beginnings",
+      "purpose": "Add insurance documents, select a preset plan, and add the dentist's treatment plan.",
+      "finance": {
+        "kind": "plan_details"
+      },
+      "checkpoints": [
+        {
+          "id": "plan-doc",
+          "label": "Plan document added",
+          "kind": "document",
+          "status": "completed",
+          "completed_by": "user",
+          "date": {
+            "value": "2026-10-03",
+            "source": "user"
+          },
+          "detail": "Harborview Dental PPO 2026 (fictional demonstration plan) selected from the preset catalog. Rules are read from the stored document with page citations.",
+          "source": {
+            "label": "Harborview certificate (fictional), 14 pages",
+            "doc": "HB26",
+            "page": 1
+          },
+          "action": {
+            "type": "open_landmark",
+            "target": "harbor"
+          },
+          "due_date": null,
+          "completed_at": "2026-10-03",
+          "links": {
+            "document": "doc-hb26",
+            "landmark": "harbor"
+          }
+        },
+        {
+          "id": "treatment-plan",
+          "label": "Treatment plan added",
+          "kind": "document",
+          "status": "completed",
+          "completed_by": "user",
+          "date": {
+            "value": "2026-10-03",
+            "source": "document"
+          },
+          "detail": "Estimate from Northside Dental Group (fictional), dated 2026-10-03: porcelain/ceramic crown on tooth 30 ($1,200) and a two-surface posterior composite on tooth 19 ($300). Typed by the user; planned dates come from the estimate.",
+          "source": {
+            "label": "Treatment estimate (typed), dated 2026-10-03"
+          },
+          "action": {
+            "type": "open_landmark",
+            "target": "lighthouse"
+          },
+          "due_date": null,
+          "completed_at": "2026-10-03",
+          "links": {
+            "document": "doc-estimate",
+            "treatment_items": [
+              "ti-crown-30",
+              "ti-composite-19"
+            ]
+          }
+        },
+        {
+          "id": "usage",
+          "label": "Benefit statement entered",
+          "kind": "review",
+          "status": "completed",
+          "completed_by": "user",
+          "date": {
+            "value": "2026-09-15",
+            "source": "user"
+          },
+          "detail": "Figures from a benefit statement dated 2026-09-15, entered by the user: deductible $50 met (applied 2026-05-22); plan paid $745 so far this year. Remaining annual maximum is derived: $1,500 \u2212 $745 = $755. These figures are not in the plan document.",
+          "source": {
+            "label": "Benefit statement figures entered by the user"
+          },
+          "action": {
+            "type": "open_landmark",
+            "target": "lookout"
+          },
+          "due_date": null,
+          "completed_at": "2026-09-15",
+          "links": {
+            "document": "doc-statement",
+            "landmark": "lookout"
+          }
+        }
+      ],
+      "linked_treatment_items": [],
+      "instructions": null,
+      "dates": null
+    },
+    {
+      "id": "before",
+      "title": "Before your visit",
+      "island": "Lantern Cove",
+      "purpose": "Review appointment information, projected costs, and any preparation instructions supplied by the dental team.",
+      "finance": {
+        "kind": "estimate"
+      },
+      "checkpoints": [
+        {
+          "id": "estimate-reviewed",
+          "label": "Cost estimate reviewed",
+          "kind": "estimate",
+          "status": "current",
+          "detail": "Projected costs for the two planned procedures under the Harborview rules, with every amount traceable to a clause.",
+          "action": {
+            "type": "open_landmark",
+            "target": "lighthouse"
+          },
+          "due_date": null,
+          "completed_at": null,
+          "links": {
+            "estimate": "planned",
+            "landmark": "lighthouse"
+          }
+        },
+        {
+          "id": "appointment-info",
+          "label": "Appointment information recorded",
+          "kind": "appointment",
+          "status": "awaiting_info",
+          "date": null,
+          "detail": "No appointment date has been recorded. The estimate lists planned completion dates (composite 2026-10-20; crown preparation 2026-11-03, completion 2026-11-20) \u2014 these are planning dates from the estimate, not confirmed appointments.",
+          "source": {
+            "label": "Planned dates: treatment estimate (typed)"
+          },
+          "action": {
+            "type": "enter_date",
+            "field": "appointment_date"
+          },
+          "due_date": null,
+          "completed_at": null
+        },
+        {
+          "id": "prep-instructions",
+          "label": "Preparation instructions viewed",
+          "kind": "instruction",
+          "status": "awaiting_info",
+          "detail": "No preparation instructions have been supplied by the dental team. OralCompass does not generate instructions.",
+          "action": {
+            "type": "add_document",
+            "field": "prep_instructions"
+          },
+          "due_date": null,
+          "completed_at": null
+        }
+      ],
+      "linked_treatment_items": [
+        "ti-crown-30",
+        "ti-composite-19"
+      ],
+      "instructions": null,
+      "dates": {
+        "label": "Planned dates on the estimate",
+        "values": [
+          "2026-10-20 (composite, planned)",
+          "2026-11-03 (crown preparation, planned)",
+          "2026-11-20 (crown completion, planned)"
+        ],
+        "source": "treatment estimate 2026-10-03 (typed)"
+      }
+    },
+    {
+      "id": "visit",
+      "title": "Your appointment",
+      "island": "Anchor Point",
+      "purpose": "Record the visit and organize the treatment information and documents received.",
+      "finance": {
+        "kind": "estimate_vs_received"
+      },
+      "checkpoints": [
+        {
+          "id": "visit-recorded",
+          "label": "Appointment recorded",
+          "kind": "appointment",
+          "status": "upcoming",
+          "date": null,
+          "detail": "Record the date of the visit and which procedures were performed, as stated by the dental team.",
+          "action": {
+            "type": "mark_recorded"
+          },
+          "due_date": null,
+          "completed_at": null
+        },
+        {
+          "id": "visit-docs",
+          "label": "Documents received organized",
+          "kind": "document",
+          "status": "upcoming",
+          "detail": "Receipts, treatment notes and any pre-treatment estimate response from the plan can be stored here.",
+          "action": {
+            "type": "add_document",
+            "field": "visit_documents"
+          },
+          "due_date": null,
+          "completed_at": null
+        }
+      ],
+      "linked_treatment_items": [
+        "ti-crown-30",
+        "ti-composite-19"
+      ],
+      "instructions": null,
+      "dates": null
+    },
+    {
+      "id": "recovery",
+      "title": "Recovery",
+      "island": "Quiet Shoals",
+      "purpose": "View the dental team's recovery instructions and track milestones you record or that the dental team confirms.",
+      "finance": {
+        "kind": "none"
+      },
+      "checkpoints": [
+        {
+          "id": "aftercare",
+          "label": "Aftercare instructions viewed",
+          "kind": "instruction",
+          "status": "awaiting_info",
+          "detail": "No aftercare instructions have been supplied by the dental team yet. When added, they are shown as written, with their source.",
+          "action": {
+            "type": "add_document",
+            "field": "aftercare_instructions"
+          },
+          "due_date": null,
+          "completed_at": null
+        },
+        {
+          "id": "recovery-milestone",
+          "label": "Recovery milestone recorded",
+          "kind": "milestone",
+          "status": "upcoming",
+          "detail": "Milestones you mark are labeled as user-marked. Milestones confirmed by the dental team are labeled as confirmed, with the date they gave. Checklist completion is not a statement about healing.",
+          "action": {
+            "type": "mark_recorded"
+          },
+          "due_date": null,
+          "completed_at": null
+        }
+      ],
+      "linked_treatment_items": [
+        "ti-crown-30",
+        "ti-composite-19"
+      ],
+      "instructions": null,
+      "dates": null
+    },
+    {
+      "id": "followup",
+      "title": "Follow-up",
+      "island": "Compass Rest",
+      "purpose": "Organize follow-up appointments, questions, records, and updated cost information.",
+      "finance": {
+        "kind": "updated_costs"
+      },
+      "checkpoints": [
+        {
+          "id": "followup-appt",
+          "label": "Follow-up appointment scheduled",
+          "kind": "appointment",
+          "status": "upcoming",
+          "date": null,
+          "detail": "No follow-up date has been recorded.",
+          "action": {
+            "type": "enter_date",
+            "field": "followup_date"
+          },
+          "due_date": null,
+          "completed_at": null
+        },
+        {
+          "id": "updated-costs",
+          "label": "Updated cost information reviewed",
+          "kind": "estimate",
+          "status": "upcoming",
+          "detail": "After the plan processes a claim, the Explanation of Benefits can be entered here to compare the projected and actual amounts.",
+          "action": {
+            "type": "add_document",
+            "field": "eob"
+          },
+          "due_date": null,
+          "completed_at": null
+        }
+      ],
+      "linked_treatment_items": [
+        "ti-crown-30",
+        "ti-composite-19"
+      ],
+      "instructions": null,
+      "dates": null
+    }
+  ],
+  "user_ref": "sam"
+}

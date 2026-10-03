@@ -1,0 +1,125 @@
+{
+  "user_label": "Jordan Lee (fictional demo user)",
+  "benefits": {
+    "plan_code": "SM26",
+    "coverage_start": "2026-01-01",
+    "coverage_end": null,
+    "network_default": {
+      "value": "in",
+      "source": "user"
+    },
+    "deductible_met_cents": 7500,
+    "benefits_used_cents": 40000,
+    "source": {
+      "type": "eob",
+      "label": "Explanation of Benefits dated 2026-10-12 (fictional), entered by the user",
+      "date": "2026-10-12",
+      "entered_by": "user"
+    },
+    "last_updated": "2026-10-12",
+    "claims": [
+      {
+        "id": "clj-1",
+        "date": "2026-09-28",
+        "procedure_key": "extraction_surgical",
+        "tooth": "19",
+        "dentist_fee_cents": 48000,
+        "allowed_cents": 32400,
+        "plan_paid_cents": 9960,
+        "patient_paid_cents": 22440,
+        "deductible_applied_cents": 7500,
+        "source": "EOB 2026-10-12"
+      },
+      {
+        "id": "clj-2",
+        "date": "2026-02-14",
+        "procedure_key": "exam",
+        "tooth": null,
+        "dentist_fee_cents": 6500,
+        "allowed_cents": 4050,
+        "plan_paid_cents": 4050,
+        "patient_paid_cents": 0,
+        "deductible_applied_cents": 0,
+        "source": "EOB 2026-10-12"
+      },
+      {
+        "id": "clj-3",
+        "date": "2026-02-14",
+        "procedure_key": "cleaning",
+        "tooth": null,
+        "dentist_fee_cents": 12500,
+        "allowed_cents": 8550,
+        "plan_paid_cents": 8550,
+        "patient_paid_cents": 0,
+        "deductible_applied_cents": 0,
+        "source": "EOB 2026-10-12"
+      }
+    ],
+    "reconciliation": "Saltmarsh applies the deductible to all classes; the EOB figures are as entered (fictional) and are not recomputed by the app; plan paid 9960 + 4050 + 8550 = 22560 \u2014 the statement's 'benefits used' line ($400) is the user's entry and is shown with its source; the app flags the mismatch between the itemized claims ($225.60) and the stated total ($400) as 'sources disagree' rather than resolving it."
+  },
+  "treatment_items": [
+    {
+      "id": "ti-j-ext-19",
+      "procedure_key": "extraction_surgical",
+      "tooth": "19",
+      "quantity": 1,
+      "dentist_fee_cents": 48000,
+      "allowed_cents": {
+        "value": 32400,
+        "status": "DOC",
+        "note": "Appendix A"
+      },
+      "network": "in",
+      "appointment_date": {
+        "value": "2026-09-28",
+        "source": "user"
+      },
+      "status": "completed",
+      "source": "treatment estimate 2026-09-22; visit recorded 2026-09-28"
+    },
+    {
+      "id": "ti-j-implant-19",
+      "procedure_key": "implant",
+      "tooth": "19",
+      "quantity": 1,
+      "dentist_fee_cents": 230000,
+      "allowed_cents": {
+        "value": null,
+        "status": "UNKNOWN",
+        "note": "excluded under Saltmarsh; Appendix A lists an allowance but Section 8.1 excludes implants"
+      },
+      "network": "in",
+      "appointment_date": null,
+      "status": "consultation_mentioned",
+      "source": "visit note 2026-10-05"
+    }
+  ],
+  "documents": [
+    {
+      "id": "doc-sm26",
+      "type": "plan_certificate",
+      "label": "Saltmarsh Dental Basic 2026 certificate (fictional, public sample)",
+      "location": "public sample: fixtures/documents/sm26_certificate.pdf",
+      "extraction_status": "confirmed",
+      "fields_needing_confirmation": []
+    },
+    {
+      "id": "doc-j-aftercare",
+      "type": "instructions",
+      "label": "Aftercare sheet, 2026-09-28 (fictional, supplied by the dental team)",
+      "location": "private: typed entry",
+      "extraction_status": "typed",
+      "fields_needing_confirmation": []
+    },
+    {
+      "id": "doc-j-eob",
+      "type": "eob",
+      "label": "Explanation of Benefits, 2026-10-12 (fictional, figures typed)",
+      "location": "private: typed entry",
+      "extraction_status": "typed",
+      "fields_needing_confirmation": [
+        "benefits used total ($400) does not match itemized claims ($225.60)"
+      ]
+    }
+  ]
+}

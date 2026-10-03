@@ -1,0 +1,51 @@
+{
+  "user_label": "Alex Chen (fictional demo user) — real plan rules: NCFlex Dental Classic Option 2026 (ML26), fictional personal records",
+  "note": "Every personal figure here is fictional and labeled by source. The plan rules applied to these records come from the public 2026 NCFlex Dental Plan Details (ML26) with page citations. Allowed amounts are NOT in that document: Alex entered them from the dentist's pre-treatment estimate response (USER).",
+  "benefits": {
+    "plan_code": "ML26",
+    "plan_version": "fixtures/plans/ml26.json (built from sources/extracted/ncflex-2026-plan-details.json)",
+    "coverage_start": "2024-01-01",
+    "coverage_end": null,
+    "network_default": {"value": "in", "source": "user", "note": "Greensboro Family Dental (fictional) listed as a MetLife PDP Plus participating office by the user"},
+    "deductible_met_cents": 2500,
+    "benefits_used_cents": 24000,
+    "source": {"type": "benefit_statement", "label": "MetLife benefit statement dated 2026-09-20, figures entered by the user", "date": "2026-09-20", "entered_by": "user"},
+    "last_updated": "2026-09-20",
+    "claims": [
+      {"id": "cl-a1", "date": "2026-03-02", "procedure_key": "exam", "tooth": null, "dentist_fee_cents": 6500, "allowed_cents": 4500, "plan_paid_cents": 4500, "patient_paid_cents": 0, "deductible_applied_cents": 0, "source": "benefit statement 2026-09-20"},
+      {"id": "cl-a2", "date": "2026-03-02", "procedure_key": "cleaning", "tooth": null, "dentist_fee_cents": 12500, "allowed_cents": 8200, "plan_paid_cents": 8200, "patient_paid_cents": 0, "deductible_applied_cents": 0, "source": "benefit statement 2026-09-20"},
+      {"id": "cl-a3", "date": "2026-03-02", "procedure_key": "bitewing_xrays", "tooth": null, "dentist_fee_cents": 8500, "allowed_cents": 3800, "plan_paid_cents": 3800, "patient_paid_cents": 0, "deductible_applied_cents": 0, "source": "benefit statement 2026-09-20"},
+      {"id": "cl-a4", "date": "2026-04-14", "procedure_key": "composite", "tooth": "14", "dentist_fee_cents": 30000, "allowed_cents": 15000, "plan_paid_cents": 7500, "patient_paid_cents": 7500, "deductible_applied_cents": 2500, "source": "benefit statement 2026-09-20"}
+    ],
+    "reconciliation": "4500 + 8200 + 3800 + 7500 = 24000 plan paid; deductible applied 2500 of 2500 (Type II filling 2026-04-14: (15000 − 2500) × 60% = 7500); remaining annual maximum = 150000 − 24000 = 126000 (derived by the engine, not stored)"
+  },
+  "treatment_items": [
+    {"id": "ti-a-exam-0302", "procedure_key": "exam", "tooth": null, "quantity": 1, "dentist_fee_cents": 6500, "allowed_cents": {"value": 4500, "status": "USER", "note": "benefit statement"}, "network": "in",
+     "appointment_date": {"value": "2026-03-02", "source": "benefit_statement"}, "status": "completed", "source": "benefit statement 2026-09-20"},
+    {"id": "ti-a-cleaning-0302", "procedure_key": "cleaning", "tooth": null, "quantity": 1, "dentist_fee_cents": 12500, "allowed_cents": {"value": 8200, "status": "USER", "note": "benefit statement"}, "network": "in",
+     "appointment_date": {"value": "2026-03-02", "source": "benefit_statement"}, "status": "completed", "source": "benefit statement 2026-09-20"},
+    {"id": "ti-a-composite-14", "procedure_key": "composite", "tooth": "14", "quantity": 1, "dentist_fee_cents": 30000, "allowed_cents": {"value": 15000, "status": "USER", "note": "benefit statement"}, "network": "in",
+     "appointment_date": {"value": "2026-04-14", "source": "benefit_statement"}, "status": "completed", "source": "benefit statement 2026-09-20"},
+    {"id": "ti-a-rct-19", "procedure_key": "root_canal_molar", "procedure_name": "Root canal therapy, molar", "tooth": "19", "quantity": 1, "dentist_fee_cents": 115000,
+     "allowed_cents": {"value": 98000, "status": "USER", "note": "MetLife pre-treatment estimate response dated 2026-09-30 (negotiated fee), entered by the user"},
+     "allowed_source": "pre-treatment estimate response 2026-09-30 (entered by the user)", "code_as_written": "D3330", "network": "in", "appointment_date": {"value": "2026-10-27", "source": "dental_team"},
+     "planned_dates": {"completion": "2026-10-27", "source": "treatment plan 2026-09-24 (typed)"}, "status": "scheduled", "source": "treatment plan 2026-09-24 (typed)"},
+    {"id": "ti-a-crown-19", "procedure_key": "crown", "procedure_name": "Crown, porcelain/ceramic", "tooth": "19", "quantity": 1, "dentist_fee_cents": 125000,
+     "allowed_cents": {"value": 102000, "status": "USER", "note": "MetLife pre-treatment estimate response dated 2026-09-30 (negotiated fee), entered by the user"},
+     "allowed_source": "pre-treatment estimate response 2026-09-30 (entered by the user)", "code_as_written": "D2740", "network": "in", "appointment_date": null,
+     "planned_dates": {"prep": "2026-11-10", "completion": "2026-11-24", "source": "treatment plan 2026-09-24 (typed)"}, "status": "planned", "source": "treatment plan 2026-09-24 (typed)"},
+    {"id": "ti-a-nightguard", "procedure_key": "night_guard", "procedure_name": "Occlusal night guard", "tooth": null, "quantity": 1, "dentist_fee_cents": 55000,
+     "allowed_cents": {"value": null, "status": "UNKNOWN", "note": "not on the pre-treatment estimate"}, "network": "in", "appointment_date": null, "planned_dates": null,
+     "status": "consultation_mentioned", "source": "mentioned at the 2026-09-24 consultation (typed by the user)"}
+  ],
+  "documents": [
+    {"id": "doc-ml26", "type": "plan_document_public", "label": "2026 NCFlex Dental Plan Details (Benefits Guide pp.24–26) — public document, preset ML26",
+     "location": "public preset: sources/extracted/ncflex-2026-plan-details.json (official URL on oshr.nc.gov)", "extraction_status": "cited_facts_verified_in_text", "fields_needing_confirmation": ["waiting period (not stated)", "alternate benefit clause (certificate not reachable)", "sealant frequency ('see certificate')"]},
+    {"id": "doc-a-treatment-plan", "type": "treatment_plan", "label": "Treatment plan from Greensboro Family Dental (fictional), dated 2026-09-24 — typed by the user",
+     "location": "private: users/<sub>/docs/doc-a-treatment-plan (typed; no file)", "extraction_status": "typed_by_user", "fields_needing_confirmation": []},
+    {"id": "doc-a-pretreatment", "type": "pretreatment_estimate_response", "label": "MetLife pre-treatment estimate response dated 2026-09-30 — figures typed by the user",
+     "location": "private: users/<sub>/docs/doc-a-pretreatment (typed; no file)", "extraction_status": "typed_by_user", "fields_needing_confirmation": ["allowed amounts are as typed; the response itself states it is not a guarantee of payment"]},
+    {"id": "doc-a-statement", "type": "benefit_statement", "label": "MetLife benefit statement dated 2026-09-20 — figures typed by the user",
+     "location": "private: users/<sub>/docs/doc-a-statement (typed; no file)", "extraction_status": "typed_by_user", "fields_needing_confirmation": []}
+  ]
+}

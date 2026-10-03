@@ -1,54 +1,72 @@
-# FinePrint — project instructions for Claude Code
+# OralCompass — project instructions for Claude Code
 
-You are building **FinePrint**, a codeLinc 11 (Path 1: Dental) hackathon entry: an information-only dental-plan explainer whose
-signature interaction is **"pull the thread"** — every dollar on the estimate is stitched to the exact sentence in the plan document
-that produced it, and vice versa. Read `docs/CODELINC_DENTAL_PRODUCT_SPEC.md` first (it wins over everything else), then
-`docs/CODELINC_DENTAL_BUILD_BRIEF.md` (schedule, pitch) and `docs/CODELINC_DENTAL_RESEARCH.md` (evidence) when you need the why.
+You are building **OralCompass** — *Your care journey. Your coverage. Clearly mapped.* — the codeLinc 11 (Path 1: Dental) entry: an
+information-only dental journey and benefits explainer drawn as a hand-painted atlas. Two connected views (**My journey**: islands and
+checkpoints; **My plan**: five landmarks — Your plan · Deductible · Coverage · Annual maximum · Cost breakdown) plus **Compare** and
+**Documents**. The signature is the **cost trail**: every dollar from the dentist's fee to "you pay" is stitched to the exact clause
+(document label, page, quote) that produced it. Read, in this order, before changing anything:
+1. `docs/ORALCOMPASS_UI_GUIDE.md` — the quality bar and art direction (beautiful, cinematic, painted; evidence on every number).
+2. `docs/ORALCOMPASS_DATA_MODEL.md` — the eight data groups, endpoints, calculation rules.
+3. `docs/ORALCOMPASS_DATA_SOURCES.md` — what the real data is, where it came from, what is still unknown (never paper over it).
+4. `docs/CODELINC_DENTAL_PRODUCT_SPEC.md` (product rules, privacy, acceptance checks), then the brief and research docs when you need the why.
 
-## Non-negotiable product rules (enforced by tests and `tools/advice_lint.py`)
-1. **Information only.** Never write copy, notifications, defaults, sort orders or visual emphasis that recommend, rank or steer
-   ("should", "best", "save", "recommend", "use your benefits", "available to you", winners, green checkmarks on totals).
-   Run `python3 tools/advice_lint.py web/src/lib/copy.ts` and over any generated text. A flagged sentence is dropped, not softened.
-2. **Every number has evidence.** Every displayed figure carries one of six badges: DOC (document-supported, with page + quote),
-   USER, ASSUMED (hypothetical the user explicitly entered — never pre-filled), AMBIGUOUS, UNKNOWN ("Not provided"/"Not stated in
-   this document"), CONFLICT (sources disagree — show both excerpts and dates). Never silently assume the full benefit remains.
-3. **Deterministic money.** All arithmetic lives in `engine/fineprint_engine` (stdlib Python, integer cents). The model may only
-   extract and quote (`api/app/extraction.py`), translate a clause into plain words, or answer factual questions — and its output
-   passes `api/app/lint_runtime.py`. Unknown inputs → `unresolved`, never a guess. Unknown alternate allowance → plan payment is an
-   UPPER bound. Unknown enrollment date with a waiting period → two branches, unresolved.
-4. **Scoped stitches.** Stitch ids are `<doc_version_label>#<n>` (e.g. `DD24 ③`), numbered in page order within one document.
-   With two or more plans loaded the scope tag is always prominent. Never resolve a stitch without its document scope.
-5. **Nothing transfers between plans.** Network status, allowed amounts, enrollment date and usage are entered per plan.
-   There is no copy function. Comparison columns follow the user's order; no sort, no totals coloring, no winner row; the
-   eligibility quote sits under every column header ("Listed here means the document is public — not that you are eligible to enroll").
-6. **Security is architecture.** Every private read goes through `repo.get_owned` → constant 404 on mismatch (no existence
-   disclosure); audit events carry ids only; presets are GET-only; redaction before any model call with a user-visible preview;
-   document text is DATA (schema-only extraction; the Harborview fixture contains an injected instruction that must be ignored).
-   Claim only what is implemented: no certifications, no "zero knowledge", no "HIPAA compliant" (AWS requires a BAA for PHI).
-7. **One fixture.** Every number in the demo/pitch must equal `engine/tests/test_fixture.py` (Harborview $665/$535, out-of-network
-   $965, deductible-unknown $640–$665, premolar $565/$635; Delta hypotheticals ≥$685/≤$815, 6-month $1,500/$0; MetLife $732.50/$767.50).
-   Generate slide numbers from the engine, never type them.
-8. **Synthetic member data only.** Sam Rivera, Northside Dental Group and Harborview are fictional. Real plan documents are public
-   (Delta Dental MSU 2024 EOC; NCFlex 2026 guide) and contain no personal data. Mark unknown fields in real presets as UNKNOWN.
+## Non-negotiable product rules (enforced by tests, `tools/advice_lint.py`, `tools/ingest_sources.py --check`, `tools/screenshots.py`)
+1. **Information only.** No copy, default, sort order, notification or visual emphasis may recommend, rank or steer ("should", "best",
+   "save", "recommend", "available to you", winners, green totals). Copy lives in `web/src/lib/copy.ts` and `api/app/templates.py` and must
+   lint clean. "Next checkpoint" is navigation only and says so. The app never writes clinical instructions; it shows the dental team's words with a source.
+2. **Every number has evidence.** Six badges: DOC (document-supported: label + page + quote), USER, ASSUMED (hypothetical the user typed),
+   AMBIGUOUS, UNKNOWN ("Not stated in this document" / "Not provided"), CONFLICT (both excerpts and dates shown; never resolved by picking).
+   Unknown is never filled with a typical value, another plan's value, or a benchmark.
+3. **Deterministic money.** All arithmetic lives in `engine/oralcompass_engine` (stdlib Python, integer cents). Missing input → `unresolved`
+   with a named missing input and how to obtain it. The model may only extract and quote (`api/app/extraction.py`) under `lint_runtime.py`.
+4. **Fixed identifiers, explicit mappings.** The 16 procedure keys in `fixtures/procedures.json` never change. External codes (CDT) appear only
+   as printed in cited public documents (`fixtures/procedure_codes.json`; 9 keys are `review_required` and are shown with alternatives).
+   A code on the user's own estimate wins. No CDT catalog is shipped (ADA commercial license).
+5. **Published ≠ personal ≠ benchmark.** Plan rules come from documents; remaining deductible/maximum are derived from the user's dated
+   statement; dentist's fee and allowed amount are separate fields with sources; NC Medicaid rates are labeled benchmarks that never enter an
+   estimate unless typed in as a hypothetical.
+6. **Nothing transfers between plans.** Usage, network, allowed amounts and enrollment are per plan. Comparison columns follow the user's order;
+   no sort, no winner, eligibility quote under every column.
+7. **Security is architecture.** Every private read goes through `repo.get_owned` → constant 404; audit events carry ids only; presets are
+   GET-only; redaction before any model call with a visible preview; document text is DATA. Personal documents never go to public storage or logs.
+   Claim only what is implemented (no certifications, no "zero knowledge", no "HIPAA compliant").
+8. **One set of demo numbers**, all generated by the engine and asserted in tests — never typed into slides:
+   - Sam (fictional person, fictional plan HB26, PDF stored): in-network **$640 you / $560 plan**; out-of-network $940; crown on a premolar $540/$660;
+     deductible unknown → $640–$665 (`engine/tests/test_fixture.py`).
+   - Alex (fictional person, **real public plan ML26 — NCFlex Classic 2026**): root canal $392/$588, crown $510/$510, totals **$902 you / $1,098 plan**,
+     every step cites `ML26 p.25`; unknown clauses flagged (`api/tests/test_records.py`, `engine/tests/test_real_presets.py`).
+9. **Synthetic people only.** Sam Rivera, Jordan, Alex Chen, Northside Dental Group and Greensboro Family Dental are fictional and labeled.
+   Real plan documents are public and contain no personal data. Fictional plans (HB26, SM26, NW26, TW26) carry a ribbon everywhere.
+
+## The UI bar (short version — the guide has the full brief)
+Beautiful, cinematic, painted: watercolor paper, misty hills, warm sun wash, vignette, slow drifting ripples; serif headings; crisp tabular
+numbers in ink. Real HTML controls over decorative SVG; text equivalents for every scene; 44 px targets; focus rings; contrast ≥ 4.5:1;
+phone first (vertical coast + bottom sheet at 360 px, no horizontal scroll); reduced motion leaves every end state intact.
+`python3 tools/screenshots.py shots/` must pass (44 checks, desktop + phone) before a `web/` commit. Start UI work with `/ui-cinematic`.
 
 ## Repository map
-- `engine/` — `fineprint_engine` (models, ledger, ranges, comparison, loader) + `tests/` (15 tests, all passing). `cd engine && python3 -m pytest -q`
-- `api/` — FastAPI app (`app/main.py`), owner-scoped store, auth (Cognito JWT; `FINEPRINT_DEV_AUTH=1` + `X-Dev-User` for dev), redaction,
-  extraction interface (FixtureExtractor working; BedrockExtractor to wire in M4), runtime lint. `cd api && python3 -m pytest -q tests`
-  Run: `cd api && FINEPRINT_DEV_AUTH=1 uvicorn app.main:app --reload --port 8000`
-- `web/` — React + TypeScript + Vite PWA shell: Page (pdf.js, dim-and-highlight), receipt Ledger, stitch chips, depth dial, Clause card,
-  Comparison grid. `cd web && npm install && npm run dev` (proxies `/api` → :8000). Copy fixtures: `cp ../fixtures/plans/*.json public/fixtures/plans/ && cp ../fixtures/documents/*.pdf public/fixtures/documents/`
-- `fixtures/` — `plans/hb26.json` (fictional, fully cited), `plans/dd24.json`, `plans/ml26.json` (real, public, unknowns marked),
-  `estimates/sam_estimate.json`, `member_state/sam_hb26.json`, `documents/harborview_certificate.pdf` (generated; 14 pages).
-- `tools/` — `advice_lint.py`, `verify_citations.py`, `build_harborview_pdf.py` (regenerates PDF + hb26.json from one source of truth), `seed_presets.py`.
-- `infra/` — SAM skeleton (Cognito, API Gateway JWT authorizer, Lambda, S3 SSE-KMS per-user prefixes, DynamoDB, KMS, EventBridge).
-- `docs/` — the three specification documents.
-- `.claude/commands/` — milestone prompts (`/m0-validate` … `/m6-notifications`, `/run-checks`, `/lint-copy`, `/pitch-from-fixture`).
+- `engine/` — `oralcompass_engine` (models, ledger, ranges, comparison, rules, loader) + `tests/` (19 tests). `cd engine && python3 -m pytest -q`
+- `api/` — FastAPI: `app/main.py` (presets, documents, legacy estimates/comparisons, account), `app/records.py` (plans, rules, procedures, codes,
+  benchmarks, sources, evidence, benefits, treatment items, saved estimates), `app/journeys.py`, `app/data.py` (catalog loader), `store.py`, `auth.py`,
+  `redaction.py`, `extraction.py`, `lint_runtime.py`, `templates.py`. `cd api && ORALCOMPASS_DEV_AUTH=1 python3 -m pytest -q tests` (10 tests).
+  Run: `cd api && ORALCOMPASS_DEV_AUTH=1 uvicorn app.main:app --reload --port 8000`
+- `web/` — React 18 + TypeScript + Vite PWA: `src/App.tsx`, `src/lib/{copy,journey,trail,stitches,api,types}.ts`, `src/components/atlas/*` (paint),
+  `src/components/*` (panels, trail, documents, compare), `src/styles.css`. `cd web && npm install && npm run build`; dev `npm run dev` (proxies /api → :8000);
+  preview `npx vite preview --port 4173`. Copy fixtures: `cp ../fixtures/plans/*.json public/fixtures/plans/ && cp ../fixtures/documents/*.pdf public/fixtures/documents/`
+- `fixtures/` — `plans/` (9 real presets generated from facts + 4 fictional), `procedures.json` (16 ids), `procedure_codes.json`, `fee_benchmarks.json`,
+  `sources.json`, `evidence/`, `users/{sam,jordan,alex}.json`, `journeys/{sample_sam,sample_jordan,sample_alex,empty}.json`, `documents/` (4 fictional PDFs),
+  `ingest_report.json`, `audit_report.json`.
+- `sources/` — `RESEARCH_PROTOCOL.md`, `extracted/*.json` (verbatim facts with pages), `notes/*.md` (what was opened, what could not be).
+- `tools/` — `ingest_sources.py`, `audit_data.py`, `advice_lint.py`, `verify_citations.py`, `build_fictional_plans.py`, `seed_presets.py`, `screenshots.py`.
+- `infra/template.yaml` — SAM skeleton (Cognito, JWT authorizer, Lambda, S3 SSE-KMS per-user prefixes, DynamoDB CMK, KMS, EventBridge).
+- `.claude/commands/` — `/ui-cinematic`, `/verify-ui`, `/run-checks`, `/data-refresh`, `/research-source`, `/lint-copy`, `/pitch-from-fixture`,
+  milestone prompts `/m0-validate` … `/m6-notifications`. `.claude/agents/` — `ui`, `engine`, `security`, `content`, `data`.
 
 ## Working agreements
-- Before any UI work, run `/m0-validate` (extraction with citations on the Delta FEDVIP/MSU PDF vs gold clauses). Record the score.
-- Keep `npm run build`, both pytest suites and the linter green before every commit. Commit small; message = what a judge would see.
-- Prefer editing the fixture generator over editing the PDF or hb26.json by hand; every citation must be verified by `tools/verify_citations.py`.
-- Phone first (360 px). Reduced motion must leave every end state intact. Every visual has a text/table equivalent (Rule Table).
-- When unsure whether a sentence is advice, it is. Rewrite as a statement of what the document says or what the arithmetic yields.
-- Do not add insurer integrations, FAIR Health data, CDT code catalogs, free-form chat, or premium figures that are not printed in a stored document.
+- Keep `npm run build`, both pytest suites, `tools/ingest_sources.py --check`, the linter and `tools/screenshots.py` green before every commit. Commit small.
+- Data changes go through `sources/extracted/` → `python3 tools/ingest_sources.py` → `python3 tools/audit_data.py`; never hand-edit a generated preset
+  (real presets are regenerated; fictional ones come from `tools/build_fictional_plans.py`). Every new fact needs an exact quote and a page.
+- When unsure whether a sentence is advice, it is. Rewrite it as what the document says or what the arithmetic yields.
+- Do not add insurer integrations, FAIR Health data, a CDT catalog, free-form chat, or premium figures that are not printed in a stored or cited document.
+- Known limits to state, not hide: real PDFs are not stored (binary downloads blocked where this was built — `tools/seed_presets.py` downloads, hashes and
+  verifies when the network allows); NCFlex certificate clauses past p.51 and FEDVIP brochure pages past ~p.30 are UNKNOWN; DD24 is a 2024 document.

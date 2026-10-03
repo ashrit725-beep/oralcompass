@@ -1,0 +1,133 @@
+{
+  "label": "Example procedures (fictional fees; plain names, no code sets)",
+  "items": [
+    {
+      "key": "exam",
+      "name": "Periodic oral evaluation",
+      "category_hint": "preventive",
+      "dentist_fee_cents": 6500,
+      "fee_source": "Northside Dental Group (fictional) fee list, 2026",
+      "tooth_or_area_relevant": false
+    },
+    {
+      "key": "cleaning",
+      "name": "Adult cleaning (prophylaxis)",
+      "category_hint": "preventive",
+      "dentist_fee_cents": 12500,
+      "fee_source": "Northside Dental Group (fictional) fee list, 2026",
+      "tooth_or_area_relevant": false
+    },
+    {
+      "key": "bitewing_xrays",
+      "name": "Bitewing x-rays (set)",
+      "category_hint": "preventive",
+      "dentist_fee_cents": 8500,
+      "fee_source": "Northside Dental Group (fictional) fee list, 2026",
+      "tooth_or_area_relevant": false
+    },
+    {
+      "key": "fluoride_child",
+      "name": "Fluoride treatment (child)",
+      "category_hint": "preventive",
+      "dentist_fee_cents": 4500,
+      "fee_source": "Northside Dental Group (fictional) fee list, 2026",
+      "tooth_or_area_relevant": false
+    },
+    {
+      "key": "sealant",
+      "name": "Sealant (per tooth, child)",
+      "category_hint": "preventive",
+      "dentist_fee_cents": 7000,
+      "fee_source": "Northside Dental Group (fictional) fee list, 2026",
+      "tooth_or_area_relevant": true
+    },
+    {
+      "key": "composite",
+      "name": "Resin composite filling, two surfaces, posterior tooth",
+      "category_hint": "basic",
+      "dentist_fee_cents": 30000,
+      "fee_source": "Northside Dental Group (fictional) fee list, 2026",
+      "tooth_or_area_relevant": true
+    },
+    {
+      "key": "amalgam",
+      "name": "Amalgam filling, two surfaces",
+      "category_hint": "basic",
+      "dentist_fee_cents": 22000,
+      "fee_source": "Northside Dental Group (fictional) fee list, 2026",
+      "tooth_or_area_relevant": true
+    },
+    {
+      "key": "extraction_simple",
+      "name": "Simple extraction",
+      "category_hint": "basic",
+      "dentist_fee_cents": 26000,
+      "fee_source": "Northside Dental Group (fictional) fee list, 2026",
+      "tooth_or_area_relevant": true
+    },
+    {
+      "key": "extraction_surgical",
+      "name": "Surgical extraction",
+      "category_hint": "basic/major (varies)",
+      "dentist_fee_cents": 48000,
+      "fee_source": "Northside Dental Group (fictional) fee list, 2026",
+      "tooth_or_area_relevant": true
+    },
+    {
+      "key": "scaling_root_planing",
+      "name": "Scaling and root planing (per quadrant)",
+      "category_hint": "basic/major (varies)",
+      "dentist_fee_cents": 32000,
+      "fee_source": "Northside Dental Group (fictional) fee list, 2026",
+      "tooth_or_area_relevant": true
+    },
+    {
+      "key": "root_canal_molar",
+      "name": "Root canal therapy, molar",
+      "category_hint": "basic/major (varies)",
+      "dentist_fee_cents": 125000,
+      "fee_source": "Northside Dental Group (fictional) fee list, 2026",
+      "tooth_or_area_relevant": true
+    },
+    {
+      "key": "crown",
+      "name": "Crown, porcelain or ceramic",
+      "category_hint": "major",
+      "dentist_fee_cents": 120000,
+      "fee_source": "Northside Dental Group (fictional) fee list, 2026",
+      "tooth_or_area_relevant": true
+    },
+    {
+      "key": "cast_crown",
+      "name": "Crown, full cast metal",
+      "category_hint": "major",
+      "dentist_fee_cents": 95000,
+      "fee_source": "Northside Dental Group (fictional) fee list, 2026",
+      "tooth_or_area_relevant": true
+    },
+    {
+      "key": "denture_partial",
+      "name": "Partial denture",
+      "category_hint": "major",
+      "dentist_fee_cents": 180000,
+      "fee_source": "Northside Dental Group (fictional) fee list, 2026",
+      "tooth_or_area_relevant": false
+    },
+    {
+      "key": "implant",
+      "name": "Dental implant (body)",
+      "category_hint": "major/excluded (varies)",
+      "dentist_fee_cents": 230000,
+      "fee_source": "Northside Dental Group (fictional) fee list, 2026",
+      "tooth_or_area_relevant": true
+    },
+    {
+      "key": "night_guard",
+      "name": "Occlusal night guard",
+      "category_hint": "major/excluded (varies)",
+      "dentist_fee_cents": 55000,
+      "fee_source": "Northside Dental Group (fictional) fee list, 2026",
+      "tooth_or_area_relevant": false
+    }
+  ]
+}

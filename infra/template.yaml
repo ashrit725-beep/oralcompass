@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
-Description: FinePrint prototype — Cognito + HTTP API (JWT authorizer) + Lambda (FastAPI/Mangum) + S3 (SSE-KMS, per-user prefixes) + DynamoDB + KMS. Skeleton: review before deploying.
+Description: OralCompass prototype — Cognito + HTTP API (JWT authorizer) + Lambda (FastAPI/Mangum) + S3 (SSE-KMS, per-user prefixes) + DynamoDB + KMS. Skeleton: review before deploying.
 
 Parameters:
   BedrockModelId: { Type: String, Description: "Anthropic Claude model id in zero-data-retention mode (named on the Privacy Panel)" }
@@ -9,7 +9,7 @@ Resources:
   UserPool:
     Type: AWS::Cognito::UserPool
     Properties:
-      UserPoolName: fineprint-users
+      UserPoolName: oralcompass-users
       AutoVerifiedAttributes: [email]
       MfaConfiguration: OPTIONAL
       EnabledMfas: [SOFTWARE_TOKEN_MFA]
@@ -21,7 +21,7 @@ Resources:
   DataKey:
     Type: AWS::KMS::Key
     Properties:
-      Description: FinePrint user data key (encryption context tenant=<sub> required by the application layer)
+      Description: OralCompass user data key (encryption context tenant=<sub> required by the application layer)
       EnableKeyRotation: true
       KeyPolicy:
         Version: "2012-10-17"
@@ -35,7 +35,7 @@ Resources:
   DocumentsBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub "fineprint-docs-${AWS::AccountId}"
+      BucketName: !Sub "oralcompass-docs-${AWS::AccountId}"
       PublicAccessBlockConfiguration: { BlockPublicAcls: true, BlockPublicPolicy: true, IgnorePublicAcls: true, RestrictPublicBuckets: true }
       BucketEncryption: { ServerSideEncryptionConfiguration: [ { ServerSideEncryptionByDefault: { SSEAlgorithm: "aws:kms", KMSMasterKeyID: !Ref DataKey }, BucketKeyEnabled: true } ] }
       VersioningConfiguration: { Status: Enabled }
@@ -62,7 +62,7 @@ Resources:
   Table:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: fineprint
+      TableName: oralcompass
       BillingMode: PAY_PER_REQUEST
       AttributeDefinitions: [ { AttributeName: pk, AttributeType: S }, { AttributeName: sk, AttributeType: S } ]
       KeySchema: [ { AttributeName: pk, KeyType: HASH }, { AttributeName: sk, KeyType: RANGE } ]
@@ -90,12 +90,12 @@ Resources:
       MemorySize: 1024
       Environment:
         Variables:
-          FINEPRINT_TABLE: !Ref Table
-          FINEPRINT_BUCKET: !Ref DocumentsBucket
-          FINEPRINT_KMS_KEY: !Ref DataKey
-          FINEPRINT_BEDROCK_MODEL_ID: !Ref BedrockModelId
-          FINEPRINT_COGNITO_JWKS_URL: !Sub "https://cognito-idp.${AWS::Region}.amazonaws.com/${UserPool}/.well-known/jwks.json"
-          FINEPRINT_COGNITO_AUDIENCE: !Ref UserPoolClient
+          ORALCOMPASS_TABLE: !Ref Table
+          ORALCOMPASS_BUCKET: !Ref DocumentsBucket
+          ORALCOMPASS_KMS_KEY: !Ref DataKey
+          ORALCOMPASS_BEDROCK_MODEL_ID: !Ref BedrockModelId
+          ORALCOMPASS_COGNITO_JWKS_URL: !Sub "https://cognito-idp.${AWS::Region}.amazonaws.com/${UserPool}/.well-known/jwks.json"
+          ORALCOMPASS_COGNITO_AUDIENCE: !Ref UserPoolClient
       Policies:
         - DynamoDBCrudPolicy: { TableName: !Ref Table }
         - Statement:

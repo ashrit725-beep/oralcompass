@@ -1,0 +1,993 @@
+{
+  "plan_code": "FD26H",
+  "title": "Delta Dental's Federal Employees Dental Program 2026 — High Option (FEDVIP, nationwide)",
+  "carrier_text": "Delta Dental of California",
+  "is_fictional": false,
+  "catalog": {
+    "carrier": "Delta Dental of California",
+    "plan_name": "Delta Dental's Federal Employees Dental Program (FEDVIP brochure 02AP-05; contract OPM02-FEDVIP-02AP-05)",
+    "option": "High Option",
+    "plan_year": 2026,
+    "benefit_year_type": "calendar",
+    "region": "Nationwide plus international (includes North Carolina); five rating regions by home ZIP code",
+    "network": "Delta Dental PPO and Delta Dental Legion networks",
+    "effective_dates": {
+      "start": "2026-01-01",
+      "end": "2026-12-31",
+      "text": "Plan year January 1, 2026 to December 31, 2026",
+      "cite": {
+        "doc": "FD26",
+        "page": 16,
+        "page_note": "p.16",
+        "quote": "The calendar year refers to the plan year, which is defined as January 1, 2026 to December 31, 2026.",
+        "section": "Section 4 Your Cost For Covered Services",
+        "fact_id": "opm-fedvip-delta-2026:benefit_year:n/a",
+        "review_status": "quote_verified_in_text"
+      }
+    },
+    "where_offered": {
+      "text": "Nationwide (United States) plus international; rates vary by one of five rating regions determined by home ZIP code. Includes North Carolina, but the brochure pages that list regions by state (end of brochure) could not be read.",
+      "cite": {
+        "doc": "FD26",
+        "page": 1,
+        "page_note": "p.1",
+        "quote": "This Plan has five enrollment regions, including international; please see the end of this brochure to determine your region and corresponding rates.",
+        "section": "Introduction",
+        "fact_id": "opm-fedvip-delta-2026:rating_regions:n/a",
+        "review_status": "quote_verified_in_text"
+      }
+    },
+    "eligibility": {
+      "text": "Federal/USPS employees eligible for FEHB; annuitants; TRICARE-eligible uniformed services retirees and families. Listed here means the document is public — not that you are eligible to enroll.",
+      "cite": {
+        "doc": "FD26",
+        "page": 6,
+        "page_note": "p.6",
+        "quote": "If you are a Federal or U.S. Postal Service employee, you are eligible to enroll in FEDVIP, if you are eligible for the Federal Employees Health Benefits (FEHB) Program...",
+        "section": "Section 1 Eligibility",
+        "fact_id": "opm-fedvip-delta-2026:eligibility:n/a",
+        "review_status": "needs_review"
+      }
+    },
+    "governing_document": {
+      "text": "The brochure is the official statement of benefits.",
+      "cite": {
+        "doc": "FD26",
+        "page": 1,
+        "page_note": "p.1",
+        "quote": "This brochure is the official statement of benefits. No oral statement can modify or otherwise affect the benefits, limitations, and exclusions of this brochure.",
+        "section": "Introduction",
+        "fact_id": "opm-fedvip-delta-2026:official_statement:n/a",
+        "review_status": "quote_verified_in_text"
+      }
+    },
+    "verification": {
+      "date": "2026-10-03",
+      "method": "WebFetch (PDF→text; page numbers from footers). The PDF-to-text conversion was truncated by the fetch tool at approximately page 29 (OPM copy) / page 30 (BENEFEDS copy); pages 30-62 were not readable by any sanctioned tool.",
+      "note": "Brochure pages 1–29 of 62 were readable; table cells on pp.15–16 were returned as 'label: value' renderings (needs_review). Pages 30–62 (implants, occlusal guards, exclusions, definitions, rates/regions) remain UNKNOWN."
+    }
+  },
+  "source_document": {
+    "title": "Delta Dental's Federal Employees Dental Program",
+    "publisher": "U.S. Office of Personnel Management (OPM) — FEDVIP plan brochure; carrier: Delta Dental of California (contract OPM02-FEDVIP-02AP-05)",
+    "url": "https://www.opm.gov/healthcare-insurance/healthcare/plan-information/plans/pdf/2026/brochures/02AP-05.pdf",
+    "secondary_urls": [
+      "https://cdn.benefeds.gov/assets/Education_Support/dental_brochures/Delta2026.pdf (BENEFEDS-hosted copy of the same brochure; used to read page 29-30 text)",
+      "https://www.opm.gov/healthcare-insurance/healthcare/plan-information/plans/BrochureJson?brochureNumber=02AP-05&year=2026 (OPM HTML/JSON rendering of the same brochure; truncates at page 18)",
+      "https://www.opm.gov/healthcare-insurance/dental-vision/plan-information/plans/dental/ (OPM dental plan index; links to brochure)",
+      "https://www.opm.gov/healthcare-insurance/dental-vision/plan-information/plan-premiums/ (OPM premiums page; links to 2026 Excel files)",
+      "https://www.opm.gov/frequently-asked-questions/insure-faq/dental-vision/what-is-a-fedvip-dental-rating-area/ (OPM FAQ on rating areas)",
+      "https://www1.deltadentalins.com/federal/fedvip/plans.html (carrier plan-compare page; summary only, not used as evidence)"
+    ],
+    "document_type": "plan_brochure",
+    "document_date": null,
+    "effective_period": {
+      "start": "2026-01-01",
+      "end": "2026-12-31",
+      "quote": "The calendar year refers to the plan year, which is defined as January 1, 2026 to December 31, 2026."
+    },
+    "retrieved_at": "2026-10-03",
+    "retrieval_method": "WebFetch (PDF→text; page numbers from footers). The PDF-to-text conversion was truncated by the fetch tool at approximately page 29 (OPM copy) / page 30 (BENEFEDS copy); pages 30-62 were not readable by any sanctioned tool.",
+    "pages": 62,
+    "sha256": "",
+    "sha256_note": "The egress policy of the build environment blocks binary downloads from this host; the document was read through the sanctioned text-extraction fetch. Record the SHA-256 and re-verify each quote on its PDF page when the PDF is downloaded (tools/seed_presets.py).",
+    "version_label": "FD26",
+    "reuse_terms": "Government contract brochure: \"This brochure describes the benefits of Delta Dental's Federal Employees Dental Program under Delta Dental of California contract OPM02-FEDVIP-02AP-05 with OPM, as authorized by the FEDVIP law.\" (p. 1). ADA notice: \"Current Dental Terminology (CDT), Copyright © American Dental Association. All rights reserved.\" (p. 5). No Delta Dental copyright line was seen in the readable pages (pp. 1-29).",
+    "access_limits": [
+      "Brochure pages ~30-62 (remainder of Section 5 Class C incl. implant and adjunctive/occlusal-guard codes, Class D Orthodontic, Section 6 International, Section 7 General Exclusions, Section 8 Claims, Section 9 Definitions, Summary of Benefits, Rate Information) could not be read: WebFetch truncated the PDF text ('Content truncated due to length') at ~page 29 on the OPM URL and ~page 30 on the BENEFEDS copy. The OPM BrochureJson rendering truncated even earlier (page 18).",
+      "https://www1.deltadentalins.com/content/dam/ddins/en/pdf/affiliate-sites/fedvip/plan-highlights-2026.pdf — WebFetch error ROBOTS_DISALLOWED (URL is disallowed by robots.txt rules). Not read.",
+      "https://www1.deltadentalins.com/content/dam/ddins/en/pdf/affiliate-sites/fedvip/plan-brochure-2026.pdf — not attempted after robots.txt block on the same path; OPM copy used instead.",
+      "https://feds.deltadentalins.com/federal/fedvip/plans/rates.html — 302 redirect to https://www1.deltadentalins.com/federal/fedvip.html (not followed; no rates there per the plans page fetch).",
+      "OPM 2026 FEDVIP Dental Premiums spreadsheet https://www.opm.gov/healthcare-insurance/dental-vision/plan-information/premiums/2026/2026-fedvip-dental-premiums.xlsx — binary .xlsx; WebFetch cannot read spreadsheets and the protocol forbids other download tools. Not read.",
+      "OPM 2026 Dental Rating Regions spreadsheet https://www.opm.gov/healthcare-insurance/healthcare/transparency-in-healthcare/public-use-files/2026/fedvip/2026-dental-rating-regions-100525.xlsx — binary .xlsx; same limitation. Not read. This is the official file that would map North Carolina ZIP codes to a Delta Dental rating region.",
+      "Table cells (deductible, coinsurance, maximum tables on pp. 15-16) were returned by the fetch tool as 'column label: value' renderings rather than as a contiguous printed passage; the labels and values are as printed but the row/column layout is reconstructed (flagged needs_review)."
+    ],
+    "source_id": "opm-fedvip-delta-2026",
+    "path": null
+  },
+  "benefit_year_start_month": {
+    "value": 1,
+    "status": "DOC",
+    "note": "",
+    "cite": {
+      "doc": "FD26",
+      "page": 16,
+      "page_note": "p.16",
+      "quote": "The calendar year refers to the plan year, which is defined as January 1, 2026 to December 31, 2026.",
+      "section": "Section 4 Your Cost For Covered Services",
+      "fact_id": "opm-fedvip-delta-2026:benefit_year:n/a",
+      "review_status": "quote_verified_in_text"
+    }
+  },
+  "deductible_individual": {
+    "value": 0,
+    "status": "DOC",
+    "note": "in-network deductible $0 for every class row",
+    "cite": {
+      "doc": "FD26",
+      "page": 15,
+      "page_note": "p.15",
+      "quote": "In-Network High Option: $0",
+      "section": "Section 4 — Deductible table",
+      "fact_id": "opm-fedvip-delta-2026:deductible_individual:High:in",
+      "review_status": "needs_review"
+    }
+  },
+  "deductible_individual_out": {
+    "value": 5000,
+    "status": "DOC",
+    "note": "out-of-network deductible per enrolled covered person (Class B and Class C rows; Class A and D rows $0); whether one combined amount across B and C is not stated",
+    "cite": {
+      "doc": "FD26",
+      "page": 15,
+      "page_note": "p.15",
+      "quote": "Out-of-Network High Option: $50",
+      "section": "Section 4 — Deductible table, Class B and Class C rows",
+      "fact_id": "opm-fedvip-delta-2026:deductible_individual:High:out",
+      "review_status": "needs_review"
+    }
+  },
+  "deductible_family": {
+    "value": null,
+    "status": "DOC",
+    "cite": {
+      "doc": "FD26",
+      "page": 15,
+      "page_note": "p.15",
+      "quote": "There is no family deductible limit.",
+      "section": "Section 4 — Deductible",
+      "fact_id": "opm-fedvip-delta-2026:deductible_family:n/a",
+      "review_status": "quote_verified_in_text"
+    },
+    "note": "'There is no family deductible limit.' — each enrolled person satisfies their own deductible"
+  },
+  "deductible_waived_classes": [
+    "Class A Basic"
+  ],
+  "deductible_waiver_note": "Out-of-network deductible applies to Class B and Class C rows only (Class A and D rows show $0). In-network the deductible is $0 for every class.",
+  "annual_max": {
+    "value": null,
+    "status": "DOC",
+    "note": "In-network High Option cell reads 'Unlimited'. Implants carry their own $2,500 per-person limit under the High Option.",
+    "cite": {
+      "doc": "FD26",
+      "page": 16,
+      "page_note": "p.16",
+      "quote": "In-Network High Option: Unlimited",
+      "section": "Section 4 — Maximum Annual Benefits",
+      "fact_id": "opm-fedvip-delta-2026:annual_max:High:in",
+      "review_status": "needs_review"
+    },
+    "unlimited": true
+  },
+  "annual_max_out": {
+    "value": 300000,
+    "status": "DOC",
+    "cite": {
+      "doc": "FD26",
+      "page": 16,
+      "page_note": "p.16",
+      "quote": "Out-of-Network High Option: $3,000",
+      "section": "Section 4 — Maximum Annual Benefits",
+      "fact_id": "opm-fedvip-delta-2026:annual_max:High:out",
+      "review_status": "needs_review"
+    },
+    "note": "Annual Benefit Maximums within each option are combined between in- and out-of-network services; the out-of-network figure is the lower cap when you use an out-of-network dentist."
+  },
+  "annual_max_rule_cite": {
+    "doc": "FD26",
+    "page": 16,
+    "page_note": "p.16",
+    "quote": "Once you reach this amount, you are responsible for all additional charges. The Annual Benefit Maximums within each option are combined between in and out of network services.",
+    "section": "Section 4 — Annual Benefit Maximum",
+    "fact_id": "opm-fedvip-delta-2026:annual_max_rule:n/a",
+    "review_status": "quote_verified_in_text"
+  },
+  "classes": [
+    {
+      "name": "Class A Basic",
+      "plan_share_bp_in": {
+        "value": 10000,
+        "status": "DOC",
+        "cite": {
+          "doc": "FD26",
+          "page": 15,
+          "page_note": "p.15",
+          "quote": "In-Network High Option: 0%",
+          "section": "Section 4 — Coinsurance table, Class A row",
+          "fact_id": "opm-fedvip-delta-2026:coinsurance:ClassA:High:in",
+          "review_status": "needs_review"
+        },
+        "note": "document states what YOU pay; plan share = 100% − that.",
+        "basis": "Class A Basic; of network allowance"
+      },
+      "plan_share_bp_out": {
+        "value": 9000,
+        "status": "DOC",
+        "cite": {
+          "doc": "FD26",
+          "page": 15,
+          "page_note": "p.15",
+          "quote": "Out-of-Network High Option: 10%",
+          "section": "Section 4 — Coinsurance table, Class A row",
+          "fact_id": "opm-fedvip-delta-2026:coinsurance:ClassA:High:out",
+          "review_status": "needs_review"
+        },
+        "note": "document states what YOU pay; plan share = 100% − that. out-of-network: you also pay any amount above the Plan Allowance billed by the provider",
+        "basis": "Class A Basic; of out-of-network plan allowance, plus billed amount over allowance"
+      },
+      "procedures_text": [
+        "Diagnostic Services (evaluations, bitewings)",
+        "Preventive Services (prophylaxis, fluoride, sealants)"
+      ],
+      "cite": {
+        "doc": "FD26",
+        "page": 18,
+        "page_note": "p.18",
+        "quote": "D0120 Periodic oral evaluation – established patient - Limited to two in a calendar year",
+        "section": "Section 5 — Class A Basic — Diagnostic Services",
+        "fact_id": "opm-fedvip-delta-2026:class_membership:exam",
+        "review_status": "quote_verified_in_text"
+      }
+    },
+    {
+      "name": "Class B Intermediate",
+      "plan_share_bp_in": {
+        "value": 7000,
+        "status": "DOC",
+        "cite": {
+          "doc": "FD26",
+          "page": 15,
+          "page_note": "p.15",
+          "quote": "In-Network High Option: 30%",
+          "section": "Section 4 — Coinsurance table, Class B row",
+          "fact_id": "opm-fedvip-delta-2026:coinsurance:ClassB:High:in",
+          "review_status": "needs_review"
+        },
+        "note": "document states what YOU pay; plan share = 100% − that.",
+        "basis": "Class B Intermediate; of network allowance"
+      },
+      "plan_share_bp_out": {
+        "value": 6000,
+        "status": "DOC",
+        "cite": {
+          "doc": "FD26",
+          "page": 15,
+          "page_note": "p.15",
+          "quote": "Out-of-Network High Option: 40%",
+          "section": "Section 4 — Coinsurance table, Class B row",
+          "fact_id": "opm-fedvip-delta-2026:coinsurance:ClassB:High:out",
+          "review_status": "needs_review"
+        },
+        "note": "document states what YOU pay; plan share = 100% − that. out-of-network: you also pay any amount above the Plan Allowance billed by the provider",
+        "basis": "Class B Intermediate; of out-of-network plan allowance, plus billed amount over allowance; after $50 out-of-network deductible"
+      },
+      "procedures_text": [
+        "Restorative Services (fillings)",
+        "Periodontic Services (scaling and root planing)",
+        "Oral Surgery (extractions)"
+      ],
+      "cite": {
+        "doc": "FD26",
+        "page": 21,
+        "page_note": "p.21",
+        "quote": "D2392 Resin-based composite – two surfaces, posterior",
+        "section": "Section 5 — Class B Intermediate — Restorative Services",
+        "fact_id": "opm-fedvip-delta-2026:class_membership:composite",
+        "review_status": "quote_verified_in_text"
+      }
+    },
+    {
+      "name": "Class C Major",
+      "plan_share_bp_in": {
+        "value": 5000,
+        "status": "DOC",
+        "cite": {
+          "doc": "FD26",
+          "page": 15,
+          "page_note": "p.15",
+          "quote": "In-Network High Option: 50%",
+          "section": "Section 4 — Coinsurance table, Class C row",
+          "fact_id": "opm-fedvip-delta-2026:coinsurance:ClassC:High:in",
+          "review_status": "needs_review"
+        },
+        "note": "document states what YOU pay; plan share = 100% − that.",
+        "basis": "Class C Major; of network allowance"
+      },
+      "plan_share_bp_out": {
+        "value": 4000,
+        "status": "DOC",
+        "cite": {
+          "doc": "FD26",
+          "page": 15,
+          "page_note": "p.15",
+          "quote": "Out-of-Network High Option: 60%",
+          "section": "Section 4 — Coinsurance table, Class C row",
+          "fact_id": "opm-fedvip-delta-2026:coinsurance:ClassC:High:out",
+          "review_status": "needs_review"
+        },
+        "note": "document states what YOU pay; plan share = 100% − that. out-of-network: you also pay any amount above the Plan Allowance billed by the provider",
+        "basis": "Class C Major; of out-of-network plan allowance, plus billed amount over allowance; after $50 out-of-network deductible"
+      },
+      "procedures_text": [
+        "Major Restorative Services (crowns)",
+        "Endodontic Services (root canals)",
+        "Prosthodontic Services (partial dentures)"
+      ],
+      "cite": {
+        "doc": "FD26",
+        "page": 27,
+        "page_note": "p.27",
+        "quote": "D2740 Crown – porcelain/ceramic",
+        "section": "Section 5 — Class C Major — Major Restorative Services",
+        "fact_id": "opm-fedvip-delta-2026:class_membership:crown",
+        "review_status": "quote_verified_in_text"
+      }
+    }
+  ],
+  "class_of": {
+    "exam": {
+      "value": "Class A Basic",
+      "status": "DOC",
+      "cite": {
+        "doc": "FD26",
+        "page": 18,
+        "page_note": "p.18",
+        "quote": "D0120 Periodic oral evaluation – established patient - Limited to two in a calendar year",
+        "section": "Section 5 — Class A Basic — Diagnostic Services",
+        "fact_id": "opm-fedvip-delta-2026:class_membership:exam",
+        "review_status": "quote_verified_in_text"
+      },
+      "note": "code line printed under Class A Basic"
+    },
+    "cleaning": {
+      "value": "Class A Basic",
+      "status": "DOC",
+      "cite": {
+        "doc": "FD26",
+        "page": 19,
+        "page_note": "p.19",
+        "quote": "D1110 Prophylaxis - adult – Limited to two in a calendar year (or three for a pregnant individual)",
+        "section": "Section 5 — Class A Basic — Preventive Services",
+        "fact_id": "opm-fedvip-delta-2026:class_membership:cleaning",
+        "review_status": "quote_verified_in_text"
+      },
+      "note": "code line printed under Class A Basic"
+    },
+    "bitewing_xrays": {
+      "value": "Class A Basic",
+      "status": "DOC",
+      "cite": {
+        "doc": "FD26",
+        "page": 18,
+        "page_note": "p.18",
+        "quote": "D0274 Bitewings - four radiographic images – Limited to one in a calendar year",
+        "section": "Section 5 — Class A Basic — Diagnostic Services",
+        "fact_id": "opm-fedvip-delta-2026:class_membership:bitewing_xrays",
+        "review_status": "quote_verified_in_text"
+      },
+      "note": "code line printed under Class A Basic"
+    },
+    "fluoride_child": {
+      "value": "Class A Basic",
+      "status": "DOC",
+      "cite": {
+        "doc": "FD26",
+        "page": 19,
+        "page_note": "p.19",
+        "quote": "D1206 Topical application of fluoride varnish - Limited to two in a calendar year",
+        "section": "Section 5 — Class A Basic — Preventive Services",
+        "fact_id": "opm-fedvip-delta-2026:class_membership:fluoride_child",
+        "review_status": "quote_verified_in_text"
+      },
+      "note": "code line printed under Class A Basic"
+    },
+    "sealant": {
+      "value": "Class A Basic",
+      "status": "DOC",
+      "cite": {
+        "doc": "FD26",
+        "page": 19,
+        "page_note": "p.19",
+        "quote": "D1351 Sealant - per tooth - Permanent molars free from caries to patients under 19 – Limited to one in 36 months",
+        "section": "Section 5 — Class A Basic — Preventive Services",
+        "fact_id": "opm-fedvip-delta-2026:class_membership:sealant",
+        "review_status": "quote_verified_in_text"
+      },
+      "note": "code line printed under Class A Basic"
+    },
+    "composite": {
+      "value": "Class B Intermediate",
+      "status": "DOC",
+      "cite": {
+        "doc": "FD26",
+        "page": 21,
+        "page_note": "p.21",
+        "quote": "D2392 Resin-based composite – two surfaces, posterior",
+        "section": "Section 5 — Class B Intermediate — Restorative Services",
+        "fact_id": "opm-fedvip-delta-2026:class_membership:composite",
+        "review_status": "quote_verified_in_text"
+      },
+      "note": "code line printed under Class B Intermediate"
+    },
+    "amalgam": {
+      "value": "Class B Intermediate",
+      "status": "DOC",
+      "cite": {
+        "doc": "FD26",
+        "page": 21,
+        "page_note": "p.21",
+        "quote": "D2150 Amalgam – two surfaces, primary or permanent",
+        "section": "Section 5 — Class B Intermediate — Restorative Services",
+        "fact_id": "opm-fedvip-delta-2026:class_membership:amalgam",
+        "review_status": "quote_verified_in_text"
+      },
+      "note": "code line printed under Class B Intermediate"
+    },
+    "extraction_simple": {
+      "value": "Class B Intermediate",
+      "status": "DOC",
+      "cite": {
+        "doc": "FD26",
+        "page": 24,
+        "page_note": "p.24",
+        "quote": "D7140 Extraction, erupted tooth or exposed root (elevation and/or forceps removal)",
+        "section": "Section 5 — Class B Intermediate — Oral Surgery",
+        "fact_id": "opm-fedvip-delta-2026:class_membership:extraction_simple",
+        "review_status": "quote_verified_in_text"
+      },
+      "note": "code line printed under Class B Intermediate"
+    },
+    "extraction_surgical": {
+      "value": "Class B Intermediate",
+      "status": "DOC",
+      "cite": {
+        "doc": "FD26",
+        "page": 24,
+        "page_note": "p.24",
+        "quote": "D7210 Extraction, erupted tooth requiring removal of bone and/or sectioning of tooth",
+        "section": "Section 5 — Class B Intermediate — Oral Surgery",
+        "fact_id": "opm-fedvip-delta-2026:class_membership:extraction_surgical",
+        "review_status": "quote_verified_in_text"
+      },
+      "note": "code line printed under Class B Intermediate"
+    },
+    "scaling_root_planing": {
+      "value": "Class B Intermediate",
+      "status": "DOC",
+      "cite": {
+        "doc": "FD26",
+        "page": 23,
+        "page_note": "p.23",
+        "quote": "D4341 Periodontal scaling and root planing – four or more teeth per quadrant - Payable once per quadrant in 24 months",
+        "section": "Section 5 — Class B Intermediate — Periodontic Services",
+        "fact_id": "opm-fedvip-delta-2026:class_membership:scaling_root_planing",
+        "review_status": "quote_verified_in_text"
+      },
+      "note": "code line printed under Class B Intermediate"
+    },
+    "root_canal_molar": {
+      "value": "Class C Major",
+      "status": "DOC",
+      "cite": {
+        "doc": "FD26",
+        "page": 28,
+        "page_note": "p.28",
+        "quote": "D3330 Endodontic therapy, molar tooth (excluding final restoration)",
+        "section": "Section 5 — Class C Major — Endodontic Services",
+        "fact_id": "opm-fedvip-delta-2026:class_membership:root_canal_molar",
+        "review_status": "quote_verified_in_text"
+      },
+      "note": "root canals are Class C (Major) in this brochure"
+    },
+    "crown": {
+      "value": "Class C Major",
+      "status": "DOC",
+      "cite": {
+        "doc": "FD26",
+        "page": 27,
+        "page_note": "p.27",
+        "quote": "D2740 Crown – porcelain/ceramic",
+        "section": "Section 5 — Class C Major — Major Restorative Services",
+        "fact_id": "opm-fedvip-delta-2026:class_membership:crown",
+        "review_status": "quote_verified_in_text"
+      },
+      "note": "code line printed under Class C Major"
+    },
+    "cast_crown": {
+      "value": "Class C Major",
+      "status": "DOC",
+      "cite": {
+        "doc": "FD26",
+        "page": 27,
+        "page_note": "p.27",
+        "quote": "D2790 Crown – full cast high noble metal – Limited to once in five years",
+        "section": "Section 5 — Class C Major — Major Restorative Services",
+        "fact_id": "opm-fedvip-delta-2026:class_membership:cast_crown",
+        "review_status": "quote_verified_in_text"
+      },
+      "note": "code line printed under Class C Major"
+    },
+    "denture_partial": {
+      "value": "Class C Major",
+      "status": "DOC",
+      "cite": {
+        "doc": "FD26",
+        "page": 29,
+        "page_note": "p.29",
+        "quote": "D5213 Maxillary partial denture - cast metal framework with resin denture bases (including retentive/clasping materials, rests and teeth)",
+        "section": "Section 5 — Class C Major — Prosthodontic Services",
+        "fact_id": "opm-fedvip-delta-2026:class_membership:denture_partial",
+        "review_status": "quote_verified_in_text"
+      },
+      "note": "code line printed under Class C Major"
+    },
+    "implant": {
+      "value": null,
+      "status": "UNKNOWN",
+      "note": "The Implant Services subsection lies after the readable pages (~p.30). Section 4 states a $2,500 per-person per-calendar-year implant limit under the High Option.",
+      "fact_id": "opm-fedvip-delta-2026:class_membership:implant"
+    },
+    "night_guard": {
+      "value": null,
+      "status": "UNKNOWN",
+      "note": "Occlusal guard appliance codes (D9944–D9946) do not appear in readable pages 1–29; only 'D9936 Cleaning and inspection of occlusal guard' (2026 change) was found.",
+      "fact_id": "opm-fedvip-delta-2026:class_membership:night_guard"
+    }
+  },
+  "allowed_amounts": {},
+  "allowed_amounts_note": "The brochure prints no fee schedule. 'The plan allowance is the amount we allow for a specific procedure' (p.13); the amount must come from your pre-treatment estimate or EOB (USER).",
+  "alternate_benefit": {
+    "status": "DOC",
+    "cite": {
+      "doc": "FD26",
+      "page": 13,
+      "page_note": "p.13",
+      "quote": "If more than one service or procedure can be used to treat the dental condition, Delta Dental reserves the right to authorize an alternate, less costly covered service as deemed by a dental professional to be appropriate and to meet broadly accepted national standards of dental practice.",
+      "section": "Section 3 How You Obtain Care — Alternate Benefit",
+      "fact_id": "opm-fedvip-delta-2026:alternate_benefit:n/a",
+      "review_status": "quote_verified_in_text"
+    },
+    "conditions": [],
+    "note": "Clause present (p.13): Delta Dental 'reserves the right to authorize an alternate, less costly covered service'. The readable pages do not list which services it applies to; the ledger flags the possibility."
+  },
+  "waiting_months": {
+    "value": null,
+    "status": "UNKNOWN",
+    "note": "No 'waiting period' text in readable pages 1–29; Summary of Benefits and Sections 7/9 not readable — UNKNOWN, not 'none'.",
+    "fact_id": "opm-fedvip-delta-2026:waiting_period:High"
+  },
+  "frequency": [
+    {
+      "procedure_key": "exam",
+      "clock": "calendar_count",
+      "n": 2,
+      "cite": {
+        "doc": "FD26",
+        "page": 18,
+        "page_note": "p.18",
+        "quote": "Limited to two in a calendar year",
+        "section": "Section 5 — Class A Basic — Diagnostic Services (D0120 line)",
+        "fact_id": "opm-fedvip-delta-2026:frequency:exam",
+        "review_status": "quote_verified_in_text"
+      },
+      "period_as_printed": "Limited to two in a calendar year"
+    },
+    {
+      "procedure_key": "cleaning",
+      "clock": "calendar_count",
+      "n": 2,
+      "cite": {
+        "doc": "FD26",
+        "page": 19,
+        "page_note": "p.19",
+        "quote": "Limited to two in a calendar year (or three for a pregnant individual)",
+        "section": "Section 5 — Class A Basic — Preventive Services (D1110 line)",
+        "fact_id": "opm-fedvip-delta-2026:frequency:cleaning",
+        "review_status": "quote_verified_in_text"
+      },
+      "period_as_printed": "Limited to two in a calendar year (or three for a pregnant individual)"
+    },
+    {
+      "procedure_key": "bitewing_xrays",
+      "clock": "calendar_count",
+      "n": 1,
+      "cite": {
+        "doc": "FD26",
+        "page": 18,
+        "page_note": "p.18",
+        "quote": "Limited to one in a calendar year",
+        "section": "Section 5 — Class A Basic — Diagnostic Services (D0272 and D0274 lines)",
+        "fact_id": "opm-fedvip-delta-2026:frequency:bitewing_xrays",
+        "review_status": "quote_verified_in_text"
+      },
+      "period_as_printed": "Limited to one in a calendar year (each bitewing code line)"
+    },
+    {
+      "procedure_key": "fluoride_child",
+      "clock": "calendar_count",
+      "n": 2,
+      "cite": {
+        "doc": "FD26",
+        "page": 19,
+        "page_note": "p.19",
+        "quote": "Limited to two in a calendar year",
+        "section": "Section 5 — Class A Basic — Preventive Services (D1206 line)",
+        "fact_id": "opm-fedvip-delta-2026:frequency:fluoride_child",
+        "review_status": "quote_verified_in_text"
+      },
+      "period_as_printed": "Limited to two in a calendar year"
+    },
+    {
+      "procedure_key": "sealant",
+      "clock": "per_tooth_months",
+      "n": 36,
+      "cite": {
+        "doc": "FD26",
+        "page": 19,
+        "page_note": "p.19",
+        "quote": "Limited to one in 36 months",
+        "section": "Section 5 — Class A Basic — Preventive Services (D1351 line)",
+        "fact_id": "opm-fedvip-delta-2026:frequency:sealant",
+        "review_status": "quote_verified_in_text"
+      },
+      "period_as_printed": "Limited to one in 36 months (per tooth; permanent molars free from caries; patients under 19)",
+      "note": "per tooth — not enforced"
+    },
+    {
+      "procedure_key": "scaling_root_planing",
+      "clock": "per_quadrant_months",
+      "n": 24,
+      "cite": {
+        "doc": "FD26",
+        "page": 23,
+        "page_note": "p.23",
+        "quote": "Payable once per quadrant in 24 months",
+        "section": "Section 5 — Class B Intermediate — Periodontic Services (D4341 and D4342 lines)",
+        "fact_id": "opm-fedvip-delta-2026:frequency:scaling_root_planing",
+        "review_status": "quote_verified_in_text"
+      },
+      "period_as_printed": "Payable once per quadrant in 24 months",
+      "note": "per quadrant — not enforced"
+    },
+    {
+      "procedure_key": "cast_crown",
+      "clock": "per_tooth_months",
+      "n": 60,
+      "cite": {
+        "doc": "FD26",
+        "page": 27,
+        "page_note": "p.27",
+        "quote": "Limited to once in five years",
+        "section": "Section 5 — Class C Major — Major Restorative Services (D2790 line)",
+        "fact_id": "opm-fedvip-delta-2026:frequency:cast_crown",
+        "review_status": "quote_verified_in_text"
+      },
+      "period_as_printed": "Limited to once in five years",
+      "note": "per-tooth wording not printed; not enforced"
+    },
+    {
+      "procedure_key": "crown",
+      "clock": "per_tooth_months",
+      "n": 60,
+      "cite": {
+        "doc": "FD26",
+        "page": 27,
+        "page_note": "p.27",
+        "quote": "Replacement of crowns, onlays, buildups, and posts and cores is covered only if the existing crown, onlay, buildup, or post and core was inserted at least five years prior to the replacement...",
+        "section": "Section 5 — Class C Major — Major Restorative Services (Benefit Limitations)",
+        "fact_id": "opm-fedvip-delta-2026:frequency:crown",
+        "review_status": "needs_review"
+      },
+      "period_as_printed": "replacement covered only if the existing crown was inserted at least five years prior",
+      "note": "replacement rule; not enforced"
+    }
+  ],
+  "excluded": {},
+  "missing_tooth": {
+    "present": null,
+    "status": "UNKNOWN",
+    "note": "Section 7 General Exclusions not readable."
+  },
+  "oon_rule": {
+    "value": {
+      "in": "You pay the coinsurance percentage of our network allowance for covered services. You are not responsible for charges above that allowance.",
+      "out": "When you use an out-of-network dentist, you are responsible for the difference between the plan allowance and our payment plus the difference up to the submitted/approved charges."
+    },
+    "status": "DOC",
+    "cite": {
+      "doc": "FD26",
+      "page": 13,
+      "page_note": "p.13",
+      "quote": "When you use an out-of-network dentist, you are responsible for the difference between the plan allowance and our payment plus the difference up to the submitted/approved charges.",
+      "section": "Section 3 How You Obtain Care — Plan allowance",
+      "fact_id": "opm-fedvip-delta-2026:oon_basis:n/a",
+      "review_status": "quote_verified_in_text"
+    },
+    "section4_cite": {
+      "doc": "FD26",
+      "page": 16,
+      "page_note": "p.16",
+      "quote": "you will be responsible for your co-insurance percentage plus the billed amount over plan allowance.",
+      "section": "Section 4 — Out-of-Network Services",
+      "fact_id": "opm-fedvip-delta-2026:oon_basis_section4:n/a",
+      "review_status": "quote_verified_in_text"
+    }
+  },
+  "dos_rule": {
+    "value": null,
+    "status": "UNKNOWN",
+    "note": "Not stated in the readable pages; computed with the completion date and labeled as an assumption."
+  },
+  "premium_monthly": {
+    "self_only": {
+      "value": null,
+      "status": "UNKNOWN",
+      "note": "Rate pages at the end of the brochure were not readable and North Carolina's rating region could not be determined from an official page (OPM's rating-region spreadsheet is a binary file the sanctioned fetch cannot read).",
+      "fact_id": "opm-fedvip-delta-2026:premium_monthly:High"
+    }
+  },
+  "unsupported_rules": [
+    {
+      "quote": "Implants are limited to $2,500 per person per calendar year in-network or out-of-network, combined, under the High Option and counts toward the annual benefit maximums.",
+      "page": 16,
+      "page_note": "p.16",
+      "doc": "FD26",
+      "reason": "implant annual limit — implants' class is not readable, so no implant line can be computed",
+      "fact_id": "opm-fedvip-delta-2026:implant_max:High"
+    },
+    {
+      "quote": "Repair or replacement of restorations by the same dentist/dental office and involving the same tooth surfaces performed within 24 months of the original restoration are considered integral procedures",
+      "page": 21,
+      "page_note": "p.21",
+      "doc": "FD26",
+      "reason": "repair/replacement of a restoration by the same dentist within 24 months is integral to the original — replacement rule, not enforced",
+      "fact_id": "opm-fedvip-delta-2026:frequency:composite"
+    },
+    {
+      "quote": "Retreatment of apical surgery or root canal therapy by the same dentist or group practice within 24 months is considered part of the original procedure.",
+      "page": 28,
+      "page_note": "p.28",
+      "doc": "FD26",
+      "reason": "retreatment within 24 months by the same dentist is part of the original procedure — not enforced",
+      "fact_id": "opm-fedvip-delta-2026:frequency:root_canal_molar"
+    },
+    {
+      "quote": "Onlays, permanent single-crown restorations, and posts and cores for members 12 years of age or younger are excluded from coverage unless specific rationale is provided...",
+      "page": 27,
+      "page_note": "p.27",
+      "doc": "FD26",
+      "reason": "single crowns excluded for members 12 or younger unless rationale is provided — age is not collected",
+      "fact_id": "opm-fedvip-delta-2026:age_limit:crown"
+    },
+    {
+      "quote": "Permanent molars free from caries to patients under 19",
+      "page": 19,
+      "page_note": "p.19",
+      "doc": "FD26",
+      "reason": "sealants: permanent molars free from caries, patients under 19 — age is not collected",
+      "fact_id": "opm-fedvip-delta-2026:age_limit:sealant"
+    },
+    {
+      "quote": "We will provide both you and your dentist with a non-binding, written Pre-treatment Estimate indicating if the procedures are covered and, if so, an estimate of what we will pay for those specific procedures. Pre-treatment Estimates are not a guarantee of payment.",
+      "page": 13,
+      "page_note": "p.13",
+      "doc": "FD26",
+      "reason": "non-binding pre-treatment estimate available on request — informational",
+      "fact_id": "opm-fedvip-delta-2026:pretreatment_estimate:n/a"
+    },
+    {
+      "quote": "In-Network High Option: 50% | In-Network Standard Option: 50% | Out-of-Network High Option: 50% | Out-of-Network Standard Option: 50%",
+      "page": 15,
+      "page_note": "p.15",
+      "doc": "FD26",
+      "reason": "Class D Orthodontic 50% — not modeled",
+      "fact_id": "opm-fedvip-delta-2026:coinsurance:ClassD:both:both"
+    }
+  ],
+  "conflicts": [],
+  "procedure_codes": {
+    "exam": {
+      "code": "D0120",
+      "descriptor_as_printed": "Periodic oral evaluation – established patient",
+      "review": false,
+      "confidence": "high",
+      "notes": "Class A Basic. You pay 0% in-network (High and Standard); 10% High / 40% Standard out-of-network; no deductible. Alternative D0150 Comprehensive oral evaluation (new or established patient) is limited to one in a calendar year.",
+      "cite": {
+        "doc": "FD26",
+        "page": 18,
+        "page_note": "p.18",
+        "quote": "D0120 Periodic oral evaluation – established patient - Limited to two in a calendar year"
+      }
+    },
+    "cleaning": {
+      "code": "D1110",
+      "descriptor_as_printed": "Prophylaxis - adult",
+      "review": false,
+      "confidence": "high",
+      "notes": "Class A Basic. Child prophylaxis is D1120 (same limit). Combined with D4910/D4346 up to four per calendar year (p. 23).",
+      "cite": {
+        "doc": "FD26",
+        "page": 19,
+        "page_note": "p.19",
+        "quote": "D1110 Prophylaxis - adult – Limited to two in a calendar year (or three for a pregnant individual)"
+      }
+    },
+    "bitewing_xrays": {
+      "code": "D0274",
+      "descriptor_as_printed": "Bitewings - four radiographic images",
+      "review": true,
+      "confidence": "medium",
+      "notes": "Class A Basic. The internal key 'Bitewing x-rays (set)' could equally map to D0272 Bitewings - two radiographic images (same 'Limited to one in a calendar year', p. 18); D0270 single and D0273 three images also listed. Review which film count the user's claim uses.",
+      "cite": {
+        "doc": "FD26",
+        "page": 18,
+        "page_note": "p.18",
+        "quote": "D0274 Bitewings - four radiographic images – Limited to one in a calendar year"
+      }
+    },
+    "fluoride_child": {
+      "code": "D1206",
+      "descriptor_as_printed": "Topical application of fluoride varnish",
+      "review": true,
+      "confidence": "medium",
+      "notes": "Class A Basic. Alternative D1208 Topical application of fluoride - excluding varnish (same limit, p. 19). No age limit printed on either line; Section 7 exclusions not readable.",
+      "cite": {
+        "doc": "FD26",
+        "page": 19,
+        "page_note": "p.19",
+        "quote": "D1206 Topical application of fluoride varnish - Limited to two in a calendar year"
+      }
+    },
+    "sealant": {
+      "code": "D1351",
+      "descriptor_as_printed": "Sealant - per tooth",
+      "review": false,
+      "confidence": "high",
+      "notes": "Class A Basic. Age limit 'under 19'; permanent molars free from caries; once in 36 months (per tooth).",
+      "cite": {
+        "doc": "FD26",
+        "page": 19,
+        "page_note": "p.19",
+        "quote": "D1351 Sealant - per tooth - Permanent molars free from caries to patients under 19 – Limited to one in 36 months"
+      }
+    },
+    "composite": {
+      "code": "D2392",
+      "descriptor_as_printed": "Resin-based composite – two surfaces, posterior",
+      "review": false,
+      "confidence": "high",
+      "notes": "Class B Intermediate. 24-month same-surface repair/replacement rule (p. 21). Alternate benefit clause (p. 13) may apply; any alternate allowance is unknown.",
+      "cite": {
+        "doc": "FD26",
+        "page": 21,
+        "page_note": "p.21",
+        "quote": "D2392 Resin-based composite – two surfaces, posterior"
+      }
+    },
+    "amalgam": {
+      "code": "D2150",
+      "descriptor_as_printed": "Amalgam – two surfaces, primary or permanent",
+      "review": false,
+      "confidence": "high",
+      "notes": "Class B Intermediate. 24-month same-surface repair/replacement rule (p. 21).",
+      "cite": {
+        "doc": "FD26",
+        "page": 21,
+        "page_note": "p.21",
+        "quote": "D2150 Amalgam – two surfaces, primary or permanent"
+      }
+    },
+    "extraction_simple": {
+      "code": "D7140",
+      "descriptor_as_printed": "Extraction, erupted tooth or exposed root (elevation and/or forceps removal)",
+      "review": false,
+      "confidence": "high",
+      "notes": "Class B Intermediate (Oral Surgery).",
+      "cite": {
+        "doc": "FD26",
+        "page": 24,
+        "page_note": "p.24",
+        "quote": "D7140 Extraction, erupted tooth or exposed root (elevation and/or forceps removal)"
+      }
+    },
+    "extraction_surgical": {
+      "code": "D7210",
+      "descriptor_as_printed": "Extraction, erupted tooth requiring removal of bone and/or sectioning of tooth",
+      "review": true,
+      "confidence": "high",
+      "notes": "Class B Intermediate. If the tooth is impacted the code would instead be D7220 (soft tissue), D7230 (partially bony) or D7240 (completely bony), all also Class B on p. 24.",
+      "cite": {
+        "doc": "FD26",
+        "page": 24,
+        "page_note": "p.24",
+        "quote": "D7210 Extraction, erupted tooth requiring removal of bone and/or sectioning of tooth"
+      }
+    },
+    "scaling_root_planing": {
+      "code": "D4341",
+      "descriptor_as_printed": "Periodontal scaling and root planing – four or more teeth per quadrant",
+      "review": true,
+      "confidence": "medium",
+      "notes": "Class B Intermediate. Alternative D4342 Periodontal scaling and root planing - one to three teeth per quadrant (same limit, p. 23). Review tooth count per quadrant.",
+      "cite": {
+        "doc": "FD26",
+        "page": 23,
+        "page_note": "p.23",
+        "quote": "D4341 Periodontal scaling and root planing – four or more teeth per quadrant - Payable once per quadrant in 24 months"
+      }
+    },
+    "root_canal_molar": {
+      "code": "D3330",
+      "descriptor_as_printed": "Endodontic therapy, molar tooth (excluding final restoration)",
+      "review": false,
+      "confidence": "high",
+      "notes": "Class C Major in this brochure (not Basic). Retreatment within 24 months by same dentist/group is part of the original procedure (p. 28).",
+      "cite": {
+        "doc": "FD26",
+        "page": 28,
+        "page_note": "p.28",
+        "quote": "D3330 Endodontic therapy, molar tooth (excluding final restoration)"
+      }
+    },
+    "crown": {
+      "code": "D2740",
+      "descriptor_as_printed": "Crown – porcelain/ceramic",
+      "review": false,
+      "confidence": "high",
+      "notes": "Class C Major. Replacement only if existing crown inserted at least five years prior (p. 27); excluded for members 12 or younger unless rationale provided (p. 27); payable only when necessary due to decay or tooth fracture (p. 27).",
+      "cite": {
+        "doc": "FD26",
+        "page": 27,
+        "page_note": "p.27",
+        "quote": "D2740 Crown – porcelain/ceramic"
+      }
+    },
+    "cast_crown": {
+      "code": "D2790",
+      "descriptor_as_printed": "Crown – full cast high noble metal",
+      "review": true,
+      "confidence": "medium",
+      "notes": "Class C Major. Metal type determines the code: D2791 Crown – full cast predominantly base metal; D2792 Crown – full cast noble metal (both 'Limited to once in five years', p. 27).",
+      "cite": {
+        "doc": "FD26",
+        "page": 27,
+        "page_note": "p.27",
+        "quote": "D2790 Crown – full cast high noble metal – Limited to once in five years"
+      }
+    },
+    "denture_partial": {
+      "code": "D5213",
+      "descriptor_as_printed": "Maxillary partial denture - cast metal framework with resin denture bases (including retentive/clasping materials, rests and teeth)",
+      "review": true,
+      "confidence": "medium",
+      "notes": "Class C Major. Alternatives on p. 29: D5214 (mandibular, cast metal), D5211/D5212 (resin base, maxillary/mandibular), D5221/D5222 (immediate, resin base). Arch and material must be reviewed. Frequency limitation text not readable (after cutoff).",
+      "cite": {
+        "doc": "FD26",
+        "page": 29,
+        "page_note": "p.29",
+        "quote": "D5213 Maxillary partial denture - cast metal framework with resin denture bases (including retentive/clasping materials, rests and teeth)"
+      }
+    }
+  }
+}

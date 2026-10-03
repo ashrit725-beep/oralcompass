@@ -9,9 +9,9 @@ try:
 except Exception: print("")' 2>/dev/null || true)"
 case "$file" in
   *web/src/lib/copy.ts|*api/app/templates*|*notifications*|*copy*.ts|*fixtures/plans/*.json)
-    if ! python3 tools/advice_lint.py "$file" >/tmp/fineprint_lint.out 2>&1; then
+    if ! python3 tools/advice_lint.py "$file" >/tmp/oralcompass_lint.out 2>&1; then
       echo "ADVICE LINT FAILED for $file — rewrite as information, not advice:" >&2
-      cat /tmp/fineprint_lint.out >&2
+      cat /tmp/oralcompass_lint.out >&2
       exit 2
     fi ;;
 esac

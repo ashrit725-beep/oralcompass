@@ -1,4 +1,4 @@
-"""FinePrint deterministic benefit engine (no AI, no advice). See docs/CODELINC_DENTAL_PRODUCT_SPEC.md §5.4."""
+"""OralCompass deterministic benefit engine (no AI, no advice). See docs/CODELINC_DENTAL_PRODUCT_SPEC.md §5.4."""
 from .models import (Citation, ClassRule, Evidence, EstimateLine, FrequencyRule, Ledger, LedgerLine, MemberState, PlanModel, Step, V,
                      AlternateBenefit)
 from .ledger import compute_ledger, compute_line, benefit_year

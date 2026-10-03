@@ -39,7 +39,7 @@ Q = {
     "fee_crown": ("Crown, porcelain or ceramic: $1,000.00", 13),
     "fee_cast": ("Crown, full cast metal: $800.00", 13),
     "fee_composite": ("Resin composite, two surfaces, posterior tooth: $200.00", 13),
-    "fictional": ("This is a fictional demonstration plan created for the FinePrint prototype. It is not an offer of insurance.", 14),
+    "fictional": ("This is a fictional demonstration plan created for the OralCompass prototype. It is not an offer of insurance.", 14),
 }
 
 styles = getSampleStyleSheet()
@@ -58,7 +58,7 @@ def page_footer(canvas, doc):
 def build():
     OUT_PDF.parent.mkdir(parents=True, exist_ok=True)
     doc = SimpleDocTemplate(str(OUT_PDF), pagesize=LETTER, leftMargin=0.9 * inch, rightMargin=0.9 * inch, topMargin=0.9 * inch, bottomMargin=0.9 * inch,
-                            title="Harborview Dental PPO 2026 — Certificate of Coverage (fictional)", author="FinePrint team (fictional document)")
+                            title="Harborview Dental PPO 2026 — Certificate of Coverage (fictional)", author="OralCompass team (fictional document)")
     s = []
     P = lambda t, st=B: s.append(Paragraph(t, st))
     # p1 cover
@@ -130,7 +130,7 @@ def write_fixture(sha: str):
         "catalog": {"carrier": "Harborview Benefits Company (fictional)", "plan_name": "Harborview Dental PPO", "option": "Standard", "plan_year": 2026,
                     "where_offered": {"text": "Demonstration only", "cite": None}, "eligibility": {"text": "None — fictional plan", "cite": None},
                     "verification": {"date": "2026-10-03", "method": "authored by the team; every citation verified against the generated PDF", "fields_unknown": []}},
-        "source_document": {"title": "Harborview Dental PPO 2026 — Certificate of Coverage (fictional)", "publisher": "FinePrint team", "url": None,
+        "source_document": {"title": "Harborview Dental PPO 2026 — Certificate of Coverage (fictional)", "publisher": "OralCompass team", "url": None,
                             "retrieved_at": "2026-10-03", "sha256": sha, "pages": 14, "version_label": "HB26", "path": "fixtures/documents/harborview_certificate.pdf"},
         "benefit_year_start_month": {"value": 1, "status": "DOC", "cite": c("benefit_year")},
         "deductible_individual": {"value": 5000, "status": "DOC", "cite": c("deductible")},

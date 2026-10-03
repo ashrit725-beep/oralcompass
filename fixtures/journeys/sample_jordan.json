@@ -1,0 +1,308 @@
+{
+  "id": "sample-jordan",
+  "label": "Sample journey \u2014 Jordan Lee (fictional): extraction and recovery",
+  "is_sample": true,
+  "user_ref": "jordan",
+  "plan_ref": "SM26",
+  "estimate_ref": null,
+  "note": "Fictional sample showing a completed visit, aftercare instructions supplied by the dental team (shown as written, with their source), a dental-team-confirmed milestone, and a user-marked milestone. Completion describes recorded activity only.",
+  "stages": [
+    {
+      "id": "start",
+      "title": "Starting point",
+      "island": "Harbor of Beginnings",
+      "purpose": "Plan document and treatment information added.",
+      "finance": {
+        "kind": "plan_details"
+      },
+      "linked_treatment_items": [],
+      "instructions": null,
+      "dates": null,
+      "checkpoints": [
+        {
+          "id": "plan-doc",
+          "label": "Plan document added",
+          "kind": "document",
+          "status": "completed",
+          "completed_by": "user",
+          "date": {
+            "value": "2026-09-20",
+            "source": "user"
+          },
+          "completed_at": "2026-09-20",
+          "due_date": null,
+          "detail": "Saltmarsh Dental Basic 2026 (fictional) selected from the preset catalog.",
+          "source": {
+            "label": "Saltmarsh certificate (fictional), 14 pages",
+            "doc": "SM26",
+            "page": 1
+          },
+          "action": {
+            "type": "open_landmark",
+            "target": "harbor"
+          },
+          "links": {
+            "landmark": "harbor"
+          }
+        },
+        {
+          "id": "treatment-plan",
+          "label": "Treatment plan added",
+          "kind": "document",
+          "status": "completed",
+          "completed_by": "user",
+          "date": {
+            "value": "2026-09-22",
+            "source": "document"
+          },
+          "completed_at": "2026-09-22",
+          "due_date": null,
+          "detail": "Estimate dated 2026-09-22 (fictional): surgical extraction of tooth 19 ($480). Under Saltmarsh, surgical extractions are Class III (Major) with a 6-month waiting period.",
+          "source": {
+            "label": "Treatment estimate (typed), dated 2026-09-22"
+          },
+          "action": {
+            "type": "open_landmark",
+            "target": "cove"
+          },
+          "links": {
+            "treatment_items": [
+              "ti-j-ext-19"
+            ],
+            "landmark": "cove"
+          }
+        }
+      ]
+    },
+    {
+      "id": "visit",
+      "title": "Your appointment",
+      "island": "Anchor Point",
+      "purpose": "The visit was recorded and the documents received were organized.",
+      "finance": {
+        "kind": "estimate_vs_received"
+      },
+      "linked_treatment_items": [
+        "ti-j-ext-19"
+      ],
+      "instructions": null,
+      "dates": {
+        "label": "Visit date",
+        "values": [
+          "2026-09-28 (recorded by the user)"
+        ],
+        "source": "user"
+      },
+      "checkpoints": [
+        {
+          "id": "visit-recorded",
+          "label": "Appointment recorded",
+          "kind": "appointment",
+          "status": "completed",
+          "completed_by": "user",
+          "date": {
+            "value": "2026-09-28",
+            "source": "user"
+          },
+          "completed_at": "2026-09-28",
+          "due_date": null,
+          "detail": "Surgical extraction of tooth 19 performed on 2026-09-28, as recorded by the user from the visit summary.",
+          "source": {
+            "label": "Visit summary (fictional), 2026-09-28"
+          },
+          "action": {
+            "type": "mark_recorded"
+          },
+          "links": {
+            "treatment_items": [
+              "ti-j-ext-19"
+            ]
+          }
+        },
+        {
+          "id": "visit-docs",
+          "label": "Documents received organized",
+          "kind": "document",
+          "status": "completed",
+          "completed_by": "user",
+          "date": {
+            "value": "2026-09-28",
+            "source": "user"
+          },
+          "completed_at": "2026-09-28",
+          "due_date": null,
+          "detail": "Receipt and aftercare sheet stored.",
+          "source": {
+            "label": "Receipt and aftercare sheet (fictional)"
+          },
+          "action": {
+            "type": "add_document",
+            "field": "visit_documents"
+          },
+          "links": {
+            "document": "doc-j-aftercare"
+          }
+        }
+      ]
+    },
+    {
+      "id": "recovery",
+      "title": "Recovery",
+      "island": "Quiet Shoals",
+      "purpose": "The dental team's aftercare instructions, shown as written, and recorded milestones.",
+      "finance": {
+        "kind": "none"
+      },
+      "linked_treatment_items": [
+        "ti-j-ext-19"
+      ],
+      "instructions": {
+        "text": "Sample aftercare sheet (fictional) \u2014 shown as written by the dental team: Rest for the remainder of the day. Soft foods for 24 hours. Contact the office with any questions or if anything seems unusual. A follow-up check is scheduled for October 5.",
+        "source": "Northside Dental Group aftercare sheet (fictional), 2026-09-28",
+        "supplied_by": "dental_team"
+      },
+      "dates": {
+        "label": "Dates supplied by the dental team",
+        "values": [
+          "2026-10-05 follow-up check (aftercare sheet)"
+        ],
+        "source": "dental team (aftercare sheet 2026-09-28)"
+      },
+      "checkpoints": [
+        {
+          "id": "aftercare",
+          "label": "Aftercare instructions viewed",
+          "kind": "instruction",
+          "status": "completed",
+          "completed_by": "user",
+          "date": {
+            "value": "2026-09-28",
+            "source": "user"
+          },
+          "completed_at": "2026-09-28",
+          "due_date": null,
+          "detail": "The aftercare sheet supplied by the dental team was viewed on 2026-09-28. Viewing it is a recorded activity, not a statement about healing.",
+          "source": {
+            "label": "Aftercare sheet (fictional), 2026-09-28"
+          },
+          "action": {
+            "type": "view_instructions"
+          },
+          "links": {
+            "document": "doc-j-aftercare"
+          }
+        },
+        {
+          "id": "followup-check",
+          "label": "Follow-up check confirmed by the dental team",
+          "kind": "milestone",
+          "status": "completed",
+          "completed_by": "dental_team",
+          "date": {
+            "value": "2026-10-05",
+            "source": "dental_team"
+          },
+          "completed_at": "2026-10-05",
+          "due_date": "2026-10-05",
+          "detail": "The dental team confirmed the follow-up check on 2026-10-05 (recorded from the visit note). This is a confirmation by the dental team, distinct from a user-marked milestone.",
+          "source": {
+            "label": "Visit note (fictional), 2026-10-05"
+          },
+          "action": null,
+          "links": {}
+        },
+        {
+          "id": "user-milestone",
+          "label": "Milestone marked by you",
+          "kind": "milestone",
+          "status": "completed",
+          "completed_by": "user",
+          "date": {
+            "value": "2026-10-02",
+            "source": "user"
+          },
+          "completed_at": "2026-10-02",
+          "due_date": null,
+          "detail": "User-marked: 'back to normal meals' (as entered). User-marked milestones are labeled as such and are not confirmations by the dental team.",
+          "source": {
+            "label": "Entered by the user"
+          },
+          "action": {
+            "type": "mark_recorded"
+          },
+          "links": {}
+        }
+      ]
+    },
+    {
+      "id": "followup",
+      "title": "Follow-up",
+      "island": "Compass Rest",
+      "purpose": "Questions, records, and updated cost information after the plan processed the claim.",
+      "finance": {
+        "kind": "updated_costs"
+      },
+      "linked_treatment_items": [
+        "ti-j-ext-19"
+      ],
+      "instructions": null,
+      "dates": {
+        "label": "Statement date",
+        "values": [
+          "2026-10-12 Explanation of Benefits (fictional)"
+        ],
+        "source": "EOB entered by the user"
+      },
+      "checkpoints": [
+        {
+          "id": "updated-costs",
+          "label": "Updated cost information reviewed",
+          "kind": "estimate",
+          "status": "current",
+          "completed_by": null,
+          "date": {
+            "value": "2026-10-12",
+            "source": "document"
+          },
+          "completed_at": null,
+          "due_date": null,
+          "detail": "The Explanation of Benefits dated 2026-10-12 (fictional) shows the plan's payment. Compare it with the projected amounts for the extraction under the Saltmarsh rules.",
+          "source": {
+            "label": "Explanation of Benefits (fictional), 2026-10-12"
+          },
+          "action": {
+            "type": "open_landmark",
+            "target": "lighthouse"
+          },
+          "links": {
+            "landmark": "lighthouse",
+            "treatment_items": [
+              "ti-j-ext-19"
+            ]
+          }
+        },
+        {
+          "id": "implant-consult",
+          "label": "Implant consultation noted",
+          "kind": "appointment",
+          "status": "upcoming",
+          "completed_by": null,
+          "date": null,
+          "completed_at": null,
+          "due_date": null,
+          "detail": "A consultation was mentioned by the dental team; no date recorded. Under Saltmarsh, dental implants are an exclusion (Section 8.1) \u2014 the cost view shows the full fee as not covered.",
+          "source": {
+            "label": "Visit note (fictional), 2026-10-05"
+          },
+          "action": {
+            "type": "enter_date",
+            "field": "consult_date"
+          },
+          "links": {
+            "landmark": "cove"
+          }
+        }
+      ]
+    }
+  ]
+}

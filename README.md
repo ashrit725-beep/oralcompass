@@ -1,42 +1,45 @@
-# FinePrint — codeLinc 11 · Path 1 Dental
+# OralCompass — codeLinc 11 · Path 1 Dental
 
-*Your plan's fine print, stitched to your estimate. Information only; the user makes every decision.*
+*Your care journey. Your coverage. Clearly mapped.* A hand-painted atlas of a dental journey and a dental plan, where every dollar on the
+cost trail is stitched to the clause that produced it. Information only; the user makes every decision.
 
-A Claude Code–ready repository: open it in Claude Code, and the project instructions (`CLAUDE.md`), milestone commands (`.claude/commands/`),
-subagent roles (`.claude/agents/`) and a copy-lint hook (`.claude/settings.json`) steer the build. The deterministic engine, the API's
-isolation model, the fixtures and the web shell are already working and tested — the milestones extend them.
+This is a **Claude Code–ready repository**: open it in Claude Code and `CLAUDE.md` tells it what to read, what the quality bar is, which
+commands to run and what must never change. Everything below already runs and is tested; the commands extend it.
 
 ## 60-second start
 ```bash
-# engine (no dependencies)
-cd engine && python3 -m pytest -q                          # 15 passed
-# api
-cd ../api && pip install -r requirements.txt && FINEPRINT_DEV_AUTH=1 python3 -m pytest -q tests   # 5 passed
-FINEPRINT_DEV_AUTH=1 uvicorn app.main:app --reload --port 8000
-# web (new terminal)
+cd engine && python3 -m pytest -q                                          # 21 passed
+cd ../api && pip install -r requirements.txt && ORALCOMPASS_DEV_AUTH=1 python3 -m pytest -q tests     # 10 passed
+ORALCOMPASS_DEV_AUTH=1 uvicorn app.main:app --reload --port 8000           # API
 cd ../web && npm install && cp ../fixtures/plans/*.json public/fixtures/plans/ && cp ../fixtures/documents/*.pdf public/fixtures/documents/ && npm run dev
-# open http://localhost:5173 — Harborview (fictional) preset, Sam's estimate, Page + Ledger joined by stitches
+# open http://localhost:5173 → "Open a labeled sample journey: Alex Chen" (real public plan rules) or Sam Rivera (fictional plan with a stored PDF)
 ```
-Then in Claude Code: `/m0-validate` → `/m1-thread-demo` → `/m2-scenarios` → `/m2b-presets-compare` → `/m3-privacy` → `/m4-live-upload` → `/m5-accessibility` → `/m6-notifications` (last). `/run-checks` any time; `/lint-copy` for any sentence; `/pitch-from-fixture` before slides.
+Verification walk (desktop + phone screenshots, 44 checks): `cd web && npm run build && npx vite preview --port 4173 &` then `python3 tools/screenshots.py shots/`.
+
+## In Claude Code
+Start with `/run-checks`, then `/ui-cinematic` (beauty pass with before/after screenshots) and `/art-assets` once you have generated the paintings from
+`docs/ORALCOMPASS_IMAGE_PROMPTS.md`. The roadmap for the team's master prompt (intro animation, grounded assistant, ten procedure journeys, scenarios,
+import/review, SQLite, local login, handoff docs) is in `docs/ORALCOMPASS_ROADMAP.md` with one command per item (`/journey-intro`, `/assistant-grounded`,
+`/procedure-journeys`, `/scenarios-low-central-high`, `/engine-bundles-ortho`, `/plan-import-review`, `/exports-crossref`, `/persist-sqlite`, `/auth-local`,
+`/copy-style`, `/handoff-docs`, `/mobile-expo`). Data work: `/research-source`, `/data-refresh`. Any sentence: `/lint-copy`.
 
 ## What is already true (tested)
 | Area | Status |
 |---|---|
-| Engine: deductible scope, coinsurance, annual-max cap, alternate benefit (incl. unknown allowance → upper bound), waiting periods (unknown enrollment → two branches), three frequency clocks, exclusions, out-of-network balance, processing-order note, ranges + "what moves these numbers", three-plan comparison with factual Differences sentences | `engine/tests` 15/15 |
-| Acceptance example from the design brief ($600 in-network / $900 out-of-network; ordering $850 either way) | `tests/test_acceptance.py` |
-| The ONE demo fixture (Harborview $665/$535; OON $965; deductible-unknown $640–$665; premolar $565/$635; Delta ≥$685/≤$815 and 6-month $1,500/$0; MetLife $732.50/$767.50) | `tests/test_fixture.py` |
-| Harborview fictional certificate PDF (14 pages) generated from one source of truth; all 23 fixture citations found on their cited pages | `tools/build_harborview_pdf.py`, `tools/verify_citations.py` |
-| API: owner-scoped reads with constant 404 and ids-only audit; presets GET-only (405 on writes); redaction preview; delete/export; fixture totals through the API | `api/tests` 5/5 |
-| Advice linter (banned words, imperatives, steering modals) over UI copy and generated sentences | `tools/advice_lint.py` — 0 violations |
-| Web shell: pdf.js Page with dim-and-highlight stitches, receipt Ledger with stitch chips, depth-dial Clause card, comparison grid, phone split panes / desktop columns, reduced-motion CSS | `npm run build` passes |
+| Deterministic engine: deductible scope, coinsurance (plan-pays and you-pay bases), annual-max cap and "Unlimited", separate out-of-network deductible/maximum, alternate benefit (unknown allowance → upper bound; general clause flagged), procedure-scoped waiting periods (AMBIGUOUS flagged; unknown enrollment → two branches), frequency clocks, exclusions, out-of-network balance billing, processing-order note, ranges + "what moves these numbers", three-plan comparison | `engine/tests` 21/21 |
+| Real plan presets generated from cited facts: NCFlex MetLife 2026 Classic/High/Low (NC), Delta Dental MSU 2024 High/Low (MS), FEDVIP 2026 MetLife and Delta (High/Standard); 437 facts from 12 sources; 16 procedure ids mapped to printed codes (9 flagged for review); NC Medicaid benchmark rows labeled by payer/geography/date | `tools/ingest_sources.py` (0 validation errors), `tools/audit_data.py` (0 high findings), `docs/ORALCOMPASS_DATA_SOURCES.md` |
+| Demo numbers: Sam (fictional plan HB26) $640/$560 in-network, $940 out-of-network, $540/$660 premolar, $640–$665 when the deductible is unknown; Alex (real plan ML26) $392/$588 + $510/$510 = $902/$1,098 with every step stitched to the guide's page 25 | `engine/tests/test_fixture.py`, `engine/tests/test_real_presets.py`, `api/tests/test_records.py` |
+| API: owner-scoped reads with constant 404 and ids-only audit for benefits, treatment items, saved estimates, journeys, documents; presets GET-only; derived remaining benefits with derivation strings and CONFLICT detection; missing-input explanations; sources/evidence/codes/benchmarks endpoints; journeys with user-marked vs dental-team-confirmed attribution | `api/tests` 10/10 |
+| Web: painted atlas (My journey islands + checkpoints, My plan landmarks, cost trail, documents with clause list / pdf.js stitches, compare, privacy controls), phone layout with bottom sheet, reduced motion, overview list | `npm run build`; `tools/screenshots.py` 44/44 |
+| Information-only policy enforced on copy, templates, generated sentences and edits (hook) | `tools/advice_lint.py` 0 violations |
 
 ## What is NOT done (honest list)
-Live Bedrock extraction (`BedrockExtractor` raises until M0/M4); Cognito/KMS/S3 wiring (infra skeleton only; dev auth header locally);
-real preset documents not yet downloaded/seeded (`tools/seed_presets.py` at the venue; DD24/ML26 page indexes to confirm; MetLife Classic premium
-and class definitions UNKNOWN until extracted from the 2026 guide/certificate); notifications; accessibility audit; any deployment.
+Real plan PDFs are not stored and hashes are pending (binary downloads were blocked where this was built; `tools/seed_presets.py` is the seeding path);
+NCFlex certificate clauses past p.51 and FEDVIP brochure pages past ~p.30 are UNKNOWN (waiting periods, missing-tooth, some rows, FEDVIP premiums);
+DD24 is a 2024 document; live Bedrock/Anthropic extraction and the grounded assistant are not wired; Cognito/KMS/S3 are a SAM skeleton; the master-prompt
+intro/summary flow, ten procedure journeys, low/central/high scenarios, admin import/review, SQLite and local login are roadmap items; no deployment.
 
 ## Documents
-`docs/CODELINC_DENTAL_PRODUCT_SPEC.md` (source of truth) · `docs/CODELINC_DENTAL_BUILD_BRIEF.md` (schedule, pitch, packet) · `docs/CODELINC_DENTAL_RESEARCH.md` (evidence).
-
-## Data and licensing posture
-Member data is synthetic (Sam Rivera, Northside Dental Group, Harborview). Real plan documents are public (Delta Dental MSU 2024 EOC; NCFlex 2026 guide / 2020 certificate) and contain no personal data. No CDT code catalog is shipped (ADA license); FAIR Health data is not used (terms); Bedrock usage costs must be documented in the Devpost packet ("components incurring future licensing costs").
+`CLAUDE.md` · `docs/ORALCOMPASS_UI_GUIDE.md` · `docs/ORALCOMPASS_IMAGE_PROMPTS.md` · `docs/ORALCOMPASS_DATA_MODEL.md` · `docs/ORALCOMPASS_DATA_SOURCES.md` ·
+`docs/ORALCOMPASS_ROADMAP.md` · `docs/MASTER_PROMPT_UPLOADED.md` · `docs/DATA_AUDIT.md` · `docs/CODELINC_DENTAL_PRODUCT_SPEC.md` · `docs/CODELINC_DENTAL_BUILD_BRIEF.md` ·
+`docs/CODELINC_DENTAL_RESEARCH.md` · `sources/RESEARCH_PROTOCOL.md`.

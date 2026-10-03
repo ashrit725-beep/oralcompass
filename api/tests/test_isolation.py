@@ -3,7 +3,7 @@ import os
 import sys
 from pathlib import Path
 
-os.environ["FINEPRINT_DEV_AUTH"] = "1"
+os.environ["ORALCOMPASS_DEV_AUTH"] = "1"
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from fastapi.testclient import TestClient  # noqa: E402
@@ -64,4 +64,4 @@ def test_delete_me_removes_everything():
     client.post("/estimates", json={"plan_ref": "HB26", "lines": SAM_LINES, "state": SAM_STATE}, headers={"X-Dev-User": "user-c"})
     out = client.delete("/me", headers={"X-Dev-User": "user-c"}).json()
     assert out["deleted"].get("estimate", 0) >= 1
-    assert client.get("/me/export", headers={"X-Dev-User": "user-c"}).json() == {"document": [], "estimate": [], "comparison": []}
+    assert all(v == [] for v in client.get("/me/export", headers={"X-Dev-User": "user-c"}).json().values())

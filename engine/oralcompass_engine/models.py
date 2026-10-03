@@ -1,4 +1,4 @@
-"""FinePrint deterministic engine — data model.
+"""OralCompass deterministic engine — data model.
 
 Every value that reaches the UI carries an evidence status. Money is integer cents. Dates are ISO strings or
 datetime.date. Nothing here calls a model; nothing here recommends anything.
@@ -93,6 +93,16 @@ class PlanModel:
     dos_rule: V = field(default_factory=lambda: V("completion", Evidence.UNKNOWN))
     premium_monthly: dict[str, V] = field(default_factory=dict)   # category -> V(cents)
     unsupported_rules: list[dict] = field(default_factory=list)
+    max_exempt_classes: list[str] = field(default_factory=list)   # classes that do not count toward / are not capped by the annual maximum (document-stated)
+    deductible_family: V = field(default_factory=lambda: V(None, Evidence.UNKNOWN))
+    # Plans whose out-of-network deductible / maximum differ from the in-network figures (e.g. FEDVIP brochures). UNKNOWN means
+    # "the document states one figure for both" or "not stated"; when known and different, out-of-network math needs the member's
+    # separate out-of-network usage figures (MemberState.remaining_deductible_out / remaining_max_out) or it stays unresolved.
+    deductible_individual_out: V = field(default_factory=lambda: V(None, Evidence.UNKNOWN))
+    annual_max_out: V = field(default_factory=lambda: V(None, Evidence.UNKNOWN))
+    annual_max_unlimited: bool = False     # document states no annual maximum (e.g. "Unlimited") for in-network services
+    annual_max_out_unlimited: bool = False
+    procedure_codes: dict[str, dict] = field(default_factory=dict)   # procedure_key -> {code, descriptor_as_printed, cite} as printed in THIS document
 
     def class_rule(self, name: str) -> Optional[ClassRule]:
         return next((c for c in self.classes if c.name == name), None)
@@ -119,6 +129,8 @@ class MemberState:
     history: dict[str, list[date]] = field(default_factory=dict)     # procedure_key -> service dates
     allowed_overrides: dict[str, V] = field(default_factory=dict)    # procedure_key -> V(cents) USER/ASSUMED
     tooth_overrides: dict[str, str] = field(default_factory=dict)
+    remaining_deductible_out: V = field(default_factory=lambda: V(None, Evidence.UNKNOWN))   # only for plans with a separate out-of-network deductible
+    remaining_max_out: V = field(default_factory=lambda: V(None, Evidence.UNKNOWN))          # only for plans with a separate out-of-network maximum
 
 
 @dataclass

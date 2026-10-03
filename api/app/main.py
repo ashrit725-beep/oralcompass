@@ -1,4 +1,4 @@
-"""FinePrint API — FastAPI (Lambda via Mangum in production; `uvicorn app.main:app --reload` locally).
+"""OralCompass API — FastAPI (Lambda via Mangum in production; `uvicorn app.main:app --reload` locally).
 
 Every private resource is read through repo.get_owned (constant 404). Presets are GET-only. No endpoint lists another user's
 data. No endpoint steers the user. Money is integer cents everywhere.
@@ -17,8 +17,8 @@ from pydantic import BaseModel, Field
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "engine"))
 
-from fineprint_engine import (Evidence, EstimateLine, MemberState, V, compare, compute_ledger, load_plan, range_and_movers)  # noqa: E402
-from fineprint_engine.loader import FIXTURES  # noqa: E402
+from oralcompass_engine import (Evidence, EstimateLine, MemberState, V, compare, compute_ledger, load_plan, range_and_movers)  # noqa: E402
+from oralcompass_engine.loader import FIXTURES  # noqa: E402
 
 from .auth import User, current_user  # noqa: E402
 from .extraction import FixtureExtractor  # noqa: E402
@@ -26,12 +26,16 @@ from .lint_runtime import guard  # noqa: E402
 from .redaction import redact  # noqa: E402
 from .store import NOT_FOUND, repo  # noqa: E402
 
-app = FastAPI(title="FinePrint API", version="0.1.0")
+app = FastAPI(title="OralCompass API", version="0.1.0")
 extractor = FixtureExtractor()
 PRESETS = {p.stem.upper(): load_plan(p) for p in sorted((FIXTURES / "plans").glob("*.json"))}
 PRESET_META = {code: extractor.by_code[code] for code in PRESETS}
 
 from .templates import FOOTER, COMPARISON_BANNER, PRESET_BANNER  # noqa: E402
+from . import journeys, records  # noqa: E402
+
+app.include_router(records.router)
+app.include_router(journeys.router)
 
 
 # ---------- schemas ----------
@@ -210,7 +214,7 @@ def get_comparison(cmp_id: str, user: User = Depends(current_user)):
 # ---------- account ----------
 @app.get("/me/export")
 def export_me(user: User = Depends(current_user)):
-    return {rtype: repo.list_owned(user.sub, rtype) for rtype in ("document", "estimate", "comparison")}
+    return {rtype: repo.list_owned(user.sub, rtype) for rtype in ("document", "estimate", "comparison", "benefits", "treatment_item", "saved_estimate", "journey")}
 
 
 @app.delete("/me")
@@ -227,4 +231,5 @@ def my_audit(user: User = Depends(current_user)):
 
 @app.get("/health")
 def health():
-    return {"ok": True, "presets": sorted(PRESETS)}
+    return {"ok": True, "presets": sorted(PRESETS), "real_presets": sorted(c for c, m in PRESET_META.items() if not m.get("is_fictional")),
+            "fictional_presets": sorted(c for c, m in PRESET_META.items() if m.get("is_fictional"))}

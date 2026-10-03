@@ -1,11 +1,11 @@
 {
   "plan_code": "HB26",
-  "label": "Sam Rivera (fictional) — Harborview statement dated 2026-09-15 — entered by the user",
-  "remaining_deductible": {"value": 5000, "status": "USER", "note": "statement 2026-09-15"},
-  "remaining_max": {"value": 80000, "status": "USER", "note": "statement 2026-09-15"},
+  "label": "Sam Rivera (fictional) — derived from fixtures/users/sam.json benefits (statement 2026-09-15): deductible met $50 of $50; plan paid $745 of the $1,500 maximum",
+  "remaining_deductible": {"value": 0, "status": "USER", "note": "deductible $50 applied on 2026-05-22 per statement 2026-09-15"},
+  "remaining_max": {"value": 75500, "status": "USER", "note": "$1,500 maximum − $745 paid year to date (statement 2026-09-15)"},
   "network": {"value": "in", "status": "USER"},
-  "enrolled_months": {"value": 30, "status": "USER"},
-  "history": {"cleaning": ["2026-03-10"]},
+  "enrolled_months": {"value": 21, "status": "USER", "note": "coverage start 2025-01-01"},
+  "history": {"exam": ["2026-03-10"], "cleaning": ["2026-03-10"], "bitewing_xrays": ["2026-03-10"], "root_canal_molar": ["2026-05-22"], "amalgam": ["2026-06-18"]},
   "allowed_overrides": {},
   "tooth_overrides": {}
 }

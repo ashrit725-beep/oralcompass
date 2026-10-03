@@ -1,0 +1,777 @@
+{
+  "label": "OralCompass source inventory — every imported record points back to one of these documents",
+  "generated_from": "sources/extracted/*.json via tools/ingest_sources.py",
+  "retrieval_note": "All documents were read through the sanctioned text-extraction fetch; binary downloads from these hosts are blocked by the build environment's egress policy, so SHA-256 values and physical PDF page indexes are pending (see each access_limits).",
+  "items": [
+    {
+      "source_id": "ada-cdt-license-terms",
+      "version_label": "ADACDT",
+      "title": "ADA Dental Terminology Licenses: Licensing for Commercial Users",
+      "publisher": "American Dental Association",
+      "url": "https://www.ada.org/publications/ada-store-products/licensing-for-commercial-users",
+      "secondary_urls": [
+        "https://www.ada.org/-/media/project/ada-organization/ada/ada-org/files/publications/cdt/ada_dental_terminology_licenses_sell_sheet.pdf",
+        "https://adanews.ada.org/ada-news/2023/may/cdt-is-ada-intellectual-property-source-of-revenue-for-association/",
+        "https://www.ada.org/-/media/project/ada-organization/ada/ada-org/files/publications/cdt/1-ada_code_sets_commercial_licensing_application.docx",
+        "https://www.ada.org/resources/practice/dental-insurance/frequently-asked-questions-regarding-dental-codes"
+      ],
+      "document_type": "license_terms",
+      "document_date": null,
+      "effective_period": {
+        "start": null,
+        "end": null,
+        "quote": null
+      },
+      "scope": {
+        "geography": "United States (ADA, publisher of CDT)",
+        "population": "commercial users of the CDT code set (software, publishers, payers, consultants, TPAs)",
+        "plan_type": "n/a",
+        "network": "n/a"
+      },
+      "retrieved_at": "2026-10-03",
+      "retrieval_method": "WebFetch (HTML page; PDF→text for the sell sheet). Quotes transcribed by the fetch model; key sentences confirmed in two independent passes on the licensing page and once in the sell sheet.",
+      "pages_total": null,
+      "reuse_terms": "© 2026 American Dental Association (licensing page footer). Terms quoted are the ADA's statements about licensing CDT; the quotes themselves are reproduced here for identification of the source document.",
+      "access_limits": [
+        "The licence agreement itself is linked as a DOCX application ('1-ada_code_sets_commercial_licensing_application.docx') and was not opened (binary; outside WebFetch text handling and the time box).",
+        "No prices are printed on the licensing page or sell sheet; licence fees are UNKNOWN.",
+        "No ADA FAQ addressing software/non-commercial use was found; the ADA page 'Frequent General Questions Regarding Dental Procedure Codes' does not address licensing (fetch: 'Not present' for copyright/licence topics; it only calls CDT 'important and valuable ADA intellectual property').",
+        "MassHealth bulletin DEN-114 (candidate end-user-licence example) returned '[binary data]' to WebFetch and could not be read."
+      ],
+      "counts": {
+        "facts": 9,
+        "by_status": {
+          "DOC": 8,
+          "UNKNOWN": 1
+        },
+        "procedure_mappings": 0,
+        "conflicts": 0,
+        "gaps": 3
+      },
+      "supports_plan_codes": [],
+      "contributes": {
+        "plan_rules": false,
+        "premiums": false,
+        "procedure_codes": false,
+        "fee_benchmarks": false,
+        "reuse_terms": true
+      },
+      "gaps": [
+        "Free / non-commercial / educational / fair-use exemption: none stated in the opened ADA documents (recorded as UNKNOWN, not as 'none exists in law').",
+        "Licence prices and royalty formulas: not printed in the opened documents.",
+        "Exact licence-agreement clauses on display of codes in a consumer-facing web app: the agreement DOCX was not opened."
+      ]
+    },
+    {
+      "source_id": "cdt-procedure-mapping",
+      "version_label": "CDTMAP",
+      "title": "CDT procedure-code mappings for the 16 OralCompass internal procedure keys, aggregated from opened public documents",
+      "publisher": "aggregated — each mapping names its document (NC Medicaid; OPM FEDVIP 2026 brochures for MetLife, Delta Dental, Aetna, GEHA, UnitedHealthcare; Wisconsin ForwardHealth; Oklahoma Health Care Authority)",
+      "url": "https://www.ada.org/-/media/project/ada-organization/ada/ada-org/files/advocacy/medicaid/2026/medicaid_fee_schedule_2026_nc.pdf",
+      "secondary_urls": [
+        "https://www.ada.org/-/media/project/ada-organization/ada/ada-org/files/advocacy/medicaid/medicaid-fee-schedule/medicaid_fee_schedule_2025_nc.pdf?rev=1cc4b096d3014d1283082f41893e46ab&hash=51F5A88417AAB9E3C5913232D63333D6",
+        "https://medicaid.ncdhhs.gov/dental-fee-schedule-general-2-10-2022pdf/open",
+        "https://www.opm.gov/healthcare-insurance/healthcare/plan-information/plans/pdf/2026/brochures/02AP-11.pdf",
+        "https://www.opm.gov/healthcare-insurance/healthcare/plan-information/plans/pdf/2026/brochures/02AP-05.pdf",
+        "https://www.opm.gov/healthcare-insurance/healthcare/plan-information/plans/pdf/2026/brochures/02AP-01.pdf",
+        "https://www.opm.gov/healthcare-insurance/healthcare/plan-information/plans/pdf/2026/brochures/02AP-08.pdf",
+        "https://www.opm.gov/healthcare-insurance/healthcare/plan-information/plans/pdf/2026/brochures/02AP-15.pdf",
+        "https://www.forwardhealth.wi.gov/WIPortal/content/Provider/medicaid/dentist/Targeted_Dental_Codes.pdf.spage",
+        "https://oklahoma.gov/content/dam/ok/en/okhca/docs/providers/types/dental/training-documents-and-resources/PA%20Guidelines%20-%20Occlusal%20Guard.pdf"
+      ],
+      "document_type": "web_page",
+      "document_date": null,
+      "effective_period": {
+        "start": null,
+        "end": null,
+        "quote": null
+      },
+      "scope": {
+        "geography": "United States (NC Medicaid; federal FEDVIP; WI and OK Medicaid for code identification only)",
+        "population": "n/a — mappings only",
+        "plan_type": "n/a",
+        "network": "n/a"
+      },
+      "retrieved_at": "2026-10-03",
+      "retrieval_method": "WebFetch (PDF→text). FEDVIP page numbers = footer line printed immediately after the row ('2026 <plan> <n> Enroll at www.BENEFEDS.gov'), ±1 where passes disagreed. NC Medicaid and Wisconsin PDFs carried no page markers.",
+      "pages_total": null,
+      "reuse_terms": "CDT codes and nomenclature are ADA copyright (see ada-cdt-license-terms.json). Descriptors recorded here are quoted as printed in the named public documents for identification of the source passages; FEDVIP brochures print 'Current Dental Terminology (CDT), Copyright © American Dental Association. All rights reserved.'; NC Medicaid prints 'CDT 2022 (including procedure codes, descriptions, and other data) is copyrighted by the American Dental Association. © 2022 American Dental Association. All rights reserved. Applicable FARS/DFARS apply.'",
+      "access_limits": [
+        "WebFetch truncates long PDFs: the MetLife 02AP-11 text ended inside Class C Major (around brochure page 37), Delta 02AP-05 around page 57, Aetna 02AP-01 around page 28, GEHA 02AP-08 around page 29, UHC 02AP-15 around page 49 ('[Content truncated due to length...]'). Codes reported ABSENT from a brochure may lie beyond the truncation point; absence is only asserted for the readable portion.",
+        "One MetLife pass hallucinated rows on pages 35/37/43 (e.g., 'D5211 Complete maxillary denture', 'D3310 Endodontic therapy, molar'); a verification pass found none of those codes in the readable text, so those claims were discarded and nothing from them is used.",
+        "OPM BrochureJson endpoint (BrochureJson?brochureNumber=02AP-11&year=2026) returned the same partial brochure text; no additional codes.",
+        "MassHealth DEN-114 bulletin returned '[binary data]' and could not be read.",
+        "NC DHHS ServiceNow fee-schedule portal blocked by robots.txt.",
+        "Page numbers in FEDVIP brochures carry ±1 uncertainty where passes disagreed (noted per mapping)."
+      ],
+      "counts": {
+        "facts": 0,
+        "by_status": {},
+        "procedure_mappings": 57,
+        "conflicts": 0,
+        "gaps": 3
+      },
+      "supports_plan_codes": [],
+      "contributes": {
+        "plan_rules": false,
+        "premiums": false,
+        "procedure_codes": true,
+        "fee_benchmarks": false,
+        "reuse_terms": false
+      },
+      "gaps": [
+        "night_guard descriptors come from a Wisconsin Medicaid document only (single pass); no FEDVIP brochure's readable text printed D9944–D9946.",
+        "implant D6010 descriptor comes from the Aetna FEDVIP brochure only.",
+        "Impacted-tooth surgical extraction codes (D7220–D7241) were seen as code numbers only, without descriptors; not mapped."
+      ]
+    },
+    {
+      "source_id": "delta-dental-nc-individual-2026",
+      "version_label": "DN26",
+      "title": "Individual & Family Dental Plans 2026 (Delta Dental of North Carolina — Preventive Plan, Enhanced Plan, Premium Plan; non-EHB brochure)",
+      "publisher": "Delta Dental of North Carolina, 3737 Glenwood Avenue, Suite 320, Raleigh, NC 27612",
+      "url": "https://deltadentalnc.com/hubfs/2026%20DIGITAL_DDNC-Individual-Brochure-nonEHB1%20Final.pdf?hsLang=en",
+      "secondary_urls": [
+        "https://deltadentalnc.com/exceptionsandreductions",
+        "https://deltadentalnc.com/hubfs/2026%20EHB%20Individual%20and%20Family%20Brochure%20DIGITAL%20Final.pdf?hsLang=en"
+      ],
+      "document_type": "plan_brochure",
+      "document_date": null,
+      "effective_period": {
+        "start": "2026-01-01",
+        "end": "2026-12-31",
+        "quote": "Rates are effective January 1, 2026 – December 31, 2026."
+      },
+      "scope": {
+        "geography": "North Carolina (\"Any North Carolina resident can enroll.\")",
+        "population": "Individual and family (off-exchange / non-EHB) purchasers; North Carolina residents and their eligible dependents",
+        "plan_type": "PPO (Delta Dental PPO / Delta Dental Premier / Out of Network; three plan designs)",
+        "network": "Delta Dental PPO Network™ and Delta Dental Premier Network®; Nonparticipating Dentist paid on Delta Dental's Nonparticipating Dentist Fee"
+      },
+      "retrieved_at": "2026-10-03",
+      "retrieval_method": "WebFetch (PDF→text via a summarizing sub-model limited to ~125-character quotes; the brochure is 4 pages with printed page numbers). Table cells were cross-checked across three fetches; cells that disagreed are recorded as AMBIGUOUS with both readings.",
+      "pages_total": 4,
+      "reuse_terms": "not stated (no copyright line returned; trademark marks printed: \"Delta Dental PPO Network™\", \"Delta Dental Premier Network®\"). The brochure is not the contract: \"The Policy prevails if discrepancies are noted between this brochure and the Policy.\" Policy form INVD-100-Delta-2026-NC.",
+      "access_limits": [
+        "The underlying individual Policy (form INVD-100-Delta-2026-NC) is not posted publicly; a search for the form number found nothing. Only this brochure and the insurer's web page https://deltadentalnc.com/exceptionsandreductions are available.",
+        "The exceptionsandreductions web page names policy forms QINVD-100-Delta-2022-NC / -2023-NC (EHB) and INDV-100-Delta-2022-NC / -2023-NC (non-EHB), not the 2026 form; its limitation sentences are therefore recorded as AMBIGUOUS for plan year 2026.",
+        "The fetch tool's sub-model returned inconsistent cells for the Preventive Plan Basic/Major rows, the Enhanced Plan Major row and the Orthodontic Premier/Out-of-Network cells across three calls; those are flagged AMBIGUOUS (see facts). Page attribution for the exclusions list (p. 3 vs p. 4) also varied.",
+        "Blue Cross and Blue Shield of North Carolina: no Dental Blue for Individuals benefit booklet/policy PDF is publicly linked from bcbsnc.com (only a quote tool and an undated limitations web page); the 'Dental Blue Policy (Rev. 9/24)' PDF found on myrxtoolkit.com is a BlueCross BlueShield of SOUTH Carolina policy and was rejected."
+      ],
+      "counts": {
+        "facts": 44,
+        "by_status": {
+          "DOC": 28,
+          "UNKNOWN": 2,
+          "AMBIGUOUS": 14
+        },
+        "procedure_mappings": 0,
+        "conflicts": 0,
+        "gaps": 6
+      },
+      "supports_plan_codes": [],
+      "contributes": {
+        "plan_rules": true,
+        "premiums": true,
+        "procedure_codes": false,
+        "fee_benchmarks": false,
+        "reuse_terms": false
+      },
+      "gaps": [
+        "The individual Policy (INVD-100-Delta-2026-NC) is not public; frequency limits, benefit-year definition, missing-tooth clause and full exclusions for 2026 are not printed in the brochure.",
+        "Preventive Plan Basic/Major cells, Enhanced Plan Major cells and Orthodontic Premier/Out-of-Network cells returned inconsistently by the fetch tool — recorded AMBIGUOUS; verify against the PDF (4 pages).",
+        "Premium Plan waiting period for major restorative/prosthodontic services: not returned.",
+        "No CDT codes are printed in the brochure or on the exceptions page (procedure_mappings empty).",
+        "Dependent age limit and the page numbers for the eligibility/effective-date sentences were not returned.",
+        "No copyright/reuse statement found (recorded 'not stated')."
+      ]
+    },
+    {
+      "source_id": "delta-msu-eoc-2024",
+      "version_label": "DD24",
+      "title": "Delta Dental Insurance Company EVIDENCE OF COVERAGE Mississippi State University Group No: 01125 Effective Date: January 1, 2024 (form PPO-ENT-MS-E-R23)",
+      "publisher": "Delta Dental Insurance Company (document); posted by Mississippi State University Human Resources Management",
+      "url": "https://www.hrm.msstate.edu/sites/www.hrm.msstate.edu/files/2024-03/Delta%20Dental%20Evidence%20of%20Coverage.pdf",
+      "secondary_urls": [
+        "https://www.hrm.msstate.edu/benefits/insurance/dental",
+        "https://www.hrm.msstate.edu/sites/www.hrm.msstate.edu/files/forms/BHS_Mississippi%20State%20University%202021.pdf",
+        "https://www.hrm.msstate.edu/sites/www.hrm.msstate.edu/files/2021-05/delta_dental_claims.pdf"
+      ],
+      "document_type": "evidence_of_coverage",
+      "document_date": "2024-01-01",
+      "effective_period": {
+        "start": "2024-01-01",
+        "end": null,
+        "quote": "Effective Date: January 1, 2024"
+      },
+      "scope": {
+        "geography": "Mississippi (Contractholder: Mississippi State University; underwriter address Alpharetta, GA)",
+        "population": "Enrollees under the Mississippi State University group contract (Primary Enrollees and Dependent Enrollees); two plan options: High Plan and Low Plan",
+        "plan_type": "PPO (Delta Dental PPO with Delta Dental Premier and Non-Delta Dental Dentist payment tiers)",
+        "network": "Delta Dental PPO / Delta Dental Premier / Non-Delta Dental Dentists"
+      },
+      "retrieved_at": "2026-10-03",
+      "retrieval_method": "WebFetch (PDF->text, 14 passes with section-focused prompts). Page numbers are the footer page numbers printed in each part; each part restarts at 1: main document footer 'PPO-ENT-MS-E-R23 n 01125', Attachment A footer 'E-PPO-A-DM2LH2 n 01125', Attachment B footer 'ENT-LE-MS-22 n 01125', HIPAA notice 'HIPAA Notice of Privacy Practices n'. Physical PDF page index was NOT observable through WebFetch; compute at seeding: index = (cover + TOC pages) + main-document pages + Attachment A pages (2) + Attachment B pages (7) + HIPAA pages (5).",
+      "pages_total": null,
+      "reuse_terms": "Not stated as a copyright notice on the EOC itself. Definitions reference 'Current Dental Terminology© (\"CDT\") number assigned to a Single Procedure by the American Dental Association'. Trademarks used in text: 'Delta Dental PPOTM' / 'Delta Dental PPOSM' and 'Delta Dental Premier®'. HIPAA Notice of Privacy Practices states 'This notice is effective on and after January 1, 2017.' Document is publicly posted by a state university HR office.",
+      "access_limits": [
+        "WebFetch's answering model refused one request to reproduce all of Attachment B verbatim (fair-use refusal); worked around with item-by-item short-quote prompts.",
+        "Page attribution inside Attachment B varied by +/-1 between fetch passes for Limitations items 4 (fluoride: reported p.2 and p.3) and 24 (crowns: reported p.4 and p.5); the Continuation of Benefits paragraph in the main document was reported on p.3 and p.4. Pages below are the majority/most-consistent reading and are marked needs_review where passes disagreed. Verify each quote on its page at seeding.",
+        "https://www.hrm.msstate.edu/forms/delta-dental-enrollment-change-form returned HTTP 403 to WebFetch.",
+        "No 2025 or 2026 Evidence of Coverage or MSU-specific rate sheet was found: the HRM dental page (last modified 2026-05-04T13:59:37-05:00 per page metadata) still links this 2024-03 EOC and a 2021 Benefit Highlights sheet; WebSearch for 2025/2026 MSU Delta Dental rates returned nothing MSU-specific.",
+        "Physical PDF page indexes could not be read through WebFetch (only printed footer markers)."
+      ],
+      "counts": {
+        "facts": 75,
+        "by_status": {
+          "DOC": 68,
+          "AMBIGUOUS": 3,
+          "UNKNOWN": 4
+        },
+        "procedure_mappings": 0,
+        "conflicts": 3,
+        "gaps": 9
+      },
+      "supports_plan_codes": [
+        "DD24",
+        "DD24L"
+      ],
+      "contributes": {
+        "plan_rules": true,
+        "premiums": false,
+        "procedure_codes": false,
+        "fee_benchmarks": false,
+        "reuse_terms": false
+      },
+      "gaps": [
+        "Newer EOC: none found. The HRM dental page (https://www.hrm.msstate.edu/benefits/insurance/dental, page metadata 'Last modified: 2026-05-04T13:59:37-05:00') links only this 2024-03 EOC, a 2021 Benefit Highlights PDF (rev. 8/26/2020), a 2021-05 'Advantages of Delta Dental' PDF and a 2021-05 claims example (dated Q4 2012). WebSearch for 2025/2026 MSU Delta Dental EOC or rates returned nothing MSU-specific.",
+        "Premiums for 2024-2026: not in the EOC; not on the HRM dental page ('The employee is responsible for the full cost.'); the enrollment/change form page returned 403. Only the 2020-revision highlights sheet prints monthly rates (separate JSON).",
+        "Physical PDF page indexes: not observable via WebFetch; only printed footer page numbers per part (main / Attachment A / Attachment B / HIPAA). Compute at seeding.",
+        "Posterior composite alternate benefit: not found (see fact).",
+        "Missing tooth clause: not found (see fact).",
+        "Dollar allowances / fee schedule: not in the document.",
+        "Limitations items 12, 14, 15, 16, 17, 18 captured only by their first words; endodontic retreatment sentence captured without a confirmed item number.",
+        "Exact text of 'Selecting Your Dentist – Free Choice of Dentist' (p.6) not captured beyond the PPO/Premier acceptance sentences.",
+        "Whether the Low Plan's deductible-waiver cell reads exactly 'Deductibles waived for Diagnostic & Preventive Services' (table cells were concatenated in extraction)."
+      ]
+    },
+    {
+      "source_id": "msu-dental-benefit-highlights-2021",
+      "version_label": "MSU20h",
+      "title": "Plan Benefit Highlights for: Mississippi State University Group No: 01125 (Delta Dental PPO; form HL_PPO #128472EA (rev. 7/20) / HLT_PPO_2COL_HILO_DDIC (Rev. 8/26/2020))",
+      "publisher": "Delta Dental Insurance Company (document); posted by Mississippi State University Human Resources Management as 'Delta Dental Plan Benefit Highlights Detailed Pdf'",
+      "url": "https://www.hrm.msstate.edu/sites/www.hrm.msstate.edu/files/forms/BHS_Mississippi%20State%20University%202021.pdf",
+      "secondary_urls": [
+        "https://www.hrm.msstate.edu/benefits/insurance/dental"
+      ],
+      "document_type": "plan_brochure",
+      "document_date": "2020-08-26",
+      "effective_period": {
+        "start": null,
+        "end": null,
+        "quote": null
+      },
+      "scope": {
+        "geography": "Mississippi (Mississippi State University group)",
+        "population": "Mississippi State University employees (Group No: 01125); Low Plan and High Plan",
+        "plan_type": "PPO",
+        "network": "Delta Dental PPO dentists / Non-Delta Dental PPO dentists (Premier reimbursed at Premier contracted fees per footnote)"
+      },
+      "retrieved_at": "2026-10-03",
+      "retrieval_method": "WebFetch (PDF->text, 2 passes). Single-sheet document; no page numbers printed/observed.",
+      "pages_total": null,
+      "reuse_terms": "Disclaimer as printed: 'This benefit information is not intended or designed to replace or serve as the plan's Evidence of Coverage or Summary Plan Description.' No copyright line captured.",
+      "access_limits": [
+        "No effective date or plan year on the sheet; the 'Monthly Rates' may be stale relative to 2024-2026. Treat the rates as 'printed in a public document dated rev. 8/26/2020', not as current premiums.",
+        "Secondary document: the Evidence of Coverage (delta-msu-eoc-2024.json) governs where the two differ."
+      ],
+      "counts": {
+        "facts": 10,
+        "by_status": {
+          "DOC": 8,
+          "CONFLICT": 1,
+          "UNKNOWN": 1
+        },
+        "procedure_mappings": 0,
+        "conflicts": 1,
+        "gaps": 4
+      },
+      "supports_plan_codes": [
+        "DD24",
+        "DD24L"
+      ],
+      "contributes": {
+        "plan_rules": false,
+        "premiums": true,
+        "procedure_codes": false,
+        "fee_benchmarks": false,
+        "reuse_terms": false
+      },
+      "gaps": [
+        "Plan year / rate effective period for the Monthly Rates: not printed.",
+        "Who pays the premium: not printed on the sheet (HRM web page: 'The employee is responsible for the full cost.').",
+        "No 2024, 2025 or 2026 rate sheet found on hrm.msstate.edu (dental page, benefits page, insurance page checked; enrollment/change form page returned 403).",
+        "Frequency/age limits: fetcher reported 'None specified in document'."
+      ]
+    },
+    {
+      "source_id": "nc-medicaid-dental-fees",
+      "version_label": "NCMED26",
+      "title": "NC Medicaid Dental Reimbursement Rates — General Dentist, Oral Surgeon, Pediatric Dentist, Periodontist, & Orthodontist",
+      "publisher": "NC Medicaid (North Carolina Department of Health and Human Services, Division of Health Benefits); copy opened from the American Dental Association's Medicaid Fee Schedules collection, labelled 'Source: North Carolina Medicaid'",
+      "url": "https://www.ada.org/-/media/project/ada-organization/ada/ada-org/files/advocacy/medicaid/2026/medicaid_fee_schedule_2026_nc.pdf",
+      "secondary_urls": [
+        "https://www.ada.org/-/media/project/ada-organization/ada/ada-org/files/advocacy/medicaid/medicaid-fee-schedule/medicaid_fee_schedule_2025_nc.pdf?rev=1cc4b096d3014d1283082f41893e46ab&hash=51F5A88417AAB9E3C5913232D63333D6",
+        "https://medicaid.ncdhhs.gov/dental-fee-schedule-general-2-10-2022pdf/open",
+        "https://medicaid.ncdhhs.gov/providers/fee-schedules/dental-fee-schedules",
+        "https://ncdhhs.servicenowservices.com/fee_schedules",
+        "https://www.ada.org/advocacy/advocacy-issues/medicaid/medicaid-fee-schedules",
+        "https://medicaid.ncdhhs.gov/blog/2025/12/19/medicaid-rate-reduction-reversal-update"
+      ],
+      "document_type": "fee_schedule",
+      "document_date": "2026-04-01",
+      "effective_period": {
+        "start": "2025-10-01",
+        "end": null,
+        "quote": "D0120 Periodic Oral Evaluation - Established Patient $26.96 10/1/2025 12/31/9999",
+        "note": "Effective Date / End Date columns as printed on every extracted row of the Apr 1, 2026 copy; 12/31/9999 is an open-ended end date."
+      },
+      "scope": {
+        "geography": "North Carolina (United States)",
+        "population": "NC Medicaid fee-for-service (NC Medicaid Direct) dental providers — document subtitle 'General Dentist, Oral Surgeon, Pediatric Dentist, Periodontist, & Orthodontist'; header line references 'Fee For Service Provider Appeal rights'",
+        "plan_type": "Medicaid (public program) reimbursement rate schedule — a payer's published payment rate to providers, not a commercial fee and not a private insurer's allowed amount",
+        "network": "n/a",
+        "purpose": "Medicaid reimbursement rates by CDT procedure code"
+      },
+      "retrieved_at": "2026-10-03",
+      "retrieval_method": "WebFetch (PDF→text; the extracted text contained no page numbers or page markers, so pages are recorded as unknown). Rows transcribed by the fetch model and cross-checked across three versions and repeated passes.",
+      "pages_total": null,
+      "reuse_terms": "CDT 2022 (including procedure codes, descriptions, and other data) is copyrighted by the American Dental Association. © 2022 American Dental Association. All rights reserved. Applicable FARS/DFARS apply. — No public-record or state-copyright statement was found in the extracted text ('not stated').",
+      "access_limits": [
+        "https://ncdhhs.servicenowservices.com/fee_schedules (NC DHHS 'Fee Schedule and Covered Code site', the official home of dental fee schedules since Nov. 3, 2022 per the NC Medicaid index page) — WebFetch error ROBOTS_DISALLOWED ('URL is disallowed by robots.txt rules'). The most recent schedule was therefore opened from the ADA-hosted copy, whose provenance rests on the ADA page's label 'Source: North Carolina Medicaid'.",
+        "The NC Medicaid index page states verbatim: 'Effective Nov. 3, 2022, NC Medicaid Dental Fee Schedules are located in the Fee Schedule and Covered Code site'. Only 2022-and-older schedules remain downloadable from medicaid.ncdhhs.gov.",
+        "PDF-to-text output for all three schedule versions carried no page numbers/page markers; 'page' is unknown for every row.",
+        "Total page count not determinable from the extracted text.",
+        "Descriptor of D7210 appears truncated at 'In Indicated' in the extracted text of the 2025 and 2026 copies; recorded as extracted.",
+        "One pass listing the full D7xxx/D5xxx/D99xx code inventories gave code numbers without descriptors; those inventories are noted but not used as evidence."
+      ],
+      "counts": {
+        "facts": 39,
+        "by_status": {
+          "DOC": 28,
+          "UNKNOWN": 11
+        },
+        "procedure_mappings": 17,
+        "conflicts": 0,
+        "gaps": 4
+      },
+      "supports_plan_codes": [],
+      "contributes": {
+        "plan_rules": false,
+        "premiums": false,
+        "procedure_codes": true,
+        "fee_benchmarks": true,
+        "reuse_terms": false
+      },
+      "gaps": [
+        "No published NC Medicaid rate for D2740, D2750, D2790, D2791, D2792 (crowns), D5213, D5214 (cast-framework partials), D6010 (implant body), D9944, D9945, D9946 (occlusal guards) — codes absent from the 2022, 2025 and 2026 versions.",
+        "Page numbers for every row (extracted text had none).",
+        "Whether the ADA-hosted 2026 copy is byte-identical to the file on the NC DHHS ServiceNow portal could not be verified (portal blocked).",
+        "The 'Notes 1'–'Notes 4' columns were blank for every checked row; their legend (if any) was not found in the extracted text."
+      ]
+    },
+    {
+      "source_id": "ncflex-2026-plan-details",
+      "version_label": "ML26",
+      "title": "2026 NCFlex Dental Plan Details from Benefits Guide (pages 24-26 of 'Benefits Guide 2026', August 2025)",
+      "publisher": "North Carolina Office of State Human Resources (OSHR) / NCFlex; plan underwritten by Metropolitan Life Insurance Company",
+      "url": "https://oshr.nc.gov/2026-ncflex-dental-plan-details-benefits-guide/open",
+      "secondary_urls": [
+        "https://oshr.nc.gov/2026-ncflex-dental-plan-details-benefits-guide",
+        "https://oshr.nc.gov/2026-ncflex-benefits-guide/open",
+        "https://oshr.nc.gov/state-employee-resources/benefits/ncflex/dental-plan/options",
+        "https://oshr.nc.gov/ncflex-dental-insurance-documents"
+      ],
+      "document_type": "benefits_guide",
+      "document_date": "2025-08-01",
+      "effective_period": {
+        "start": "2026-01-01",
+        "end": "2026-12-31",
+        "quote": "Benefits elections made during annual enrollment will begin on January 1 of the following year",
+        "quote_note": "Parent guide p.4 (footer 'www.ncflex.org 4'); cover 'Benefits Guide 2026'. The dental pages (24-26) contain no '2026', 'January' or 'plan year' date; the only date-bearing sentence is 'they must keep that option for the entire plan year' (p.24). End date 2026-12-31 is inferred from the calendar-year structure (certificate: 'Year or Yearly, for Dental Insurance, means the 12 month period that begins January 1.') and the guide title; not printed on the dental pages."
+      },
+      "scope": {
+        "geography": "North Carolina (State of North Carolina employees; NCFlex)",
+        "population": "NCFlex-eligible employees: guide p.2 'An employee may enroll in any or all of the NCFlex benefits if they work for a state agency, university*, participating community college, or participating charter school for 20 hours or more (30 hours or more for the Disability Plan) per week'",
+        "plan_type": "PPO-type group dental insurance (in- and out-of-network benefits)",
+        "network": "MetLife Preferred Dental Provider (PDP) Plus Network"
+      },
+      "retrieved_at": "2026-10-03",
+      "retrieval_method": "WebFetch (PDF->text; full verbatim transcription of the 3-page extract, then three targeted verification passes; page numbers from printed footers '24 www.ncflex.org', 'www.ncflex.org 25', '26 www.ncflex.org'). Parent 56-page guide fetched separately for plan-year and eligibility sentences.",
+      "pages_total": 3,
+      "reuse_terms": "not stated for the text. The only copyright line, '© N.C. Department of Natural & Cultural Resources', is the photo credit under the 'Merlefest' image on p.26. North Carolina state government publication (public).",
+      "access_limits": [
+        "WebFetch's answering model limits each quote to ~125 characters; long cells were transcribed in one pass and re-verified in targeted passes. One targeted pass wrongly reported 'plan year' and 'enroll' as NOT PRESENT; a third pass confirmed the full-transcription wording ('entire plan year', 'annual enrollment period'), which is used here.",
+        "The dental pages never print the word 'plan pays'; the percentage basis is taken from the footnote wording 'Reimbursement for out-of-network services is based on reasonable and customary (R&C) charge' and 'Benefits are subject to the Maximum Allowable Charge (MAC)', and corroborated by the Classic certificate's 'Covered Percentage' header (see ncflex-metlife-classic-certificate-2020.json)."
+      ],
+      "counts": {
+        "facts": 79,
+        "by_status": {
+          "DOC": 75,
+          "UNKNOWN": 2,
+          "AMBIGUOUS": 2
+        },
+        "procedure_mappings": 0,
+        "conflicts": 3,
+        "gaps": 11
+      },
+      "supports_plan_codes": [
+        "ML26",
+        "ML26H",
+        "ML26L"
+      ],
+      "contributes": {
+        "plan_rules": true,
+        "premiums": true,
+        "procedure_codes": false,
+        "fee_benchmarks": false,
+        "reuse_terms": false
+      },
+      "gaps": [
+        "Waiting period: not mentioned on pp.24-26 or elsewhere in the 56-page guide (targeted passes); absence not confirmed by a certificate clause.",
+        "Alternate benefit / least costly alternative clause: not in the guide; certificate clause not reachable (see certificate JSON).",
+        "Missing tooth clause: not in the guide (exclusion list is 'a partial listing').",
+        "Sealant frequency and per-tooth limit: guide says 'see certificate for frequencies'; certificate p.63 not reachable.",
+        "Scaling and root planing per-quadrant limits and frequency: not printed.",
+        "Posterior composite alternate-benefit rule: not printed (composite fillings are named as covered under Type II).",
+        "Crown material distinction (porcelain/ceramic vs full cast), partial denture type, implant body vs implant crown distinctions: not printed beyond 'Crowns, including Single Implant Crowns' and 'Implants'.",
+        "Whether the deductible/maximum are shared across in- and out-of-network: not stated in the guide.",
+        "Percentage basis is not printed as 'plan pays'; inferred from 'Reimbursement ... is based on' and the certificates' 'Covered Percentage' header.",
+        "No CDT codes are printed anywhere in the guide; procedure_mappings left empty.",
+        "The dental pages do not print '2026'; plan year established from the parent guide cover and OSHR page title."
+      ]
+    },
+    {
+      "source_id": "ncflex-metlife-classic-certificate-2020",
+      "version_label": "ML20c",
+      "title": "MetLife Certificate of Insurance — Dental Insurance for You and Your Dependents — North Carolina Office of State Human Resources, Group Policy 165756-1-G, Classic Option (OSHR title: 'MetLife Dental Classic Option Certificate (1/1/20)')",
+      "publisher": "Metropolitan Life Insurance Company (MetLife); posted by North Carolina Office of State Human Resources",
+      "url": "https://oshr.nc.gov/documents/files/metlife-dental-classic-option-certificate-01-01-20/open",
+      "secondary_urls": [
+        "https://oshr.nc.gov/documents/files/metlife-dental-classic-option-certificate-unc-chapel-hill-01-01/open",
+        "https://oshr.nc.gov/metlife-dental-rider-high-and-classic-options-1124/open",
+        "https://oshr.nc.gov/ncflex-dental-rider-high-and-classic-options112024/open",
+        "https://oshr.nc.gov/ncflex-dental-insurance-documents",
+        "https://oshr.nc.gov/state-employee-resources/benefits/ncflex/dental-plan/options"
+      ],
+      "document_type": "certificate",
+      "document_date": "2020-01-01",
+      "effective_period": {
+        "start": "2020-01-01",
+        "end": null,
+        "quote": "Certificate Date: January 1, 2020",
+        "quote_note": "No end date; the certificate stays in force until replaced. 'Year or Yearly, for Dental Insurance, means the 12 month period that begins January 1.' (def 50)"
+      },
+      "scope": {
+        "geography": "North Carolina (State of North Carolina employees); a separate UNC Chapel Hill edition exists with the same date, policy number and schedule values",
+        "population": "Employees of the North Carolina Office of State Human Resources group policy (NCFlex) and their Dependents; 'Child ... is under age 26' (def 48)",
+        "plan_type": "Group dental insurance with In-Network (Preferred Dentist Program) and Out-of-Network benefits",
+        "network": "Preferred Dentist Program (In-Network Dentist 'participates in the Preferred Dentist Program', def 49); marketed in the 2026 guide as the 'MetLife Preferred Dental Provider (PDP) Plus Network'"
+      },
+      "retrieved_at": "2026-10-03",
+      "retrieval_method": "WebFetch (PDF->text). Page numbers are the printed footers 'GCERT2000 <section> <n>' (e.g. 'GCERT2000 sch 47', 'GCERT2000 def 50'); recorded as pdf_footer. Six targeted passes with quotes limited to ~125 characters each.",
+      "pages_total": null,
+      "reuse_terms": "not stated in the reachable pages. Insurer form GCERT2000 ('fp as amended by GEND16-NM-DSC'); posted as a public document by a North Carolina state agency.",
+      "access_limits": [
+        "WebFetch returned text only through footer 'GCERT2000 e/ee 51'. The following TOC sections were NOT reachable: DENTAL INSURANCE (p.59; would contain Deductible, Maximum Benefit, Alternate Benefits, Pre-Treatment Estimate and any Waiting Period clauses), DENTAL INSURANCE: DESCRIPTION OF COVERED SERVICES (p.63; Type A/B/C lists with frequency limits), DENTAL INSURANCE: EXCLUSIONS (p.66; missing-tooth and other exclusions), COORDINATION OF BENEFITS (p.68), FILING A CLAIM (p.73), PROCEDURES FOR DENTAL CLAIMS (p.74), GENERAL PROVISIONS (p.76). All facts that depend on those sections are UNKNOWN.",
+        "The UNC Chapel Hill edition (same URL family) was tried as an alternative; its text also ends early ('GCERT2000 50 e/ee', last sentence truncated mid-word: 'All Actively at Work University of North Carolina at Chapel Hill employees in a permanent, probati').",
+        "The answering model caps each quote at ~125 characters; long definitions were captured as consecutive pieces (R&C definition in 9 pieces).",
+        "'Negotiated Fee' was not found as a defined term in the reachable definitions (the in-network basis is defined as 'Maximum Allowed Charge')."
+      ],
+      "counts": {
+        "facts": 27,
+        "by_status": {
+          "DOC": 21,
+          "CONFLICT": 1,
+          "UNKNOWN": 5
+        },
+        "procedure_mappings": 0,
+        "conflicts": 3,
+        "gaps": 8
+      },
+      "supports_plan_codes": [
+        "ML26"
+      ],
+      "contributes": {
+        "plan_rules": true,
+        "premiums": false,
+        "procedure_codes": false,
+        "fee_benchmarks": false,
+        "reuse_terms": false
+      },
+      "gaps": [
+        "Type A/B/C covered-service lists and frequency limits (p.63-65) — not reachable via WebFetch.",
+        "Alternate Benefits / least costly alternative clause (DENTAL INSURANCE, p.59-62) — not reachable.",
+        "Missing tooth clause and full exclusions list (p.66-67) — not reachable.",
+        "Waiting period — not in the schedule; clause section not reachable.",
+        "Pre-treatment estimate language — not reachable in the certificate (available in the 2026 guide and MetLife FAQ sheet).",
+        "Sealant frequency/tooth limit, SRP per-quadrant limits, posterior composite rule, crown material rules, denture type rules, occlusal guard coverage — not reachable.",
+        "No CDT codes printed in the reachable pages; procedure_mappings empty.",
+        "'Negotiated Fee' is not a defined term in the reachable definitions."
+      ]
+    },
+    {
+      "source_id": "ncflex-metlife-high-certificate-2018",
+      "version_label": "ML18h",
+      "title": "MetLife Certificate of Insurance — North Carolina Office of State Human Resources, Group Policy 165756-1-G, High Option (OSHR title: 'MetLife Dental High Option Certificate (12/2017)')",
+      "publisher": "Metropolitan Life Insurance Company (MetLife); posted by North Carolina Office of State Human Resources",
+      "url": "https://oshr.nc.gov/metlife-dental-high-option-certificate-dec-2017/open",
+      "secondary_urls": [
+        "https://oshr.nc.gov/ncflex-dental-insurance-documents",
+        "https://oshr.nc.gov/metlife-dental-rider-high-and-classic-options-1124/open",
+        "https://oshr.nc.gov/ncflex-dental-rider-high-and-classic-options112024/open"
+      ],
+      "document_type": "certificate",
+      "document_date": "2018-01-01",
+      "effective_period": {
+        "start": "2018-01-01",
+        "end": null,
+        "quote": "Certificate Date: January 1, 2018"
+      },
+      "scope": {
+        "geography": "North Carolina (State of North Carolina employees); a UNC Chapel Hill edition is also posted (not opened)",
+        "population": "Employees under the NC OSHR group policy and their Dependents",
+        "plan_type": "Group dental insurance, In-Network (Preferred Dentist Program) and Out-of-Network",
+        "network": "Preferred Dentist Program"
+      },
+      "retrieved_at": "2026-10-03",
+      "retrieval_method": "WebFetch (PDF->text); two targeted passes; page numbers as reported from printed footers ('GCERT2000 ... <n>').",
+      "pages_total": null,
+      "reuse_terms": "not stated in reachable pages; insurer form GCERT2000; public posting by a North Carolina state agency.",
+      "access_limits": [
+        "Text conversion ends at footer 'GCERT2000 50 e/dep'; DENTAL INSURANCE (p.55), DESCRIPTION OF COVERED SERVICES (p.59), EXCLUSIONS (p.62) and GENERAL PROVISIONS (p.72) NOT reached ('Alternate Benefits', 'Pre-Treatment Estimate', 'Deductible', 'Maximum Benefit', 'Waiting Period' subsections all reported NOT REACHED).",
+        "The deductible lines were returned as '...Type B; Type C' without the Classic certificate's 'excluding implants and implant services' tail; whether that tail exists in the High certificate was not re-verified (time box) — review_status needs_review."
+      ],
+      "counts": {
+        "facts": 12,
+        "by_status": {
+          "DOC": 11,
+          "UNKNOWN": 1
+        },
+        "procedure_mappings": 0,
+        "conflicts": 1,
+        "gaps": 4
+      },
+      "supports_plan_codes": [
+        "ML26H"
+      ],
+      "contributes": {
+        "plan_rules": true,
+        "premiums": false,
+        "procedure_codes": false,
+        "fee_benchmarks": false,
+        "reuse_terms": false
+      },
+      "gaps": [
+        "All clause bodies beyond p.50 (covered-service lists, frequencies, alternate benefit, exclusions, waiting period, missing tooth, pre-treatment estimate) — not reachable.",
+        "Whether the High deductible line also says 'excluding implants and implant services' — not verified.",
+        "UNC Chapel Hill edition of the High certificate not opened (time box).",
+        "No CDT codes in reachable pages."
+      ]
+    },
+    {
+      "source_id": "ncflex-metlife-low-certificate-2020",
+      "version_label": "ML20l",
+      "title": "MetLife Certificate of Insurance — North Carolina Office of State Human Resources, Group Policy 165756-1-G, Low Option (OSHR title: 'MetLife Dental Low Option Certificate (1/1/20)')",
+      "publisher": "Metropolitan Life Insurance Company (MetLife); posted by North Carolina Office of State Human Resources",
+      "url": "https://oshr.nc.gov/documents/files/metlife-dental-low-option-certificate-01-01-20/open",
+      "secondary_urls": [
+        "https://oshr.nc.gov/ncflex-dental-insurance-documents"
+      ],
+      "document_type": "certificate",
+      "document_date": "2020-01-01",
+      "effective_period": {
+        "start": "2020-01-01",
+        "end": null,
+        "quote": "Certificate Date: January 1, 2020"
+      },
+      "scope": {
+        "geography": "North Carolina (State of North Carolina employees); a UNC Chapel Hill edition is also posted (not opened)",
+        "population": "Employees under the NC OSHR group policy and their Dependents",
+        "plan_type": "Group dental insurance, In-Network (Preferred Dentist Program) and Out-of-Network; Type A and Type B only (no Type C / major services)",
+        "network": "Preferred Dentist Program"
+      },
+      "retrieved_at": "2026-10-03",
+      "retrieval_method": "WebFetch (PDF->text); one targeted pass; page numbers as reported from printed footers.",
+      "pages_total": null,
+      "reuse_terms": "not stated in reachable pages; insurer form GCERT2000; public posting by a North Carolina state agency.",
+      "access_limits": [
+        "Text conversion ends at p.50; covered-service lists, frequencies, alternate benefit, exclusions, waiting period and missing-tooth clauses NOT reached.",
+        "Single pass only (time box); the Type C line was not reported — consistent with the 2026 guide ('Not covered under the Low Option') but not confirmed as an explicit 'Not Covered' line in the schedule."
+      ],
+      "counts": {
+        "facts": 10,
+        "by_status": {
+          "DOC": 9,
+          "UNKNOWN": 1
+        },
+        "procedure_mappings": 0,
+        "conflicts": 0,
+        "gaps": 4
+      },
+      "supports_plan_codes": [
+        "ML26L"
+      ],
+      "contributes": {
+        "plan_rules": true,
+        "premiums": false,
+        "procedure_codes": false,
+        "fee_benchmarks": false,
+        "reuse_terms": false
+      },
+      "gaps": [
+        "All clause bodies beyond p.50 (Type A/B lists, frequencies, alternate benefit, exclusions, waiting period, missing tooth, pre-treatment estimate) — not reachable.",
+        "Explicit Type C 'Not Covered' line in the schedule — not quoted.",
+        "UNC Chapel Hill edition not opened (time box).",
+        "No CDT codes in reachable pages."
+      ]
+    },
+    {
+      "source_id": "opm-fedvip-delta-2026",
+      "version_label": "FD26",
+      "title": "Delta Dental's Federal Employees Dental Program",
+      "publisher": "U.S. Office of Personnel Management (OPM) — FEDVIP plan brochure; carrier: Delta Dental of California (contract OPM02-FEDVIP-02AP-05)",
+      "url": "https://www.opm.gov/healthcare-insurance/healthcare/plan-information/plans/pdf/2026/brochures/02AP-05.pdf",
+      "secondary_urls": [
+        "https://cdn.benefeds.gov/assets/Education_Support/dental_brochures/Delta2026.pdf (BENEFEDS-hosted copy of the same brochure; used to read page 29-30 text)",
+        "https://www.opm.gov/healthcare-insurance/healthcare/plan-information/plans/BrochureJson?brochureNumber=02AP-05&year=2026 (OPM HTML/JSON rendering of the same brochure; truncates at page 18)",
+        "https://www.opm.gov/healthcare-insurance/dental-vision/plan-information/plans/dental/ (OPM dental plan index; links to brochure)",
+        "https://www.opm.gov/healthcare-insurance/dental-vision/plan-information/plan-premiums/ (OPM premiums page; links to 2026 Excel files)",
+        "https://www.opm.gov/frequently-asked-questions/insure-faq/dental-vision/what-is-a-fedvip-dental-rating-area/ (OPM FAQ on rating areas)",
+        "https://www1.deltadentalins.com/federal/fedvip/plans.html (carrier plan-compare page; summary only, not used as evidence)"
+      ],
+      "document_type": "plan_brochure",
+      "document_date": null,
+      "effective_period": {
+        "start": "2026-01-01",
+        "end": "2026-12-31",
+        "quote": "The calendar year refers to the plan year, which is defined as January 1, 2026 to December 31, 2026."
+      },
+      "scope": {
+        "geography": "Nationwide (United States) plus international; rates vary by one of five rating regions determined by home ZIP code. Includes North Carolina, but the brochure pages that list regions by state (end of brochure) could not be read.",
+        "population": "Federal and U.S. Postal Service employees eligible for FEHB, annuitants, TRICARE-eligible retired uniformed services members (including gray-area retirees) and eligible family members; enrollment via BENEFEDS",
+        "plan_type": "PPO (\"A Nationwide Dental PPO Plan\")",
+        "network": "Delta Dental PPO(TM) and Delta Dental Legion(TM) networks; out-of-network care allowed and paid on an out-of-network plan allowance"
+      },
+      "retrieved_at": "2026-10-03",
+      "retrieval_method": "WebFetch (PDF→text; page numbers from footers). The PDF-to-text conversion was truncated by the fetch tool at approximately page 29 (OPM copy) / page 30 (BENEFEDS copy); pages 30-62 were not readable by any sanctioned tool.",
+      "pages_total": 62,
+      "reuse_terms": "Government contract brochure: \"This brochure describes the benefits of Delta Dental's Federal Employees Dental Program under Delta Dental of California contract OPM02-FEDVIP-02AP-05 with OPM, as authorized by the FEDVIP law.\" (p. 1). ADA notice: \"Current Dental Terminology (CDT), Copyright © American Dental Association. All rights reserved.\" (p. 5). No Delta Dental copyright line was seen in the readable pages (pp. 1-29).",
+      "access_limits": [
+        "Brochure pages ~30-62 (remainder of Section 5 Class C incl. implant and adjunctive/occlusal-guard codes, Class D Orthodontic, Section 6 International, Section 7 General Exclusions, Section 8 Claims, Section 9 Definitions, Summary of Benefits, Rate Information) could not be read: WebFetch truncated the PDF text ('Content truncated due to length') at ~page 29 on the OPM URL and ~page 30 on the BENEFEDS copy. The OPM BrochureJson rendering truncated even earlier (page 18).",
+        "https://www1.deltadentalins.com/content/dam/ddins/en/pdf/affiliate-sites/fedvip/plan-highlights-2026.pdf — WebFetch error ROBOTS_DISALLOWED (URL is disallowed by robots.txt rules). Not read.",
+        "https://www1.deltadentalins.com/content/dam/ddins/en/pdf/affiliate-sites/fedvip/plan-brochure-2026.pdf — not attempted after robots.txt block on the same path; OPM copy used instead.",
+        "https://feds.deltadentalins.com/federal/fedvip/plans/rates.html — 302 redirect to https://www1.deltadentalins.com/federal/fedvip.html (not followed; no rates there per the plans page fetch).",
+        "OPM 2026 FEDVIP Dental Premiums spreadsheet https://www.opm.gov/healthcare-insurance/dental-vision/plan-information/premiums/2026/2026-fedvip-dental-premiums.xlsx — binary .xlsx; WebFetch cannot read spreadsheets and the protocol forbids other download tools. Not read.",
+        "OPM 2026 Dental Rating Regions spreadsheet https://www.opm.gov/healthcare-insurance/healthcare/transparency-in-healthcare/public-use-files/2026/fedvip/2026-dental-rating-regions-100525.xlsx — binary .xlsx; same limitation. Not read. This is the official file that would map North Carolina ZIP codes to a Delta Dental rating region.",
+        "Table cells (deductible, coinsurance, maximum tables on pp. 15-16) were returned by the fetch tool as 'column label: value' renderings rather than as a contiguous printed passage; the labels and values are as printed but the row/column layout is reconstructed (flagged needs_review)."
+      ],
+      "counts": {
+        "facts": 82,
+        "by_status": {
+          "DOC": 71,
+          "UNKNOWN": 11
+        },
+        "procedure_mappings": 16,
+        "conflicts": 0,
+        "gaps": 12
+      },
+      "supports_plan_codes": [
+        "FD26H",
+        "FD26S"
+      ],
+      "contributes": {
+        "plan_rules": true,
+        "premiums": false,
+        "procedure_codes": true,
+        "fee_benchmarks": false,
+        "reuse_terms": false
+      },
+      "gaps": [
+        "Premiums (biweekly/monthly, Self / Self Plus One / Self and Family) for Standard and High by rating region — rate pages at the end of the brochure not readable; OPM 2026 premium .xlsx unreadable by sanctioned tools; carrier Plan Highlights PDF blocked by robots.txt.",
+        "Which Delta Dental rating region includes North Carolina — brochure region/state list not readable; OPM 2026 Dental Rating Regions .xlsx unreadable; OPM FAQ says rating areas are ZIP-code groups (up to five per plan) without listing states.",
+        "Waiting periods — no 'waiting period' text in readable pages 1-29; Summary of Benefits / Sections 7 and 9 not readable; cannot confirm 'no waiting periods'.",
+        "Missing tooth clause — none in readable pages; Section 7 General Exclusions not readable.",
+        "Implant (D6010) class membership, descriptor and percentage — Implant Services subsection after the cutoff.",
+        "Occlusal/night guard appliance codes (D9944/D9945/D9946) class and frequency — adjunctive section after the cutoff.",
+        "Partial denture replacement frequency — Prosthodontic limitation text after the cutoff.",
+        "Whether the out-of-network deductible ($50 High / $75 Standard) is a single combined amount across Class B and Class C or separate per class, and its period (calendar year) — not stated in readable text.",
+        "Per-person wording for the annual maximum — not returned; only 'combined between in and out of network services' and 'Once you reach this amount, you are responsible for all additional charges.'",
+        "Definition and dollar basis of the 'out-of-network plan allowance' (fee schedule vs percentile) — Section 9 Definitions not readable.",
+        "Class D Orthodontic details for the Standard Option and out-of-network lifetime maximum — only the in-network High Option lifetime maximum sentence was (partially) returned; orthodontia is unsupported in the app.",
+        "Exact footer page for the Section 2 coverage-effective-date sentence (returned as Section 2, pp. 8-11) and for the Section 5 preamble (assumed p. 18)."
+      ]
+    },
+    {
+      "source_id": "opm-fedvip-metlife-2026",
+      "version_label": "FM26",
+      "title": "The MetLife Federal Dental Plan 2026 — A Nationwide Dental PPO Plan (FEDVIP brochure, OPM form 02AP-11)",
+      "publisher": "U.S. Office of Personnel Management (FEDVIP brochure prepared by Metropolitan Life Insurance Company)",
+      "url": "https://www.opm.gov/healthcare-insurance/healthcare/plan-information/plans/pdf/2026/brochures/02AP-11.pdf",
+      "secondary_urls": [],
+      "document_type": "plan_brochure",
+      "document_date": null,
+      "effective_period": {
+        "start": "2026-01-01",
+        "end": "2026-12-31",
+        "quote": "If you sign up for a dental and/or vision plan during the 2025 Open Season, your coverage will begin on January 1, 2026."
+      },
+      "scope": {
+        "geography": "Nationwide and overseas (United States, including North Carolina) — \"A Nationwide Dental PPO Plan\"; \"MetLife Dental is available nationwide and overseas.\" (cover)",
+        "population": "All Federal employees and annuitants in the United States and overseas who are eligible to enroll in Federal Employees Dental and Vision Insurance Program.",
+        "plan_type": "PPO (two options: High Option and Standard Option)",
+        "network": "MetLife Dental PPO (In-Network / Out-of-Network; Plan Allowance basis)"
+      },
+      "retrieved_at": "2026-10-03",
+      "retrieval_method": "WebFetch (PDF→text via a summarizing sub-model limited to ~125-character quotes; page numbers from footers of the form \"2026 The MetLife Federal Dental Plan 22 Enroll at www.BENEFEDS.gov\"). The converter's text window ended around pp. 29–33 in several calls, so content beyond Class C's first page (endodontics, prosthodontics, implants, Section 7 exclusions, Definitions, Rate Information p. 71) could not be verified consistently.",
+      "pages_total": 71,
+      "reuse_terms": "Printed on p. 7: \"Current Dental Terminology (CDT), Copyright © American Dental Association. All rights reserved.\" and \"FEDVIP abides by the Current Dental Terminology (CDT) codification system in accordance with standards set by the American Dental Association (ADA).\" No other copyright statement was visible in the extracted text; the brochure is posted by OPM (a federal agency) — treat the government-publication status as not stated in the document.",
+      "access_limits": [
+        "Rate Information (printed p. 71 / back cover) was not present in the text the fetch tool returned; three attempts. Only \"Your rates are determined based on where you live. This is called a rating area.\" and \"OPM negotiates rates with each carrier annually. Rates are shown at the end of this brochure.\" were found. Premiums therefore UNKNOWN.",
+        "Text extraction appears truncated near p. 29–33 in several calls (one call reported the excerpt ends with \"D2990 Resin infiltration of incipient smooth surface lesions - Limited\"). Rows for endodontics (D3310/D3320/D3330), removable prosthodontics (D5110–D5214), implants (D6010 etc.) and occlusal guards (D9944–D9946) were reported NOT PRESENT in two verification calls; one earlier call listed such rows with descriptors that do not match CDT (e.g., \"D5211 Complete denture\"), so that output was treated as unreliable and discarded.",
+        "The word \"waiting\" was not found in two searches of the extracted text; because of the truncation this is recorded as UNKNOWN, not as 'no waiting period'.",
+        "Section 7 General Exclusions narrative (p. 50) and the Definitions entry for Plan Allowance (p. 59) were returned by one call and reported not visible by another; recorded with needs_review."
+      ],
+      "counts": {
+        "facts": 50,
+        "by_status": {
+          "DOC": 43,
+          "UNKNOWN": 7
+        },
+        "procedure_mappings": 12,
+        "conflicts": 0,
+        "gaps": 7
+      },
+      "supports_plan_codes": [
+        "FM26H",
+        "FM26S"
+      ],
+      "contributes": {
+        "plan_rules": true,
+        "premiums": false,
+        "procedure_codes": true,
+        "fee_benchmarks": false,
+        "reuse_terms": false
+      },
+      "gaps": [
+        "Premiums / Rate Information (p. 71, back cover): not present in extracted text after three attempts; rating-area state list (North Carolina) not extractable.",
+        "Waiting periods: no sentence containing \"waiting\" found in extracted text (two searches); recorded UNKNOWN because extraction was truncated.",
+        "Molar root canal (D3330), partial dentures (D5211–D5214), implant body (D6010) and occlusal guard codes (D9944–D9946/D9940): NOT PRESENT in extracted text; class, coinsurance and limits unknown. Only the 2026 change note on occlusal-guard frequency (1 in 24 months) was captured.",
+        "Section 7 General Exclusions narrative (cosmetic, missing tooth, services begun before coverage): not reliably extracted (one fetch returned only the heading at p. 50).",
+        "Family deductible: not stated in returned text (deductible printed per person).",
+        "Dependent-child age limit for fluoride: table says \"based on age limits\" but the limit itself was not returned.",
+        "Class A row page attribution varies between fetches (p. 26 vs range 25–28); Class B rows vary between p. 29/30 and p. 30/31."
+      ]
+    }
+  ]
+}

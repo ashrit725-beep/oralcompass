@@ -18,7 +18,7 @@ export function StitchChip({ stitch, selected, prominent, onSelect }: { stitch: 
       type="button"
       className={`stitch ${selected ? "stitch-selected" : ""}`}
       aria-pressed={!!selected}
-      aria-label={`Stitch ${stitch.n}, ${stitch.topic.replace(/[_:]/g, " ")}, ${stitch.doc} page ${stitch.page}`}
+      aria-label={`Stitch ${stitch.n}, ${stitch.topic.replace(/[_:]/g, " ")}, ${stitch.doc} ${stitch.pageNote ?? `page ${stitch.page}`}`}
       onClick={() => onSelect?.(stitch)}
     >
       <span className={`scope ${prominent ? "scope-prominent" : ""}`} aria-hidden="true">{stitch.doc}</span>

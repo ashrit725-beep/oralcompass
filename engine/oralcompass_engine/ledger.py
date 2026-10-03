@@ -14,7 +14,17 @@ from .models import (AlternateBenefit, Evidence, EstimateLine, Ledger, LedgerLin
 
 MOLARS = {"1", "2", "3", "14", "15", "16", "17", "18", "19", "30", "31", "32"}
 MANDIBULAR_MOLARS = {"17", "18", "19", "30", "31", "32"}
+UPPER_SECOND_THIRD_OR_LOWER_MOLARS = {"1", "2", "15", "16"} | MANDIBULAR_MOLARS   # Delta Dental "Optional Services" wording
 POSTERIOR = MOLARS | {"4", "5", "12", "13", "20", "21", "28", "29"}
+
+
+def waiting_months_for(wm: V, procedure_key: str, class_name: str) -> int:
+    """Waiting period in months: a procedure-level entry wins over its class entry (documents name procedure groups, not classes)."""
+    if not wm.known or not isinstance(wm.value, dict):
+        return 0
+    if procedure_key in wm.value:
+        return wm.value[procedure_key] or 0
+    return wm.value.get(class_name, 0) or 0
 
 
 def stitch(plan: PlanModel, cite) -> Optional[str]:
@@ -61,12 +71,49 @@ def _alternate_applies(ab: AlternateBenefit, line: EstimateLine, tooth: Optional
             continue
         cond = c.get("condition", "any")
         if cond == "any" or (cond == "molar" and tooth in MOLARS) or (cond == "mandibular_molar" and tooth in MANDIBULAR_MOLARS) \
-                or (cond == "posterior" and tooth in POSTERIOR):
+                or (cond == "posterior" and tooth in POSTERIOR) \
+                or (cond == "upper_second_third_or_lower_molar" and tooth in UPPER_SECOND_THIRD_OR_LOWER_MOLARS):
             return c
     return None
 
 
-def compute_line(plan: PlanModel, line: EstimateLine, state: MemberState, ded_left: int, max_left: int,
+def oon_separate_deductible(plan: PlanModel, state: MemberState) -> bool:
+    """True when the member is out-of-network and the document states a different out-of-network deductible."""
+    return (state.network.known and state.network.value == "out" and plan.deductible_individual_out.known
+            and plan.deductible_individual_out.value != plan.deductible_individual.value)
+
+
+def oon_separate_max(plan: PlanModel, state: MemberState) -> bool:
+    """True when the member is out-of-network and the document states a different out-of-network annual maximum."""
+    if not (state.network.known and state.network.value == "out"):
+        return False
+    if plan.annual_max_out_unlimited != plan.annual_max_unlimited:
+        return True
+    return plan.annual_max_out.known and plan.annual_max_out.value != plan.annual_max.value
+
+
+def max_is_unlimited(plan: PlanModel, state: MemberState) -> bool:
+    if state.network.known and state.network.value == "out" and (plan.annual_max_out.known or plan.annual_max_out_unlimited):
+        return plan.annual_max_out_unlimited
+    return plan.annual_max_unlimited
+
+
+def usage_inputs(plan: PlanModel, state: MemberState):
+    """(remaining deductible V, remaining maximum V or None when unlimited, list of missing input names) for this member/plan."""
+    ded_v = state.remaining_deductible_out if oon_separate_deductible(plan, state) else state.remaining_deductible
+    if max_is_unlimited(plan, state):
+        max_v = None
+    else:
+        max_v = state.remaining_max_out if oon_separate_max(plan, state) else state.remaining_max
+    missing = []
+    if not ded_v.known:
+        missing.append("remaining out-of-network deductible" if oon_separate_deductible(plan, state) else "remaining deductible")
+    if max_v is not None and not max_v.known:
+        missing.append("remaining out-of-network annual maximum" if oon_separate_max(plan, state) else "remaining annual maximum")
+    return ded_v, max_v, missing
+
+
+def compute_line(plan: PlanModel, line: EstimateLine, state: MemberState, ded_left: int, max_left: Optional[int],
                  planned_before: list[date], dos_rule: str) -> LedgerLine:
     L = LedgerLine(label=line.label, status="estimate")
     tooth = state.tooth_overrides.get(line.key, line.tooth)
@@ -98,8 +145,10 @@ def compute_line(plan: PlanModel, line: EstimateLine, state: MemberState, ded_le
     wm = plan.waiting_months
     if wm.status == Evidence.UNKNOWN:
         L.flags.append("waiting period: not found in the pages read — computed as none; could be higher if one applies")
-    elif wm.known and wm.value.get(cls.name):
-        months = wm.value[cls.name]
+    elif wm.known and waiting_months_for(wm, line.key, cls.name):
+        months = waiting_months_for(wm, line.key, cls.name)
+        if wm.status == Evidence.AMBIGUOUS:
+            L.flags.append(f"waiting period scope is AMBIGUOUS for '{line.label}' ({wm.note}) — applied as {months} months")
         if not state.enrolled_months.known:
             L.status = "unresolved"
             L.flags.append(f"enrollment date not provided and this plan has a {months}-month waiting period for {cls.name} — "
@@ -142,6 +191,8 @@ def compute_line(plan: PlanModel, line: EstimateLine, state: MemberState, ded_le
         L.flags.append("alternate-benefit clause: not found in the pages read — plan payment could be lower if one applies")
     elif ab.status in (Evidence.DOC, Evidence.USER):
         cond = _alternate_applies(ab, line, tooth)
+        if cond is None and not ab.conditions:
+            L.flags.append("the plan has an alternate-benefit clause; the pages read do not say which services it applies to — plan payment could be lower if it applies to this line")
         if cond:
             bk = cond.get("basis_key")
             bv = plan.allowed_amounts.get(bk) if bk else None
@@ -154,20 +205,33 @@ def compute_line(plan: PlanModel, line: EstimateLine, state: MemberState, ded_le
 
     # deductible
     share_v = cls.plan_share_bp_in if state.network.value == "in" else cls.plan_share_bp_out
+    if not share_v.known:
+        L.status = "unresolved"
+        L.flags.append(f"{'in' if state.network.value == 'in' else 'out-of'}-network coinsurance for {cls.name} is not stated in this document — unresolved")
+        return L
+    ded_rule_v = plan.deductible_individual_out if oon_separate_deductible(plan, state) else plan.deductible_individual
+    max_rule_v = plan.annual_max_out if oon_separate_max(plan, state) and plan.annual_max_out.known else plan.annual_max
     ded = 0
     if cls.name not in plan.deductible_waived_classes and ded_left > 0:
         ded = min(ded_left, basis)
-        L.steps.append(Step("Applied to deductible", ded, "patient", "D", stitch(plan, plan.deductible_individual.cite)))
+        L.steps.append(Step("Applied to deductible", ded, "patient", "D", stitch(plan, ded_rule_v.cite)))
     after = basis - ded
     share_bp = share_v.value
     plan_pre = round(after * share_bp / 10000)
     pat_coins = after - plan_pre
     L.steps.append(Step(f"Your share ({(10000 - share_bp) // 100}% of the amount after deductible)", pat_coins, "patient", "CO", stitch(plan, share_v.cite)))
     L.steps.append(Step(f"Plan pays {share_bp // 100}% before the annual maximum", plan_pre, "plan_pre", "CO", stitch(plan, share_v.cite)))
-    plan_pay = min(plan_pre, max_left)
-    beyond = plan_pre - plan_pay
+    if max_left is None:
+        plan_pay, beyond = plan_pre, 0          # document states no annual maximum for this network tier
+        L.flags.append("no annual maximum applies to this line (the document states the maximum is unlimited)")
+    elif cls.name in plan.max_exempt_classes:
+        plan_pay, beyond = plan_pre, 0          # document states this class does not count toward the annual maximum
+        L.flags.append(f"{cls.name} services do not count toward the annual maximum under this plan")
+    else:
+        plan_pay = min(plan_pre, max_left)
+        beyond = plan_pre - plan_pay
     if beyond:
-        L.steps.append(Step("Beyond the plan's remaining annual maximum (your share)", beyond, "patient", "M", stitch(plan, plan.annual_max.cite)))
+        L.steps.append(Step("Beyond the plan's remaining annual maximum (your share)", beyond, "patient", "M", stitch(plan, max_rule_v.cite)))
     ab_diff = allowed - basis
     if ab_diff:
         L.steps.append(Step("Difference between the allowed amount and the alternate basis (your share)", ab_diff, "patient", "AB", stitch(plan, ab.cite)))
@@ -193,8 +257,12 @@ def compute_ledger(plan: PlanModel, lines: list[EstimateLine], state: MemberStat
         if v.status == Evidence.ASSUMED:
             assumptions.append(f"allowed amount for {k}: ${v.value/100:,.2f} (hypothetical you entered)")
 
-    if not state.remaining_deductible.known or not state.remaining_max.known:
-        return Ledger("unresolved", [], None, None, False, ["benefit usage not provided (remaining deductible / remaining annual maximum)"],
+    ded_v, max_v, missing = usage_inputs(plan, state)
+    for name in missing:
+        if name not in not_provided:
+            not_provided.append(name)
+    if missing:
+        return Ledger("unresolved", [], None, None, False, [f"benefit usage not provided ({' / '.join(missing)})"],
                       not_provided, assumptions, order_note="")
 
     seq = list(lines)
@@ -202,14 +270,16 @@ def compute_ledger(plan: PlanModel, lines: list[EstimateLine], state: MemberStat
         seq.sort(key=lambda l: (l.prep if (dos_rule == "prep" and l.prep) else l.completion) or date.max)
 
     def run(seq_):
-        ded_left, max_left, out, planned = state.remaining_deductible.value, state.remaining_max.value, [], {}
+        ded_left, max_left, out, planned = ded_v.value, (None if max_v is None else max_v.value), [], {}
         for line in seq_:
             L = compute_line(plan, line, state, ded_left, max_left, planned.get(line.key, []), dos_rule)
             if line.completion:
                 planned.setdefault(line.key, []).append(line.completion)
             if L.status == "estimate":
                 ded_left -= sum(s.cents for s in L.steps if s.rule == "D")
-                max_left -= L.plan_cents or 0
+                cls_name = plan.class_of.get(line.key).value if plan.class_of.get(line.key) else None
+                if max_left is not None and cls_name not in plan.max_exempt_classes:
+                    max_left -= L.plan_cents or 0
             L.remaining_after = {"deductible_cents": ded_left, "annual_max_cents": max_left}
             out.append(L)
         return out

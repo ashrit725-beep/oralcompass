@@ -1,7 +1,7 @@
 [project]
-name = "fineprint-engine"
+name = "oralcompass-engine"
 version = "0.1.0"
-description = "FinePrint deterministic dental-benefit ledger engine (no AI, no advice)"
+description = "OralCompass deterministic dental-benefit ledger engine (no AI, no advice)"
 requires-python = ">=3.11"
 dependencies = []
 

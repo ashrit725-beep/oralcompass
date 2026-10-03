@@ -45,6 +45,14 @@ def load_plan(path: Path) -> PlanModel:
         oon_rule=_v(j.get("oon_rule"), doc), dos_rule=_v(j.get("dos_rule"), doc),
         premium_monthly={k: _v(v, doc) for k, v in j.get("premium_monthly", {}).items()},
         unsupported_rules=j.get("unsupported_rules", []),
+        max_exempt_classes=j.get("annual_max_exempt_classes", []),
+        deductible_family=_v(j.get("deductible_family"), doc),
+        deductible_individual_out=_v(j.get("deductible_individual_out"), doc),
+        annual_max_out=_v(j.get("annual_max_out"), doc),
+        annual_max_unlimited=bool((j.get("annual_max") or {}).get("unlimited", False)),
+        annual_max_out_unlimited=bool((j.get("annual_max_out") or {}).get("unlimited", False)),
+        procedure_codes={k: {"code": c.get("code"), "descriptor_as_printed": c.get("descriptor_as_printed"), "cite": _cite(c.get("cite"), doc),
+                             "review": c.get("review", False)} for k, c in j.get("procedure_codes", {}).items()},
     )
 
 
@@ -66,7 +74,7 @@ def load_state(path: Path) -> MemberState:
     return MemberState(v("remaining_deductible"), v("remaining_max"), v("network"), v("enrolled_months"),
                        {k: [date.fromisoformat(x) for x in vals] for k, vals in j.get("history", {}).items()},
                        {k: V(d["value"], Evidence(d.get("status", "USER"))) for k, d in j.get("allowed_overrides", {}).items()},
-                       j.get("tooth_overrides", {}))
+                       j.get("tooth_overrides", {}), v("remaining_deductible_out"), v("remaining_max_out"))
 
 
 def load_fixture_set():

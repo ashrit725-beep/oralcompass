@@ -1,7 +1,7 @@
 """Rule semantics from the research: frequency clocks, benefit-year straddle with date-of-service scenarios, excluded service."""
 from datetime import date
 
-from fineprint_engine import (AlternateBenefit, ClassRule, Evidence, EstimateLine, FrequencyRule, MemberState, PlanModel, V, compute_ledger)
+from oralcompass_engine import (AlternateBenefit, ClassRule, Evidence, EstimateLine, FrequencyRule, MemberState, PlanModel, V, compute_ledger)
 
 
 def plan(clock, **kw):

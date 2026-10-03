@@ -1,0 +1,415 @@
+{
+  "generated_at": "2026-10-03",
+  "sources": 12,
+  "facts": 437,
+  "facts_by_status": {
+    "DOC": 370,
+    "UNKNOWN": 46,
+    "AMBIGUOUS": 19,
+    "CONFLICT": 2
+  },
+  "presets_written": [
+    "fixtures/plans/ml26.json",
+    "fixtures/plans/ml26h.json",
+    "fixtures/plans/ml26l.json",
+    "fixtures/plans/dd24.json",
+    "fixtures/plans/dd24l.json",
+    "fixtures/plans/fm26h.json",
+    "fixtures/plans/fm26s.json",
+    "fixtures/plans/fd26h.json",
+    "fixtures/plans/fd26s.json"
+  ],
+  "procedure_keys": 16,
+  "procedure_keys_with_code": [
+    "exam",
+    "cleaning",
+    "bitewing_xrays",
+    "fluoride_child",
+    "sealant",
+    "composite",
+    "amalgam",
+    "extraction_simple",
+    "extraction_surgical",
+    "scaling_root_planing",
+    "root_canal_molar",
+    "crown",
+    "cast_crown",
+    "denture_partial",
+    "implant",
+    "night_guard"
+  ],
+  "procedure_keys_without_code": [],
+  "procedure_keys_review_required": [
+    "exam",
+    "cleaning",
+    "bitewing_xrays",
+    "fluoride_child",
+    "extraction_surgical",
+    "scaling_root_planing",
+    "cast_crown",
+    "denture_partial",
+    "night_guard"
+  ],
+  "fee_benchmark_rows_present": [
+    "D0120",
+    "D0140",
+    "D0272",
+    "D0274",
+    "D1110",
+    "D1120",
+    "D1206",
+    "D1208",
+    "D1351",
+    "D2140",
+    "D2150",
+    "D2391",
+    "D2392",
+    "D3310",
+    "D3320",
+    "D3330",
+    "D4341",
+    "D4342",
+    "D5211",
+    "D5212",
+    "D7140",
+    "D7210"
+  ],
+  "fee_benchmark_rows_absent": [
+    "D2740",
+    "D2750",
+    "D2790",
+    "D2791",
+    "D2792",
+    "D5213",
+    "D5214",
+    "D6010",
+    "D9944",
+    "D9945",
+    "D9946"
+  ],
+  "per_plan": {
+    "ML26": {
+      "class_known": [
+        "amalgam",
+        "bitewing_xrays",
+        "cast_crown",
+        "cleaning",
+        "composite",
+        "crown",
+        "denture_partial",
+        "exam",
+        "extraction_simple",
+        "extraction_surgical",
+        "fluoride_child",
+        "implant",
+        "root_canal_molar",
+        "scaling_root_planing",
+        "sealant"
+      ],
+      "class_ambiguous": [
+        "extraction_surgical",
+        "scaling_root_planing"
+      ],
+      "class_unknown": [],
+      "excluded": [
+        "night_guard"
+      ],
+      "not_in_class_of": [],
+      "frequency_rules": 6,
+      "codes_printed": 0,
+      "waiting": "UNKNOWN",
+      "alternate_benefit": "UNKNOWN",
+      "premium": {
+        "employee_only": "DOC",
+        "employee_spouse": "DOC",
+        "employee_children": "DOC",
+        "family": "DOC"
+      },
+      "conflicts": 6
+    },
+    "ML26H": {
+      "class_known": [
+        "amalgam",
+        "bitewing_xrays",
+        "cast_crown",
+        "cleaning",
+        "composite",
+        "crown",
+        "denture_partial",
+        "exam",
+        "extraction_simple",
+        "extraction_surgical",
+        "fluoride_child",
+        "implant",
+        "root_canal_molar",
+        "scaling_root_planing",
+        "sealant"
+      ],
+      "class_ambiguous": [
+        "extraction_surgical",
+        "scaling_root_planing"
+      ],
+      "class_unknown": [],
+      "excluded": [
+        "night_guard"
+      ],
+      "not_in_class_of": [],
+      "frequency_rules": 6,
+      "codes_printed": 0,
+      "waiting": "UNKNOWN",
+      "alternate_benefit": "UNKNOWN",
+      "premium": {
+        "employee_only": "DOC",
+        "employee_spouse": "DOC",
+        "employee_children": "DOC",
+        "family": "DOC"
+      },
+      "conflicts": 4
+    },
+    "ML26L": {
+      "class_known": [
+        "amalgam",
+        "bitewing_xrays",
+        "cleaning",
+        "composite",
+        "exam",
+        "extraction_simple",
+        "extraction_surgical",
+        "fluoride_child",
+        "root_canal_molar",
+        "scaling_root_planing",
+        "sealant"
+      ],
+      "class_ambiguous": [
+        "extraction_surgical",
+        "scaling_root_planing"
+      ],
+      "class_unknown": [],
+      "excluded": [
+        "cast_crown",
+        "crown",
+        "denture_partial",
+        "implant",
+        "night_guard"
+      ],
+      "not_in_class_of": [],
+      "frequency_rules": 4,
+      "codes_printed": 0,
+      "waiting": "UNKNOWN",
+      "alternate_benefit": "UNKNOWN",
+      "premium": {
+        "employee_only": "DOC",
+        "employee_spouse": "DOC",
+        "employee_children": "DOC",
+        "family": "DOC"
+      },
+      "conflicts": 3
+    },
+    "DD24": {
+      "class_known": [
+        "amalgam",
+        "bitewing_xrays",
+        "cast_crown",
+        "cleaning",
+        "composite",
+        "crown",
+        "denture_partial",
+        "exam",
+        "extraction_simple",
+        "extraction_surgical",
+        "fluoride_child",
+        "root_canal_molar",
+        "scaling_root_planing",
+        "sealant"
+      ],
+      "class_ambiguous": [
+        "bitewing_xrays"
+      ],
+      "class_unknown": [],
+      "excluded": [
+        "implant",
+        "night_guard"
+      ],
+      "not_in_class_of": [],
+      "frequency_rules": 7,
+      "codes_printed": 0,
+      "waiting": "AMBIGUOUS",
+      "alternate_benefit": "DOC",
+      "premium": {
+        "employee_only": "AMBIGUOUS",
+        "employee_plus_dependents": "AMBIGUOUS"
+      },
+      "conflicts": 4
+    },
+    "DD24L": {
+      "class_known": [
+        "amalgam",
+        "bitewing_xrays",
+        "cast_crown",
+        "cleaning",
+        "composite",
+        "crown",
+        "denture_partial",
+        "exam",
+        "extraction_simple",
+        "extraction_surgical",
+        "fluoride_child",
+        "root_canal_molar",
+        "scaling_root_planing",
+        "sealant"
+      ],
+      "class_ambiguous": [
+        "bitewing_xrays"
+      ],
+      "class_unknown": [],
+      "excluded": [
+        "implant",
+        "night_guard"
+      ],
+      "not_in_class_of": [],
+      "frequency_rules": 7,
+      "codes_printed": 0,
+      "waiting": "AMBIGUOUS",
+      "alternate_benefit": "DOC",
+      "premium": {
+        "employee_only": "AMBIGUOUS",
+        "employee_plus_dependents": "AMBIGUOUS"
+      },
+      "conflicts": 4
+    },
+    "FM26H": {
+      "class_known": [
+        "amalgam",
+        "bitewing_xrays",
+        "cast_crown",
+        "cleaning",
+        "composite",
+        "crown",
+        "exam",
+        "extraction_simple",
+        "extraction_surgical",
+        "fluoride_child",
+        "scaling_root_planing",
+        "sealant"
+      ],
+      "class_ambiguous": [],
+      "class_unknown": [
+        "denture_partial",
+        "implant",
+        "night_guard",
+        "root_canal_molar"
+      ],
+      "excluded": [],
+      "not_in_class_of": [],
+      "frequency_rules": 8,
+      "codes_printed": 12,
+      "waiting": "UNKNOWN",
+      "alternate_benefit": "DOC",
+      "premium": {
+        "self_only": "UNKNOWN"
+      },
+      "conflicts": 0
+    },
+    "FM26S": {
+      "class_known": [
+        "amalgam",
+        "bitewing_xrays",
+        "cast_crown",
+        "cleaning",
+        "composite",
+        "crown",
+        "exam",
+        "extraction_simple",
+        "extraction_surgical",
+        "fluoride_child",
+        "scaling_root_planing",
+        "sealant"
+      ],
+      "class_ambiguous": [],
+      "class_unknown": [
+        "denture_partial",
+        "implant",
+        "night_guard",
+        "root_canal_molar"
+      ],
+      "excluded": [],
+      "not_in_class_of": [],
+      "frequency_rules": 8,
+      "codes_printed": 12,
+      "waiting": "UNKNOWN",
+      "alternate_benefit": "DOC",
+      "premium": {
+        "self_only": "UNKNOWN"
+      },
+      "conflicts": 0
+    },
+    "FD26H": {
+      "class_known": [
+        "amalgam",
+        "bitewing_xrays",
+        "cast_crown",
+        "cleaning",
+        "composite",
+        "crown",
+        "denture_partial",
+        "exam",
+        "extraction_simple",
+        "extraction_surgical",
+        "fluoride_child",
+        "root_canal_molar",
+        "scaling_root_planing",
+        "sealant"
+      ],
+      "class_ambiguous": [],
+      "class_unknown": [
+        "implant",
+        "night_guard"
+      ],
+      "excluded": [],
+      "not_in_class_of": [],
+      "frequency_rules": 8,
+      "codes_printed": 14,
+      "waiting": "UNKNOWN",
+      "alternate_benefit": "DOC",
+      "premium": {
+        "self_only": "UNKNOWN"
+      },
+      "conflicts": 0
+    },
+    "FD26S": {
+      "class_known": [
+        "amalgam",
+        "bitewing_xrays",
+        "cast_crown",
+        "cleaning",
+        "composite",
+        "crown",
+        "denture_partial",
+        "exam",
+        "extraction_simple",
+        "extraction_surgical",
+        "fluoride_child",
+        "root_canal_molar",
+        "scaling_root_planing",
+        "sealant"
+      ],
+      "class_ambiguous": [],
+      "class_unknown": [
+        "implant",
+        "night_guard"
+      ],
+      "excluded": [],
+      "not_in_class_of": [],
+      "frequency_rules": 8,
+      "codes_printed": 14,
+      "waiting": "UNKNOWN",
+      "alternate_benefit": "DOC",
+      "premium": {
+        "self_only": "UNKNOWN"
+      },
+      "conflicts": 0
+    }
+  },
+  "conflicts_total": 11,
+  "validation_errors": []
+}

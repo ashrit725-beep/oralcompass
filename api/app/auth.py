@@ -1,8 +1,8 @@
 """Authentication: Cognito JWT in production; a dev header in local/test mode.
 
 Production: API Gateway's JWT authorizer validates the Cognito token and forwards claims; this module re-validates `sub`
-from the `Authorization: Bearer <jwt>` header using the pool's JWKS (set FINEPRINT_COGNITO_JWKS_URL and FINEPRINT_COGNITO_AUDIENCE).
-Dev/test: when FINEPRINT_DEV_AUTH=1, the `X-Dev-User` header is the user id. Never enable in production.
+from the `Authorization: Bearer <jwt>` header using the pool's JWKS (set ORALCOMPASS_COGNITO_JWKS_URL and ORALCOMPASS_COGNITO_AUDIENCE).
+Dev/test: when ORALCOMPASS_DEV_AUTH=1, the `X-Dev-User` header is the user id. Never enable in production.
 """
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ class User:
 
 
 def _dev_mode() -> bool:
-    return os.getenv("FINEPRINT_DEV_AUTH") == "1"
+    return os.getenv("ORALCOMPASS_DEV_AUTH") == "1"
 
 
 def current_user(request: Request, authorization: str | None = Header(default=None), x_dev_user: str | None = Header(default=None)) -> User:
@@ -32,8 +32,8 @@ def current_user(request: Request, authorization: str | None = Header(default=No
     try:
         import jwt  # PyJWT
         from jwt import PyJWKClient
-        jwks_url = os.environ["FINEPRINT_COGNITO_JWKS_URL"]
-        audience = os.environ["FINEPRINT_COGNITO_AUDIENCE"]
+        jwks_url = os.environ["ORALCOMPASS_COGNITO_JWKS_URL"]
+        audience = os.environ["ORALCOMPASS_COGNITO_AUDIENCE"]
         signing_key = PyJWKClient(jwks_url).get_signing_key_from_jwt(token)
         claims = jwt.decode(token, signing_key.key, algorithms=["RS256"], audience=audience)
         return User(sub=claims["sub"])

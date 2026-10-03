@@ -1,0 +1,873 @@
+{
+  "plan_code": "ML26L",
+  "title": "MetLife NCFlex Dental — Low Option, plan year 2026 (State of North Carolina)",
+  "carrier_text": "Metropolitan Life Insurance Company (MetLife)",
+  "is_fictional": false,
+  "catalog": {
+    "carrier": "Metropolitan Life Insurance Company (MetLife)",
+    "plan_name": "NCFlex Dental Plan (State of North Carolina)",
+    "option": "Low Option",
+    "plan_year": 2026,
+    "benefit_year_type": "calendar",
+    "region": "North Carolina",
+    "network": {
+      "text": "MetLife Preferred Dental Provider (PDP) Plus Network",
+      "cite": {
+        "doc": "ML26",
+        "page": 24,
+        "page_note": "p.24",
+        "quote": "visit any licensed dentist, in or out of the MetLife Preferred Dental Provider (PDP) Plus Network, and still receive benefits",
+        "section": "Save When Using a Network Provider",
+        "fact_id": "ncflex-2026-plan-details:network:n/a",
+        "review_status": "quote_verified_in_text"
+      }
+    },
+    "effective_dates": {
+      "start": "2026-01-01",
+      "end": "2026-12-31",
+      "text": "Plan year 2026 (the dental pages do not print the year; it rests on the guide cover 'Benefits Guide 2026' and the enrollment rule that elections begin January 1 of the following year).",
+      "cite": {
+        "doc": "ML26",
+        "page": 24,
+        "page_note": "p.24",
+        "quote": "they must keep that option for the entire plan year, even if they have a qualified life event",
+        "section": "Changing Dental Plan Options",
+        "fact_id": "ncflex-2026-plan-details:effective_dates:n/a",
+        "review_status": "quote_verified_in_text"
+      },
+      "basis_note": "Parent guide p.4 (footer 'www.ncflex.org 4'); cover 'Benefits Guide 2026'. The dental pages (24-26) contain no '2026', 'January' or 'plan year' date; the only date-bearing sentence is 'they must keep that option for the entire plan year' (p.24). End date 2026-12-31 is inferred from the calendar-year structure (certificate: 'Year or Yearly, for Dental Insurance, means the 12 month period that begins January 1.') and the guide title; not printed on the dental pages."
+    },
+    "where_offered": {
+      "text": "North Carolina — NCFlex (state agencies, universities, participating community colleges and charter schools)",
+      "cite": {
+        "doc": "ML26",
+        "page": 2,
+        "page_note": "p.2",
+        "quote": "if they work for a state agency, university*, participating community college, or participating charter school for 20 hours or more",
+        "section": "Parent guide: Benefits Guide 2026 (eligibility page)",
+        "fact_id": "ncflex-2026-plan-details:eligibility:n/a",
+        "review_status": "needs_review"
+      }
+    },
+    "eligibility": {
+      "text": "state agency, university, participating community college or participating charter school employees working 20+ hours per week. Listed here means the document is public — not that you are eligible to enroll.",
+      "cite": {
+        "doc": "ML26",
+        "page": 2,
+        "page_note": "p.2",
+        "quote": "if they work for a state agency, university*, participating community college, or participating charter school for 20 hours or more",
+        "section": "Parent guide: Benefits Guide 2026 (eligibility page)",
+        "fact_id": "ncflex-2026-plan-details:eligibility:n/a",
+        "review_status": "needs_review"
+      }
+    },
+    "governing_document": {
+      "text": "The guide states the certificate/contract governs over the guide.",
+      "cite": {
+        "doc": "ML26",
+        "page": 26,
+        "page_note": "p.26",
+        "quote": "If there are any discrepancies, the plan policy certificate and/or contract shall govern.",
+        "section": "Exclusions and Limitations",
+        "fact_id": "ncflex-2026-plan-details:governing_document:n/a",
+        "review_status": "quote_verified_in_text"
+      }
+    },
+    "verification": {
+      "date": "2026-10-03",
+      "method": "WebFetch (PDF->text; full verbatim transcription of the 3-page extract, then three targeted verification passes; page numbers from printed footers '24 www.ncflex.org', 'www.ncflex.org 25', '26 www.ncflex.org'). Parent 56-page guide fetched separately for plan-year and eligibility sentences.",
+      "note": "Primary document: 2026 NCFlex Dental Plan Details (3 pages, verified in three passes). Certificates: 2020/2018 editions reachable only to about page 50; covered-service lists, alternate-benefit, waiting-period, missing-tooth and exclusions clauses were NOT reachable and remain UNKNOWN."
+    }
+  },
+  "source_document": {
+    "title": "2026 NCFlex Dental Plan Details from Benefits Guide (pages 24-26 of 'Benefits Guide 2026', August 2025)",
+    "publisher": "North Carolina Office of State Human Resources (OSHR) / NCFlex; plan underwritten by Metropolitan Life Insurance Company",
+    "url": "https://oshr.nc.gov/2026-ncflex-dental-plan-details-benefits-guide/open",
+    "secondary_urls": [
+      "https://oshr.nc.gov/2026-ncflex-dental-plan-details-benefits-guide",
+      "https://oshr.nc.gov/2026-ncflex-benefits-guide/open",
+      "https://oshr.nc.gov/state-employee-resources/benefits/ncflex/dental-plan/options",
+      "https://oshr.nc.gov/ncflex-dental-insurance-documents"
+    ],
+    "document_type": "benefits_guide",
+    "document_date": "2025-08-01",
+    "effective_period": {
+      "start": "2026-01-01",
+      "end": "2026-12-31",
+      "quote": "Benefits elections made during annual enrollment will begin on January 1 of the following year",
+      "quote_note": "Parent guide p.4 (footer 'www.ncflex.org 4'); cover 'Benefits Guide 2026'. The dental pages (24-26) contain no '2026', 'January' or 'plan year' date; the only date-bearing sentence is 'they must keep that option for the entire plan year' (p.24). End date 2026-12-31 is inferred from the calendar-year structure (certificate: 'Year or Yearly, for Dental Insurance, means the 12 month period that begins January 1.') and the guide title; not printed on the dental pages."
+    },
+    "retrieved_at": "2026-10-03",
+    "retrieval_method": "WebFetch (PDF->text; full verbatim transcription of the 3-page extract, then three targeted verification passes; page numbers from printed footers '24 www.ncflex.org', 'www.ncflex.org 25', '26 www.ncflex.org'). Parent 56-page guide fetched separately for plan-year and eligibility sentences.",
+    "pages": 3,
+    "sha256": "",
+    "sha256_note": "The egress policy of the build environment blocks binary downloads from this host; the document was read through the sanctioned text-extraction fetch. Record the SHA-256 and re-verify each quote on its PDF page when the PDF is downloaded (tools/seed_presets.py).",
+    "version_label": "ML26",
+    "reuse_terms": "not stated for the text. The only copyright line, '© N.C. Department of Natural & Cultural Resources', is the photo credit under the 'Merlefest' image on p.26. North Carolina state government publication (public).",
+    "access_limits": [
+      "WebFetch's answering model limits each quote to ~125 characters; long cells were transcribed in one pass and re-verified in targeted passes. One targeted pass wrongly reported 'plan year' and 'enroll' as NOT PRESENT; a third pass confirmed the full-transcription wording ('entire plan year', 'annual enrollment period'), which is used here.",
+      "The dental pages never print the word 'plan pays'; the percentage basis is taken from the footnote wording 'Reimbursement for out-of-network services is based on reasonable and customary (R&C) charge' and 'Benefits are subject to the Maximum Allowable Charge (MAC)', and corroborated by the Classic certificate's 'Covered Percentage' header (see ncflex-metlife-classic-certificate-2020.json)."
+    ],
+    "source_id": "ncflex-2026-plan-details",
+    "path": null,
+    "primary_pages": "24-26 of 'Benefits Guide 2026' (footer www.ncflex.org 24/25/26)"
+  },
+  "secondary_documents": [
+    {
+      "version_label": "ML20l",
+      "title": "MetLife Certificate of Insurance — North Carolina Office of State Human Resources, Group Policy 165756-1-G, Low Option (OSHR title: 'MetLife Dental Low Option Certificate (1/1/20)')",
+      "url": "https://oshr.nc.gov/documents/files/metlife-dental-low-option-certificate-01-01-20/open",
+      "document_date": "2020-01-01",
+      "document_type": "certificate",
+      "source_id": "ncflex-metlife-low-certificate-2020",
+      "access_limits": [
+        "Text conversion ends at p.50; covered-service lists, frequencies, alternate benefit, exclusions, waiting period and missing-tooth clauses NOT reached.",
+        "Single pass only (time box); the Type C line was not reported — consistent with the 2026 guide ('Not covered under the Low Option') but not confirmed as an explicit 'Not Covered' line in the schedule."
+      ]
+    }
+  ],
+  "benefit_year_start_month": {
+    "value": 1,
+    "status": "DOC",
+    "note": "certificate definition of 'Year' (same group policy 165756-1-G); the guide's tables are labeled 'Calendar-Year'",
+    "cite": {
+      "doc": "ML20l",
+      "page": 49,
+      "page_note": "p.49",
+      "quote": "Year or Yearly, for Dental Insurance, means the 12 month period that begins January 1.",
+      "section": "DEFINITIONS — Year or Yearly",
+      "fact_id": "ncflex-metlife-low-certificate-2020:benefit_year:Low",
+      "review_status": "quote_verified_in_text"
+    }
+  },
+  "deductible_individual": {
+    "value": 2500,
+    "status": "DOC",
+    "note": "Low certificate (2020, p.46): '$25 for the following Covered Services Combined: Type A; Type B'.",
+    "cite": {
+      "doc": "ML26",
+      "page": 25,
+      "page_note": "p.25",
+      "quote": "Calendar-Year Deductible (per person/per family) $50/$150 $25/$75 $25/$75",
+      "section": "Summary of Dental Benefits — Maximums/Deductibles",
+      "fact_id": "ncflex-2026-plan-details:deductible_individual:Low",
+      "review_status": "quote_verified_in_text"
+    }
+  },
+  "deductible_family": {
+    "value": 7500,
+    "status": "DOC",
+    "note": "",
+    "cite": {
+      "doc": "ML26",
+      "page": 25,
+      "page_note": "p.25",
+      "quote": "Calendar-Year Deductible (per person/per family) $50/$150 $25/$75 $25/$75",
+      "section": "Summary of Dental Benefits — Maximums/Deductibles",
+      "fact_id": "ncflex-2026-plan-details:deductible_family:Low",
+      "review_status": "quote_verified_in_text"
+    }
+  },
+  "deductible_waived_classes": [],
+  "deductible_waiver_note": "Under the Low Option the Type I cell reads '100% after deductible', so the deductible applies to Type I.",
+  "annual_max": {
+    "value": 100000,
+    "status": "DOC",
+    "note": "",
+    "cite": {
+      "doc": "ML26",
+      "page": 25,
+      "page_note": "p.25",
+      "quote": "Calendar-Year Maximum (Per covered person; excludes orthodontic services under the High Option and Classic Option Plans) $5,000 $1,500 $1,000",
+      "section": "Summary of Dental Benefits — Maximums/Deductibles",
+      "fact_id": "ncflex-2026-plan-details:annual_max:Low",
+      "review_status": "quote_verified_in_text"
+    }
+  },
+  "classes": [
+    {
+      "name": "Type I",
+      "plan_share_bp_in": {
+        "value": 10000,
+        "status": "DOC",
+        "cite": {
+          "doc": "ML26",
+          "page": 25,
+          "page_note": "p.25",
+          "quote": "100% 100% 100% after deductible",
+          "section": "Summary of Dental Benefits — Type I — Diagnostic and Preventive",
+          "fact_id": "ncflex-2026-plan-details:coinsurance_type1:Low",
+          "review_status": "quote_verified_in_text"
+        },
+        "note": "",
+        "basis": "Type I — Diagnostic and Preventive; AFTER deductible under the Low Option"
+      },
+      "plan_share_bp_out": {
+        "value": 10000,
+        "status": "DOC",
+        "cite": {
+          "doc": "ML26",
+          "page": 25,
+          "page_note": "p.25",
+          "quote": "100% 100% 100% after deductible",
+          "section": "Summary of Dental Benefits — Type I — Diagnostic and Preventive",
+          "fact_id": "ncflex-2026-plan-details:coinsurance_type1:Low",
+          "review_status": "quote_verified_in_text"
+        },
+        "note": "same percentage out-of-network, applied to the reasonable and customary (R&C) charge",
+        "basis": "Type I — Diagnostic and Preventive; AFTER deductible under the Low Option"
+      },
+      "procedures_text": [
+        "Oral Examination",
+        "Cleaning",
+        "X-rays",
+        "Topical Fluoride",
+        "Sealants for Permanent First and Second Molars"
+      ],
+      "cite": {
+        "doc": "ML26",
+        "page": 25,
+        "page_note": "p.25",
+        "quote": "Oral Examination (two per calendar year)",
+        "section": "Summary of Dental Benefits — Type I",
+        "fact_id": "ncflex-2026-plan-details:class_membership:exam",
+        "review_status": "quote_verified_in_text"
+      }
+    },
+    {
+      "name": "Type II",
+      "plan_share_bp_in": {
+        "value": 5000,
+        "status": "DOC",
+        "cite": {
+          "doc": "ML26",
+          "page": 25,
+          "page_note": "p.25",
+          "quote": "80% after deductible 60% after deductible 50% after deductible",
+          "section": "Summary of Dental Benefits — Type II — Basic Services (row 1)",
+          "fact_id": "ncflex-2026-plan-details:coinsurance_type2_basic:Low",
+          "review_status": "quote_verified_in_text"
+        },
+        "note": "",
+        "basis": "Type II — Basic Services, first row; after deductible"
+      },
+      "plan_share_bp_out": {
+        "value": 5000,
+        "status": "DOC",
+        "cite": {
+          "doc": "ML26",
+          "page": 25,
+          "page_note": "p.25",
+          "quote": "80% after deductible 60% after deductible 50% after deductible",
+          "section": "Summary of Dental Benefits — Type II — Basic Services (row 1)",
+          "fact_id": "ncflex-2026-plan-details:coinsurance_type2_basic:Low",
+          "review_status": "quote_verified_in_text"
+        },
+        "note": "same percentage out-of-network, applied to the R&C charge",
+        "basis": "Type II — Basic Services, first row; after deductible"
+      },
+      "procedures_text": [
+        "Fillings (amalgam, synthetic, or composite)",
+        "Simple Extractions",
+        "Endodontics (root canal treatment)",
+        "Re-Cement Crowns, Inlays, Bridges"
+      ],
+      "cite": {
+        "doc": "ML26",
+        "page": 25,
+        "page_note": "p.25",
+        "quote": "Fillings (amalgam, synthetic, or composite; replacements limited to once every 24 months)",
+        "section": "Summary of Dental Benefits — Type II — Basic Services",
+        "fact_id": "ncflex-2026-plan-details:class_membership:composite",
+        "review_status": "quote_verified_in_text"
+      }
+    },
+    {
+      "name": "Type II (50% row)",
+      "plan_share_bp_in": {
+        "value": 5000,
+        "status": "DOC",
+        "cite": {
+          "doc": "ML26",
+          "page": 25,
+          "page_note": "p.25",
+          "quote": "50% after deductible 50% after deductible 50% after deductible",
+          "section": "Summary of Dental Benefits — Type II — Basic Services (row 2)",
+          "fact_id": "ncflex-2026-plan-details:coinsurance_type2_perio_surgery:Low",
+          "review_status": "quote_verified_in_text"
+        },
+        "note": "",
+        "basis": "Type II — Basic Services, second row; after deductible"
+      },
+      "plan_share_bp_out": {
+        "value": 5000,
+        "status": "DOC",
+        "cite": {
+          "doc": "ML26",
+          "page": 25,
+          "page_note": "p.25",
+          "quote": "50% after deductible 50% after deductible 50% after deductible",
+          "section": "Summary of Dental Benefits — Type II — Basic Services (row 2)",
+          "fact_id": "ncflex-2026-plan-details:coinsurance_type2_perio_surgery:Low",
+          "review_status": "quote_verified_in_text"
+        },
+        "note": "same percentage out-of-network, applied to the R&C charge",
+        "basis": "Type II — Basic Services, second row; after deductible"
+      },
+      "procedures_text": [
+        "Periodontal Services (gingivectomy, gingivoplasty, osseous surgery, scaling, and root planing)",
+        "Periodontal Maintenance after Therapy",
+        "Oral Surgery (wisdom teeth extractions)",
+        "General Anesthesia"
+      ],
+      "cite": {
+        "doc": "ML26",
+        "page": 25,
+        "page_note": "p.25",
+        "quote": "Periodontal Services (gingivectomy, gingivoplasty, osseous surgery, scaling, and root planing)",
+        "section": "Summary of Dental Benefits — Type II — Basic Services",
+        "fact_id": "ncflex-2026-plan-details:class_membership:scaling_root_planing",
+        "review_status": "quote_verified_in_text"
+      },
+      "note": "The guide prints this row under 'Type II — Basic Services' at 50% for every option, which equals the certificates' Type C percentage rather than Type B. The label is preserved as printed; the class membership of the procedures in this row is AMBIGUOUS (see conflicts)."
+    }
+  ],
+  "class_of": {
+    "exam": {
+      "value": "Type I",
+      "status": "DOC",
+      "note": "",
+      "cite": {
+        "doc": "ML26",
+        "page": 25,
+        "page_note": "p.25",
+        "quote": "Oral Examination (two per calendar year)",
+        "section": "Summary of Dental Benefits — Type I",
+        "fact_id": "ncflex-2026-plan-details:class_membership:exam",
+        "review_status": "quote_verified_in_text"
+      }
+    },
+    "cleaning": {
+      "value": "Type I",
+      "status": "DOC",
+      "note": "Replaces the ML26 preset's reliance on the flagged 2025 summary for this quote.",
+      "cite": {
+        "doc": "ML26",
+        "page": 25,
+        "page_note": "p.25",
+        "quote": "Cleaning (two per calendar year)",
+        "section": "Summary of Dental Benefits — Type I",
+        "fact_id": "ncflex-2026-plan-details:class_membership:cleaning",
+        "review_status": "quote_verified_in_text"
+      }
+    },
+    "bitewing_xrays": {
+      "value": "Type I",
+      "status": "DOC",
+      "note": "",
+      "cite": {
+        "doc": "ML26",
+        "page": 25,
+        "page_note": "p.25",
+        "quote": "X-rays (bitewing x-rays — one per calendar year; full-mouth radiograph series or panoramic series — one every five years)",
+        "section": "Summary of Dental Benefits — Type I",
+        "fact_id": "ncflex-2026-plan-details:class_membership:bitewing_xrays",
+        "review_status": "quote_verified_in_text"
+      }
+    },
+    "fluoride_child": {
+      "value": "Type I",
+      "status": "DOC",
+      "note": "",
+      "cite": {
+        "doc": "ML26",
+        "page": 25,
+        "page_note": "p.25",
+        "quote": "Topical Fluoride (two per calendar year under age 19)",
+        "section": "Summary of Dental Benefits — Type I",
+        "fact_id": "ncflex-2026-plan-details:class_membership:fluoride_child",
+        "review_status": "quote_verified_in_text"
+      }
+    },
+    "sealant": {
+      "value": "Type I",
+      "status": "DOC",
+      "note": "Tooth limit: permanent first and second molars.",
+      "cite": {
+        "doc": "ML26",
+        "page": 25,
+        "page_note": "p.25",
+        "quote": "Sealants for Permanent First and Second Molars (under age 16; see certificate for frequencies)",
+        "section": "Summary of Dental Benefits — Type I",
+        "fact_id": "ncflex-2026-plan-details:class_membership:sealant",
+        "review_status": "quote_verified_in_text"
+      }
+    },
+    "composite": {
+      "value": "Type II",
+      "status": "DOC",
+      "note": "Composite fillings are listed by name under Type II. No posterior-composite alternate-benefit rule is printed in the guide; the certificate's Alternate Benefits clause was not reachable — so an alternate allowance remains UNKNOWN (plan payment is an upper bound). Resolves the ML26 'class_of.composite' AMBIGUOUS status to DOC for the guide.",
+      "cite": {
+        "doc": "ML26",
+        "page": 25,
+        "page_note": "p.25",
+        "quote": "Fillings (amalgam, synthetic, or composite; replacements limited to once every 24 months)",
+        "section": "Summary of Dental Benefits — Type II — Basic Services",
+        "fact_id": "ncflex-2026-plan-details:class_membership:composite",
+        "review_status": "quote_verified_in_text"
+      }
+    },
+    "amalgam": {
+      "value": "Type II",
+      "status": "DOC",
+      "note": "",
+      "cite": {
+        "doc": "ML26",
+        "page": 25,
+        "page_note": "p.25",
+        "quote": "Fillings (amalgam, synthetic, or composite; replacements limited to once every 24 months)",
+        "section": "Summary of Dental Benefits — Type II — Basic Services",
+        "fact_id": "ncflex-2026-plan-details:class_membership:amalgam",
+        "review_status": "quote_verified_in_text"
+      }
+    },
+    "extraction_simple": {
+      "value": "Type II",
+      "status": "DOC",
+      "note": "",
+      "cite": {
+        "doc": "ML26",
+        "page": 25,
+        "page_note": "p.25",
+        "quote": "Simple Extractions",
+        "section": "Summary of Dental Benefits — Type II — Basic Services",
+        "fact_id": "ncflex-2026-plan-details:class_membership:extraction_simple",
+        "review_status": "quote_verified_in_text"
+      }
+    },
+    "root_canal_molar": {
+      "value": "Type II",
+      "status": "DOC",
+      "note": "'Endodontics (root canal treatment)' is listed in the Type II first row; no molar/anterior distinction is printed.",
+      "cite": {
+        "doc": "ML26",
+        "page": 25,
+        "page_note": "p.25",
+        "quote": "Endodontics (root canal treatment)",
+        "section": "Summary of Dental Benefits — Type II — Basic Services",
+        "fact_id": "ncflex-2026-plan-details:class_membership:root_canal_molar",
+        "review_status": "quote_verified_in_text"
+      }
+    },
+    "scaling_root_planing": {
+      "value": "Type II (50% row)",
+      "status": "AMBIGUOUS",
+      "note": "printed under 'Type II' but at the 50% row, which equals the certificate's Type C percentage; computed at 50%",
+      "cite": {
+        "doc": "ML26",
+        "page": 25,
+        "page_note": "p.25",
+        "quote": "Periodontal Services (gingivectomy, gingivoplasty, osseous surgery, scaling, and root planing)",
+        "section": "Summary of Dental Benefits — Type II — Basic Services",
+        "fact_id": "ncflex-2026-plan-details:class_membership:scaling_root_planing",
+        "review_status": "quote_verified_in_text"
+      }
+    },
+    "extraction_surgical": {
+      "value": "Type II (50% row)",
+      "status": "AMBIGUOUS",
+      "note": "the guide names only 'Oral Surgery (wisdom teeth extractions)' in the 50% row; a surgical extraction of another tooth could fall under 'Simple Extractions' — not stated; computed at 50%",
+      "cite": {
+        "doc": "ML26",
+        "page": 25,
+        "page_note": "p.25",
+        "quote": "Oral Surgery (wisdom teeth extractions)",
+        "section": "Summary of Dental Benefits — Type II — Basic Services",
+        "fact_id": "ncflex-2026-plan-details:class_membership:extraction_surgical",
+        "review_status": "quote_verified_in_text"
+      }
+    }
+  },
+  "allowed_amounts": {},
+  "allowed_amounts_note": "No fee schedule or negotiated fee is printed in the guide or the certificates. In-network: 'The MAC for in-network dental providers is the negotiated in-network fee.' The allowed amount must come from your pre-treatment estimate, EOB or dentist (USER).",
+  "alternate_benefit": {
+    "status": "UNKNOWN",
+    "conditions": [],
+    "note": "The certificate's Alternate Benefits clause (DENTAL INSURANCE section, p.59–62) was not reachable; the guide does not print one. Absence is not confirmed.",
+    "fact_id": null
+  },
+  "waiting_months": {
+    "value": null,
+    "status": "UNKNOWN",
+    "note": "Not mentioned on guide pages 24–26 or elsewhere in the 56-page guide; the certificate section that would contain a waiting period was not reachable. Absence not confirmed.",
+    "fact_id": "ncflex-2026-plan-details:waiting_period:n/a"
+  },
+  "frequency": [
+    {
+      "procedure_key": "exam",
+      "clock": "calendar_count",
+      "n": 2,
+      "cite": {
+        "doc": "ML26",
+        "page": 25,
+        "page_note": "p.25",
+        "quote": "Oral Examination (two per calendar year)",
+        "section": "Summary of Dental Benefits — Type I",
+        "fact_id": "ncflex-2026-plan-details:frequency:exam",
+        "review_status": "quote_verified_in_text"
+      },
+      "period_as_printed": "two per calendar year"
+    },
+    {
+      "procedure_key": "cleaning",
+      "clock": "calendar_count",
+      "n": 2,
+      "cite": {
+        "doc": "ML26",
+        "page": 25,
+        "page_note": "p.25",
+        "quote": "Cleaning (two per calendar year)",
+        "section": "Summary of Dental Benefits — Type I",
+        "fact_id": "ncflex-2026-plan-details:frequency:cleaning",
+        "review_status": "quote_verified_in_text"
+      },
+      "period_as_printed": "two per calendar year"
+    },
+    {
+      "procedure_key": "bitewing_xrays",
+      "clock": "calendar_count",
+      "n": 1,
+      "cite": {
+        "doc": "ML26",
+        "page": 25,
+        "page_note": "p.25",
+        "quote": "bitewing x-rays — one per calendar year; full-mouth radiograph series or panoramic series — one every five years",
+        "section": "Summary of Dental Benefits — Type I",
+        "fact_id": "ncflex-2026-plan-details:frequency:bitewing_xrays",
+        "review_status": "quote_verified_in_text"
+      },
+      "period_as_printed": "one per calendar year"
+    },
+    {
+      "procedure_key": "fluoride_child",
+      "clock": "calendar_count",
+      "n": 2,
+      "cite": {
+        "doc": "ML26",
+        "page": 25,
+        "page_note": "p.25",
+        "quote": "Topical Fluoride (two per calendar year under age 19)",
+        "section": "Summary of Dental Benefits — Type I",
+        "fact_id": "ncflex-2026-plan-details:frequency:fluoride_child",
+        "review_status": "quote_verified_in_text"
+      },
+      "period_as_printed": "two per calendar year under age 19"
+    }
+  ],
+  "excluded": {
+    "night_guard": {
+      "value": true,
+      "status": "DOC",
+      "note": "Exclusions list: 'Appliances or treatment for bruxism (grinding teeth).' The page says the list is partial and the certificate governs.",
+      "cite": {
+        "doc": "ML26",
+        "page": 26,
+        "page_note": "p.26",
+        "quote": "Appliances or treatment for bruxism (grinding teeth).",
+        "section": "Exclusions and Limitations",
+        "fact_id": "ncflex-2026-plan-details:exclusion:night_guard",
+        "review_status": "quote_verified_in_text"
+      }
+    },
+    "crown": {
+      "value": true,
+      "status": "DOC",
+      "note": "Type III — Major Services are 'Not Covered' under the Low Option (table cell 'Not Covered').",
+      "cite": {
+        "doc": "ML26",
+        "page": 25,
+        "page_note": "p.25",
+        "quote": "Type III — Major Services (Not covered under the Low Option)",
+        "section": "Summary of Dental Benefits — Type III",
+        "fact_id": "ncflex-2026-plan-details:coinsurance_type3:Low",
+        "review_status": "quote_verified_in_text"
+      }
+    },
+    "cast_crown": {
+      "value": true,
+      "status": "DOC",
+      "note": "Type III — Major Services are 'Not Covered' under the Low Option (table cell 'Not Covered').",
+      "cite": {
+        "doc": "ML26",
+        "page": 25,
+        "page_note": "p.25",
+        "quote": "Type III — Major Services (Not covered under the Low Option)",
+        "section": "Summary of Dental Benefits — Type III",
+        "fact_id": "ncflex-2026-plan-details:coinsurance_type3:Low",
+        "review_status": "quote_verified_in_text"
+      }
+    },
+    "denture_partial": {
+      "value": true,
+      "status": "DOC",
+      "note": "Type III — Major Services are 'Not Covered' under the Low Option (table cell 'Not Covered').",
+      "cite": {
+        "doc": "ML26",
+        "page": 25,
+        "page_note": "p.25",
+        "quote": "Type III — Major Services (Not covered under the Low Option)",
+        "section": "Summary of Dental Benefits — Type III",
+        "fact_id": "ncflex-2026-plan-details:coinsurance_type3:Low",
+        "review_status": "quote_verified_in_text"
+      }
+    },
+    "implant": {
+      "value": true,
+      "status": "DOC",
+      "note": "Type III — Major Services are 'Not Covered' under the Low Option (table cell 'Not Covered').",
+      "cite": {
+        "doc": "ML26",
+        "page": 25,
+        "page_note": "p.25",
+        "quote": "Type III — Major Services (Not covered under the Low Option)",
+        "section": "Summary of Dental Benefits — Type III",
+        "fact_id": "ncflex-2026-plan-details:coinsurance_type3:Low",
+        "review_status": "quote_verified_in_text"
+      }
+    }
+  },
+  "missing_tooth": {
+    "present": null,
+    "status": "UNKNOWN",
+    "note": "Not in the guide (its exclusion list is 'a partial listing'); certificate exclusions (p.66–67) not reachable."
+  },
+  "oon_rule": {
+    "value": {
+      "in": "Maximum Allowable Charge = negotiated in-network fee",
+      "out": "reasonable and customary (R&C) charge for the area; lowest of actual charge, dentist's usual charge, or charge of most dentists in the same geographic area; percentile not stated. employee may owe the difference between R&C and the out-of-network dentist's charge"
+    },
+    "status": "DOC",
+    "cite": {
+      "doc": "ML26",
+      "page": 25,
+      "page_note": "p.25",
+      "quote": "Reimbursement for out-of-network services is based on reasonable and customary (R&C) charge for the area.",
+      "section": "Summary of Dental Benefits — asterisk footnote",
+      "fact_id": "ncflex-2026-plan-details:oon_basis:n/a",
+      "review_status": "quote_verified_in_text"
+    },
+    "balance_billing_cite": {
+      "doc": "ML26",
+      "page": 25,
+      "page_note": "p.25",
+      "quote": "The employee may be responsible for the difference between the R&C charge and what an out-of-network dentist charges",
+      "section": "Summary of Dental Benefits — asterisk footnote",
+      "fact_id": "ncflex-2026-plan-details:balance_billing:n/a",
+      "review_status": "quote_verified_in_text"
+    },
+    "in_network_cite": {
+      "doc": "ML26",
+      "page": 25,
+      "page_note": "p.25",
+      "quote": "The MAC for in-network dental providers is the negotiated in-network fee.",
+      "section": "Summary of Dental Benefits — asterisk footnote",
+      "fact_id": "ncflex-2026-plan-details:in_network_basis:n/a",
+      "review_status": "quote_verified_in_text"
+    },
+    "note": "The guide states no percentile. The Low certificate (ML20l, 2020-01-01) defines the customary charge as: 'the usual charge of other Dentists or other providers in the same geographic area equal to the 70th percentile of charges as determined by MetLife'. That certificate predates the 2026 plan year — recorded as a potential version conflict.",
+    "certificate_cite": {
+      "doc": "ML20l",
+      "page": 49,
+      "page_note": "p.49",
+      "quote": "the usual charge of other Dentists or other providers in the same geographic area equal to the 70th percentile of charges as determined by MetLife",
+      "section": "DEFINITIONS — Reasonable and Customary Charge",
+      "fact_id": "ncflex-metlife-low-certificate-2020:oon_basis:Low",
+      "review_status": "quote_verified_in_text"
+    }
+  },
+  "dos_rule": {
+    "value": "completion",
+    "status": "DOC",
+    "note": "stated for single prosthetic procedures (crowns): 'considered completed on the date they are inserted, not the date of impression'; application to other services is not explicit",
+    "cite": {
+      "doc": "ML26",
+      "page": 25,
+      "page_note": "p.25",
+      "quote": "Single prosthetic procedures are considered completed on the date they are inserted, not the date of impression.",
+      "section": "Summary of Dental Benefits — Type III — Major Services (Crowns)",
+      "fact_id": "ncflex-2026-plan-details:dos_rule_prosthetics:n/a",
+      "review_status": "quote_verified_in_text"
+    }
+  },
+  "premium_monthly": {
+    "employee_only": {
+      "value": 2564,
+      "status": "DOC",
+      "note": "Low Option, 'employee only' tier, Monthly Cost table (columns High | Classic | Low)",
+      "cite": {
+        "doc": "ML26",
+        "page": 24,
+        "page_note": "p.24",
+        "quote": "Employee Only $58.76 $37.94 $25.64",
+        "section": "Monthly Cost",
+        "fact_id": "ncflex-2026-plan-details:premium_monthly_employee_only:Low",
+        "review_status": "quote_verified_in_text"
+      }
+    },
+    "employee_spouse": {
+      "value": 5170,
+      "status": "DOC",
+      "note": "Low Option, 'employee spouse' tier, Monthly Cost table (columns High | Classic | Low)",
+      "cite": {
+        "doc": "ML26",
+        "page": 24,
+        "page_note": "p.24",
+        "quote": "Employee and Spouse $117.88 $76.06 $51.70",
+        "section": "Monthly Cost",
+        "fact_id": "ncflex-2026-plan-details:premium_monthly_employee_spouse:Low",
+        "review_status": "quote_verified_in_text"
+      }
+    },
+    "employee_children": {
+      "value": 5554,
+      "status": "DOC",
+      "note": "Low Option, 'employee children' tier, Monthly Cost table (columns High | Classic | Low)",
+      "cite": {
+        "doc": "ML26",
+        "page": 24,
+        "page_note": "p.24",
+        "quote": "Employee and Child(ren) $127.12 $82.40 $55.54",
+        "section": "Monthly Cost",
+        "fact_id": "ncflex-2026-plan-details:premium_monthly_employee_children:Low",
+        "review_status": "quote_verified_in_text"
+      }
+    },
+    "family": {
+      "value": 8850,
+      "status": "DOC",
+      "note": "Low Option, 'family' tier, Monthly Cost table (columns High | Classic | Low)",
+      "cite": {
+        "doc": "ML26",
+        "page": 24,
+        "page_note": "p.24",
+        "quote": "Employee and Family $208.12 $130.22 $88.50",
+        "section": "Monthly Cost",
+        "fact_id": "ncflex-2026-plan-details:premium_monthly_family:Low",
+        "review_status": "quote_verified_in_text"
+      }
+    }
+  },
+  "unsupported_rules": [
+    {
+      "quote": "Type IV — Orthodontics (High Option and Classic Option — dependent children up to age 19)",
+      "page": 25,
+      "page_note": "p.25",
+      "doc": "ML26",
+      "reason": "orthodontia (Type IV) — not modeled",
+      "fact_id": "ncflex-2026-plan-details:coinsurance_type4_ortho:Classic"
+    },
+    {
+      "quote": "replacements limited to once every 24 months",
+      "page": 25,
+      "page_note": "p.25",
+      "doc": "ML26",
+      "reason": "replacement-of-filling rule (once every 24 months) — applies to replacements only; shown as a limitation, not enforced",
+      "fact_id": "ncflex-2026-plan-details:frequency:fillings_replacement"
+    },
+    {
+      "quote": "Not eligible for dependent children under age 14",
+      "page": 25,
+      "page_note": "p.25",
+      "doc": "ML26",
+      "reason": "age condition for crowns — age is not collected",
+      "fact_id": "ncflex-2026-plan-details:age_limit:crown"
+    },
+    {
+      "quote": "Sealants for Permanent First and Second Molars (under age 16; see certificate for frequencies)",
+      "page": 25,
+      "page_note": "p.25",
+      "doc": "ML26",
+      "reason": "sealant age/tooth condition — age is not collected; frequency 'see certificate' (not reached)",
+      "fact_id": "ncflex-2026-plan-details:age_limit:sealant"
+    },
+    {
+      "quote": "Topical Fluoride (two per calendar year under age 19)",
+      "page": 25,
+      "page_note": "p.25",
+      "doc": "ML26",
+      "reason": "fluoride age condition — age is not collected",
+      "fact_id": "ncflex-2026-plan-details:age_limit:fluoride_child"
+    },
+    {
+      "quote": "submit a pre-estimate before the work begins if the estimated charge for a particular dental service is expected to be $300 or more",
+      "page": 24,
+      "page_note": "p.24",
+      "doc": "ML26",
+      "reason": "pre-estimate encouraged when a service is expected to cost $300 or more — informational",
+      "fact_id": "ncflex-2026-plan-details:pretreatment_estimate:n/a"
+    },
+    {
+      "quote": "Periodontal Maintenance after Therapy (two per consecutive 12 months)",
+      "page": 25,
+      "page_note": "p.25",
+      "doc": "ML26",
+      "reason": "periodontal maintenance count — not an internal procedure; may interact with cleaning counts (not stated)",
+      "fact_id": "ncflex-2026-plan-details:frequency:perio_maintenance"
+    }
+  ],
+  "conflicts": [
+    {
+      "field": "class label for periodontal services / oral surgery / general anesthesia",
+      "a": {
+        "value": "Type II — Basic Services, 50% after deductible (all options)",
+        "quote": "50% after deductible 50% after deductible 50% after deductible",
+        "doc": "2026 NCFlex Dental Plan Details p.25",
+        "date": "2025-08 (guide), plan year 2026"
+      },
+      "b": {
+        "value": "Type B Services 60% (Classic) / 80% (High); only Type A/B/C exist in the schedule",
+        "quote": "Type B Services 60% 60%",
+        "doc": "MetLife Classic Option Certificate, GCERT2000 sch 47",
+        "date": "2020-01-01"
+      },
+      "note": "Not a numeric contradiction if the guide's 50% row corresponds to certificate Type C; but the guide labels it Type II. Class membership for scaling_root_planing and extraction_surgical is therefore AMBIGUOUS; the 50% figure itself is DOC in the guide.",
+      "source_id": "ncflex-2026-plan-details"
+    },
+    {
+      "field": "deductible applicability to implants",
+      "a": {
+        "value": "Type III row (which lists Implants) is '50% after deductible'",
+        "quote": "50% after deductible 50% after deductible Not Covered",
+        "doc": "2026 NCFlex Dental Plan Details p.25",
+        "date": "plan year 2026"
+      },
+      "b": {
+        "value": "deductible excludes implants and implant services",
+        "quote": "$25 for the following Covered Services Combined: Type B; Type C; excluding implants and implant services",
+        "doc": "MetLife Classic Option Certificate, GCERT2000 sch 47",
+        "date": "2020-01-01"
+      },
+      "note": "The guide's row-level 'after deductible' wording and the certificate's deductible line disagree for implants. The guide itself says the certificate governs; the certificate predates the plan year. Preserve both.",
+      "source_id": "ncflex-2026-plan-details"
+    },
+    {
+      "field": "out-of-network R&C percentile",
+      "a": {
+        "value": "not stated (R&C 'lowest of' three-part test only)",
+        "quote": "Reimbursement for out-of-network services is based on reasonable and customary (R&C) charge for the area.",
+        "doc": "2026 NCFlex Dental Plan Details p.25",
+        "date": "plan year 2026"
+      },
+      "b": {
+        "value": "70th percentile (Classic and Low certificates); 80th percentile (High certificate)",
+        "quote": "equal to the 70th percentile of charges as determined by MetLife",
+        "doc": "MetLife Classic Option Certificate, GCERT2000 def 50 (Low: p.49; High 2018: p.45 '80th percentile')",
+        "date": "2020-01-01 (Classic, Low); 2018-01-01 (High)"
+      },
+      "note": "Gap in the 2026 guide filled only by older certificates; the percentile could have changed since 2020/2018. Treat as potential version conflict.",
+      "source_id": "ncflex-2026-plan-details"
+    }
+  ],
+  "procedure_codes": {},
+  "procedure_codes_note": "No CDT codes are printed in the guide or the reachable certificate pages."
+}

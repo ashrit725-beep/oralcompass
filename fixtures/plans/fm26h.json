@@ -1,0 +1,925 @@
+{
+  "plan_code": "FM26H",
+  "title": "The MetLife Federal Dental Plan 2026 — High Option (FEDVIP, nationwide)",
+  "carrier_text": "Metropolitan Life Insurance Company (MetLife)",
+  "is_fictional": false,
+  "catalog": {
+    "carrier": "Metropolitan Life Insurance Company (MetLife)",
+    "plan_name": "The MetLife Federal Dental Plan (FEDVIP brochure 02AP-11)",
+    "option": "High Option",
+    "plan_year": 2026,
+    "benefit_year_type": "calendar",
+    "region": "Nationwide and overseas (includes North Carolina); premiums vary by rating area",
+    "network": "MetLife Dental PPO (In-Network / Out-of-Network, Plan Allowance basis)",
+    "effective_dates": {
+      "start": "2026-01-01",
+      "end": "2026-12-31",
+      "text": "Plan year 2026",
+      "cite": {
+        "doc": "FM26",
+        "page": 7,
+        "page_note": "p.7",
+        "quote": "If you sign up for a dental and/or vision plan during the 2025 Open Season, your coverage will begin on January 1, 2026.",
+        "section": "Section 1 / FEDVIP program information",
+        "fact_id": "opm-fedvip-metlife-2026:effective_dates:n/a",
+        "review_status": "quote_verified_in_text"
+      },
+      "benefit_period_cite": {
+        "doc": "FM26",
+        "page": 23,
+        "page_note": "p.23",
+        "quote": "A period that starts on any January 1 and ends on the next December 31.",
+        "section": "Section 4 Your costs for covered services (Calendar year / Plan year)",
+        "fact_id": "opm-fedvip-metlife-2026:benefit_period:n/a",
+        "review_status": "needs_review"
+      }
+    },
+    "where_offered": {
+      "text": "Nationwide and overseas (United States, including North Carolina) — \"A Nationwide Dental PPO Plan\"; \"MetLife Dental is available nationwide and overseas.\" (cover)",
+      "cite": {
+        "doc": "FM26",
+        "page": 0,
+        "page_note": "p.cover",
+        "quote": "All Federal employees and annuitants in the United States and overseas who are eligible to enroll in Federal Employees Dental and Vision Insurance Program.",
+        "section": "Cover",
+        "fact_id": "opm-fedvip-metlife-2026:eligibility:n/a",
+        "review_status": "quote_verified_in_text"
+      }
+    },
+    "eligibility": {
+      "text": "Federal employees and annuitants eligible for FEDVIP; nationwide and overseas. Listed here means the document is public — not that you are eligible to enroll.",
+      "cite": {
+        "doc": "FM26",
+        "page": 0,
+        "page_note": "p.cover",
+        "quote": "All Federal employees and annuitants in the United States and overseas who are eligible to enroll in Federal Employees Dental and Vision Insurance Program.",
+        "section": "Cover",
+        "fact_id": "opm-fedvip-metlife-2026:eligibility:n/a",
+        "review_status": "quote_verified_in_text"
+      }
+    },
+    "governing_document": {
+      "text": "The brochure is the official statement of benefits.",
+      "cite": {
+        "doc": "FM26",
+        "page": 2,
+        "page_note": "p.2",
+        "quote": "This brochure is the official statement of benefits. No oral statement can modify or otherwise affect the benefits, limitations, and exclusions of this brochure.",
+        "section": "Introduction",
+        "fact_id": "opm-fedvip-metlife-2026:official_statement:n/a",
+        "review_status": "quote_verified_in_text"
+      }
+    },
+    "verification": {
+      "date": "2026-10-03",
+      "method": "WebFetch (PDF→text via a summarizing sub-model limited to ~125-character quotes; page numbers from footers of the form \"2026 The MetLife Federal Dental Plan 22 Enroll at www.BENEFEDS.gov\"). The converter's text window ended around pp. 29–33 in several calls, so content beyond Class C's first page (endodontics, prosthodontics, implants, Section 7 exclusions, Definitions, Rate Information p. 71) could not be verified consistently.",
+      "note": "Brochure text was reachable to about page 33 (71 pages). Rate pages, Section 7 exclusions, endodontic/prosthodontic/implant/occlusal-guard rows were not reliably returned and remain UNKNOWN."
+    }
+  },
+  "source_document": {
+    "title": "The MetLife Federal Dental Plan 2026 — A Nationwide Dental PPO Plan (FEDVIP brochure, OPM form 02AP-11)",
+    "publisher": "U.S. Office of Personnel Management (FEDVIP brochure prepared by Metropolitan Life Insurance Company)",
+    "url": "https://www.opm.gov/healthcare-insurance/healthcare/plan-information/plans/pdf/2026/brochures/02AP-11.pdf",
+    "secondary_urls": [],
+    "document_type": "plan_brochure",
+    "document_date": null,
+    "effective_period": {
+      "start": "2026-01-01",
+      "end": "2026-12-31",
+      "quote": "If you sign up for a dental and/or vision plan during the 2025 Open Season, your coverage will begin on January 1, 2026."
+    },
+    "retrieved_at": "2026-10-03",
+    "retrieval_method": "WebFetch (PDF→text via a summarizing sub-model limited to ~125-character quotes; page numbers from footers of the form \"2026 The MetLife Federal Dental Plan 22 Enroll at www.BENEFEDS.gov\"). The converter's text window ended around pp. 29–33 in several calls, so content beyond Class C's first page (endodontics, prosthodontics, implants, Section 7 exclusions, Definitions, Rate Information p. 71) could not be verified consistently.",
+    "pages": 71,
+    "sha256": "",
+    "sha256_note": "The egress policy of the build environment blocks binary downloads from this host; the document was read through the sanctioned text-extraction fetch. Record the SHA-256 and re-verify each quote on its PDF page when the PDF is downloaded (tools/seed_presets.py).",
+    "version_label": "FM26",
+    "reuse_terms": "Printed on p. 7: \"Current Dental Terminology (CDT), Copyright © American Dental Association. All rights reserved.\" and \"FEDVIP abides by the Current Dental Terminology (CDT) codification system in accordance with standards set by the American Dental Association (ADA).\" No other copyright statement was visible in the extracted text; the brochure is posted by OPM (a federal agency) — treat the government-publication status as not stated in the document.",
+    "access_limits": [
+      "Rate Information (printed p. 71 / back cover) was not present in the text the fetch tool returned; three attempts. Only \"Your rates are determined based on where you live. This is called a rating area.\" and \"OPM negotiates rates with each carrier annually. Rates are shown at the end of this brochure.\" were found. Premiums therefore UNKNOWN.",
+      "Text extraction appears truncated near p. 29–33 in several calls (one call reported the excerpt ends with \"D2990 Resin infiltration of incipient smooth surface lesions - Limited\"). Rows for endodontics (D3310/D3320/D3330), removable prosthodontics (D5110–D5214), implants (D6010 etc.) and occlusal guards (D9944–D9946) were reported NOT PRESENT in two verification calls; one earlier call listed such rows with descriptors that do not match CDT (e.g., \"D5211 Complete denture\"), so that output was treated as unreliable and discarded.",
+      "The word \"waiting\" was not found in two searches of the extracted text; because of the truncation this is recorded as UNKNOWN, not as 'no waiting period'.",
+      "Section 7 General Exclusions narrative (p. 50) and the Definitions entry for Plan Allowance (p. 59) were returned by one call and reported not visible by another; recorded with needs_review."
+    ],
+    "source_id": "opm-fedvip-metlife-2026",
+    "path": null
+  },
+  "benefit_year_start_month": {
+    "value": 1,
+    "status": "DOC",
+    "note": "One fetch placed this sentence on p. 21, another on p. 23. A second sentence was returned from p. 23: \"The calendar year refers to the plan year, which is defined as January 1, 2026, to December 31, 2026.\"",
+    "cite": {
+      "doc": "FM26",
+      "page": 23,
+      "page_note": "p.23",
+      "quote": "A period that starts on any January 1 and ends on the next December 31.",
+      "section": "Section 4 Your costs for covered services (Calendar year / Plan year)",
+      "fact_id": "opm-fedvip-metlife-2026:benefit_period:n/a",
+      "review_status": "needs_review"
+    }
+  },
+  "deductible_individual": {
+    "value": 0,
+    "status": "DOC",
+    "note": "in-network deductible is $0 per person (Class A, B and C rows)",
+    "cite": {
+      "doc": "FM26",
+      "page": 22,
+      "page_note": "p.22",
+      "quote": "In-Network High Option: $0",
+      "section": "Section 4 — Deductible table (row label \"Deductible\")",
+      "fact_id": "opm-fedvip-metlife-2026:deductible_individual:High",
+      "review_status": "quote_verified_in_text"
+    }
+  },
+  "deductible_individual_out": {
+    "value": 5000,
+    "status": "DOC",
+    "note": "out-of-network deductible per person per calendar year; tracked separately — enter your remaining out-of-network deductible for out-of-network estimates",
+    "cite": {
+      "doc": "FM26",
+      "page": 22,
+      "page_note": "p.22",
+      "quote": "Out-of-Network High Option: $50",
+      "section": "Section 4 — Deductible table",
+      "fact_id": "opm-fedvip-metlife-2026:deductible_individual:High:out",
+      "review_status": "quote_verified_in_text"
+    }
+  },
+  "deductible_family": {
+    "value": null,
+    "status": "UNKNOWN",
+    "note": "Family deductible not stated in the returned text (deductible printed per person).",
+    "fact_id": "opm-fedvip-metlife-2026:deductible_family:n/a"
+  },
+  "deductible_waived_classes": [],
+  "deductible_waiver_note": "The deductible table shows the same values for Class A, B and C rows ($0 in-network); orthodontics $0.",
+  "annual_max": {
+    "value": null,
+    "status": "DOC",
+    "note": "The table cell reads 'Unlimited' (in-network and out-of-network rows) — no dollar maximum.",
+    "cite": {
+      "doc": "FM26",
+      "page": 23,
+      "page_note": "p.23",
+      "quote": "In-Network High Option: Unlimited",
+      "section": "Section 4 — Annual Benefit Maximum",
+      "fact_id": "opm-fedvip-metlife-2026:annual_max:High",
+      "review_status": "quote_verified_in_text"
+    },
+    "unlimited": true
+  },
+  "annual_max_out": {
+    "value": null,
+    "status": "DOC",
+    "unlimited": true,
+    "cite": {
+      "doc": "FM26",
+      "page": 23,
+      "page_note": "p.23",
+      "quote": "In-Network High Option: Unlimited",
+      "section": "Section 4 — Annual Benefit Maximum",
+      "fact_id": "opm-fedvip-metlife-2026:annual_max:High",
+      "review_status": "quote_verified_in_text"
+    },
+    "note": "Out-of-network row also 'Unlimited'."
+  },
+  "classes": [
+    {
+      "name": "Class A Basic",
+      "plan_share_bp_in": {
+        "value": 10000,
+        "status": "DOC",
+        "cite": {
+          "doc": "FM26",
+          "page": 25,
+          "page_note": "p.25",
+          "quote": "In-Network: Nothing.",
+          "section": "Section 5 — Class A Basic — You Pay header, High Option",
+          "fact_id": "opm-fedvip-metlife-2026:coinsurance:High:classA:in",
+          "review_status": "quote_verified_in_text"
+        },
+        "note": "document states what YOU pay; plan share = 100% − that.",
+        "basis": "of Plan Allowance; Class A Basic (preventive & diagnostic)"
+      },
+      "plan_share_bp_out": {
+        "value": 9000,
+        "status": "DOC",
+        "cite": {
+          "doc": "FM26",
+          "page": 25,
+          "page_note": "p.25",
+          "quote": "Out-of-Network: 10% of the Plan Allowance plus any amount above the Plan Allowance billed by the provider.",
+          "section": "Section 5 — Class A Basic — You Pay header, High Option",
+          "fact_id": "opm-fedvip-metlife-2026:coinsurance:High:classA:out",
+          "review_status": "quote_verified_in_text"
+        },
+        "note": "document states what YOU pay; plan share = 100% − that. out-of-network: you also pay any amount above the Plan Allowance billed by the provider",
+        "basis": "of Plan Allowance plus any amount above the Plan Allowance billed by the provider; Class A"
+      },
+      "procedures_text": [
+        "Preventive and Diagnostic Services: oral evaluations, prophylaxis, bitewings, fluoride, sealants"
+      ],
+      "cite": {
+        "doc": "FM26",
+        "page": 26,
+        "page_note": "p.26",
+        "quote": "Periodic oral evaluation - established patient - Limited to 2 every 12 months",
+        "section": "Section 5 — Class A Basic table (D0120)",
+        "fact_id": "opm-fedvip-metlife-2026:frequency:exam",
+        "review_status": "quote_verified_in_text"
+      }
+    },
+    {
+      "name": "Class B Intermediate",
+      "plan_share_bp_in": {
+        "value": 7000,
+        "status": "DOC",
+        "cite": {
+          "doc": "FM26",
+          "page": 29,
+          "page_note": "p.29",
+          "quote": "High Option / In-Network: 30% of the Plan Allowance",
+          "section": "Section 5 — Class B Intermediate — You Pay header",
+          "fact_id": "opm-fedvip-metlife-2026:coinsurance:High:classB:in",
+          "review_status": "quote_verified_in_text"
+        },
+        "note": "document states what YOU pay; plan share = 100% − that.",
+        "basis": "of Plan Allowance; Class B Intermediate"
+      },
+      "plan_share_bp_out": {
+        "value": 6000,
+        "status": "DOC",
+        "cite": {
+          "doc": "FM26",
+          "page": 29,
+          "page_note": "p.29",
+          "quote": "Out-of-Network: 40% of the Plan Allowance plus any amount above the Plan Allowance billed by the provider.",
+          "section": "Section 5 — Class B Intermediate — You Pay header, High Option",
+          "fact_id": "opm-fedvip-metlife-2026:coinsurance:High:classB:out",
+          "review_status": "quote_verified_in_text"
+        },
+        "note": "document states what YOU pay; plan share = 100% − that. out-of-network: you also pay any amount above the Plan Allowance billed by the provider",
+        "basis": "of Plan Allowance plus any amount above the Plan Allowance billed by the provider; Class B"
+      },
+      "procedures_text": [
+        "Restorative (fillings)",
+        "Extractions",
+        "Periodontal scaling and root planing"
+      ],
+      "cite": {
+        "doc": "FM26",
+        "page": 31,
+        "page_note": "p.31",
+        "quote": "D7210 Extraction, erupted tooth requiring removal of bone and/or sectioning of tooth",
+        "section": "Section 5 — Class B Intermediate table",
+        "fact_id": "opm-fedvip-metlife-2026:class_membership:extraction",
+        "review_status": "quote_verified_in_text"
+      }
+    },
+    {
+      "name": "Class C Major",
+      "plan_share_bp_in": {
+        "value": 5000,
+        "status": "DOC",
+        "cite": {
+          "doc": "FM26",
+          "page": 33,
+          "page_note": "p.33",
+          "quote": "In-Network: 50% of the Plan Allowance",
+          "section": "Section 5 — Class C Major — You Pay header, High Option",
+          "fact_id": "opm-fedvip-metlife-2026:coinsurance:High:classC:in",
+          "review_status": "quote_verified_in_text"
+        },
+        "note": "document states what YOU pay; plan share = 100% − that.",
+        "basis": "of Plan Allowance; Class C Major"
+      },
+      "plan_share_bp_out": {
+        "value": 4000,
+        "status": "DOC",
+        "cite": {
+          "doc": "FM26",
+          "page": 33,
+          "page_note": "p.33",
+          "quote": "Out-of-Network: 60% of the Plan Allowance plus any amount above the Plan Allowance billed by the provider.",
+          "section": "Section 5 — Class C Major — You Pay header, High Option",
+          "fact_id": "opm-fedvip-metlife-2026:coinsurance:High:classC:out",
+          "review_status": "quote_verified_in_text"
+        },
+        "note": "document states what YOU pay; plan share = 100% − that. out-of-network: you also pay any amount above the Plan Allowance billed by the provider",
+        "basis": "of Plan Allowance plus any amount above the Plan Allowance billed by the provider; Class C"
+      },
+      "procedures_text": [
+        "Crowns"
+      ],
+      "cite": {
+        "doc": "FM26",
+        "page": 33,
+        "page_note": "p.33",
+        "quote": "D2740 Crown - porcelain/ceramic - Limited to 1 per tooth every 60 months",
+        "section": "Section 5 — Class C Major table",
+        "fact_id": "opm-fedvip-metlife-2026:frequency:crown",
+        "review_status": "quote_verified_in_text"
+      }
+    }
+  ],
+  "class_of": {
+    "exam": {
+      "value": "Class A Basic",
+      "status": "DOC",
+      "cite": {
+        "doc": "FM26",
+        "page": 26,
+        "page_note": "p.26",
+        "quote": "Periodic oral evaluation - established patient - Limited to 2 every 12 months",
+        "section": "Section 5 — Class A Basic table (D0120)",
+        "fact_id": "opm-fedvip-metlife-2026:frequency:exam",
+        "review_status": "quote_verified_in_text"
+      },
+      "note": "code line printed in the Class A Basic table"
+    },
+    "cleaning": {
+      "value": "Class A Basic",
+      "status": "DOC",
+      "cite": {
+        "doc": "FM26",
+        "page": 26,
+        "page_note": "p.26",
+        "quote": "Prophylaxis – adult - Limited to 2 in 12 months; High Option only: a third cleaning",
+        "section": "Section 5 — Class A Basic table (D1110)",
+        "fact_id": "opm-fedvip-metlife-2026:frequency:cleaning",
+        "review_status": "quote_verified_in_text"
+      },
+      "note": "code line printed in the Class A Basic table"
+    },
+    "bitewing_xrays": {
+      "value": "Class A Basic",
+      "status": "DOC",
+      "cite": {
+        "doc": "FM26",
+        "page": 26,
+        "page_note": "p.26",
+        "quote": "Bitewings - four radiographic images - Adult - 1 set every calendar year",
+        "section": "Section 5 — Class A Basic table (D0274)",
+        "fact_id": "opm-fedvip-metlife-2026:frequency:bitewing_xrays",
+        "review_status": "quote_verified_in_text"
+      },
+      "note": "code line printed in the Class A Basic table"
+    },
+    "fluoride_child": {
+      "value": "Class A Basic",
+      "status": "DOC",
+      "cite": {
+        "doc": "FM26",
+        "page": 26,
+        "page_note": "p.26",
+        "quote": "Topical application of fluoride – excluding varnish - Limited to 2 every 12 months",
+        "section": "Section 5 — Class A Basic table (D1208)",
+        "fact_id": "opm-fedvip-metlife-2026:frequency:fluoride_child",
+        "review_status": "quote_verified_in_text"
+      },
+      "note": "code line printed in the Class A Basic table"
+    },
+    "sealant": {
+      "value": "Class A Basic",
+      "status": "DOC",
+      "cite": {
+        "doc": "FM26",
+        "page": 26,
+        "page_note": "p.26",
+        "quote": "Sealant - per tooth - Limited to unrestored permanent molars - Less than age 19",
+        "section": "Section 5 — Class A Basic table (D1351)",
+        "fact_id": "opm-fedvip-metlife-2026:frequency:sealant",
+        "review_status": "quote_verified_in_text"
+      },
+      "note": "code line printed in the Class A Basic table"
+    },
+    "composite": {
+      "value": "Class B Intermediate",
+      "status": "DOC",
+      "cite": {
+        "doc": "FM26",
+        "page": 29,
+        "page_note": "p.29 (one fetch placed the row on p.30)",
+        "quote": "D2392 Resin-based composite - two surfaces, posterior"
+      },
+      "note": "listed in the Class B Intermediate table"
+    },
+    "amalgam": {
+      "value": "Class B Intermediate",
+      "status": "DOC",
+      "cite": {
+        "doc": "FM26",
+        "page": 29,
+        "page_note": "p.29 (one fetch placed the row on p.30)",
+        "quote": "D2150 Amalgam - two surfaces, primary or permanent"
+      },
+      "note": "listed in the Class B Intermediate table"
+    },
+    "extraction_simple": {
+      "value": "Class B Intermediate",
+      "status": "DOC",
+      "cite": {
+        "doc": "FM26",
+        "page": 31,
+        "page_note": "p.31",
+        "quote": "D7210 Extraction, erupted tooth requiring removal of bone and/or sectioning of tooth",
+        "section": "Section 5 — Class B Intermediate table",
+        "fact_id": "opm-fedvip-metlife-2026:class_membership:extraction",
+        "review_status": "quote_verified_in_text"
+      },
+      "note": "D7140 and D7210 both listed in Class B"
+    },
+    "extraction_surgical": {
+      "value": "Class B Intermediate",
+      "status": "DOC",
+      "cite": {
+        "doc": "FM26",
+        "page": 31,
+        "page_note": "p.31",
+        "quote": "D7210 Extraction, erupted tooth requiring removal of bone and/or sectioning of tooth",
+        "section": "Section 5 — Class B Intermediate table",
+        "fact_id": "opm-fedvip-metlife-2026:class_membership:extraction",
+        "review_status": "quote_verified_in_text"
+      },
+      "note": "D7210 listed in Class B; impacted-tooth codes may differ"
+    },
+    "scaling_root_planing": {
+      "value": "Class B Intermediate",
+      "status": "DOC",
+      "cite": {
+        "doc": "FM26",
+        "page": 31,
+        "page_note": "p.31",
+        "quote": "Periodontal scaling and root planing - four or more teeth per quadrant – Limited to 1 every 24 months",
+        "section": "Section 5 — Class B Intermediate table (D4341)",
+        "fact_id": "opm-fedvip-metlife-2026:frequency:scaling_root_planing",
+        "review_status": "needs_review"
+      },
+      "note": "code line printed in the Class B Intermediate table"
+    },
+    "crown": {
+      "value": "Class C Major",
+      "status": "DOC",
+      "cite": {
+        "doc": "FM26",
+        "page": 33,
+        "page_note": "p.33",
+        "quote": "D2740 Crown - porcelain/ceramic - Limited to 1 per tooth every 60 months",
+        "section": "Section 5 — Class C Major table",
+        "fact_id": "opm-fedvip-metlife-2026:frequency:crown",
+        "review_status": "quote_verified_in_text"
+      },
+      "note": "code line printed in the Class C Major table"
+    },
+    "cast_crown": {
+      "value": "Class C Major",
+      "status": "DOC",
+      "cite": {
+        "doc": "FM26",
+        "page": 33,
+        "page_note": "p.33",
+        "quote": "D2790 Crown - full cast high noble metal – Limited to 1 per tooth every 60 months",
+        "section": "Section 5 — Class C Major table",
+        "fact_id": "opm-fedvip-metlife-2026:frequency:cast_crown",
+        "review_status": "quote_verified_in_text"
+      },
+      "note": "code line printed in the Class C Major table"
+    },
+    "root_canal_molar": {
+      "value": null,
+      "status": "UNKNOWN",
+      "note": "D3330 (molar root canal) was not present in the readable text (truncated near p.33); class and coinsurance unknown.",
+      "fact_id": "opm-fedvip-metlife-2026:frequency:root_canal_molar"
+    },
+    "denture_partial": {
+      "value": null,
+      "status": "UNKNOWN",
+      "note": "D5211–D5214 not present in the readable text; class unknown.",
+      "fact_id": "opm-fedvip-metlife-2026:frequency:denture_partial"
+    },
+    "implant": {
+      "value": null,
+      "status": "UNKNOWN",
+      "note": "D6010 (implant body) not present in the readable text; only implant maintenance codes appeared in the 2026 changes list.",
+      "fact_id": "opm-fedvip-metlife-2026:frequency:implant"
+    },
+    "night_guard": {
+      "value": null,
+      "status": "UNKNOWN",
+      "note": "Occlusal guard appliance codes (D9944–D9946) not present in the readable text; only the 2026 frequency change (1 in 24 months) is known.",
+      "fact_id": "opm-fedvip-metlife-2026:frequency:night_guard"
+    }
+  },
+  "allowed_amounts": {},
+  "allowed_amounts_note": "The brochure prints no fee schedule. 'Plan Allowance' is 'the maximum amount we will consider for payment for a specific procedure' (p.59); the amount must come from your pre-treatment estimate or EOB (USER).",
+  "alternate_benefit": {
+    "status": "DOC",
+    "cite": {
+      "doc": "FM26",
+      "page": 18,
+      "page_note": "p.18",
+      "quote": "we will pay benefits based upon the less costly service if such service would produce a professionally acceptable result under generally accepted dental standards",
+      "section": "Section 3/4 — Alternate benefit (less costly service)",
+      "fact_id": "opm-fedvip-metlife-2026:alternate_benefit:n/a",
+      "review_status": "quote_verified_in_text"
+    },
+    "conditions": [],
+    "note": "Clause present (p.18): benefits are paid on a less costly covered service that 'would produce a professionally acceptable result'. The readable pages do not list which services it applies to, so no condition is modeled; the ledger flags the possibility."
+  },
+  "waiting_months": {
+    "value": null,
+    "status": "UNKNOWN",
+    "note": "No sentence containing 'waiting' was found in the readable text; because the text was truncated this is UNKNOWN, not 'no waiting period'.",
+    "fact_id": "opm-fedvip-metlife-2026:waiting_period:n/a"
+  },
+  "frequency": [
+    {
+      "procedure_key": "exam",
+      "clock": "rolling12_count",
+      "n": 2,
+      "cite": {
+        "doc": "FM26",
+        "page": 26,
+        "page_note": "p.26",
+        "quote": "Periodic oral evaluation - established patient - Limited to 2 every 12 months",
+        "section": "Section 5 — Class A Basic table (D0120)",
+        "fact_id": "opm-fedvip-metlife-2026:frequency:exam",
+        "review_status": "quote_verified_in_text"
+      },
+      "period_as_printed": "Limited to 2 every 12 months"
+    },
+    {
+      "procedure_key": "cleaning",
+      "clock": "rolling12_count",
+      "n": 2,
+      "cite": {
+        "doc": "FM26",
+        "page": 26,
+        "page_note": "p.26",
+        "quote": "Prophylaxis – adult - Limited to 2 in 12 months; High Option only: a third cleaning",
+        "section": "Section 5 — Class A Basic table (D1110)",
+        "fact_id": "opm-fedvip-metlife-2026:frequency:cleaning",
+        "review_status": "quote_verified_in_text"
+      },
+      "period_as_printed": "Limited to 2 in 12 months (High Option: a third cleaning with pregnancy or diabetes)"
+    },
+    {
+      "procedure_key": "bitewing_xrays",
+      "clock": "calendar_count",
+      "n": 1,
+      "cite": {
+        "doc": "FM26",
+        "page": 26,
+        "page_note": "p.26",
+        "quote": "Bitewings - four radiographic images - Adult - 1 set every calendar year",
+        "section": "Section 5 — Class A Basic table (D0274)",
+        "fact_id": "opm-fedvip-metlife-2026:frequency:bitewing_xrays",
+        "review_status": "quote_verified_in_text"
+      },
+      "period_as_printed": "Adult - 1 set every calendar year"
+    },
+    {
+      "procedure_key": "fluoride_child",
+      "clock": "rolling12_count",
+      "n": 2,
+      "cite": {
+        "doc": "FM26",
+        "page": 26,
+        "page_note": "p.26",
+        "quote": "Topical application of fluoride – excluding varnish - Limited to 2 every 12 months",
+        "section": "Section 5 — Class A Basic table (D1208)",
+        "fact_id": "opm-fedvip-metlife-2026:frequency:fluoride_child",
+        "review_status": "quote_verified_in_text"
+      },
+      "period_as_printed": "Limited to 2 every 12 months for dependent children based on age limits"
+    },
+    {
+      "procedure_key": "sealant",
+      "clock": "per_tooth_months",
+      "n": 36,
+      "cite": {
+        "doc": "FM26",
+        "page": 26,
+        "page_note": "p.26",
+        "quote": "Sealant - per tooth - Limited to unrestored permanent molars - Less than age 19",
+        "section": "Section 5 — Class A Basic table (D1351)",
+        "fact_id": "opm-fedvip-metlife-2026:frequency:sealant",
+        "review_status": "quote_verified_in_text"
+      },
+      "period_as_printed": "1 sealant per tooth every 36 months; unrestored permanent molars; less than age 19",
+      "note": "per tooth — not enforced in the arithmetic"
+    },
+    {
+      "procedure_key": "scaling_root_planing",
+      "clock": "per_quadrant_months",
+      "n": 24,
+      "cite": {
+        "doc": "FM26",
+        "page": 31,
+        "page_note": "p.31",
+        "quote": "Periodontal scaling and root planing - four or more teeth per quadrant – Limited to 1 every 24 months",
+        "section": "Section 5 — Class B Intermediate table (D4341)",
+        "fact_id": "opm-fedvip-metlife-2026:frequency:scaling_root_planing",
+        "review_status": "needs_review"
+      },
+      "period_as_printed": "Limited to 1 every 24 months (per quadrant)",
+      "note": "per quadrant — not enforced in the arithmetic"
+    },
+    {
+      "procedure_key": "crown",
+      "clock": "per_tooth_months",
+      "n": 60,
+      "cite": {
+        "doc": "FM26",
+        "page": 33,
+        "page_note": "p.33",
+        "quote": "D2740 Crown - porcelain/ceramic - Limited to 1 per tooth every 60 months",
+        "section": "Section 5 — Class C Major table",
+        "fact_id": "opm-fedvip-metlife-2026:frequency:crown",
+        "review_status": "quote_verified_in_text"
+      },
+      "period_as_printed": "Limited to 1 per tooth every 60 months",
+      "note": "per tooth — not enforced in the arithmetic"
+    },
+    {
+      "procedure_key": "cast_crown",
+      "clock": "per_tooth_months",
+      "n": 60,
+      "cite": {
+        "doc": "FM26",
+        "page": 33,
+        "page_note": "p.33",
+        "quote": "D2790 Crown - full cast high noble metal – Limited to 1 per tooth every 60 months",
+        "section": "Section 5 — Class C Major table",
+        "fact_id": "opm-fedvip-metlife-2026:frequency:cast_crown",
+        "review_status": "quote_verified_in_text"
+      },
+      "period_as_printed": "Limited to 1 per tooth every 60 months",
+      "note": "per tooth — not enforced in the arithmetic"
+    }
+  ],
+  "excluded": {},
+  "missing_tooth": {
+    "present": null,
+    "status": "UNKNOWN",
+    "note": "Section 7 General Exclusions (p.50) was not reliably extracted."
+  },
+  "oon_rule": {
+    "value": {
+      "in": "for In-Network services you only pay the difference between the Plan Allowance for the covered service and the plan's benefit payment",
+      "out": "The Plan Allowance for Out-of-Network services will be equal to the In-Network Plan Allowance for the covered service. Out-of-Network providers may charge their normal fees which may be greater than the Plan Allowance."
+    },
+    "status": "DOC",
+    "cite": {
+      "doc": "FM26",
+      "page": 17,
+      "page_note": "p.17",
+      "quote": "The Plan Allowance for Out-of-Network services will be equal to the In-Network Plan Allowance for the covered service",
+      "section": "Section 3/4 — Out-of-Network benefits",
+      "fact_id": "opm-fedvip-metlife-2026:oon_basis:n/a",
+      "review_status": "quote_verified_in_text"
+    },
+    "in_network_cite": {
+      "doc": "FM26",
+      "page": 17,
+      "page_note": "p.17",
+      "quote": "for In-Network services you only pay the difference between the Plan Allowance for the covered service and the plan's benefit payment",
+      "section": "Section 3/4 — In-Network benefits",
+      "fact_id": "opm-fedvip-metlife-2026:in_network_basis:n/a",
+      "review_status": "needs_review"
+    },
+    "plan_allowance_cite": {
+      "doc": "FM26",
+      "page": 59,
+      "page_note": "p.59",
+      "quote": "The maximum amount we will consider for payment for a specific procedure. The actual benefit will be a percentage of the plan allowance.",
+      "section": "Section 9 — Definitions of terms — Plan Allowance",
+      "fact_id": "opm-fedvip-metlife-2026:plan_allowance_definition:n/a",
+      "review_status": "needs_review"
+    }
+  },
+  "dos_rule": {
+    "value": null,
+    "status": "UNKNOWN",
+    "note": "Not stated in the readable pages; computed with the completion date and labeled as an assumption."
+  },
+  "premium_monthly": {
+    "self_only": {
+      "value": null,
+      "status": "UNKNOWN",
+      "note": "Rate Information (p.71) was not returned by the text extraction; rates depend on the rating area for your ZIP code (North Carolina's area not determined).",
+      "fact_id": "opm-fedvip-metlife-2026:premium_monthly:n/a"
+    }
+  },
+  "unsupported_rules": [
+    {
+      "quote": "Replacement restorations (fillings) are limited to 1 in 24 months.",
+      "page": 29,
+      "page_note": "p.29",
+      "doc": "FM26",
+      "reason": "replacement restorations limited to 1 in 24 months — replacement rule, not enforced",
+      "fact_id": "opm-fedvip-metlife-2026:frequency:fillings_replacement"
+    },
+    {
+      "quote": "the date of the prior service may be counted toward the time, frequency limitations and/ or replacement limitations under this dental insurance.",
+      "page": 33,
+      "page_note": "p.33",
+      "doc": "FM26",
+      "reason": "services before the effective date may count toward frequency limits — history entered by the user is counted regardless of plan",
+      "fact_id": "opm-fedvip-metlife-2026:prior_service_counts:n/a"
+    },
+    {
+      "quote": "Changing the frequency limitation of occlusal guards from 1 in 12 months to 1 in 24 months",
+      "page": 6,
+      "page_note": "p.6",
+      "doc": "FM26",
+      "reason": "occlusal guard frequency changed to 1 in 24 months for 2026 — class/coinsurance for the appliance not readable",
+      "fact_id": "opm-fedvip-metlife-2026:frequency:night_guard"
+    },
+    {
+      "quote": "The Orthodontia Lifetime Benefit Maximum is applicable to Orthodontia benefits only. There are no other lifetime maximums under this Plan.",
+      "page": 23,
+      "page_note": "p.23",
+      "doc": "FM26",
+      "reason": "orthodontia lifetime maximum — not modeled; figures from a single fetch",
+      "fact_id": "opm-fedvip-metlife-2026:ortho_lifetime_max:High"
+    },
+    {
+      "quote": "In-Network: 50% of the Plan Allowance",
+      "page": 41,
+      "page_note": "p.41",
+      "doc": "FM26",
+      "reason": "Class D Orthodontic 50% — not modeled",
+      "fact_id": "opm-fedvip-metlife-2026:coinsurance:both:classD"
+    }
+  ],
+  "conflicts": [],
+  "procedure_codes": {
+    "exam": {
+      "code": "D0120",
+      "descriptor_as_printed": "Periodic oral evaluation - established patient",
+      "review": true,
+      "confidence": "high",
+      "notes": "Comprehensive evaluation D0150 (\"Comprehensive oral evaluation - new or established patient\") is also printed; combined limitation of 2 per 12 months.",
+      "cite": {
+        "doc": "FM26",
+        "page": 26,
+        "page_note": "p.26",
+        "quote": "Periodic oral evaluation - established patient - Limited to 2 every 12 months"
+      }
+    },
+    "cleaning": {
+      "code": "D1110",
+      "descriptor_as_printed": "Prophylaxis – adult",
+      "review": true,
+      "confidence": "high",
+      "notes": "Child prophylaxis D1120 also printed.",
+      "cite": {
+        "doc": "FM26",
+        "page": 26,
+        "page_note": "p.26",
+        "quote": "Prophylaxis – adult - Limited to 2 in 12 months; High Option only: a third cleaning"
+      }
+    },
+    "bitewing_xrays": {
+      "code": "D0274",
+      "descriptor_as_printed": "Bitewings - four radiographic images",
+      "review": true,
+      "confidence": "high",
+      "notes": "Two-film D0272 (\"Bitewings - two radiographic images\") also printed with the same limitation; choose per film count.",
+      "cite": {
+        "doc": "FM26",
+        "page": 26,
+        "page_note": "p.26",
+        "quote": "Bitewings - four radiographic images - Adult - 1 set every calendar year"
+      }
+    },
+    "fluoride_child": {
+      "code": "D1208",
+      "descriptor_as_printed": "Topical application of fluoride – excluding varnish",
+      "review": true,
+      "confidence": "high",
+      "notes": "Varnish D1206 (\"Topical application of fluoride varnish\") also printed.",
+      "cite": {
+        "doc": "FM26",
+        "page": 26,
+        "page_note": "p.26",
+        "quote": "Topical application of fluoride – excluding varnish - Limited to 2 every 12 months"
+      }
+    },
+    "sealant": {
+      "code": "D1351",
+      "descriptor_as_printed": "Sealant - per tooth",
+      "review": false,
+      "confidence": "high",
+      "notes": "",
+      "cite": {
+        "doc": "FM26",
+        "page": 26,
+        "page_note": "p.26",
+        "quote": "Sealant - per tooth - Limited to unrestored permanent molars - Less than age 19"
+      }
+    },
+    "amalgam": {
+      "code": "D2150",
+      "descriptor_as_printed": "Amalgam - two surfaces, primary or permanent",
+      "review": false,
+      "confidence": "high",
+      "notes": "One fetch placed the row on p. 30.",
+      "cite": {
+        "doc": "FM26",
+        "page": 29,
+        "page_note": "p.29",
+        "quote": "D2150 Amalgam - two surfaces, primary or permanent"
+      }
+    },
+    "composite": {
+      "code": "D2392",
+      "descriptor_as_printed": "Resin-based composite - two surfaces, posterior",
+      "review": false,
+      "confidence": "high",
+      "notes": "Listed in Class B Intermediate; one fetch placed the row on p. 30.",
+      "cite": {
+        "doc": "FM26",
+        "page": 29,
+        "page_note": "p.29",
+        "quote": "D2392 Resin-based composite - two surfaces, posterior"
+      }
+    },
+    "extraction_simple": {
+      "code": "D7140",
+      "descriptor_as_printed": "Extraction, erupted tooth or exposed root (elevation and/or forceps removal)",
+      "review": false,
+      "confidence": "high",
+      "notes": "Class B Intermediate.",
+      "cite": {
+        "doc": "FM26",
+        "page": 31,
+        "page_note": "p.31",
+        "quote": "D7140 Extraction, erupted tooth or exposed root (elevation and/or forceps removal)"
+      }
+    },
+    "extraction_surgical": {
+      "code": "D7210",
+      "descriptor_as_printed": "Extraction, erupted tooth requiring removal of bone and/or sectioning of tooth, and including elevation of mucoperiosteal flap if indicated",
+      "review": true,
+      "confidence": "high",
+      "notes": "Impacted-tooth codes (D7220–D7241) were not returned; 'surgical extraction' could map to several codes.",
+      "cite": {
+        "doc": "FM26",
+        "page": 31,
+        "page_note": "p.31",
+        "quote": "D7210 Extraction, erupted tooth requiring removal of bone and/or sectioning of tooth"
+      }
+    },
+    "scaling_root_planing": {
+      "code": "D4341",
+      "descriptor_as_printed": "Periodontal scaling and root planing - four or more teeth per quadrant",
+      "review": true,
+      "confidence": "high",
+      "notes": "D4342 (one to three teeth per quadrant) also printed with the same 1-every-24-months limit; page reported as 30 by one fetch, 31 by another.",
+      "cite": {
+        "doc": "FM26",
+        "page": 31,
+        "page_note": "p.31",
+        "quote": "D4341 Periodontal scaling and root planing - four or more teeth per quadrant"
+      }
+    },
+    "crown": {
+      "code": "D2740",
+      "descriptor_as_printed": "Crown - porcelain/ceramic",
+      "review": false,
+      "confidence": "high",
+      "notes": "Class C Major.",
+      "cite": {
+        "doc": "FM26",
+        "page": 33,
+        "page_note": "p.33",
+        "quote": "D2740 Crown - porcelain/ceramic - Limited to 1 per tooth every 60 months"
+      }
+    },
+    "cast_crown": {
+      "code": "D2790",
+      "descriptor_as_printed": "Crown - full cast high noble metal",
+      "review": true,
+      "confidence": "high",
+      "notes": "D2791 (predominantly base metal) and D2792 (noble metal) also printed; metal type determines code.",
+      "cite": {
+        "doc": "FM26",
+        "page": 33,
+        "page_note": "p.33",
+        "quote": "D2790 Crown - full cast high noble metal – Limited to 1 per tooth every 60 months"
+      }
+    }
+  },
+  "reuse_terms_cite": {
+    "doc": "FM26",
+    "page": 7,
+    "page_note": "p.7",
+    "quote": "Current Dental Terminology (CDT), Copyright © American Dental Association. All rights reserved.",
+    "section": "Section 1 — CDT notice",
+    "fact_id": "opm-fedvip-metlife-2026:reuse_terms:n/a",
+    "review_status": "quote_verified_in_text"
+  }
+}

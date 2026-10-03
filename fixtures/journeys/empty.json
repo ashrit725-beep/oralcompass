@@ -1,0 +1,22 @@
+{
+  "id": "new",
+  "label": "Your journey",
+  "is_sample": false,
+  "plan_ref": null,
+  "estimate_ref": null,
+  "note": "Stages appear as you add information. Nothing is pre-filled.",
+  "stages": [
+    {
+      "id": "start",
+      "title": "Starting point",
+      "island": "Harbor of Beginnings",
+      "purpose": "Add insurance documents, select a preset plan, and add the dentist's treatment plan.",
+      "finance": {"kind": "plan_details"},
+      "checkpoints": [
+        {"id": "plan-doc", "label": "Plan document added", "kind": "document", "status": "awaiting_info", "detail": "Upload your plan document or choose a preset plan from the catalog.", "action": {"type": "open_landmark", "target": "harbor"}},
+        {"id": "treatment-plan", "label": "Treatment plan added", "kind": "document", "status": "awaiting_info", "detail": "Type the procedures and quoted charges from your dentist's estimate, or photograph it.", "action": {"type": "add_document", "field": "treatment_plan"}},
+        {"id": "usage", "label": "Benefit statement entered", "kind": "review", "status": "awaiting_info", "detail": "Optional: remaining deductible and remaining annual maximum from a benefit statement. Without them, estimates show ranges.", "action": {"type": "open_landmark", "target": "lookout"}}
+      ]
+    }
+  ]
+}

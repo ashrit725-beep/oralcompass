@@ -9,62 +9,958 @@
     "option": "High Plan",
     "plan_year": 2024,
     "benefit_year_type": "calendar",
-    "where_offered": {"text": "Group plan for Mississippi State University (Group 01125) — Mississippi", "cite": {"doc": "DD24", "page": 1, "quote": "Group 01125"}},
-    "eligibility": {"text": "MSU benefits-eligible employees and their dependents enrolled under the Contract (as the EOC defines Enrollee). Listed here means the document is public — not that you are eligible to enroll.", "cite": null},
+    "region": "Mississippi",
+    "network": "Delta Dental PPO / Delta Dental Premier / Non-Delta Dental Dentists",
+    "effective_dates": {
+      "start": "2024-01-01",
+      "end": null,
+      "text": "Effective Date: January 1, 2024 (no end date printed). The MSU HR dental page (last modified 2026-05-04) still links this EOC; no 2025/2026 EOC was found.",
+      "cite": {
+        "doc": "DD24",
+        "page": 1,
+        "page_note": "Attachment A p.1",
+        "quote": "Group Number: 01125 Effective Date: January 1, 2024",
+        "section": "Attachment A (footer E-PPO-A-DM2LH2) — footer line 'Contractholder: Mississippi State University'",
+        "fact_id": "delta-msu-eoc-2024:effective_dates:n/a",
+        "review_status": "quote_verified_in_text"
+      }
+    },
+    "where_offered": {
+      "text": "Group plan for Mississippi State University (Group 01125) — Mississippi",
+      "cite": {
+        "doc": "DD24",
+        "page": 1,
+        "page_note": "Attachment A p.1",
+        "quote": "Contractholder: Mississippi State University",
+        "section": "Attachment A footer line",
+        "fact_id": "delta-msu-eoc-2024:eligibility:n/a:public_document",
+        "review_status": "quote_verified_in_text"
+      }
+    },
+    "eligibility": {
+      "text": "MSU benefits-eligible employees and their dependents enrolled under the Contract. Listed here means the document is public — not that you are eligible to enroll.",
+      "cite": {
+        "doc": "DD24",
+        "page": 3,
+        "page_note": "p.3",
+        "quote": "dependent children from birth to age 26",
+        "section": "Definitions — 'Dependent (\"Dependent Enrollee\")' (main document)",
+        "fact_id": "delta-msu-eoc-2024:eligibility:n/a:dependent_age",
+        "review_status": "quote_verified_in_text"
+      }
+    },
+    "currency_note": "Possibly outdated for 2026: the latest public EOC is effective 2024-01-01; premiums come from a 2020-revision highlights sheet.",
     "verification": {
       "date": "2026-10-03",
-      "method": "fields re-read against the public PDF via fetch on 2026-10-03 (seven passages); PDF page indexes to be confirmed at seeding (page numbers below are attachment page numbers)",
-      "fields_verified": ["deductible_individual", "deductible_waived_classes", "classes", "class_of.crown", "class_of.composite", "annual_max", "waiting_months", "frequency.cleaning", "alternate_benefit", "oon_rule", "benefit_year_start_month", "excluded.implant"],
-      "fields_unknown": ["allowed_amounts", "alternate allowance amount", "premium_monthly", "missing_tooth (not found)", "dos_rule for claim payment (EOC 'incurred' rule governs termination liability only)"]
+      "method": "WebFetch (PDF->text, 14 passes with section-focused prompts). Page numbers are the footer page numbers printed in each part; each part restarts at 1: main document footer 'PPO-ENT-MS-E-R23 n 01125', Attachment A footer 'E-PPO-A-DM2LH2 n 01125', Attachment B footer 'ENT-LE-MS-22 n 01125', HIPAA notice 'HIPAA Notice of Privacy Practices n'. Physical PDF page index was NOT observable through WebFetch; compute at seeding: index = (cover + TOC pages) + main-document pages + Attachment A pages (2) + Attachment B pages (7) + HIPAA pages (5).",
+      "note": "Page numbers are the footer page numbers printed in each PART of the EOC (main document / Attachment A / Attachment B); physical PDF indexes could not be read. Three attributions carry ±1 uncertainty (needs_review in the cite)."
     }
   },
   "source_document": {
-    "title": "Delta Dental PPO Evidence of Coverage — Mississippi State University, effective January 1, 2024",
-    "publisher": "Mississippi State University Human Resources Management (posting of Delta Dental Insurance Company document)",
+    "title": "Delta Dental Insurance Company EVIDENCE OF COVERAGE Mississippi State University Group No: 01125 Effective Date: January 1, 2024 (form PPO-ENT-MS-E-R23)",
+    "publisher": "Delta Dental Insurance Company (document); posted by Mississippi State University Human Resources Management",
     "url": "https://www.hrm.msstate.edu/sites/www.hrm.msstate.edu/files/2024-03/Delta%20Dental%20Evidence%20of%20Coverage.pdf",
+    "secondary_urls": [
+      "https://www.hrm.msstate.edu/benefits/insurance/dental",
+      "https://www.hrm.msstate.edu/sites/www.hrm.msstate.edu/files/forms/BHS_Mississippi%20State%20University%202021.pdf",
+      "https://www.hrm.msstate.edu/sites/www.hrm.msstate.edu/files/2021-05/delta_dental_claims.pdf"
+    ],
+    "document_type": "evidence_of_coverage",
+    "document_date": "2024-01-01",
+    "effective_period": {
+      "start": "2024-01-01",
+      "end": null,
+      "quote": "Effective Date: January 1, 2024"
+    },
     "retrieved_at": "2026-10-03",
-    "sha256": "",
-    "sha256_note": "compute at seeding: tools/seed_presets.py downloads the PDF, records SHA-256 and verifies each quote on its page",
+    "retrieval_method": "WebFetch (PDF->text, 14 passes with section-focused prompts). Page numbers are the footer page numbers printed in each part; each part restarts at 1: main document footer 'PPO-ENT-MS-E-R23 n 01125', Attachment A footer 'E-PPO-A-DM2LH2 n 01125', Attachment B footer 'ENT-LE-MS-22 n 01125', HIPAA notice 'HIPAA Notice of Privacy Practices n'. Physical PDF page index was NOT observable through WebFetch; compute at seeding: index = (cover + TOC pages) + main-document pages + Attachment A pages (2) + Attachment B pages (7) + HIPAA pages (5).",
     "pages": null,
-    "version_label": "DD24"
+    "sha256": "",
+    "sha256_note": "The egress policy of the build environment blocks binary downloads from this host; the document was read through the sanctioned text-extraction fetch. Record the SHA-256 and re-verify each quote on its PDF page when the PDF is downloaded (tools/seed_presets.py).",
+    "version_label": "DD24",
+    "reuse_terms": "Not stated as a copyright notice on the EOC itself. Definitions reference 'Current Dental Terminology© (\"CDT\") number assigned to a Single Procedure by the American Dental Association'. Trademarks used in text: 'Delta Dental PPOTM' / 'Delta Dental PPOSM' and 'Delta Dental Premier®'. HIPAA Notice of Privacy Practices states 'This notice is effective on and after January 1, 2017.' Document is publicly posted by a state university HR office.",
+    "access_limits": [
+      "WebFetch's answering model refused one request to reproduce all of Attachment B verbatim (fair-use refusal); worked around with item-by-item short-quote prompts.",
+      "Page attribution inside Attachment B varied by +/-1 between fetch passes for Limitations items 4 (fluoride: reported p.2 and p.3) and 24 (crowns: reported p.4 and p.5); the Continuation of Benefits paragraph in the main document was reported on p.3 and p.4. Pages below are the majority/most-consistent reading and are marked needs_review where passes disagreed. Verify each quote on its page at seeding.",
+      "https://www.hrm.msstate.edu/forms/delta-dental-enrollment-change-form returned HTTP 403 to WebFetch.",
+      "No 2025 or 2026 Evidence of Coverage or MSU-specific rate sheet was found: the HRM dental page (last modified 2026-05-04T13:59:37-05:00 per page metadata) still links this 2024-03 EOC and a 2021 Benefit Highlights sheet; WebSearch for 2025/2026 MSU Delta Dental rates returned nothing MSU-specific.",
+      "Physical PDF page indexes could not be read through WebFetch (only printed footer markers)."
+    ],
+    "source_id": "delta-msu-eoc-2024",
+    "path": null,
+    "parts": [
+      "main document (footer PPO-ENT-MS-E-R23 n 01125)",
+      "Attachment A (footer E-PPO-A-DM2LH2, benefit summary)",
+      "Attachment B (footer ENT-LE-MS-22, services/limitations/exclusions)"
+    ]
   },
-  "benefit_year_start_month": {"value": 1, "status": "DOC", "cite": {"page": 2, "quote": "Calendar Year: the 12 months of the year from January 1 through December 31.", "page_note": "Definitions p.2"}},
-  "deductible_individual": {"value": 5000, "status": "DOC", "cite": {"page": 1, "quote": "$50 per Enrollee each Calendar Year", "page_note": "Attachment A p.1; family $150; 'Deductibles waived for Diagnostic & Preventive and Orthodontic Services'"}},
-  "deductible_waived_classes": ["Diagnostic & Preventive"],
-  "annual_max": {"value": 150000, "status": "DOC", "cite": {"page": 1, "quote": "$1,500 per Enrollee per Calendar Year", "page_note": "Attachment A p.1 (High Plan)"}},
+  "secondary_documents": [
+    {
+      "version_label": "MSU20h",
+      "title": "Plan Benefit Highlights for: Mississippi State University Group No: 01125 (Delta Dental PPO; form HL_PPO #128472EA (rev. 7/20) / HLT_PPO_2COL_HILO_DDIC (Rev. 8/26/2020))",
+      "url": "https://www.hrm.msstate.edu/sites/www.hrm.msstate.edu/files/forms/BHS_Mississippi%20State%20University%202021.pdf",
+      "document_date": "2020-08-26",
+      "document_type": "plan_brochure",
+      "source_id": "msu-dental-benefit-highlights-2021",
+      "access_limits": [
+        "No effective date or plan year on the sheet; the 'Monthly Rates' may be stale relative to 2024-2026. Treat the rates as 'printed in a public document dated rev. 8/26/2020', not as current premiums.",
+        "Secondary document: the Evidence of Coverage (delta-msu-eoc-2024.json) governs where the two differ."
+      ]
+    }
+  ],
+  "benefit_year_start_month": {
+    "value": 1,
+    "status": "DOC",
+    "note": "Deductibles and maximums in Attachment A are stated 'each Calendar Year' / 'per Calendar Year'.",
+    "cite": {
+      "doc": "DD24",
+      "page": 2,
+      "page_note": "p.2",
+      "quote": "Calendar Year: the 12 months of the year from January 1 through December 31.",
+      "section": "Definitions (main document, footer PPO-ENT-MS-E-R23)",
+      "fact_id": "delta-msu-eoc-2024:benefit_year:n/a",
+      "review_status": "quote_verified_in_text"
+    }
+  },
+  "deductible_individual": {
+    "value": 5000,
+    "status": "DOC",
+    "note": "Identical text appears in both the High Plan and Low Plan columns.",
+    "cite": {
+      "doc": "DD24",
+      "page": 1,
+      "page_note": "Attachment A p.1",
+      "quote": "$50 per Enrollee each Calendar Year",
+      "section": "Attachment A (footer E-PPO-A-DM2LH2) — 'Deductibles & Maximums' table, row 'Annual Deductible', columns 'Dental Service Category High Plan Low Plan'",
+      "fact_id": "delta-msu-eoc-2024:deductible_individual:High",
+      "review_status": "quote_verified_in_text"
+    }
+  },
+  "deductible_family": {
+    "value": 15000,
+    "status": "DOC",
+    "note": "",
+    "cite": {
+      "doc": "DD24",
+      "page": 1,
+      "page_note": "Attachment A p.1",
+      "quote": "$150 per family each Calendar Year",
+      "section": "Attachment A — 'Deductibles & Maximums', row 'Annual Deductible'",
+      "fact_id": "delta-msu-eoc-2024:deductible_family:High",
+      "review_status": "quote_verified_in_text"
+    }
+  },
+  "deductible_waived_classes": [
+    "Diagnostic and Preventive Services"
+  ],
+  "deductible_waiver_cite": {
+    "doc": "DD24",
+    "page": 1,
+    "page_note": "Attachment A p.1",
+    "quote": "Deductibles waived for Diagnostic & Preventive and Orthodontic Services",
+    "section": "Attachment A — 'Deductibles & Maximums', row 'Annual Deductible', High Plan column",
+    "fact_id": "delta-msu-eoc-2024:deductible_waived_classes:High",
+    "review_status": "quote_verified_in_text"
+  },
+  "deductible_waiver_note": "'Deductibles waived for Diagnostic & Preventive and Orthodontic Services' (orthodontics not modeled).",
+  "annual_max": {
+    "value": 150000,
+    "status": "DOC",
+    "note": "Switch rule in the same cell: 'If an Enrollee switches from the Low Plan to the High Plan during the Calendar Year, the Annual Maximum will not exceed the applicable Annual Maximum for the High Plan.'",
+    "cite": {
+      "doc": "DD24",
+      "page": 1,
+      "page_note": "Attachment A p.1",
+      "quote": "$1,500 per Enrollee per Calendar Year",
+      "section": "Attachment A — 'Deductibles & Maximums', row 'Annual Maximum', High Plan column",
+      "fact_id": "delta-msu-eoc-2024:annual_max:High",
+      "review_status": "quote_verified_in_text"
+    }
+  },
   "classes": [
-    {"name": "Diagnostic & Preventive", "plan_share_bp_in": {"value": 10000, "status": "DOC", "cite": {"page": 2, "quote": "Diagnostic & Preventive 100%", "page_note": "Attachment A p.2 — same for PPO, Premier and Non-Delta dentists"}}, "procedures_text": ["oral examinations", "cleanings", "x-rays"]},
-    {"name": "Basic", "plan_share_bp_in": {"value": 8000, "status": "DOC", "cite": {"page": 2, "quote": "Basic 80%", "page_note": "Attachment A p.2"}}, "procedures_text": ["Oral Surgery", "Restorative: amalgam and resin-based composite restorations (fillings) and prefabricated crowns", "Sealants", "Palliative", "Denture Repairs"], "cite": {"page": 1, "quote": "Restorative: amalgam and resin-based composite restorations (fillings) and prefabricated crowns", "page_note": "Attachment B pp.1-2"}},
-    {"name": "Major", "plan_share_bp_in": {"value": 5000, "status": "DOC", "cite": {"page": 2, "quote": "Major 50%", "page_note": "Attachment A p.2"}}, "procedures_text": ["Crowns and Inlays/Onlays", "Prosthodontics", "Endodontics", "Periodontics"], "cite": {"page": 2, "quote": "Endodontics: treatment of diseases and injuries of the tooth pulp. Periodontics: treatment of gums and bones supporting teeth.", "page_note": "Attachment B pp.1-2 — listed under Major Services"}}
+    {
+      "name": "Diagnostic and Preventive Services",
+      "plan_share_bp_in": {
+        "value": 10000,
+        "status": "DOC",
+        "cite": {
+          "doc": "DD24",
+          "page": 2,
+          "page_note": "Attachment A p.2",
+          "quote": "Diagnostic and Preventive Services 100% 100% 100% 100%",
+          "section": "Attachment A — 'Contract Benefit Levels' (row order: High PPO, High Premier/Non-Delta, Low PPO, Low Premier/Non-Delta)",
+          "fact_id": "delta-msu-eoc-2024:coinsurance:High:diagnostic_preventive",
+          "review_status": "quote_verified_in_text"
+        },
+        "note": "",
+        "basis": "of Maximum Allowance (PPO Contracted Fee / Premier Contracted Fee / Program Allowance by dentist type); same % for PPO and Premier/Non-Delta"
+      },
+      "plan_share_bp_out": {
+        "value": 10000,
+        "status": "DOC",
+        "cite": {
+          "doc": "DD24",
+          "page": 2,
+          "page_note": "Attachment A p.2",
+          "quote": "Diagnostic and Preventive Services 100% 100% 100% 100%",
+          "section": "Attachment A — 'Contract Benefit Levels' (row order: High PPO, High Premier/Non-Delta, Low PPO, Low Premier/Non-Delta)",
+          "fact_id": "delta-msu-eoc-2024:coinsurance:High:diagnostic_preventive",
+          "review_status": "quote_verified_in_text"
+        },
+        "note": "same percentage for Premier and Non-Delta Dental dentists (columns 2 and 4); paid on the Program Allowance for Non-Delta dentists",
+        "basis": "of Maximum Allowance (PPO Contracted Fee / Premier Contracted Fee / Program Allowance by dentist type); same % for PPO and Premier/Non-Delta"
+      },
+      "procedures_text": [
+        "Diagnostic (oral examinations)",
+        "Preventive: cleaning, topical application of fluoride solutions, space maintainers"
+      ],
+      "cite": {
+        "doc": "DD24",
+        "page": 1,
+        "page_note": "Attachment B p.1",
+        "quote": "Preventive: cleaning (including scaling in the presence of generalized moderate or severe gingival inflammation-full mouth, which is considered to be a Diagnostic and Preventive Benefit, and periodontal maintenance, which is considered to be a Major Benefit for payment purposes), topical application of fluoride solutions, space maintainers.",
+        "section": "Attachment B — 'Diagnostic and Preventive Services' item (2)",
+        "fact_id": "delta-msu-eoc-2024:class_membership:n/a:cleaning",
+        "review_status": "quote_verified_in_text"
+      }
+    },
+    {
+      "name": "Basic Services",
+      "plan_share_bp_in": {
+        "value": 8000,
+        "status": "DOC",
+        "cite": {
+          "doc": "DD24",
+          "page": 2,
+          "page_note": "Attachment A p.2",
+          "quote": "Basic Services 80% 80% 50% 50%",
+          "section": "Attachment A — 'Contract Benefit Levels'",
+          "fact_id": "delta-msu-eoc-2024:coinsurance:High:basic",
+          "review_status": "quote_verified_in_text"
+        },
+        "note": "",
+        "basis": "of Maximum Allowance; same % for PPO and Premier/Non-Delta"
+      },
+      "plan_share_bp_out": {
+        "value": 8000,
+        "status": "DOC",
+        "cite": {
+          "doc": "DD24",
+          "page": 2,
+          "page_note": "Attachment A p.2",
+          "quote": "Basic Services 80% 80% 50% 50%",
+          "section": "Attachment A — 'Contract Benefit Levels'",
+          "fact_id": "delta-msu-eoc-2024:coinsurance:High:basic",
+          "review_status": "quote_verified_in_text"
+        },
+        "note": "same percentage for Premier and Non-Delta Dental dentists",
+        "basis": "of Maximum Allowance; same % for PPO and Premier/Non-Delta"
+      },
+      "procedures_text": [
+        "Oral Surgery: extractions and other surgical procedures",
+        "Restorative: amalgam and resin-based composite restorations (fillings) and prefabricated crowns",
+        "Sealants",
+        "Palliative",
+        "Denture Repairs"
+      ],
+      "cite": {
+        "doc": "DD24",
+        "page": 1,
+        "page_note": "Attachment B p.1",
+        "quote": "Restorative: amalgam and resin-based composite restorations (fillings) and prefabricated crowns for treatment of carious lesions.",
+        "section": "Attachment B — 'Basic Services'",
+        "fact_id": "delta-msu-eoc-2024:class_membership:n/a:composite",
+        "review_status": "quote_verified_in_text"
+      }
+    },
+    {
+      "name": "Major Services",
+      "plan_share_bp_in": {
+        "value": 5000,
+        "status": "DOC",
+        "cite": {
+          "doc": "DD24",
+          "page": 2,
+          "page_note": "Attachment A p.2",
+          "quote": "Major Services 50% 50% 25% 25%",
+          "section": "Attachment A — 'Contract Benefit Levels'",
+          "fact_id": "delta-msu-eoc-2024:coinsurance:High:major",
+          "review_status": "quote_verified_in_text"
+        },
+        "note": "",
+        "basis": "of Maximum Allowance; same % for PPO and Premier/Non-Delta"
+      },
+      "plan_share_bp_out": {
+        "value": 5000,
+        "status": "DOC",
+        "cite": {
+          "doc": "DD24",
+          "page": 2,
+          "page_note": "Attachment A p.2",
+          "quote": "Major Services 50% 50% 25% 25%",
+          "section": "Attachment A — 'Contract Benefit Levels'",
+          "fact_id": "delta-msu-eoc-2024:coinsurance:High:major",
+          "review_status": "quote_verified_in_text"
+        },
+        "note": "same percentage for Premier and Non-Delta Dental dentists",
+        "basis": "of Maximum Allowance; same % for PPO and Premier/Non-Delta"
+      },
+      "procedures_text": [
+        "Crowns and Inlays/Onlays",
+        "Prosthodontics",
+        "Endodontics",
+        "Periodontics"
+      ],
+      "cite": {
+        "doc": "DD24",
+        "page": 1,
+        "page_note": "Attachment B p.1",
+        "quote": "Crowns and Inlays/Onlays: treatment of carious lesions (visible decay of the hard tooth structure) when teeth cannot be restored with amalgam or resin-based composites.",
+        "section": "Attachment B — 'Major Services' item (1)",
+        "fact_id": "delta-msu-eoc-2024:class_membership:n/a:crown",
+        "review_status": "quote_verified_in_text"
+      }
+    }
   ],
   "class_of": {
-    "crown": {"value": "Major", "status": "DOC", "cite": {"page": 2, "quote": "Crowns and Inlays/Onlays", "page_note": "Attachment B, Major Services"}},
-    "composite": {"value": "Basic", "status": "DOC", "cite": {"page": 1, "quote": "resin-based composite restorations (fillings)", "page_note": "Attachment B, Basic Services"}},
-    "cleaning": {"value": "Diagnostic & Preventive", "status": "DOC", "cite": {"page": 1, "quote": "cleanings", "page_note": "Attachment B, Diagnostic & Preventive"}},
-    "root_canal": {"value": "Major", "status": "DOC", "cite": {"page": 2, "quote": "Endodontics: treatment of diseases and injuries of the tooth pulp.", "page_note": "Attachment B, Major Services"}}
+    "exam": {
+      "value": "Diagnostic and Preventive Services",
+      "status": "DOC",
+      "note": "Oral examinations are named in Limitation 2(a) ('We will pay for oral examinations ...'), which confirms exams are the Diagnostic service.",
+      "cite": {
+        "doc": "DD24",
+        "page": 1,
+        "page_note": "Attachment B p.1",
+        "quote": "Diagnostic: procedures to aid the Provider in determining required dental treatment.",
+        "section": "Attachment B — 'Diagnostic and Preventive Services' item (1)",
+        "fact_id": "delta-msu-eoc-2024:class_membership:n/a:exam",
+        "review_status": "quote_verified_in_text"
+      }
+    },
+    "cleaning": {
+      "value": "Diagnostic and Preventive Services",
+      "status": "DOC",
+      "note": "Periodontal maintenance is a Major Benefit 'for payment purposes'. One fetch pass placed the page break mid-item ('...fluoride solutions, space' / 'maintainers.'), so the end of this item may sit on footer p.2.",
+      "cite": {
+        "doc": "DD24",
+        "page": 1,
+        "page_note": "Attachment B p.1",
+        "quote": "Preventive: cleaning (including scaling in the presence of generalized moderate or severe gingival inflammation-full mouth, which is considered to be a Diagnostic and Preventive Benefit, and periodontal maintenance, which is considered to be a Major Benefit for payment purposes), topical application of fluoride solutions, space maintainers.",
+        "section": "Attachment B — 'Diagnostic and Preventive Services' item (2)",
+        "fact_id": "delta-msu-eoc-2024:class_membership:n/a:cleaning",
+        "review_status": "quote_verified_in_text"
+      }
+    },
+    "fluoride_child": {
+      "value": "Diagnostic and Preventive Services",
+      "status": "DOC",
+      "note": "",
+      "cite": {
+        "doc": "DD24",
+        "page": 1,
+        "page_note": "Attachment B p.1",
+        "quote": "topical application of fluoride solutions, space maintainers.",
+        "section": "Attachment B — 'Diagnostic and Preventive Services' item (2) Preventive",
+        "fact_id": "delta-msu-eoc-2024:class_membership:n/a:fluoride_child",
+        "review_status": "quote_verified_in_text"
+      }
+    },
+    "bitewing_xrays": {
+      "value": "Diagnostic and Preventive Services",
+      "status": "AMBIGUOUS",
+      "cite": {
+        "doc": "DD24",
+        "page": 2,
+        "page_note": "Attachment B p.2",
+        "quote": "Bitewing x-rays are limited to two (2) times in a Calendar Year when provided to Enrollees under age 18 and one (1) time each Calendar Year for Enrollees age 18 and over.",
+        "section": "Attachment B — Limitations item 3(e) 'X-ray limitations'",
+        "fact_id": "delta-msu-eoc-2024:frequency:n/a:bitewing_xrays",
+        "review_status": "quote_verified_in_text"
+      },
+      "note": "The 'Diagnostic' category description does not name x-rays; the only x-ray text is Limitation 3 (x-ray limitations). Diagnostic is the only plausible home — computed as such and labeled AMBIGUOUS.",
+      "fact_id": "delta-msu-eoc-2024:class_membership:n/a:bitewing_xrays"
+    },
+    "sealant": {
+      "value": "Basic Services",
+      "status": "DOC",
+      "note": "Sealants are a BASIC service in this EOC (not Diagnostic & Preventive).",
+      "cite": {
+        "doc": "DD24",
+        "page": 1,
+        "page_note": "Attachment B p.1",
+        "quote": "Sealants: topically applied acrylic, plastic or composite materials used to seal developmental grooves and pits in permanent molars for the purpose of preventing decay.",
+        "section": "Attachment B — 'Basic Services'",
+        "fact_id": "delta-msu-eoc-2024:class_membership:n/a:sealant",
+        "review_status": "quote_verified_in_text"
+      }
+    },
+    "extraction_simple": {
+      "value": "Basic Services",
+      "status": "DOC",
+      "note": "No distinction between simple and surgical extractions is printed; both are 'Oral Surgery'. Also under Basic: 'General Anesthesia or IV Sedation: when administered by a Provider for covered Oral Surgery or selected endodontic and periodontal surgical procedures.' and 'Palliative: emergency treatment to relieve pain.' Oral Surgery is not among the services subject to the 12-month waiting period.",
+      "cite": {
+        "doc": "DD24",
+        "page": 1,
+        "page_note": "Attachment B p.1",
+        "quote": "Oral Surgery: extractions and other surgical procedures (including pre- and post-operative care).",
+        "section": "Attachment B — 'Basic Services' item (1)",
+        "fact_id": "delta-msu-eoc-2024:class_membership:n/a:extraction",
+        "review_status": "quote_verified_in_text"
+      }
+    },
+    "extraction_surgical": {
+      "value": "Basic Services",
+      "status": "DOC",
+      "note": "Limitation 20: 'Oral Surgery services are covered once in a lifetime except removal of cysts and lesions and incision and drainage procedures, which are covered once in the same day.'",
+      "cite": {
+        "doc": "DD24",
+        "page": 1,
+        "page_note": "Attachment B p.1",
+        "quote": "Oral Surgery: extractions and other surgical procedures (including pre- and post-operative care).",
+        "section": "Attachment B — 'Basic Services' item (1)",
+        "fact_id": "delta-msu-eoc-2024:class_membership:n/a:extraction_surgical",
+        "review_status": "quote_verified_in_text"
+      }
+    },
+    "composite": {
+      "value": "Basic Services",
+      "status": "DOC",
+      "note": "'Restorative' IS named in the 12-month waiting period (Attachment A p.2).",
+      "cite": {
+        "doc": "DD24",
+        "page": 1,
+        "page_note": "Attachment B p.1",
+        "quote": "Restorative: amalgam and resin-based composite restorations (fillings) and prefabricated crowns for treatment of carious lesions.",
+        "section": "Attachment B — 'Basic Services'",
+        "fact_id": "delta-msu-eoc-2024:class_membership:n/a:composite",
+        "review_status": "quote_verified_in_text"
+      }
+    },
+    "amalgam": {
+      "value": "Basic Services",
+      "status": "DOC",
+      "note": "",
+      "cite": {
+        "doc": "DD24",
+        "page": 1,
+        "page_note": "Attachment B p.1",
+        "quote": "Restorative: amalgam and resin-based composite restorations (fillings) and prefabricated crowns for treatment of carious lesions.",
+        "section": "Attachment B — 'Basic Services'",
+        "fact_id": "delta-msu-eoc-2024:class_membership:n/a:amalgam",
+        "review_status": "quote_verified_in_text"
+      }
+    },
+    "root_canal_molar": {
+      "value": "Major Services",
+      "status": "DOC",
+      "note": "Endodontics is subject to the 12-month waiting period. Fetch passes placed Major Services on footer p.1; one marker pass suggests p.2 — verify.",
+      "cite": {
+        "doc": "DD24",
+        "page": 1,
+        "page_note": "Attachment B p.1",
+        "quote": "Endodontics: treatment of diseases and injuries of the tooth pulp.",
+        "section": "Attachment B — 'Major Services' item (3)",
+        "fact_id": "delta-msu-eoc-2024:class_membership:n/a:root_canal_molar",
+        "review_status": "quote_verified_in_text"
+      }
+    },
+    "scaling_root_planing": {
+      "value": "Major Services",
+      "status": "DOC",
+      "note": "Periodontics is subject to the 12-month waiting period.",
+      "cite": {
+        "doc": "DD24",
+        "page": 1,
+        "page_note": "Attachment B p.1",
+        "quote": "Periodontics: treatment of gums and bones supporting teeth.",
+        "section": "Attachment B — 'Major Services' item (4)",
+        "fact_id": "delta-msu-eoc-2024:class_membership:n/a:scaling_root_planing",
+        "review_status": "quote_verified_in_text"
+      }
+    },
+    "crown": {
+      "value": "Major Services",
+      "status": "DOC",
+      "note": "Existing DD24 quote 'Crowns and Inlays/Onlays' is a verbatim prefix of this item.",
+      "cite": {
+        "doc": "DD24",
+        "page": 1,
+        "page_note": "Attachment B p.1",
+        "quote": "Crowns and Inlays/Onlays: treatment of carious lesions (visible decay of the hard tooth structure) when teeth cannot be restored with amalgam or resin-based composites.",
+        "section": "Attachment B — 'Major Services' item (1)",
+        "fact_id": "delta-msu-eoc-2024:class_membership:n/a:crown",
+        "review_status": "quote_verified_in_text"
+      }
+    },
+    "cast_crown": {
+      "value": "Major Services",
+      "status": "DOC",
+      "note": "The document does not distinguish full cast metal crowns from other crowns; 'cast restoration' appears only in the Continuation of Benefits 'incurred' rule ('a crown, bridge or cast restoration').",
+      "cite": {
+        "doc": "DD24",
+        "page": 1,
+        "page_note": "Attachment B p.1",
+        "quote": "Crowns and Inlays/Onlays: treatment of carious lesions (visible decay of the hard tooth structure) when teeth cannot be restored with amalgam or resin-based composites.",
+        "section": "Attachment B — 'Major Services' item (1)",
+        "fact_id": "delta-msu-eoc-2024:class_membership:n/a:cast_crown",
+        "review_status": "quote_verified_in_text"
+      }
+    },
+    "denture_partial": {
+      "value": "Major Services",
+      "status": "DOC",
+      "note": "Prosthodontics is subject to the 12-month waiting period. 'Denture Repairs: repair to partial or complete dentures, including rebase procedures and relining.' is a separate BASIC item.",
+      "cite": {
+        "doc": "DD24",
+        "page": 1,
+        "page_note": "Attachment B p.1",
+        "quote": "Prosthodontics: procedures for construction of fixed bridges, partial or complete dentures and the repair of fixed bridges.",
+        "section": "Attachment B — 'Major Services' item (2)",
+        "fact_id": "delta-msu-eoc-2024:class_membership:n/a:denture_partial",
+        "review_status": "quote_verified_in_text"
+      }
+    }
   },
-  "allowed_amounts": {
-    "crown": {"value": null, "status": "UNKNOWN", "note": "Payment is 'calculated based on the lesser of the Dentist's Submitted Fee or the Maximum Allowance'; the fee schedule is not part of this document"},
-    "composite": {"value": null, "status": "UNKNOWN", "note": "same"}
-  },
+  "allowed_amounts": {},
+  "allowed_amounts_note": "No fee schedule or dollar allowances anywhere in the EOC ('Maximum Contract Allowance' is defined but not listed). Payment is 'the lesser of the Dentist's Submitted Fee or the Maximum Allowance'.",
   "alternate_benefit": {
     "status": "DOC",
-    "cite": {"page": 1, "quote": "porcelain, resin or similar materials for crowns placed on a maxillary second or third molar, or on any mandibular molar", "page_note": "Attachment B, Limitations 1 'Optional Services'"},
-    "conditions": [{"procedure_key": "crown", "condition": "mandibular_molar", "basis_key": null}],
-    "note": "The alternate allowance ('the lower cost of the customary service or standard practice') is not stated as a dollar amount in this document."
+    "cite": {
+      "doc": "DD24",
+      "page": 2,
+      "page_note": "Attachment B p.2",
+      "quote": "porcelain, resin or similar materials for crowns placed on a maxillary second or third molar, or on any mandibular molar (an allowance will be made for a porcelain fused to high noble metal crown)",
+      "section": "Attachment B — Limitations item (1) ('Optional Services'), example c)",
+      "fact_id": "delta-msu-eoc-2024:alternate_benefit:n/a:optional_services",
+      "review_status": "quote_verified_in_text"
+    },
+    "rule_cite": {
+      "doc": "DD24",
+      "page": 2,
+      "page_note": "Attachment B p.2",
+      "quote": "If an Enrollee receives Optional Services, an alternate Benefit will be allowed, which means We will base Benefits on the lower cost of the customary service or standard practice instead of on the higher cost of the Optional Service.",
+      "section": "Attachment B — Limitations item (1)",
+      "fact_id": "delta-msu-eoc-2024:alternate_benefit:n/a:rule_sentence",
+      "review_status": "quote_verified_in_text"
+    },
+    "conditions": [
+      {
+        "procedure_key": "crown",
+        "condition": "upper_second_third_or_lower_molar",
+        "basis_key": null,
+        "text": "porcelain, resin or similar materials for crowns placed on a maxillary second or third molar, or on any mandibular molar (an allowance will be made for a porcelain fused to high noble metal crown)"
+      }
+    ],
+    "note": "The alternate allowance (porcelain fused to high noble metal crown) is not stated as a dollar amount; plan payment is an UPPER bound when the condition applies. No posterior-composite downgrade clause was found (Limitations 1–35 searched).",
+    "posterior_composite_fact_id": "delta-msu-eoc-2024:alternate_benefit:n/a:posterior_composite"
   },
-  "waiting_months": {"value": {"Basic": 12, "Major": 12}, "status": "DOC", "cite": {"page": 2, "quote": "Restorative, Endodontics, Periodontics, and Prosthodontics are limited to Enrollees who have been enrolled in the Contract for 12 consecutive months.", "page_note": "Attachment A p.2 'Waiting Periods'"}},
+  "waiting_months": {
+    "value": {
+      "composite": 12,
+      "amalgam": 12,
+      "root_canal_molar": 12,
+      "scaling_root_planing": 12,
+      "denture_partial": 12,
+      "crown": 12,
+      "cast_crown": 12
+    },
+    "status": "AMBIGUOUS",
+    "cite": {
+      "doc": "DD24",
+      "page": 2,
+      "page_note": "Attachment A p.2",
+      "quote": "Restorative, Endodontics, Periodontics, and Prosthodontics are limited to Enrollees who have been enrolled in the Contract for 12 consecutive months.",
+      "section": "Attachment A — 'Waiting Periods:' (first bullet)",
+      "fact_id": "delta-msu-eoc-2024:waiting_period:n/a:restorative_endo_perio_prostho",
+      "review_status": "quote_verified_in_text"
+    },
+    "note": "The 12-month wait names 'Restorative, Endodontics, Periodontics, and Prosthodontics' — procedure groups, not classes. Applied to fillings (Restorative), root canals (Endodontics), scaling and root planing (Periodontics) and partial dentures (Prosthodontics). 'Crowns and Inlays/Onlays' is a separate Major item not named in the sentence — applied here as 12 months and flagged AMBIGUOUS. Oral Surgery (extractions), Sealants, Palliative care and Denture Repairs are not named — no wait applied.",
+    "ambiguous_fact_id": "delta-msu-eoc-2024:waiting_period:n/a:crown"
+  },
   "frequency": [
-    {"procedure_key": "cleaning", "clock": "calendar_count", "n": 2, "cite": {"page": 1, "quote": "no more than twice in a Calendar Year", "page_note": "Attachment B Limitations"}},
-    {"procedure_key": "crown", "clock": "per_tooth_months", "n": 60, "cite": {"page": 1, "quote": "not more often than once in any 60 month period", "page_note": "Attachment B Limitations (crowns/inlays/onlays, age 12 and older)"}}
+    {
+      "procedure_key": "exam",
+      "clock": "calendar_count",
+      "n": 2,
+      "cite": {
+        "doc": "DD24",
+        "page": 2,
+        "page_note": "Attachment B p.2",
+        "quote": "We will pay for oral examinations (except after-hours exams and exams for observation) and cleanings (including scaling in the presence of generalized moderate or severe gingival inflammation-full mouth, periodontal maintenance in the presence of inflamed gums or any combination thereof) no more than twice in a Calendar Year.",
+        "section": "Attachment B — Limitations item 2(a) 'Exam and cleaning limitations'",
+        "fact_id": "delta-msu-eoc-2024:frequency:n/a:exam",
+        "review_status": "quote_verified_in_text"
+      },
+      "period_as_printed": "no more than twice in a Calendar Year"
+    },
+    {
+      "procedure_key": "cleaning",
+      "clock": "calendar_count",
+      "n": 2,
+      "cite": {
+        "doc": "DD24",
+        "page": 2,
+        "page_note": "Attachment B p.2",
+        "quote": "no more than twice in a Calendar Year",
+        "section": "Attachment B — Limitations item 2(a)",
+        "fact_id": "delta-msu-eoc-2024:frequency:n/a:cleaning",
+        "review_status": "quote_verified_in_text"
+      },
+      "period_as_printed": "no more than twice in a Calendar Year"
+    },
+    {
+      "procedure_key": "bitewing_xrays",
+      "clock": "calendar_count",
+      "n": 1,
+      "cite": {
+        "doc": "DD24",
+        "page": 2,
+        "page_note": "Attachment B p.2",
+        "quote": "Bitewing x-rays are limited to two (2) times in a Calendar Year when provided to Enrollees under age 18 and one (1) time each Calendar Year for Enrollees age 18 and over.",
+        "section": "Attachment B — Limitations item 3(e) 'X-ray limitations'",
+        "fact_id": "delta-msu-eoc-2024:frequency:n/a:bitewing_xrays",
+        "review_status": "quote_verified_in_text"
+      },
+      "period_as_printed": "one (1) time each Calendar Year for Enrollees age 18 and over (twice under age 18)",
+      "note": "computed with the age-18-and-over limit; age is not collected"
+    },
+    {
+      "procedure_key": "fluoride_child",
+      "clock": "calendar_count",
+      "n": 2,
+      "cite": {
+        "doc": "DD24",
+        "page": 3,
+        "page_note": "Attachment B p.3",
+        "quote": "Topical application of fluoride solutions is limited to Enrollees to age 19 and no more than twice in a Calendar Year.",
+        "section": "Attachment B — Limitations item (4)",
+        "fact_id": "delta-msu-eoc-2024:age_limit:n/a:fluoride_child",
+        "review_status": "needs_review"
+      },
+      "period_as_printed": "no more than twice in a Calendar Year; Enrollees to age 19"
+    },
+    {
+      "procedure_key": "scaling_root_planing",
+      "clock": "per_quadrant_months",
+      "n": 24,
+      "cite": {
+        "doc": "DD24",
+        "page": 4,
+        "page_note": "Attachment B p.4",
+        "quote": "Benefits for periodontal scaling and root planing in the same quadrant are limited to once in every 24-month period.",
+        "section": "Attachment B — Limitations item 19(a) 'Periodontal limitations'",
+        "fact_id": "delta-msu-eoc-2024:frequency:n/a:scaling_root_planing",
+        "review_status": "quote_verified_in_text"
+      },
+      "period_as_printed": "once in every 24-month period (same quadrant)",
+      "note": "per quadrant — not enforced in the arithmetic (quadrant history is not collected); shown as a rule"
+    },
+    {
+      "procedure_key": "crown",
+      "clock": "per_tooth_months",
+      "n": 60,
+      "cite": {
+        "doc": "DD24",
+        "page": 5,
+        "page_note": "Attachment B p.5",
+        "quote": "Crowns and Inlays/Onlays are limited to Enrollees age 12 and older and are covered not more often than once in any 60 month period except when We determine the existing Crown or Inlay/Onlay is not satisfactory and cannot be made satisfactory because the tooth involved has experienced extensive loss or changes to tooth structure or supporting tissues.",
+        "section": "Attachment B — Limitations item (24)",
+        "fact_id": "delta-msu-eoc-2024:frequency:n/a:crown",
+        "review_status": "needs_review"
+      },
+      "period_as_printed": "not more often than once in any 60 month period (age 12 and older)",
+      "note": "per tooth — not enforced in the arithmetic; shown as a rule"
+    },
+    {
+      "procedure_key": "denture_partial",
+      "clock": "interval_months",
+      "n": 60,
+      "cite": {
+        "doc": "DD24",
+        "page": 5,
+        "page_note": "Attachment B p.5",
+        "quote": "Prosthodontic appliances that were provided under any Delta Dental program will be replaced only after 60 months have passed, except when We determine that there is such extensive loss of remaining teeth or change in supporting tissue that the existing fixed bridge or denture cannot be made satisfactory.",
+        "section": "Attachment B — Limitations item (29)",
+        "fact_id": "delta-msu-eoc-2024:frequency:n/a:denture_partial",
+        "review_status": "quote_verified_in_text"
+      },
+      "period_as_printed": "replaced only after 60 months have passed"
+    }
   ],
-  "excluded": {"implant": {"value": true, "status": "DOC", "cite": {"page": 3, "quote": "We will not pay for implants", "page_note": "Attachment B Exclusion 34; credit toward a pontic or standard denture is described"}}},
-  "missing_tooth": {"present": null, "status": "UNKNOWN", "note": "not found in the pages read"},
-  "oon_rule": {"value": {"in": "Delta Dental PPO dentists accept Delta Dental's allowance (contracted); amounts above it are not billed", "out": "Payment for covered services provided by a Non-Delta Dental Dentist is calculated based on the lesser of the Dentist's Submitted Fee or the Maximum Allowance. Because these Dentists are not contracted, We cannot limit the amount charged to You. A Non-Delta Dental Dentist can bill You the difference"}, "status": "DOC", "cite": {"page": 6, "quote": "A Non-Delta Dental Dentist can bill You the difference", "page_note": "main document pp.6-7"}},
-  "dos_rule": {"value": "completion", "status": "UNKNOWN", "note": "The EOC's 'incurred' rule (crown 'at the time the tooth or teeth are prepared') sits under Continuation of Benefits and governs termination liability; the claim-payment date rule is not stated in this document. Computed with completion date and labeled as an assumption."},
-  "premium_monthly": {"employee_only": {"value": null, "status": "UNKNOWN", "note": "premiums are not in the Evidence of Coverage"}},
+  "excluded": {
+    "implant": {
+      "value": true,
+      "status": "DOC",
+      "note": "Limitation 33 (Attachment B p.6): 'We will not pay for implants…'; a credit toward a pontic or standard denture is described. Exclusion 34 (p.7) also excludes implant services.",
+      "cite": {
+        "doc": "DD24",
+        "page": 6,
+        "page_note": "Attachment B p.6",
+        "quote": "We will not pay for implants (artificial teeth implanted into or on bone or gums), their removal or other associated procedures, but We will credit the cost of a pontic or standard complete or partial denture toward the cost of the implant associated appliance, i.e., the implant supported crown or denture. The implant appliance is not covered.",
+        "section": "Attachment B — Limitations item (33) (NOT the Exclusions list)",
+        "fact_id": "delta-msu-eoc-2024:exclusion:n/a:implant_limitation",
+        "review_status": "quote_verified_in_text"
+      }
+    },
+    "night_guard": {
+      "value": true,
+      "status": "DOC",
+      "note": "Exclusion 6: '… Night Guards/Occlusal guards …' are listed as examples of excluded treatment.",
+      "cite": {
+        "doc": "DD24",
+        "page": 6,
+        "page_note": "Attachment B p.6",
+        "quote": "Examples include but are not limited to: equilibration, periodontal splinting, complete occlusal adjustments or Night Guards/Occlusal guards and abfraction.",
+        "section": "Attachment B — Exclusions item (6)",
+        "fact_id": "delta-msu-eoc-2024:exclusion:n/a:night_guard",
+        "review_status": "quote_verified_in_text"
+      }
+    }
+  },
+  "missing_tooth": {
+    "present": null,
+    "status": "UNKNOWN",
+    "note": "No missing-tooth clause found in Attachment B Limitations 1–35 or Exclusions 1–34 (fetcher reported none); not asserted as absent."
+  },
+  "oon_rule": {
+    "value": {
+      "in": "PPO Dentists have agreed to accept the PPO Maximum Allowance as payment in full for covered services.",
+      "out": "Payment for covered services provided by a Non-Delta Dental Dentist is calculated based on the lesser of the Dentist's Submitted Fee or the Maximum Allowance. A Non-Delta Dental Dentist can bill You the difference between the Dentist's Submitted Fee and the amount paid by Us unless Benefits are assigned in accordance with the Payment of Claims provision."
+    },
+    "status": "DOC",
+    "cite": {
+      "doc": "DD24",
+      "page": 6,
+      "page_note": "p.6",
+      "quote": "A Non-Delta Dental Dentist can bill You the difference between the Dentist's Submitted Fee and the amount paid by Us unless Benefits are assigned in accordance with the Payment of Claims provision.",
+      "section": "How Claims are Paid — Non-Delta Dental Dentist paragraph (runs onto p.7)",
+      "fact_id": "delta-msu-eoc-2024:oon_basis:n/a:balance_billing",
+      "review_status": "quote_verified_in_text"
+    },
+    "payment_basis_cite": {
+      "doc": "DD24",
+      "page": 6,
+      "page_note": "p.6",
+      "quote": "Payment for covered services provided by a Non-Delta Dental Dentist is calculated based on the lesser of the Dentist's Submitted Fee or the Maximum Allowance.",
+      "section": "How Claims are Paid — Non-Delta Dental Dentist paragraph",
+      "fact_id": "delta-msu-eoc-2024:oon_basis:n/a:payment_basis",
+      "review_status": "quote_verified_in_text"
+    },
+    "in_network_cite": {
+      "doc": "DD24",
+      "page": 6,
+      "page_note": "p.6",
+      "quote": "PPO Dentists have agreed to accept the PPO Maximum Allowance as payment in full for covered services.",
+      "section": "How Claims are Paid — PPO Dentist paragraph",
+      "fact_id": "delta-msu-eoc-2024:oon_basis:n/a:ppo_accepts_allowance",
+      "review_status": "quote_verified_in_text"
+    },
+    "footnote_cite": {
+      "doc": "DD24",
+      "page": 2,
+      "page_note": "Attachment A p.2",
+      "quote": "† Reimbursement is based on PPO Contracted Fees for PPO Providers, Premier Contracted Fees for Premier Providers and Program Allowance for Non-Delta Dental Providers.",
+      "section": "Attachment A — footnote to 'Contract Benefit Levels'",
+      "fact_id": "delta-msu-eoc-2024:oon_basis:n/a:attachment_a_footnote",
+      "review_status": "quote_verified_in_text"
+    }
+  },
+  "dos_rule": {
+    "value": "completion",
+    "status": "UNKNOWN",
+    "cite": {
+      "doc": "DD24",
+      "page": 4,
+      "page_note": "p.4",
+      "quote": "a crown, bridge or cast restoration, at the time the tooth or teeth are prepared; root canal therapy, at the time the pulp chamber is opened;",
+      "section": "'Continuation of Benefits' (main document; one pass reported p.3, another p.4)",
+      "fact_id": "delta-msu-eoc-2024:other:n/a:incurred_rule",
+      "review_status": "needs_review"
+    },
+    "note": "The EOC's 'incurred' rule (crown 'at the time the tooth or teeth are prepared') sits under Continuation of Benefits and governs termination liability; the claim-payment date rule is not stated. Computed with the completion date and labeled as an assumption."
+  },
+  "premium_monthly": {
+    "employee_only": {
+      "value": 4157,
+      "status": "AMBIGUOUS",
+      "note": "Printed on the Benefit Highlights sheet revised 8/26/2020 (file dated 2021). No plan year is printed on the sheet; the rate may not apply to 2024–2026. Shown with its document date, not as a current premium.",
+      "cite": {
+        "doc": "MSU20h",
+        "page": 1,
+        "page_note": "p.1",
+        "quote": "Enrollee only $28.82 $41.57",
+        "section": "'Monthly Rates' table (column order Low, High)",
+        "fact_id": "msu-dental-benefit-highlights-2021:premium_monthly:High:enrollee_only",
+        "review_status": "quote_verified_in_text"
+      }
+    },
+    "employee_plus_dependents": {
+      "value": 8649,
+      "status": "AMBIGUOUS",
+      "note": "same sheet; 'Enrollee + 1 or more dependents' tier",
+      "cite": {
+        "doc": "MSU20h",
+        "page": 1,
+        "page_note": "p.1",
+        "quote": "Enrollee + 1 or more dependents $60.13 $86.49",
+        "section": "'Monthly Rates' table (column order Low, High)",
+        "fact_id": "msu-dental-benefit-highlights-2021:premium_monthly:High:enrollee_plus_dependents",
+        "review_status": "quote_verified_in_text"
+      }
+    }
+  },
   "unsupported_rules": [
-    {"quote": "$1,200 per dependent child Enrollee to age 26 per lifetime", "page": 1, "reason": "orthodontic lifetime maximum — not modeled in this prototype; shown as a Limitation if an orthodontic line is entered"},
-    {"quote": "Pre-Treatment Estimate requests are not required", "page": 5, "reason": "pre-treatment estimates are described (valid 365 days; 'does not guarantee payment') — informational only"}
-  ]
+    {
+      "quote": "$1,200 per dependent child Enrollee to age 26 per lifetime",
+      "page": 1,
+      "page_note": "Attachment A p.1",
+      "doc": "DD24",
+      "reason": "orthodontic lifetime maximum — not modeled",
+      "fact_id": "delta-msu-eoc-2024:orthodontic_max:High"
+    },
+    {
+      "quote": "A Pre-Treatment Estimate does not guarantee payment.",
+      "page": 5,
+      "page_note": "p.5",
+      "doc": "DD24",
+      "reason": "pre-treatment estimates are described (not required; 'does not guarantee payment') — informational",
+      "fact_id": "delta-msu-eoc-2024:other:n/a:pre_treatment_estimate"
+    },
+    {
+      "quote": "We will not cover replacement of an amalgam or resin-based composite restorations (fillings) or prefabricated crowns within 24 months of treatment if the service is provided by the same Provider/Provider office.",
+      "page": 3,
+      "page_note": "Attachment B p.3",
+      "doc": "DD24",
+      "reason": "replacement of a filling within 24 months by the same provider is not covered — replacement rule, not enforced",
+      "fact_id": "delta-msu-eoc-2024:frequency:n/a:filling_replacement"
+    },
+    {
+      "quote": "Retreatment of root canal therapy by the same Provider/Provider office within 24 months is considered part of the original procedure.",
+      "page": 4,
+      "page_note": "Attachment B p.4",
+      "doc": "DD24",
+      "reason": "root canal retreatment within 24 months by the same provider is part of the original procedure — not enforced",
+      "fact_id": "delta-msu-eoc-2024:frequency:n/a:root_canal_retreatment"
+    },
+    {
+      "quote": "Oral Surgery services are covered once in a lifetime except removal of cysts and lesions and incision and drainage procedures, which are covered once in the same day.",
+      "page": 4,
+      "page_note": "Attachment B p.4",
+      "doc": "DD24",
+      "reason": "oral surgery services covered once in a lifetime — shown as printed; 'per tooth' is an inference the document does not make",
+      "fact_id": "delta-msu-eoc-2024:frequency:n/a:oral_surgery"
+    },
+    {
+      "quote": "through age 15 on permanent molars if they are without caries (decay) or restorations on the occlusal surface.",
+      "page": 3,
+      "page_note": "Attachment B p.3",
+      "doc": "DD24",
+      "reason": "sealant age/tooth condition (through age 15, permanent molars) — age is not collected",
+      "fact_id": "delta-msu-eoc-2024:age_limit:n/a:sealant"
+    },
+    {
+      "quote": "Crowns and Inlays/Onlays are limited to Enrollees age 12 and older",
+      "page": 5,
+      "page_note": "Attachment B p.5",
+      "doc": "DD24",
+      "reason": "crowns limited to Enrollees age 12 and older — age is not collected",
+      "fact_id": "delta-msu-eoc-2024:age_limit:n/a:crown"
+    },
+    {
+      "quote": "A complete intraoral series and panoramic film are each limited to once every 60 months.",
+      "page": 2,
+      "page_note": "Attachment B p.2",
+      "doc": "DD24",
+      "reason": "complete series / panoramic film once every 60 months — not an internal procedure",
+      "fact_id": "delta-msu-eoc-2024:frequency:n/a:full_mouth_xrays"
+    },
+    {
+      "quote": "Note that periodontal maintenance, Procedure Codes that include periodontal maintenance and full mouth debridement are covered as a Major Benefit and that routine cleanings (including scaling in presence of generalized moderate or severe gingival inflammation-full mouth) are covered as a Diagnostic and Preventive Benefit.",
+      "page": 2,
+      "page_note": "Attachment B p.2",
+      "doc": "DD24",
+      "reason": "periodontal maintenance is a Major Benefit for payment purposes — not an internal procedure",
+      "fact_id": "delta-msu-eoc-2024:class_membership:n/a:periodontal_maintenance"
+    },
+    {
+      "quote": "Any annual Deductible amount satisfied by the Enrollees under the Contractholder's previous dental care plan from January 1st to the Effective Date will be credited towards the annual Deductible under the Contract.",
+      "page": 1,
+      "page_note": "Attachment A p.1",
+      "doc": "DD24",
+      "reason": "prior-plan deductible credit for the 2024 transition — not modeled",
+      "fact_id": "delta-msu-eoc-2024:deductible_takeover:n/a"
+    }
+  ],
+  "conflicts": [
+    {
+      "field": "waiting_period (Basic Services)",
+      "a": {
+        "value": "12 months for Restorative, Endodontics, Periodontics, Prosthodontics",
+        "quote": "Restorative, Endodontics, Periodontics, and Prosthodontics are limited to Enrollees who have been enrolled in the Contract for 12 consecutive months.",
+        "doc": "Evidence of Coverage PPO-ENT-MS-E-R23, Attachment A p.2",
+        "date": "2024-01-01"
+      },
+      "b": {
+        "value": "Basic Services: none; Major Services 12 months; Prosthodontics 12 months; Orthodontics 12 months",
+        "quote": "Waiting Period(s) Basic Services None Major Services 12 Months Prosthodontics 12 Months Orthodontics 12 Months",
+        "doc": "Delta Dental Plan Benefit Highlights, HL_PPO #128472EA (rev. 7/20) / HLT_PPO_2COL_HILO_DDIC (Rev. 8/26/2020), posted at hrm.msstate.edu as 'BHS_Mississippi State University 2021.pdf'",
+        "date": "2020-08-26"
+      },
+      "note": "The EOC (contract document, 2024) applies the wait to Restorative (fillings, a Basic service); the older highlights sheet says Basic has no wait. The EOC is the governing document and is newer; both are shown per protocol. Whether 'Crowns and Inlays/Onlays' (Major, not literally listed) wait is AMBIGUOUS in the EOC; the highlights sheet's 'Major Services 12 Months' would include them.",
+      "source_id": "delta-msu-eoc-2024"
+    },
+    {
+      "field": "deductible waiver (Low Plan)",
+      "a": {
+        "value": "Diagnostic & Preventive only",
+        "quote": "Diagnostic & Preventive Services",
+        "doc": "EOC Attachment A p.1, Low Plan column (cell text concatenated in extraction)",
+        "date": "2024-01-01"
+      },
+      "b": {
+        "value": "Diagnostic & Preventive and Orthodontics (both plans)",
+        "quote": "Deductibles waived for Diagnostic & Preventive (D & P) and Orthodontics",
+        "doc": "Benefit Highlights HL_PPO #128472EA (rev. 7/20)",
+        "date": "2020-08-26"
+      },
+      "note": "Practically moot for the Low Plan (no Orthodontic benefit), but the wording differs.",
+      "source_id": "delta-msu-eoc-2024"
+    },
+    {
+      "field": "existing preset DD24 citations vs document (not a document-vs-document conflict; recorded for the seeding fix list)",
+      "a": {
+        "value": "DD24 quotes 'Diagnostic & Preventive 100%', 'Basic 80%', 'Major 50%' (Attachment A p.2)",
+        "quote": "Diagnostic & Preventive 100%",
+        "doc": "fixtures/plans/dd24.json",
+        "date": "2026-10-03"
+      },
+      "b": {
+        "value": "Document rows read 'Diagnostic and Preventive Services 100% 100% 100% 100%', 'Basic Services 80% 80% 50% 50%', 'Major Services 50% 50% 25% 25%'",
+        "quote": "Basic Services 80% 80% 50% 50%",
+        "doc": "EOC Attachment A p.2",
+        "date": "2024-01-01"
+      },
+      "note": "DD24 quotes are not verbatim and would fail tools/verify_citations.py. Also: DD24 'excluded.implant' cite says page 3 / 'Exclusion 34' but 'We will not pay for implants' is Limitation 33 on Attachment B footer p.6 (Exclusion 34 on p.7 reads 'services for implants (prosthetic appliances placed into or on the bone...'); DD24 frequency.cleaning and frequency.crown cite page 1 but sit on Attachment B footer p.2 (Limitation 2(a)) and p.5 (Limitation 24, +/-1); DD24 alternate_benefit cite page 1 -> Attachment B footer p.2 (Limitation 1); DD24 classes[Major].cite joins two separate items ('(3) Endodontics: ...' and '(4) Periodontics: ...') into one quote — item numbers sit between them in the text; DD24 waiting_months {Basic:12, Major:12} is broader than the text (Oral Surgery, Sealants, Palliative, Denture Repairs are Basic services not named in the waiting period; Crowns and Inlays/Onlays not literally named); DD24 alternate_benefit condition 'mandibular_molar' omits 'maxillary second or third molar'.",
+      "source_id": "delta-msu-eoc-2024"
+    },
+    {
+      "field": "waiting_period (Basic Services)",
+      "a": {
+        "value": "Basic Services: None",
+        "quote": "Waiting Period(s) Basic Services None Major Services 12 Months Prosthodontics 12 Months Orthodontics 12 Months",
+        "doc": "Benefit Highlights HL_PPO #128472EA (rev. 7/20)",
+        "date": "2020-08-26"
+      },
+      "b": {
+        "value": "12 months for Restorative (Basic), Endodontics, Periodontics, Prosthodontics",
+        "quote": "Restorative, Endodontics, Periodontics, and Prosthodontics are limited to Enrollees who have been enrolled in the Contract for 12 consecutive months.",
+        "doc": "Evidence of Coverage PPO-ENT-MS-E-R23, Attachment A p.2",
+        "date": "2024-01-01"
+      },
+      "note": "Different documents, different dates; the EOC is the contract document.",
+      "source_id": "msu-dental-benefit-highlights-2021"
+    }
+  ],
+  "procedure_codes": {},
+  "procedure_codes_note": "The EOC prints no CDT codes (it defines 'Procedure Code' by reference to CDT)."
 }

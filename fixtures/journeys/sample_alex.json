@@ -1,0 +1,91 @@
+{
+  "id": "sample-alex",
+  "label": "Sample journey — Alex Chen (fictional) on the NCFlex Dental Classic Option 2026 (real public plan document)",
+  "is_sample": true,
+  "plan_ref": "ML26",
+  "user_ref": "alex",
+  "note": "Plan rules come from the public 2026 NCFlex Dental Plan Details with page citations. Every personal record is fictional and labeled by source. Completion describes recorded activity only.",
+  "stages": [
+    {
+      "id": "start", "title": "Starting point", "island": "Harbor of Beginnings",
+      "purpose": "Select the plan, add the dentist's treatment plan and the pre-treatment estimate response, and enter benefit statement figures.",
+      "finance": {"kind": "plan_details"},
+      "checkpoints": [
+        {"id": "plan-doc", "label": "Plan document selected", "kind": "document", "status": "completed", "completed_by": "user", "date": {"value": "2026-10-01", "source": "user"},
+         "detail": "NCFlex Dental Plan — Classic Option, plan year 2026, selected from the preset catalog. Rules are read from the public 2026 Plan Details (pages 24–26) with page citations; the certificate governs where they differ.",
+         "source": {"label": "2026 NCFlex Dental Plan Details, pp.24–26 (NC OSHR)", "doc": "ML26", "page": 24}, "action": {"type": "open_landmark", "target": "harbor"},
+         "due_date": null, "completed_at": "2026-10-01", "links": {"document": "doc-ml26", "landmark": "harbor"}},
+        {"id": "treatment-plan", "label": "Treatment plan added", "kind": "document", "status": "completed", "completed_by": "user", "date": {"value": "2026-09-24", "source": "document"},
+         "detail": "Treatment plan from Greensboro Family Dental (fictional), dated 2026-09-24: root canal therapy on tooth 19 ($1,150) and a porcelain/ceramic crown on tooth 19 ($1,250). Typed by the user.",
+         "source": {"label": "Treatment plan (typed), dated 2026-09-24"}, "action": {"type": "open_landmark", "target": "lighthouse"},
+         "due_date": null, "completed_at": "2026-10-01", "links": {"document": "doc-a-treatment-plan", "treatment_items": ["ti-a-rct-19", "ti-a-crown-19"]}},
+        {"id": "pretreatment", "label": "Pre-treatment estimate response added", "kind": "document", "status": "completed", "completed_by": "user", "date": {"value": "2026-09-30", "source": "document"},
+         "detail": "MetLife's pre-treatment estimate response dated 2026-09-30 lists the negotiated fees: root canal $980, crown $1,020. These allowed amounts are not in the plan document; they are used as entered (USER). The response states it is not a guarantee of payment.",
+         "source": {"label": "Pre-treatment estimate response (typed), dated 2026-09-30"}, "action": {"type": "open_landmark", "target": "cove"},
+         "due_date": null, "completed_at": "2026-10-01", "links": {"document": "doc-a-pretreatment"}},
+        {"id": "usage", "label": "Benefit statement entered", "kind": "review", "status": "completed", "completed_by": "user", "date": {"value": "2026-09-20", "source": "user"},
+         "detail": "Figures from a benefit statement dated 2026-09-20, entered by the user: deductible $25 met (applied 2026-04-14); plan paid $240 so far this year. Remaining annual maximum is derived: $1,500 − $240 = $1,260.",
+         "source": {"label": "Benefit statement figures entered by the user"}, "action": {"type": "open_landmark", "target": "lookout"},
+         "due_date": null, "completed_at": "2026-10-01", "links": {"document": "doc-a-statement", "landmark": "lookout"}}
+      ],
+      "linked_treatment_items": [], "instructions": null, "dates": null
+    },
+    {
+      "id": "before", "title": "Before your visit", "island": "Lantern Cove",
+      "purpose": "Review the projected costs and the appointment information the dental team supplied.",
+      "finance": {"kind": "estimate"},
+      "checkpoints": [
+        {"id": "estimate-reviewed", "label": "Cost estimate reviewed", "kind": "estimate", "status": "current",
+         "detail": "Projected costs for the root canal and the crown under the Classic Option rules, each step traceable to a page of the 2026 Plan Details. Two rules could not be read (waiting period, alternate benefit) and are flagged, not assumed.",
+         "action": {"type": "open_landmark", "target": "lighthouse"}, "due_date": null, "completed_at": null, "links": {"estimate": "planned", "landmark": "lighthouse"}},
+        {"id": "appointment-info", "label": "Appointment information recorded", "kind": "appointment", "status": "completed", "completed_by": "dental_team", "date": {"value": "2026-10-27", "source": "dental_team"},
+         "detail": "Root canal appointment on 2026-10-27, confirmed by the dental team (appointment card). The crown dates (preparation 2026-11-10, completion 2026-11-24) are planning dates from the treatment plan, not confirmed appointments.",
+         "source": {"label": "Appointment card from Greensboro Family Dental (fictional), 2026-10-01"}, "action": {"type": "enter_date", "field": "appointment_date"},
+         "due_date": "2026-10-27", "completed_at": "2026-10-01", "links": {"treatment_items": ["ti-a-rct-19"]}},
+        {"id": "prep-instructions", "label": "Preparation instructions viewed", "kind": "instruction", "status": "awaiting_info",
+         "detail": "No preparation instructions have been supplied by the dental team. OralCompass does not generate instructions.",
+         "action": {"type": "add_document", "field": "prep_instructions"}, "due_date": null, "completed_at": null}
+      ],
+      "linked_treatment_items": ["ti-a-rct-19", "ti-a-crown-19"], "instructions": null,
+      "dates": {"label": "Dates", "values": ["2026-10-27 (root canal, confirmed by the dental team)", "2026-11-10 (crown preparation, planned)", "2026-11-24 (crown completion, planned)"], "source": "appointment card 2026-10-01; treatment plan 2026-09-24 (typed)"}
+    },
+    {
+      "id": "visit", "title": "Your appointment", "island": "Anchor Point",
+      "purpose": "Record the visit and organize the documents received.",
+      "finance": {"kind": "estimate_vs_received"},
+      "checkpoints": [
+        {"id": "visit-recorded", "label": "Appointment recorded", "kind": "appointment", "status": "upcoming", "date": null,
+         "detail": "Record the date of the visit and which procedures were performed, as stated by the dental team.", "action": {"type": "mark_recorded"}, "due_date": "2026-10-27", "completed_at": null},
+        {"id": "visit-docs", "label": "Documents received organized", "kind": "document", "status": "upcoming",
+         "detail": "Receipts, treatment notes and the plan's response can be stored here.", "action": {"type": "add_document", "field": "visit_documents"}, "due_date": null, "completed_at": null}
+      ],
+      "linked_treatment_items": ["ti-a-rct-19"], "instructions": null, "dates": null
+    },
+    {
+      "id": "recovery", "title": "Recovery", "island": "Quiet Shoals",
+      "purpose": "View the dental team's aftercare instructions and record milestones you mark or the dental team confirms.",
+      "finance": {"kind": "none"},
+      "checkpoints": [
+        {"id": "aftercare", "label": "Aftercare instructions viewed", "kind": "instruction", "status": "awaiting_info",
+         "detail": "No aftercare instructions have been supplied by the dental team yet. When added, they are shown as written, with their source.", "action": {"type": "add_document", "field": "aftercare_instructions"}, "due_date": null, "completed_at": null},
+        {"id": "recovery-milestone", "label": "Recovery milestone recorded", "kind": "milestone", "status": "upcoming",
+         "detail": "Milestones you mark are labeled as user-marked; milestones confirmed by the dental team are labeled as confirmed, with the date they gave. Checklist completion is not a statement about healing.",
+         "action": {"type": "mark_recorded"}, "due_date": null, "completed_at": null}
+      ],
+      "linked_treatment_items": ["ti-a-rct-19"], "instructions": null, "dates": null
+    },
+    {
+      "id": "followup", "title": "Follow-up", "island": "Compass Rest",
+      "purpose": "Organize the crown appointments, questions, records, and updated cost information.",
+      "finance": {"kind": "updated_costs"},
+      "checkpoints": [
+        {"id": "followup-appt", "label": "Crown appointment scheduled", "kind": "appointment", "status": "upcoming", "date": null,
+         "detail": "Planning dates from the treatment plan: preparation 2026-11-10, completion 2026-11-24. No confirmed appointment has been recorded.", "source": {"label": "Treatment plan 2026-09-24 (typed)"},
+         "action": {"type": "enter_date", "field": "followup_date"}, "due_date": null, "completed_at": null, "links": {"treatment_items": ["ti-a-crown-19"]}},
+        {"id": "updated-costs", "label": "Updated cost information reviewed", "kind": "estimate", "status": "upcoming",
+         "detail": "After the plan processes the root canal claim, the Explanation of Benefits can be entered here to compare the projected and actual amounts.", "action": {"type": "add_document", "field": "eob"}, "due_date": null, "completed_at": null}
+      ],
+      "linked_treatment_items": ["ti-a-crown-19"], "instructions": null, "dates": null
+    }
+  ]
+}
