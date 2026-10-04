@@ -324,3 +324,12 @@ describe("one checkpoint evidence rule for the map and the pipeline (finding web
     }
   });
 });
+
+describe("what if (finding demo-5)", () => {
+  it("the Answers log says when the estimate uses a hypothetical the person entered", () => {
+    const vm = buildPassage(alex);
+    const est = { ...alexEstimate, inputs: { ...alexEstimate.inputs, hypotheticals: { network: "out" } } };
+    expect(answersLog(vm, alex.journey, alex.plan, est).find((r) => r.key === "cost")?.dd).toBe("$902.00 · plan $1,098.00 (with a hypothetical you entered)");
+    expect(answersLog(vm, alex.journey, alex.plan, alexEstimate).find((r) => r.key === "cost")?.dd).toBe("$902.00 · plan $1,098.00");
+  });
+});

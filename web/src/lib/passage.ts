@@ -281,7 +281,11 @@ export function answersLog(vm: PassageVM, view: JourneyView | null, plan: PlanFi
   if (recalculating) cost = PASSAGE.recalculating;
   else if (!estimate) cost = PASSAGE.noEstimate;
   else if (estimate.status !== "estimate" || estimate.user_estimated_payment_cents == null) cost = PASSAGE.waitingInputs(estimate.missing_inputs.length);
-  else { cost = `${moneyText(estimate.user_estimated_payment_cents)} · ${PASSAGE.plan} ${moneyText(estimate.insurer_estimated_payment_cents)}${estimate.plan_payment_is_upper_bound ? ` ${PASSAGE.upperBoundParen}` : ""}`; calc = true; }
+  else {
+    const hypo = Object.keys(estimate.inputs?.hypotheticals ?? {}).length > 0;
+    cost = `${moneyText(estimate.user_estimated_payment_cents)} · ${PASSAGE.plan} ${moneyText(estimate.insurer_estimated_payment_cents)}${estimate.plan_payment_is_upper_bound ? ` ${PASSAGE.upperBoundParen}` : ""}${hypo ? ` ${PASSAGE.withHypothetical}` : ""}`;
+    calc = true;
+  }
   const rulesRow = `${vm.stepsCited} ${PASSAGE.step}${s(vm.stepsCited)} ${PASSAGE.cited} · ${vm.rulesNotStated} ${PASSAGE.rule}${s(vm.rulesNotStated)} ${PASSAGE.notStated}`;
   const from = plan ? `${plan.source_document.version_label} · ${plan.source_document.title}${plan.is_fictional ? ` · ${PASSAGE.fictional}` : ""}` : PASSAGE.noPlan;
   return [

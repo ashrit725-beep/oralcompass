@@ -29,6 +29,11 @@ export function useAppData() {
   const [busy, setBusy] = useState(false);
   const [samples, setSamples] = useState<JourneySample[]>([]);
   const [tick, setTick] = useState(0);
+  /** "What if" values the person types for one plan (labelled ASSUMED by the engine). Keyed by plan ref: nothing transfers between plans,
+   *  and a plan switch starts with none. Records are never changed by them. */
+  const [hypo, setHypo] = useState<{ ref: PlanRef; values: Record<string, unknown> }>({ ref: "", values: {} });
+  const hypotheticals = useMemo(() => (hypo.ref === planRef ? hypo.values : {}), [hypo, planRef]);
+  const hypoKey = JSON.stringify(hypotheticals);
 
   const stitches = useMemo(() => (evidence ? stitchesFromClauses(evidence.clauses) : []), [evidence]);
 
@@ -65,16 +70,17 @@ export function useAppData() {
         if (cancelled) return;
         setPlan(pm.model); setRules(ru.rules); setEvidence(ev);
         const planned = items.filter((i) => i.status === "planned" || i.status === "scheduled");
-        if (planned.length) { const est = await api.estimateFromRecords(planRef); if (!cancelled) setEstimate(est); }
+        if (planned.length) { const est = await api.estimateFromRecords(planRef, undefined, hypotheticals); if (!cancelled) setEstimate(est); }
         else setEstimate(null);
       } catch (e: any) { if (!cancelled) setError(`${UI.errorTitle}: ${e.message}`); }
       finally { if (!cancelled) setLoading(null); }
     })();
     return () => { cancelled = true; };
-  }, [planRef, items, tick]);
+  }, [planRef, items, tick, hypoKey]);
 
   const selectPlan = useCallback((ref: PlanRef) => setPlanRef(ref), []);
   const reestimate = useCallback(() => setTick((t) => t + 1), []);
+  const setHypotheticals = useCallback((values: Record<string, unknown>) => setHypo({ ref: planRef, values }), [planRef]);
 
   /** Switch the active journey (also follows its plan ref, as before). */
   const setView = useCallback((v: JourneyView | null) => { setViewState(v); if (v?.journey.plan_ref) setPlanRef(v.journey.plan_ref); }, []);
@@ -95,6 +101,6 @@ export function useAppData() {
     try { const v = await api.putInstructions(view.id, stageId, { text, source, given_on: givenOn }); setViewState(v); } catch (e: any) { setError(`${UI.errorTitle}: ${e.message}`); } finally { setBusy(false); }
   }, [view]);
 
-  return { planRef, selectPlan, reestimate, estimate, plan, rules, evidence, stitches, benefits, items, journeys, view, setView, samples, procedures, loading, error, busy, startJourney, patch, instructions, loadBase, loadRecords, plans };
+  return { planRef, selectPlan, reestimate, hypotheticals, setHypotheticals, estimate, plan, rules, evidence, stitches, benefits, items, journeys, view, setView, samples, procedures, loading, error, busy, startJourney, patch, instructions, loadBase, loadRecords, plans };
 }
 export type AppData = ReturnType<typeof useAppData>;

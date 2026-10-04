@@ -11,6 +11,8 @@ import { DetailPanel } from "@/components/DetailPanel";
 import { AnswersLog } from "@/components/journey/AnswersLog";
 import { CareTimeline } from "@/components/journey/CareTimeline";
 import { IslandStrip } from "@/components/journey/IslandStrip";
+import { ToothEdit } from "@/components/journey/ToothEdit";
+import { WhatIfNetwork } from "@/components/journey/WhatIfNetwork";
 import { Money } from "@/components/Money";
 import { OverviewList } from "@/components/OverviewList";
 import { UI } from "@/lib/copy";
@@ -175,5 +177,19 @@ describe("island strip pages (finding web-correctness-30)", () => {
     expect(html).toContain("Procedures 13 to 14");
     expect((html.match(/class="unstyled island-chip[^"]*"[^>]*aria-pressed="false"/g) ?? []).length).toBeGreaterThanOrEqual(12);
     expect(renderToStaticMarkup(<IslandStrip vm={vm} selected={null} onSelect={noop} mobile={false} />)).not.toContain("Procedures 1 to");
+  });
+});
+
+describe("what if and tooth controls (finding demo-5)", () => {
+  it("the network hypothetical offers records / in / out and labels an active value ASSUMED", () => {
+    const off = renderToStaticMarkup(<WhatIfNetwork value={null} recorded="in" onChange={noop} />);
+    expect(off).toContain("As in your records (in-network)");
+    expect(off).toContain("Out-of-network (hypothetical)");
+    expect(off).not.toContain("badge-assumed");
+    expect(renderToStaticMarkup(<WhatIfNetwork value="out" recorded="in" onChange={noop} />)).toContain("badge-assumed");
+  });
+  it("the tooth field starts from the record", () => {
+    const item = f.items.find((i) => i.status === "planned" || i.status === "scheduled")!;
+    expect(renderToStaticMarkup(<ToothEdit item={item} />)).toContain(`value="${item.tooth}"`);
   });
 });

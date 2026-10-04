@@ -5,6 +5,7 @@ import { DRAWER } from "@/lib/copy/drawer";
 import { money, stitchesForLine, uniqueStitches } from "@/lib/stitches";
 import type { IslandVM, PassageVM, Stitch } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { WhatIfNetwork } from "@/components/journey/WhatIfNetwork";
 import { Figure, Row, Section, type SectionProps } from "./shared";
 
 const statusWord = (i: IslandVM) => (i.state === "estimate" ? DRAWER.statusEstimate : i.state === "not_covered" ? DRAWER.statusNotCovered : i.state === "unresolved" ? DRAWER.statusUnresolved : DRAWER.statusPending);
@@ -15,7 +16,9 @@ const statusWord = (i: IslandVM) => (i.state === "estimate" ? DRAWER.statusEstim
  * assumptions and movers range, the "could change" sentence, and the count of care stages after the route. Visited islands' claim figures
  * never enter these totals.
  */
-export function HarborSections({ island, vm, estimate, stitches, onSelectStitch }: SectionProps & { vm: PassageVM }) {
+export function HarborSections({ island, vm, estimate, stitches, onSelectStitch, hypotheticals, onHypotheticals, benefits }: SectionProps & { vm: PassageVM }) {
+  const hypoNet = hypotheticals?.network === "in" || hypotheticals?.network === "out" ? hypotheticals.network : null;
+  const recordedNet = (vm.islands.find((i) => i.item?.network)?.item?.network ?? (benefits as { network_default?: string } | null)?.network_default ?? null) as string | null;
   const unresolved = !estimate || estimate.status === "unresolved";
   const chips: Stitch[] = estimate ? uniqueStitches(estimate.ledger.lines.flatMap((l) => stitchesForLine(l, stitches))) : [];
   const last = vm.islands[vm.islands.length - 1];
@@ -36,6 +39,9 @@ export function HarborSections({ island, vm, estimate, stitches, onSelectStitch 
           <p className="range"><EvidenceBadge status="UNKNOWN" /> {UI.rangeBecause(money(estimate.movers.range[0]), money(estimate.movers.range[1]), estimate.movers.movers.filter((m) => m.impact_cents).map((m) => m.unknown).join(" and "))}</p>
         )}
         {estimate && estimate.status === "unresolved" && <MissingInputs estimate={estimate} compact />}
+        {onHypotheticals && vm.islands.length > 0 && (
+          <WhatIfNetwork value={hypoNet} recorded={recordedNet} onChange={(v) => { const { network: _n, ...rest } = hypotheticals ?? {}; onHypotheticals(v ? { ...rest, network: v } : rest); }} />
+        )}
       </Section>
       {vm.islands.length > 0 && (
         <Section k="calculation" title={DRAWER.sPerIsland}>

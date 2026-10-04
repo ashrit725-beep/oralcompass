@@ -65,6 +65,9 @@ export interface ProcedureDrawerProps {
   onRecordsChanged?: () => void;
   /** Additive (optional): false when the drawer was opened from the keyboard; the gold cast line then stays off (opacity-only entrance). */
   castLine?: boolean;
+  /** Additive (optional; finding demo-5): the plan's "what if" values and their setter (the Harbor Light's network hypothetical). */
+  hypotheticals?: Record<string, unknown>;
+  onHypotheticals?: (values: Record<string, unknown>) => void;
 }
 
 const SHEET_STAGGER = {
@@ -73,7 +76,7 @@ const SHEET_STAGGER = {
 };
 
 export function ProcedureDrawer(props: ProcedureDrawerProps) {
-  const { island, vm, plan, rules, benefits, estimate, stitches, selectedCheckpoint, onSelectStitch, onOpenDocuments, onClose, mobile, returnFocus, onRecordsChanged, castLine = true } = props;
+  const { island, vm, plan, rules, benefits, estimate, stitches, selectedCheckpoint, onSelectStitch, onOpenDocuments, onClose, mobile, returnFocus, onRecordsChanged, castLine = true, hypotheticals, onHypotheticals } = props;
   const reduce = useReducedMotion();
   const item = island.item;
   // A planned island whose estimate has no ledger lines at all (usage not provided) is in fog: give the sections an unresolved pseudo-line so
@@ -115,7 +118,7 @@ export function ProcedureDrawer(props: ProcedureDrawerProps) {
     return () => window.clearTimeout(t);
   }, [island.id, selectedCheckpoint, arrivedAt, goTo, mobile, titleId]);
 
-  const sectionProps: SectionProps = { island, line, item, rule, trail, plan, rules, benefits, estimate, stitches, onSelectStitch, onOpenDocuments, mobile, arrivedAt, onRecordsChanged };
+  const sectionProps: SectionProps = { island, line, item, rule, trail, plan, rules, benefits, estimate, stitches, onSelectStitch, onOpenDocuments, mobile, arrivedAt, onRecordsChanged, hypotheticals, onHypotheticals };
   const planRef = estimate?.plan_code ?? plan.plan_code;
   const scope: AssistScope = {
     plan_ref: planRef, estimate_id: estimate?.id, treatment_item_id: item?.id, line_index: island.lineIndex,
@@ -137,7 +140,7 @@ export function ProcedureDrawer(props: ProcedureDrawerProps) {
     const tail = [<CalculationSection key="calculation" {...sectionProps} />, <ClauseEvidenceSection key="evidence" {...sectionProps} />, <AskSection key="ask" scope={scope} onOpenStitch={openStitch} />];
     return mobile ? [finalCost, ...core, ...tail] : [...core, finalCost, ...tail];
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [island, vm, plan, rules, benefits, estimate, stitches, mobile, arrivedAt, selectedCp?.key]);
+  }, [island, vm, plan, rules, benefits, estimate, stitches, mobile, arrivedAt, selectedCp?.key, hypotheticals, onHypotheticals]);
 
   const crumbs = island.kind === "start" ? DRAWER.crumbsStart(island.place) : island.kind === "destination" ? DRAWER.crumbsLight(island.place)
     : island.kind === "visited" ? DRAWER.crumbsVisited(island.place) : island.kind === "marginal" ? DRAWER.crumbsMarginal(island.place)

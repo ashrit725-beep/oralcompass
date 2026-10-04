@@ -346,3 +346,12 @@
 .island-strip-pages { display: flex; flex-wrap: wrap; gap: var(--s-2); }
 .island-strip-pages .island-chip[aria-pressed="true"] { border-color: var(--select); font-weight: 600; }
 .passage-controls .marginal-more { font-weight: 600; width: 112px; max-width: 112px; min-height: 44px; }
+
+/* "what if" on the Harbor Light and the tooth field in the Procedure section (finding demo-5) */
+.what-if { margin: var(--s-3) 0 0; padding: var(--s-2) var(--s-3) var(--s-3); border: 1px dashed var(--rule); border-radius: var(--r-2); display: grid; gap: 4px; min-width: 0; }
+.what-if legend { padding: 0 4px; font-weight: 600; font-size: 14px; }
+.what-if label { font-size: 13px; color: var(--ink-soft); }
+.what-if select { min-height: 44px; max-width: 100%; }
+.what-if-note { margin: 4px 0 0; font-size: 13px; display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: center; }
+.tooth-edit { margin-top: var(--s-2); }
+.tooth-edit input { max-width: 8rem; min-height: 44px; }
