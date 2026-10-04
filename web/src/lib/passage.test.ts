@@ -93,7 +93,7 @@ describe("buildPassage — Alex on ML26 (CLAUDE.md rule 8: $902.00 you / $1,098.
     const u = answersLog(buildPassage({ ...alex, estimate: unresolved }), alex.journey, alex.plan, unresolved);
     expect(u[2].dd).toBe("We need more info (1 thing)");
     expect(u[2].dd).not.toContain("$0.00");
-    expect(answersLog(vm, alex.journey, alex.plan, alexEstimate, true)[2].dd).toBe("Recalculating…");
+    expect(answersLog(vm, alex.journey, alex.plan, alexEstimate, true)[2].dd).toBe("Doing the math…");
   });
   it("checkpoint accessible names carry the whole fact", () => {
     const cps = vm.islands[0].checkpoints;
