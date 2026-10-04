@@ -77,6 +77,12 @@ describe("RedactionSummary: the count", () => {
     expect($$(".rs-chip")).toHaveLength(0);
     expect($("details.rs-list")).toBeNull();
   });
+
+  it("does not claim none were found when the PDF has no text layer", () => {
+    render([], ["", "  "]);
+    expect(headline()).toBe("No text could be read on this device.");
+    expect(headline()).not.toContain("No personal identifiers found");
+  });
 });
 
 describe("RedactionSummary: Keep in text", () => {

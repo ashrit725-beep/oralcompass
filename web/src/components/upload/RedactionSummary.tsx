@@ -58,11 +58,13 @@ export function RedactionSummary({ pageTexts, found, onContinue, onChooseAnother
 
   const noteId = useId();
   const nothingRemoved = result.total === 0;
+  // A scanned PDF has no text layer: nothing could be checked here, so do not claim "No personal identifiers found" (S13).
+  const noText = pageTexts.every((t) => !t.trim());
 
   return (
     <div className="up-redaction rs">
-      <Headline total={result.total} anyFound={found.length > 0 || result.total > 0} />
-      <p className="rs-caption">{nothingRemoved ? UPLOAD.noneFoundBody : UPLOAD.summaryCaption}</p>
+      <Headline total={result.total} anyFound={found.length > 0 || result.total > 0} noText={noText} />
+      <p className="rs-caption">{noText ? UPLOAD.noTextBody : nothingRemoved ? UPLOAD.noneFoundBody : UPLOAD.summaryCaption}</p>
       <Chips result={result} />
       {keptCount > 0 && <p className="rs-kept">{UPLOAD.keptCount(keptCount)}</p>}
 
@@ -89,7 +91,7 @@ export function RedactionSummary({ pageTexts, found, onContinue, onChooseAnother
 }
 
 /** The step heading: the count in the display serif, the whole sentence as the accessible name. Polite announcement on change only. */
-function Headline({ total, anyFound }: { total: number; anyFound: boolean }) {
+function Headline({ total, anyFound, noText = false }: { total: number; anyFound: boolean; noText?: boolean }) {
   const reduce = useReducedMotion();
   const [shown, setShown] = useState(reduce ? total : 0);
   useEffect(() => { setShown(total); }, [total]);
@@ -114,7 +116,7 @@ function Headline({ total, anyFound }: { total: number; anyFound: boolean }) {
             </span>
           </>
         ) : (
-          <span data-rs-headline="">{UPLOAD.noneFoundTitle}</span>
+          <span data-rs-headline="">{noText ? UPLOAD.noTextTitle : UPLOAD.noneFoundTitle}</span>
         )}
       </PaneHeading>
       <p className="sr-only" role="status" aria-live="polite" aria-atomic="true">{announce}</p>

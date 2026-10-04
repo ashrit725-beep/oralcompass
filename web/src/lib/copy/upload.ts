@@ -59,6 +59,8 @@ export const UPLOAD = {
   identifiersRemovedWords: (n: number) => (n === 1 ? "personal identifier removed before AI analysis" : "personal identifiers removed before AI analysis"),
   noneFoundTitle: "No personal identifiers found.",
   noneFoundBody: "The AI receives the plan text as is.",
+  noTextTitle: "No text could be read on this device.",
+  noTextBody: "This PDF has no text layer, so nothing could be checked or removed here before upload.",
   summaryCaption: "Found and removed on this device. The AI receives only the plan text it needs: coverage clauses, deductible, annual maximum, procedure codes, percentages, exclusions, waiting periods and limits.",
   categoriesLabel: "Removed, by kind",
   categoryCount: (c: string, n: number) => {
