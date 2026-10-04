@@ -2,7 +2,7 @@ import { MissingInputs } from "@/components/CostTrail";
 import { EvidenceBadge } from "@/components/Primitives";
 import { UI } from "@/lib/copy";
 import { DRAWER } from "@/lib/copy/drawer";
-import { money, stitchesForLine, uniqueStitches } from "@/lib/stitches";
+import { money, stepContextFor, stitchesForLine, uniqueStitches } from "@/lib/stitches";
 import type { IslandVM, PassageVM, Stitch } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Figure, Row, Section, type SectionProps } from "./shared";
@@ -15,9 +15,9 @@ const statusWord = (i: IslandVM) => (i.state === "estimate" ? DRAWER.statusEstim
  * assumptions and movers range, the "could change" sentence, and the count of care stages after the route. Visited islands' claim figures
  * never enter these totals.
  */
-export function HarborSections({ island, vm, estimate, stitches, onSelectStitch }: SectionProps & { vm: PassageVM }) {
+export function HarborSections({ island, vm, rules, estimate, stitches, onSelectStitch }: SectionProps & { vm: PassageVM }) {
   const unresolved = !estimate || estimate.status === "unresolved";
-  const chips: Stitch[] = estimate ? uniqueStitches(estimate.ledger.lines.flatMap((l) => stitchesForLine(l, stitches))) : [];
+  const chips: Stitch[] = estimate ? uniqueStitches(estimate.ledger.lines.flatMap((l) => stitchesForLine(l, stitches, stepContextFor(l, rules)))) : [];
   const last = vm.islands[vm.islands.length - 1];
   const after = last?.soundingsAfter ?? null;
   return (

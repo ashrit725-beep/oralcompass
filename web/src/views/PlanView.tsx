@@ -121,7 +121,7 @@ export function PlanView({ data, mobile, landmark, onLandmark, stitch, onStitch,
             <div className="detail-body">
               <LandmarkContent landmark={landmark} plan={plan} summary={summary} benefits={benefitsFor} rules={rules} estimate={estimate} stitches={stitches} selected={stitch} onSelect={onStitch} prominentScope onOpenDocuments={onOpenDocuments}
                                depth={depth} onDepth={setDepth} planRef={planRef} onBenefitsSaved={onBenefitsSaved} />
-              {landmark === "lighthouse" && (estimate ? <CostTrail estimate={estimate} stitches={stitches} selected={stitch} onSelect={onStitch} prominentScope /> : (
+              {landmark === "lighthouse" && (estimate ? <CostTrail estimate={estimate} stitches={stitches} rules={rules} selected={stitch} onSelect={onStitch} prominentScope /> : (
                 <>
                   <p className="muted"><EvidenceBadge status="UNKNOWN" /> {PLAN.noProcedures}</p>
                   {procedures.length > 0 && <TreatmentPlanImporter procedures={procedures} onAdded={() => { setLive(PLAN.recalculating); loadRecords(); reestimate(); }} compact />}

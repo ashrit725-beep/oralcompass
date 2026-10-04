@@ -1,14 +1,16 @@
 import { useState } from "react";
 import { UI } from "../lib/copy";
-import { money, signed, stitchForLabel, stitchForStep } from "../lib/stitches";
+import { money, signed, stepContextFor, stitchForLabel, stitchForStep } from "../lib/stitches";
 import { buildTrail } from "../lib/trail";
-import type { LedgerLine, SavedEstimate, Stitch } from "../lib/types";
+import type { CoverageRule, LedgerLine, SavedEstimate, Stitch } from "../lib/types";
 import { EvidenceBadge, StitchChip } from "./Primitives";
 
 interface Props {
   estimate: SavedEstimate; stitches: Stitch[]; selected?: Stitch; onSelect: (s: Stitch) => void; prominentScope?: boolean;
   /** Render one line only, without the line tabs, the estimate hero and the estimate-level notes (the drawer's "How was this calculated?"). */
   lineIndex?: number;
+  /** The plan's coverage rule rows: a coinsurance step then cites its own class row, not the first CO quote on the page. */
+  rules?: CoverageRule[];
 }
 
 /**
@@ -17,7 +19,7 @@ interface Props {
  * With `lineIndex` the same trail renders a single line inside the procedure drawer: no tabs, no hero (the drawer's Final cost section
  * carries it), every amount sits in the step's `<li>` next to its stitch chip or badge, and the receipt table keeps its stitch in the amount cell.
  */
-export function CostTrail({ estimate, stitches, selected, onSelect, prominentScope, lineIndex }: Props) {
+export function CostTrail({ estimate, stitches, selected, onSelect, prominentScope, lineIndex, rules }: Props) {
   const lines = estimate.ledger.lines;
   const [idx, setIdx] = useState(0);
   const one = lineIndex != null;
@@ -27,6 +29,7 @@ export function CostTrail({ estimate, stitches, selected, onSelect, prominentSco
   const line: LedgerLine | undefined = lines[Math.min(one ? lineIndex : idx, lines.length - 1)];
   if (!line) return <MissingInputs estimate={estimate} />;
   const trail = buildTrail(line);
+  const ctx = stepContextFor(line, rules);
   const hid = one ? `trail-h-${lineIndex}` : "trail-h";
   return (
     <section className={`trail ${one ? "trail-one" : ""}`} aria-labelledby={hid}>
@@ -49,7 +52,7 @@ export function CostTrail({ estimate, stitches, selected, onSelect, prominentSco
       )}
       <ol className="trail-steps" aria-label={`Cost trail for ${line.label}`}>
         {trail.steps.map((s, i) => {
-          const st = stitchForLabel(s.stitch, s.rule, stitches);
+          const st = stitchForLabel(s.stitch, s.rule, stitches, ctx);
           const mark = st ? <StitchChip stitch={st} selected={selected?.id === st.id} prominent={prominentScope} onSelect={onSelect} /> : s.rule === "fee" ? <EvidenceBadge status="USER" /> : one ? <EvidenceBadge status={s.rule === "total" ? "DOC" : "USER"} /> : null;
           return (
             <li key={s.key} className={`trail-step owner-${s.owner} ${s.key === "you" ? "is-total" : ""}`}>
@@ -93,7 +96,7 @@ export function CostTrail({ estimate, stitches, selected, onSelect, prominentSco
         <summary>Engine receipt (every step, as computed)</summary>
         <table className="receipt"><tbody>
           {line.steps.map((s, i) => {
-            const st = one ? stitchForStep(s, stitches) : undefined;
+            const st = one ? stitchForStep(s, stitches, ctx) : undefined;
             return (
               <tr key={i} className={`owner-${s.owner}`}>
                 <th scope="row">{s.label}</th>

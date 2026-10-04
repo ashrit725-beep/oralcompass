@@ -61,18 +61,36 @@ export function buildStitches(plan: PlanFixture): Stitch[] {
   return list;
 }
 
-/** Map a Ledger step to its stitch: the engine labels steps `${doc}#p${page}` plus a rule code; we pick the stitch on that page with that rule. */
-export function stitchForStep(step: Step, stitches: Stitch[]): Stitch | undefined {
+/**
+ * The line's exact clause context. The engine labels every step with a page only (`ML26#p25`), and one page holds the coverage table for
+ * every class, so a coinsurance step resolved by page alone lands on whichever CO quote sorts first (Type I "100% 100% 100% after
+ * deductible" for a Type II line). The rule row's `coverage_cite` names the line's own class row; CO steps resolve through it first.
+ */
+export interface StepContext { coverageCite?: Cite | null }
+/** Context for a ledger line from the plan's coverage rule rows (matched by procedure key). */
+export function stepContextFor(line: { procedure_key?: string | null } | undefined, rules: { procedure_key: string; coverage_cite?: Cite | null }[] | undefined): StepContext | undefined {
+  const key = line?.procedure_key;
+  const row = key ? rules?.find((r) => r.procedure_key === key) : undefined;
+  return row ? { coverageCite: row.coverage_cite ?? null } : undefined;
+}
+
+/** Map a Ledger step to its stitch: the engine labels steps `${doc}#p${page}` plus a rule code; we pick the stitch on that page with that rule
+ *  (for CO, the line's own class row when the context names it). */
+export function stitchForStep(step: Step, stitches: Stitch[], ctx?: StepContext): Stitch | undefined {
   if (!step.stitch) return undefined;
   const m = /^(.+)#p(\d+)$/.exec(step.stitch);
   if (!m) return undefined;
   const page = Number(m[2]);
+  if (step.rule === "CO" && ctx?.coverageCite) {
+    const exact = stitchForCite(ctx.coverageCite, stitches, m[1]);
+    if (exact) return exact;
+  }
   return stitches.find((s) => s.doc === m[1] && s.page === page && s.ruleCodes.includes(step.rule))
     ?? stitches.find((s) => s.doc === m[1] && s.page === page);
 }
 /** Same lookup for a raw stitch label (e.g. from the cost trail). */
-export function stitchForLabel(label: string | null, rule: string, stitches: Stitch[]): Stitch | undefined {
-  return label ? stitchForStep({ label: "", cents: 0, owner: "", rule, stitch: label }, stitches) : undefined;
+export function stitchForLabel(label: string | null, rule: string, stitches: Stitch[], ctx?: StepContext): Stitch | undefined {
+  return label ? stitchForStep({ label: "", cents: 0, owner: "", rule, stitch: label }, stitches, ctx) : undefined;
 }
 export function stitchForCite(cite: Cite | null | undefined, stitches: Stitch[], defaultDoc: string): Stitch | undefined {
   if (!cite) return undefined;
@@ -86,8 +104,8 @@ export function circled(n: number): string {
   return base[n - 1] ?? `(${n})`;
 }
 /** Additive (drawer agent): the unique stitches behind one ledger line, in step order (spec §4.4 section 12). */
-export function stitchesForLine(line: { steps: Step[] }, stitches: Stitch[]): Stitch[] {
-  return uniqueStitches(line.steps.map((s) => stitchForStep(s, stitches)));
+export function stitchesForLine(line: { steps: Step[] }, stitches: Stitch[], ctx?: StepContext): Stitch[] {
+  return uniqueStitches(line.steps.map((s) => stitchForStep(s, stitches, ctx)));
 }
 /** Additive (drawer agent): de-duplicate stitches by id, keeping first appearance; undefined entries are dropped. */
 export function uniqueStitches(list: (Stitch | undefined | null)[]): Stitch[] {

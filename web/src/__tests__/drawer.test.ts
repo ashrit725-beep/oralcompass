@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { checkpointAmountWords, checkpointAriaName, checkpointsForLine, citeForRule, clockWords, conditionWords, missingForLine, rememberStitchAnchor, sectionForRule, stitchForCheckpoint, stitchScopeLabel, takeStitchAnchor } from "@/lib/drawer";
-import { stitchesForLine, stitchesFromClauses, uniqueStitches } from "@/lib/stitches";
+import { stepContextFor, stitchesForLine, stitchesFromClauses, stitchForStep, uniqueStitches } from "@/lib/stitches";
 import type { Clause, CoverageRule, LedgerLine, PlanFixture } from "@/lib/types";
 
 /** Alex's root canal line as the API returns it (api/app/records.py → engine): no D step (deductible met), no M step (within the maximum). */
@@ -114,5 +114,29 @@ describe("thread-pull anchor bridge", () => {
     rememberStitchAnchor(r);
     expect(takeStitchAnchor()).toBe(r);
     expect(takeStitchAnchor()).toBeNull();
+  });
+});
+
+describe("demo-3: a coinsurance step cites its own class row", () => {
+  // ML26 page 25 holds the coverage table for every class; sorted by quote, the Type I "100%" row comes first.
+  const page25: Clause[] = [
+    { n: 1, field: "classes[0].plan_share_bp_in.cite", doc: "ML26", page: 25, quote: "100% 100% 100% after deductible" },
+    { n: 2, field: "classes[2].plan_share_bp_in.cite", doc: "ML26", page: 25, quote: "50% after deductible 50% after deductible Not Covered" },
+    { n: 3, field: "classes[1].plan_share_bp_in.cite", doc: "ML26", page: 25, quote: "80% after deductible 60% after deductible 50% after deductible" },
+  ];
+  const st = stitchesFromClauses(page25);
+  it("resolves the root canal CO steps through the rule row's coverage cite, not the first CO quote on the page", () => {
+    const withoutCtx = stitchesForLine(alexLine, st);
+    expect(withoutCtx[0].quote.startsWith("100%")).toBe(true);           // the old behaviour this guards against
+    const list = stitchesForLine(alexLine, st, stepContextFor(alexLine, [rule]));
+    const co = list.find((s) => s.ruleCodes.includes("CO") && s.quote.includes("60%"));
+    expect(co).toBeDefined();
+    const coSteps = alexLine.steps.filter((s) => s.rule === "CO").map((s) => stitchForStep(s, st, stepContextFor(alexLine, [rule])));
+    expect(coSteps.every((s) => s?.quote.includes("60%") && !s.quote.startsWith("100%"))).toBe(true);
+    expect(stitchForStep(alexLine.steps[2], st, { coverageCite: rule.coverage_cite })?.quote).toContain("60%");
+  });
+  it("leaves non-CO steps and lines without a rule row on the page lookup", () => {
+    expect(stepContextFor({ procedure_key: "unknown" }, [rule])).toBeUndefined();
+    expect(stitchForStep(alexLine.steps[0], st, { coverageCite: rule.coverage_cite })?.quote).toBe(st[0].quote);
   });
 });

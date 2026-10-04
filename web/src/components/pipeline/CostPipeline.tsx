@@ -54,7 +54,7 @@ export function CostPipeline({ line, item, rule, plan, stitches, estimateId, mis
   const trail = useMemo(() => buildTrail(line), [line]);
   const lineMissing = useMemo(() => missingForLine(missing, line), [missing, line]);
   const cps = useMemo(() => checkpointsForLine(line, item, rule, plan, stitches, lineMissing), [line, item, rule, plan, stitches, lineMissing]);
-  const lineStitches = useMemo(() => stitchesForLine(line, stitches), [line, stitches]);
+  const lineStitches = useMemo(() => stitchesForLine(line, stitches, rule ? { coverageCite: rule.coverage_cite } : undefined), [line, stitches, rule]);
   const unresolved = line.status === "unresolved";
   const nodeCount = cps.length + (unresolved && item ? 1 : 0);
 

@@ -18,7 +18,7 @@ const RULE_CITES: CheckpointRule[] = ["N", "AB", "D", "CO", "M", "X", "W", "F"];
  */
 export function ClauseEvidenceSection({ line, rule, plan, estimate, stitches, onSelectStitch, onOpenDocuments }: SectionProps) {
   const doc = docOf(plan);
-  const fromSteps = line ? stitchesForLine(line, stitches) : [];
+  const fromSteps = line ? stitchesForLine(line, stitches, rule ? { coverageCite: rule.coverage_cite } : undefined) : [];
   const fromRules = RULE_CITES.map((r) => stitchForCite(citeForRule(r, rule, plan), stitches, doc));
   const list = uniqueStitches([...fromSteps, ...fromRules, stitchForCite(rule?.category_cite, stitches, doc)]);
   const hasPdf = estimate?.sources?.plan_document?.has_stored_pdf ?? !!plan.source_document.path;

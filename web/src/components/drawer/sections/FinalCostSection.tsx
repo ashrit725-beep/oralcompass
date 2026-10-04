@@ -1,6 +1,6 @@
 import { CostPipeline } from "@/components/pipeline/CostPipeline";
 import { DRAWER } from "@/lib/copy/drawer";
-import { stitchesForLine } from "@/lib/stitches";
+import { stepContextFor, stitchesForLine } from "@/lib/stitches";
 import type { Stitch } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Figure, Flag, Section, type SectionProps } from "./shared";
@@ -12,9 +12,9 @@ import { Figure, Flag, Section, type SectionProps } from "./shared";
  * Not covered → the engine's closed-step label and the "full fee is your share" sentence. Always rendered for procedure islands.
  */
 export function FinalCostSection(props: SectionProps & { estimateId?: string; first?: boolean }) {
-  const { island, line, item, rule, plan, estimate, stitches, onSelectStitch, mobile, estimateId, first } = props;
+  const { island, line, item, rule, plan, rules, estimate, stitches, onSelectStitch, mobile, estimateId, first } = props;
   if (!line) return null;
-  const chips: Stitch[] = stitchesForLine(line, stitches);
+  const chips: Stitch[] = stitchesForLine(line, stitches, stepContextFor(line, rules));
   const unresolved = line.status === "unresolved";
   const otherFlags = line.flags.filter((f) => !/waiting|alternate/i.test(f));
   return (

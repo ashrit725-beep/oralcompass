@@ -14,7 +14,7 @@
  */
 import { CHECKPOINT_PLACE, CHECKPOINT_TERM, CLOSED_SUFFIX, GLYPH_FOR_RULE, LIGHT_PLACE, SLOT_ORDER, START_PLACE, categoryOf, placeName } from "./islands";
 import { PASSAGE } from "./copy/passage";
-import { stitchForLabel } from "./stitches";
+import { stepContextFor, stitchForLabel, type StepContext } from "./stitches";
 import { buildTrail, type TrailStep } from "./trail";
 import type {
   Benefits, CheckpointRule, Claim, CoverageRule, Evidence, InsuranceCheckpointVM, IslandVM, JourneyView, LedgerLine, MissingInput, PassageVM, PlanFixture,
@@ -74,7 +74,7 @@ const RULE_FLAG_WORDS: Partial<Record<CheckpointRule, RegExp>> = {
 };
 
 /** Insurance checkpoints for one line: the trail steps in fixed slot order; Fee, Allowed, Deductible, Share, Maximum, You pay always present on an estimate line. */
-export function checkpointsFor(line: LedgerLine, islandId: string, stitches: Stitch[], item: TreatmentItem | undefined, benefits: Benefits | null, missing: MissingInput[]): InsuranceCheckpointVM[] {
+export function checkpointsFor(line: LedgerLine, islandId: string, stitches: Stitch[], item: TreatmentItem | undefined, benefits: Benefits | null, missing: MissingInput[], ctx?: StepContext): InsuranceCheckpointVM[] {
   const trail = buildTrail(line);
   const mk = (rule: CheckpointRule, s: Partial<InsuranceCheckpointVM>): InsuranceCheckpointVM => ({
     key: `${islandId}:${rule}`, rule, term: CHECKPOINT_TERM[rule], place: CHECKPOINT_PLACE[rule], glyph: GLYPH_FOR_RULE[rule],
@@ -108,7 +108,7 @@ export function checkpointsFor(line: LedgerLine, islandId: string, stitches: Sti
     const step = byKey.get(key);
     if (!step) continue;                      // AB only when the engine produced one
     const stepIndexes = line.steps.map((s, i) => ({ s, i })).filter(({ s }) => (rule === "N" && s.rule === "N") || (rule === "AB" && s.rule === "AB") || (rule === "D" && s.rule === "D") || (rule === "CO" && s.rule === "CO") || (rule === "M" && s.rule === "M")).map(({ i }) => i);
-    const st = stitchForLabel(step.stitch, step.rule, stitches);
+    const st = stitchForLabel(step.stitch, step.rule, stitches, ctx);
     const flags = line.flags.filter((f) => RULE_FLAG_WORDS[rule]?.test(f));
     out.push(mk(rule, {
       amountIn: step.amountIn, change: step.change == null ? null : step.change || 0, amountOut: step.amountOut, owner: step.owner, explanation: step.explanation, stitchLabel: step.stitch, stitch: st,
@@ -150,7 +150,7 @@ export function buildPassage(inp: PassageInputs): PassageVM {
     return {
       id, kind: "procedure", state, order: i + 1, place: state === "not_covered" ? `${base}${CLOSED_SUFFIX}` : base, title, subtitle, category,
       itemId: item.id, item, line, lineIndex,
-      checkpoints: line ? checkpointsFor(line, id, stitches, item, benefits, missing) : [],
+      checkpoints: line ? checkpointsFor(line, id, stitches, item, benefits, missing, stepContextFor(line, rules)) : [],
       youPay: line?.status === "estimate" || line?.status === "not_covered" ? line.patient_cents : null,
       planPays: line?.status === "estimate" ? line.plan_cents : line?.status === "not_covered" ? line.plan_cents : null,
       upperBound: !!line?.plan_is_upper_bound, missing, notices,

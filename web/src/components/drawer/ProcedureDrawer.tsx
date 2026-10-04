@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { DRAWER } from "@/lib/copy/drawer";
 import { checkpointAriaName, rememberStitchAnchor, ruleFor, sectionForRule, type DrawerSectionKey } from "@/lib/drawer";
 import { transitions } from "@/lib/motion";
-import { stitchesForLine } from "@/lib/stitches";
+import { stepContextFor, stitchesForLine } from "@/lib/stitches";
 import { buildTrail } from "@/lib/trail";
 import type { AssistScope, Benefits, CoverageRule, InsuranceCheckpointVM, IslandVM, LedgerLine, PassageVM, PlanFixture, SavedEstimate, Stitch } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -142,7 +142,7 @@ export function ProcedureDrawer(props: ProcedureDrawerProps) {
   const crumbs = island.kind === "start" ? DRAWER.crumbsStart(island.place) : island.kind === "destination" ? DRAWER.crumbsLight(island.place)
     : island.kind === "visited" ? DRAWER.crumbsVisited(island.place) : island.kind === "marginal" ? DRAWER.crumbsMarginal(island.place)
     : DRAWER.crumbs(island.order, vm.islands.length, island.place);
-  const lineStitches = line ? stitchesForLine(line, stitches) : [];
+  const lineStitches = line ? stitchesForLine(line, stitches, stepContextFor(line, rules)) : [];
   const unresolved = island.kind === "procedure" && (island.state === "unresolved" || island.state === "pending");
 
   const header = (

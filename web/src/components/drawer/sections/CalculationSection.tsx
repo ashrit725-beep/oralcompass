@@ -23,7 +23,7 @@ function Part({ p }: { p: EquationPart }) {
  * amounts, each row ending with its stitch chip), the reconciliation line only when the trail reconciles, then the existing CostTrail for
  * this line alone (no line tabs) with the engine receipt table one click away. Always rendered for procedure islands.
  */
-export function CalculationSection({ line, island, trail, rule, plan, estimate, stitches, onSelectStitch, mobile, arrivedAt }: SectionProps) {
+export function CalculationSection({ line, island, trail, rule, plan, rules, estimate, stitches, onSelectStitch, mobile, arrivedAt }: SectionProps) {
   if (!line || !trail || !estimate) return null;
   const rows = equationRows(trail, {
     fee: DRAWER.eqFee, allowed: DRAWER.eqAllowed, basis: DRAWER.eqBasis, afterDeductible: DRAWER.eqAfterDeductible, planShare: DRAWER.eqPlanShare,
@@ -55,7 +55,7 @@ export function CalculationSection({ line, island, trail, rule, plan, estimate, 
       {trail.reconciles !== true && <p className="dsec-note">{DRAWER.reconcilesOnlyNote}</p>}
       <details className="full-trail" open={trail.reconciles === false || undefined}>
         <summary>{DRAWER.fullTrail}</summary>
-        <CostTrail estimate={estimate} stitches={stitches} onSelect={onSelectStitch} lineIndex={lineIndex >= 0 ? lineIndex : 0} />
+        <CostTrail estimate={estimate} stitches={stitches} rules={rules} onSelect={onSelectStitch} lineIndex={lineIndex >= 0 ? lineIndex : 0} />
       </details>
       <p className="calc-footer muted small">{DRAWER.calcFooter}</p>
     </Section>
