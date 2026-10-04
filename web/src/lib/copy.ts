@@ -10,7 +10,6 @@ export const BADGE_LABEL: Record<string, string> = {
   DOC: "From the plan document", USER: "You entered", ASSUMED: "Hypothetical you entered", AMBIGUOUS: "Ambiguous in the document",
   UNKNOWN: "Not provided", CONFLICT: "Sources disagree",
 };
-export const BADGE_ICON: Record<string, string> = { DOC: "📄", USER: "✎", ASSUMED: "~", AMBIGUOUS: "?", UNKNOWN: "∅", CONFLICT: "⇄" };
 
 /** Depth-1 sentences for concepts (≤ 20 words). Keyed by topic. */
 export const PLAIN: Record<string, string> = {
