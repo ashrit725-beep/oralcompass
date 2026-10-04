@@ -622,3 +622,50 @@ def test_redaction_terms_cannot_change_while_an_extraction_runs():
     repo.patch_if_exists("redact-mid-run", "document", up["id"], {"extraction": extraction.new_status("live"), "extraction_status": "queued"})
     r = client.put(f"/me/documents/{up['id']}/redaction", json={"extra_terms": ["Harborview"]}, headers=h)
     assert r.status_code == 409 and r.json()["detail"]["error"] == "extraction_in_progress"
+
+
+def _review(h, doc_id, decisions):
+    return client.put(f"/me/documents/{doc_id}/review", json={"decisions": decisions}, headers=h)
+
+
+def test_review_values_are_validated_and_a_failed_batch_changes_nothing():
+    """api-correctness-11 (shapes; unhashable class value is 422 not 500), -12 (no class list leaks into the record) and -13 (atomic batch)."""
+    h = H("review-validate")
+    up = upload(h, HB26_PDF.read_bytes(), name="harborview_certificate.pdf").json()
+    client.post(f"/me/documents/{up['id']}/extract", headers=h)
+    bad = [("class_of.exam", {"a": 1}), ("waiting_months", {"Major": "twelve"}), ("frequency[0]", {"clock": "calendar_count", "n": 2}),
+           ("frequency[0]", {"procedure_key": "cleaning", "clock": "weekly", "n": 2}), ("alternate_benefit", [{"procedure_key": "nope"}])]
+    for path, value in bad:
+        r = _review(h, up["id"], [{"field_path": path, "decision": "edited", "value": value, "source": "x"}])
+        assert r.status_code == 422 and r.json()["detail"]["error"] == "invalid_value", (path, r.text)
+    assert _review(h, up["id"], [{"field_path": "class_of.exam", "decision": "edited", "value": "Nope", "source": "x"}]).json()["detail"]["error"] == "unknown_class"
+    ok = _review(h, up["id"], [{"field_path": "waiting_months", "decision": "edited", "value": {"Major": 12}, "source": "x"}])
+    assert ok.status_code == 200
+    # a batch whose second decision fails leaves the first one unapplied, on the default (in-memory) backend too
+    r = _review(h, up["id"], [{"field_path": "deductible_individual", "decision": "edited", "value": 12345, "source": "probe"}, {"field_path": "nope", "decision": "confirmed"}])
+    assert r.status_code == 422
+    st = client.get(f"/me/documents/{up['id']}/extraction", headers=h).json()
+    ded = next(f for f in st["fields"] if f["field_path"] == "deductible_individual")
+    assert (ded.get("decision") or {}).get("value") != 12345 and ded["evidence_status"] != "USER"
+    assert not any("_class_names" in f for f in st["fields"])
+
+
+def test_not_in_document_can_be_undone_and_candidate_page_notes_follow_the_candidate():
+    """api-correctness-14 and -15."""
+    from app.uploads import ReviewDecision, apply_decision
+    row = {"field_path": "x", "unit": "cents", "confidence": "confirmed", "evidence_status": "DOC", "review_status": "quote_verified_in_text", "quote_verified": True,
+           "proposed_value": 3, "quote": "q", "page": 1}
+    apply_decision(row, ReviewDecision(field_path="x", decision="not_in_document"), [], "t1")
+    assert row["confidence"] == "not_found" and row["evidence_status"] == "UNKNOWN"
+    apply_decision(row, ReviewDecision(field_path="x", decision="confirmed"), [], "t2")
+    assert row["confidence"] == "confirmed" and row["evidence_status"] == "DOC" and row["review_status"] == "quote_verified_in_text" and row["decision"]["kind"] == "confirmed"
+    pages = ["intro", "The annual deductible is $50 per person", "other", "The annual deductible is $75 per family"]
+    from app.extraction import apply_verification, normalize
+    f = {"field_path": "deductible_individual", "unit": "cents", "proposed_value": None, "quote": None, "page": None,
+         "candidates": [{"value": 5000, "quote": "The annual deductible is $50 per person", "page": 3}]}
+    apply_verification([f], pages)
+    assert f["page"] == 2 and f["page_note"] and "page 2" in f["page_note"]
+    stale = {"field_path": "d", "unit": "cents", "confidence": "needs_review", "evidence_status": "AMBIGUOUS", "page_note": "quote found on page 4; the extraction cited page 3",
+             "candidates": [{"value": 5000, "quote": "The annual deductible is $50 per person", "page": 2}, {"value": 7500, "quote": "The annual deductible is $75 per family", "page": 4}]}
+    apply_decision(stale, ReviewDecision(field_path="d", decision="candidate", candidate_index=0), [normalize(p) for p in pages], "t3")
+    assert stale["page"] == 2 and stale["page_note"] is None

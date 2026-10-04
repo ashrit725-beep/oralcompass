@@ -408,7 +408,7 @@ def apply_verification(fields: list[dict], pages: list[str], on_progress: Option
                 v = verify_quote(c.get("quote"), c.get("page"), pages_n)
                 if v["result"] != "not_found":
                     verified += 1
-                    kept.append({**c, "page": v["page"], "verified": v["result"]})
+                    kept.append({**c, "page": v["page"], "verified": v["result"], "page_note": v.get("page_note")})
             f["candidates"] = kept
             if on_progress:
                 on_progress(done, total)
@@ -432,7 +432,7 @@ def apply_verification(fields: list[dict], pages: list[str], on_progress: Option
             f.update({"confidence": "needs_review", "evidence_status": "AMBIGUOUS", "review_status": None, "proposed_value": None, "quote": None, "quote_verified": False})
         elif len(f.get("candidates") or []) == 1 and f.get("proposed_value") is None and not f.get("quote"):
             c = f["candidates"][0]
-            f.update({"proposed_value": c.get("value"), "quote": c.get("quote"), "page": c.get("page"), "candidates": [],
+            f.update({"proposed_value": c.get("value"), "quote": c.get("quote"), "page": c.get("page"), "page_note": c.get("page_note"), "candidates": [],
                       "quote_verified": c.get("verified") == "confirmed", "confidence": "confirmed" if c.get("verified") == "confirmed" else "likely",
                       "evidence_status": "DOC", "review_status": "quote_verified_in_text" if c.get("verified") == "confirmed" else "needs_review"})
         if on_progress:

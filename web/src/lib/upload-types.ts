@@ -12,7 +12,7 @@ export interface ExtractedField {
   evidence_status: Evidence; review_status: "quote_verified_in_text" | "needs_review" | "user_confirmed" | null;
   candidates: { value: unknown; quote: string; page: number }[];
   required: boolean;
-  decision: null | { kind: "confirmed" | "edited" | "not_in_document" | "candidate"; value?: unknown; source?: string; candidate_index?: number; at: string };
+  decision: null | { kind: "confirmed" | "edited" | "not_in_document" | "candidate"; value?: unknown; source?: string; candidate_index?: number; at: string; prior?: { confidence?: string } };
 }
 export type ExtractionStatus = { status: "queued"|"reading_text"|"redacting"|"identifying_fields"|"matching_rules"|"verifying_quotes"|"ready"|"failed"|"demo_no_model";
   stage_index: number; stages: { key: string; label: string; done: boolean }[]; pages: number; pages_done: number; quotes_total: number; quotes_verified: number;

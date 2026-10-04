@@ -269,19 +269,42 @@ def get_extraction(doc_id: str, user: User = Depends(current_user)):
 
 
 # ---------------------------------------------------------------- review
+_INT = lambda v: isinstance(v, int) and not isinstance(v, bool)          # noqa: E731
+_CLOCKS = ("calendar_count", "interval_months", "rolling12_count", "per_tooth_months", "lifetime")
+
+
+def _valid_list_value(path: str, v: Any) -> bool:
+    """Structural checks for the 'list' unit rows, so an edit can only publish a shape the engine reads (api-correctness-11)."""
+    if path == "waiting_months":
+        return isinstance(v, dict) and all(isinstance(k, str) and k.strip() and _INT(n) and 0 <= n <= 120 for k, n in v.items())
+    if path.startswith("frequency["):
+        return (isinstance(v, dict) and v.get("procedure_key") in PROC_BY_KEY and v.get("clock") in _CLOCKS
+                and (v.get("n") is None or (_INT(v.get("n")) and 1 <= v["n"] <= 120)))
+    if path == "alternate_benefit":
+        return isinstance(v, list) and all(isinstance(c, dict) and c.get("procedure_key") in PROC_BY_KEY and (c.get("basis_key") is None or c.get("basis_key") in PROC_BY_KEY)
+                                           and isinstance(c.get("condition", "any"), str) for c in v)
+    return isinstance(v, (list, dict))
+
+
 _UNIT_CHECK = {
     "cents": lambda v: isinstance(v, int) and not isinstance(v, bool) and v >= 0,
     "bp": lambda v: isinstance(v, int) and not isinstance(v, bool) and 0 <= v <= 10000,
     "months": lambda v: isinstance(v, int) and not isinstance(v, bool) and v >= 0,
     "month_index": lambda v: isinstance(v, int) and not isinstance(v, bool) and 1 <= v <= 12,
-    "text": lambda v: isinstance(v, (str, dict)) and bool(v),
+    "text": lambda v: (isinstance(v, str) and bool(v.strip())) or (isinstance(v, dict) and bool(v) and all(isinstance(x, str) for x in v.values())),
     "bool": lambda v: isinstance(v, bool),
     "list": lambda v: isinstance(v, (list, dict)),
 }
 
 
-def apply_decision(f: dict, d: ReviewDecision, pages_n: list[str], at: str) -> None:
+_VERIFICATION_KEYS = ("confidence", "evidence_status", "review_status", "quote_verified")
+
+
+def apply_decision(f: dict, d: ReviewDecision, pages_n: list[str], at: str, class_names: Optional[list[dict]] = None) -> None:
     kind = d.decision
+    prior = (f.get("decision") or {}).get("prior")
+    if prior and kind != "not_in_document":
+        f.update(prior)                                      # a later decision starts from the verification state 'Not in document' set aside
     if kind == "confirmed":
         if f["confidence"] not in ("confirmed", "likely") or f.get("proposed_value") is None:
             raise HTTPException(status_code=422, detail={"error": "nothing_to_confirm", "field_path": f["field_path"]})
@@ -292,22 +315,30 @@ def apply_decision(f: dict, d: ReviewDecision, pages_n: list[str], at: str) -> N
     elif kind == "edited":
         if not (d.source or "").strip():
             raise HTTPException(status_code=422, detail={"error": "source_required", "field_path": f["field_path"]})
-        if not _UNIT_CHECK[f["unit"]](d.value):
-            raise HTTPException(status_code=422, detail={"error": "invalid_value", "field_path": f["field_path"], "unit": f["unit"]})
-        if f["field_path"].startswith("class_of.") and d.value not in {c.get("name") for c in (f.get("_class_names") or [])} and f.get("_class_names") is not None:
-            raise HTTPException(status_code=422, detail={"error": "unknown_class", "field_path": f["field_path"]})
+        unit = f.get("unit")
+        check = _UNIT_CHECK.get(unit)
+        if check is None or not check(d.value) or (unit == "list" and not _valid_list_value(f["field_path"], d.value)):
+            raise HTTPException(status_code=422, detail={"error": "invalid_value", "field_path": f["field_path"], "unit": unit})
+        if f["field_path"].startswith("class_of."):
+            if not isinstance(d.value, str):
+                raise HTTPException(status_code=422, detail={"error": "invalid_value", "field_path": f["field_path"], "unit": unit})
+            if class_names is not None and d.value not in {c.get("name") for c in class_names}:
+                raise HTTPException(status_code=422, detail={"error": "unknown_class", "field_path": f["field_path"]})
         f["evidence_status"], f["review_status"] = "USER", None
         f["decision"] = {"kind": "edited", "value": d.value, "source": d.source.strip(), "at": at}
     elif kind == "not_in_document":
+        # the verification state is set aside, not destroyed, so 'Looks right' or a candidate can follow a mistaken click (api-correctness-14)
+        keep = prior or {k: f.get(k) for k in _VERIFICATION_KEYS}
         f.update({"confidence": "not_found", "evidence_status": "UNKNOWN", "review_status": None, "quote_verified": False})
-        f["decision"] = {"kind": "not_in_document", "at": at}
+        f["decision"] = {"kind": "not_in_document", "at": at, "prior": keep}
     elif kind == "candidate":
         cands = f.get("candidates") or []
         if d.candidate_index is None or not (0 <= d.candidate_index < len(cands)):
             raise HTTPException(status_code=422, detail={"error": "candidate_index_out_of_range", "field_path": f["field_path"]})
         c = cands[d.candidate_index]
         v = verify_quote(c.get("quote"), c.get("page"), pages_n)
-        f.update({"proposed_value": c.get("value"), "quote": c.get("quote"), "page": v["page"] if v["result"] != "not_found" else c.get("page")})
+        f.update({"proposed_value": c.get("value"), "quote": c.get("quote"), "page": v["page"] if v["result"] != "not_found" else c.get("page"),
+                  "page_note": c.get("page_note") or v.get("page_note")})       # None clears another candidate's stale note (api-correctness-15)
         if v["result"] == "confirmed":                       # an exactly verified candidate quote is DOC
             f.update({"quote_verified": True, "confidence": "confirmed", "evidence_status": "DOC", "review_status": "quote_verified_in_text"})
         else:
@@ -331,9 +362,7 @@ def put_review(doc_id: str, body: ReviewIn, user: User = Depends(current_user)):
             raise HTTPException(status_code=422, detail={"error": "unknown_field", "field_path": d.field_path})
         if d.decision == "candidate" and pages_n is None:
             pages_n = [normalize(p) for p in read_text(doc_path(user.sub, doc_id))[0]]
-        f["_class_names"] = class_names
-        apply_decision(f, d, pages_n or [], at)
-        f.pop("_class_names", None)
+        apply_decision(f, d, pages_n or [], at, class_names)
     st["counts"] = {k: sum(1 for f in st["fields"] if f["confidence"] == k) for k in ("confirmed", "likely", "needs_review", "not_found")}
     doc["fields_needing_confirmation"] = undecided_required(st["fields"])
     repo.put(user.sub, "document", doc)
