@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { motion } from "motion/react";
 import { FOOTER, NAV, PASSAGE, TAGLINE, UI, type LandmarkId } from "@/lib/copy";
 import { defaultCompareColumns } from "@/lib/appData";
@@ -8,6 +8,7 @@ import { useJourneySelection } from "@/hooks/useJourneySelection";
 import { useMobile } from "@/hooks/useMobile";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dock, DockIcon } from "@/components/eldoraui/dock";
+import { AssistDataProvider } from "@/components/assistant/AssistData";
 import { ClauseCard } from "@/components/ClauseCard";
 import { CompareView } from "@/components/CompareView";
 import { DocumentsView } from "@/components/DocumentsView";
@@ -64,8 +65,12 @@ export default function App() {
       })}
     </TabsList>
   );
+  // web-correctness-34: the assistant resolves refs against the payloads the shell already holds (no refetch per question)
+  const assistValue = useMemo(() => ({ planRef, estimate, plan: data.plan, benefits: benefits.find((b) => b.plan_code === planRef) ?? null, rules: data.rules, items, stitches }),
+    [planRef, estimate, data.plan, benefits, data.rules, items, stitches]);
 
   return (
+    <AssistDataProvider value={assistValue}>
     <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)} className="app gap-0">
       <a href="#main" className="skip-link">{UI.skipToContent}</a>
       {/* the target exists in every segment of a loaded journey (map: the chart's controls; care timeline and overview: their content) */}
@@ -102,5 +107,6 @@ export default function App() {
       {stitch && <ClauseCard stitch={stitch} lines={estimate?.ledger.lines ?? []} askScope={{ plan_ref: planRef, stitch: `${stitch.doc}#p${stitch.page}`, estimate_id: estimate?.id }} onClose={closeStitch} onOpenOnPage={openOnPage} />}
       <footer className="footer">{FOOTER}</footer>
     </Tabs>
+    </AssistDataProvider>
   );
 }

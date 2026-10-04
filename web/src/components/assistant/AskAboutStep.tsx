@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { api, ApiError } from "@/lib/api";
 import { ASSIST } from "@/lib/copy/assistant";
 import {
-  applyScopeChoice, clientGuard, initialSuggestions, ribbonFor, scopeChoices, toolLabel, type AssistBlockX, type AssistData, type AssistResponseX, type ScopeChoice,
+  applyScopeChoice, clientGuard, createRequestGate, initialSuggestions, lookupLabels, ribbonFor, scopeChoices, type AssistBlockX, type AssistData, type AssistResponseX, type ScopeChoice,
 } from "@/lib/assistant";
 import { cn } from "@/lib/utils";
 import type { AssistScope } from "@/lib/types";
@@ -18,8 +18,8 @@ const RATE_LIMIT_PAUSE_MS = 20_000;
 /**
  * AskAboutStep (owner: web upload-review + assistant agent; spec §8, component plan N8). Replaces the day-1 stub IN PLACE, same export.
  * The Kokonut ai-prompt composer (scope selector, Compass send button) rendered INLINE at the foot of a step or in the ClauseCard footer,
- * three suggested questions as 44 px buttons, the ThoughtLine retrieval header (label = the real stage; the trace lists the server's
- * `tools_used`), and the answer list: parchment note blocks with Money-rendered refs, stitch chips that open the clause, the demo /
+ * three suggested questions as a ruled list of 44 px text buttons, the ThoughtLine retrieval header (label = the real stage, the lookup
+ * count when settled, no timer), and the answer list: parchment note blocks with Money-rendered refs, stitch chips that open the clause, the demo /
  * fixed-template / live label, the guard's dropped count. Never a right-hand column, never chat bubbles, no AI iconography. Answers clear
  * when the scope changes. States (spec §8.6): idle · sending · answered · nothing survived · live unavailable · rate limited · offline.
  * Additive props beyond the frozen contract: `data` (payloads for ref resolution; otherwise the AssistDataProvider or a lazy fetch) and
@@ -52,12 +52,16 @@ export function AskAboutStep({ scope, onOpenStitch, onOpenStep, className, data:
   const [mode, setMode] = useState<ServerMode | null>(null);
   const [asked, setAsked] = useState(false);
   const seq = useRef(0);
+  const gate = useRef(createRequestGate());   // an answer for an earlier scope never lands in this scope's list (web-correctness-14)
   const [cycle, setCycle] = useState(0);   // one ThoughtLine instance per question, so its timer runs from send to settle
   const { data, loading } = useAssistData(scope, dataProp, asked);
 
   useEffect(() => { serverMode().then(setMode); }, []);
   // answers belong to one scope: a new step, clause or plan clears them (spec §8.1)
-  useEffect(() => { setAnswers([]); setSuggested(initialSuggestions(scope)); setError(null); setChoice(scopeChoices(scope)[0]?.value ?? "plan"); }, [scopeKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    gate.current.invalidate(); setPending(null);
+    setAnswers([]); setSuggested(initialSuggestions(scope)); setError(null); setChoice(scopeChoices(scope)[0]?.value ?? "plan");
+  }, [scopeKey]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (pausedUntil === null) return;
     const t = setTimeout(() => setPausedUntil(null), Math.max(0, pausedUntil - Date.now()));
@@ -76,22 +80,25 @@ export function AskAboutStep({ scope, onOpenStitch, onOpenStep, className, data:
     const effective = { ...applyScopeChoice(scope, choice), ...(patch ?? {}) };
     setError(null); setAsked(true); setPending(q); setCycle((c) => c + 1);
     if (typeof navigator !== "undefined" && navigator.onLine === false) { setError(ASSIST.offline); setPending(null); return; }
+    const ticket = gate.current.begin();
     try {
       const resp = (await api.ask({ message: q, scope: effective })) as AssistResponseX;
+      if (!gate.current.isCurrent(ticket)) return;
       const guarded = clientGuard(resp.blocks ?? []);
       setAnswers((a) => [...a, { id: ++seq.current, question: q, scope: effective, resp, blocks: guarded.blocks, localDropped: guarded.dropped }]);
       if (resp.suggested?.length) setSuggested(resp.suggested);
     } catch (e) {
+      if (!gate.current.isCurrent(ticket)) return;
       if (e instanceof ApiError) {
         if (e.status === 429) { setError(ASSIST.rateLimited); setPausedUntil(Date.now() + RATE_LIMIT_PAUSE_MS); }
         else if (e.status === 404) setError(ASSIST.notFound);
         else setError(ASSIST.failed);
       } else setError(ASSIST.offline);
-    } finally { setPending(null); }
+    } finally { if (gate.current.isCurrent(ticket)) setPending(null); }
   }, [scope, choice, pending]);
 
   const latest = answers[answers.length - 1];
-  const traceSteps = latest ? latest.resp.tools_used.map(toolLabel) : [];
+  const lookupCount = latest ? lookupLabels(latest.resp.tools_used, data).length : 0;
   const preLabel = !answers.length && mode ? (mode.llm_mode === "live" && mode.llm_model ? ASSIST.liveLabel(mode.llm_model) : ASSIST.demoEnvironment) : null;
 
   return (
@@ -105,6 +112,7 @@ export function AskAboutStep({ scope, onOpenStitch, onOpenStep, className, data:
         onScopeChange={(v) => setChoice(v as ScopeChoice)}
         placeholder={isClause ? ASSIST.clausePlaceholder : stepScoped ? ASSIST.placeholder : ASSIST.planPlaceholder}
         sendLabel={ASSIST.send}
+        label={isClause ? ASSIST.clauseHeading : stepScoped ? ASSIST.heading : ASSIST.planHeading}
         scopeLabel={ASSIST.scopeLabel}
         describedBy={descId}
         disabled={!!pending || paused}
@@ -113,7 +121,7 @@ export function AskAboutStep({ scope, onOpenStitch, onOpenStep, className, data:
       />
       <ul className="as-suggestions" aria-label={ASSIST.suggestionsLabel}>
         {suggested.map((q) => (
-          <li key={q}><Button type="button" variant="outline" size="touch" className="as-suggestion h-auto max-w-full whitespace-normal text-left" disabled={!!pending || paused} onClick={() => { void ask(q); }}>{q}</Button></li>
+          <li key={q}><Button type="button" variant="ghost" size="touch" className="as-suggestion h-auto w-full justify-start whitespace-normal rounded-[var(--r-2)] text-left" disabled={!!pending || paused} onClick={() => { void ask(q); }}>{q}</Button></li>
         ))}
       </ul>
       {(pending || latest) && (
@@ -121,8 +129,8 @@ export function AskAboutStep({ scope, onOpenStitch, onOpenStep, className, data:
           key={cycle}
           working={!!pending}
           label={isClause ? ASSIST.sendingClause : ASSIST.sending}
-          doneLabel={ASSIST.readIn(traceSteps.length)}
-          steps={pending ? [] : traceSteps}
+          doneLabel={ASSIST.readIn(lookupCount)}
+          showTimer={false}
           glyph={<Compass aria-hidden="true" />}
           glyphColor="var(--gold)"
           breathPeriod={2.4}
@@ -151,7 +159,7 @@ export function AskAboutStep({ scope, onOpenStitch, onOpenStep, className, data:
                 {dropped > 0 && <span className="as-guard">{ASSIST.guardRemoved(dropped)}</span>}
                 {grounding > 0 && <span className="as-guard">{ASSIST.groundingRemoved(grounding)}</span>}
                 {a.resp.tools_used.length > 0 && (
-                  <span className="as-tools">{ASSIST.toolsUsed} {a.resp.tools_used.map(toolLabel).join(" · ")}</span>
+                  <span className="as-tools">{ASSIST.toolsUsed} {lookupLabels(a.resp.tools_used, data).join(" · ")}</span>
                 )}
               </footer>
             </li>

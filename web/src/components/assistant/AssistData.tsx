@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { api } from "@/lib/api";
-import { EMPTY_DATA, type AssistData } from "@/lib/assistant";
+import { EMPTY_DATA, scopedProvided, type AssistData, type AssistProvided } from "@/lib/assistant";
 import { stitchesFromClauses } from "@/lib/stitches";
 import type { AssistScope } from "@/lib/types";
 
@@ -10,9 +10,10 @@ import type { AssistScope } from "@/lib/types";
  * in priority order: the `data` prop on AskAboutStep, this provider (mount once with `useAppData()` values), and a lazy owner-scoped fetch
  * that runs only after the first question is sent (so opening a drawer costs nothing). Everything fetched here is read-only.
  */
-export const AssistDataContext = createContext<Partial<AssistData> | null>(null);
+export const AssistDataContext = createContext<AssistProvided | null>(null);
 
-export function AssistDataProvider({ value, children }: { value: Partial<AssistData>; children: ReactNode }) {
+/** Mounted once by App with the `useAppData()` payloads (web-correctness-34); `planRef` scopes them to questions about that plan. */
+export function AssistDataProvider({ value, children }: { value: AssistProvided; children: ReactNode }) {
   return <AssistDataContext.Provider value={value}>{children}</AssistDataContext.Provider>;
 }
 
@@ -36,7 +37,7 @@ const has = (d: Partial<AssistData>, k: keyof AssistData) => {
 /** Merge provided data and, once `enabled`, fetch whatever the scope needs that nobody supplied. */
 export function useAssistData(scope: AssistScope, override: Partial<AssistData> | undefined, enabled: boolean): { data: AssistData; loading: boolean } {
   const ctx = useContext(AssistDataContext);
-  const provided = useMemo(() => merge(ctx, override), [ctx, override]);
+  const provided = useMemo(() => merge(scopedProvided(ctx, scope), override), [ctx, override, scope.plan_ref, scope.estimate_id]); // eslint-disable-line react-hooks/exhaustive-deps
   const [fetched, setFetched] = useState<Partial<AssistData>>({});
   const [loading, setLoading] = useState(false);
   const key = `${scope.plan_ref}|${scope.estimate_id ?? ""}`;
@@ -48,7 +49,7 @@ export function useAssistData(scope: AssistScope, override: Partial<AssistData> 
     let cancelled = false;
     const jobs: Promise<void>[] = [];
     const put = (k: keyof AssistData, v: AssistData[typeof k]) => { if (!cancelled) setFetched((f) => ({ ...f, [k]: v })); };
-    if (!has(provided, "estimate") && scope.estimate_id) jobs.push(api.savedEstimates().then((list) => put("estimate", list.find((e) => e.id === scope.estimate_id) ?? null)).catch(() => undefined));
+    if (!has(provided, "estimate") && scope.estimate_id) jobs.push(api.savedEstimate(scope.estimate_id).then((e) => put("estimate", e)).catch(() => put("estimate", null)));
     if (!has(provided, "plan")) jobs.push(api.planByRef(scope.plan_ref).then((r) => put("plan", r.model)).catch(() => undefined));
     if (!has(provided, "benefits")) jobs.push(api.benefitsFor(scope.plan_ref).then((b) => put("benefits", b)).catch(() => put("benefits", null)));
     if (!has(provided, "rules")) jobs.push(api.rulesByRef(scope.plan_ref).then((r) => put("rules", r.rules)).catch(() => undefined));

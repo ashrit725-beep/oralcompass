@@ -44,7 +44,9 @@ export function TreatmentPlanReader({ onConfirmed }: TreatmentPlanReaderProps) {
   const [confirming, setConfirming] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   // live mode, photo or scan: the server holds it until the visitor confirms the notice (nothing is sent before that; docs/SECURITY.md)
-  const [pendingImage, setPendingImage] = useState<File | null>(null);
+  const [held, setHeld] = useState<{ file: File; notice: string } | null>(null);
+  const confirmRef = useRef<HTMLDivElement>(null);   // the shadcn Button takes no ref (React 18 function component)
+  useEffect(() => { if (held) confirmRef.current?.querySelector<HTMLButtonElement>(".tpr-image-send")?.focus(); }, [held]);
   // The section usually sits in a closed <details>: nothing is fetched and no file input exists until it has been visible once.
   const rootRef = useRef<HTMLElement>(null);
   const textRef = useRef<HTMLTextAreaElement>(null);
@@ -83,10 +85,13 @@ export function TreatmentPlanReader({ onConfirmed }: TreatmentPlanReaderProps) {
   function pasteInstead() { dropStaged(PLAN.readGateCancelled); textRef.current?.focus(); }
   /** `imageConsent`: the visitor acknowledged the notice for this file; the server still holds a photo or scan without it (needs_image_consent). */
   async function readFile(f: File, imageConsent = false) {
-    setStaged(null); setAck(false); setPendingImage(null);
+    setStaged(null); setAck(false); setHeld(null);
     setFile(f); setBusy("file"); setError(null); setMessage(null); setResult(null);
-    try { const res = await api.readTreatmentPlanFile(f, imageConsent); show(res); if (res.needs_image_consent) setPendingImage(f); }
-    catch (e) { fail(e); } finally { setBusy(null); setFile(null); }
+    try {
+      const res = await api.readTreatmentPlanFile(f, imageConsent);
+      if (res.needs_image_consent) setHeld({ file: f, notice: res.image_notice || PLAN.readImageNotice });
+      else show(res);
+    } catch (e) { fail(e); } finally { setBusy(null); setFile(null); }
   }
 
   const items = result?.items ?? [];
@@ -141,6 +146,15 @@ export function TreatmentPlanReader({ onConfirmed }: TreatmentPlanReaderProps) {
           {seen && <FileUpload onFileSelected={pickFile} status={busy === "file" ? "uploading" : "idle"} currentFile={file} acceptedFileTypes={ACCEPTED} maxFileSize={MAX_BYTES} showTitle
                       labels={{ title: PLAN.readFileTitle, hint: PLAN.readFileHint, choose: PLAN.readFileChoose, cancel: PLAN.readFileCancel, limits: PLAN.readFileLimits, tooLarge: () => PLAN.readFileTooLarge, wrongType: PLAN.readFileWrongType }} />}
           <p className="muted small tpr-image-note">{PLAN.readImageNote}</p>
+          {held && (
+            <div ref={confirmRef} className="tpr-image-confirm" role="group" aria-labelledby={`${id}-notice`}>
+              <p id={`${id}-notice`} className="bs-note">{held.notice}</p>
+              <div className="bs-actions">
+                <Button type="button" variant="outline" size="touch" onClick={() => { setHeld(null); textRef.current?.focus(); }}>{PLAN.readImagePaste}</Button>
+                <Button type="button" size="touch" className="tpr-image-send" onClick={() => { void readFile(held.file, true); }} disabled={!!busy}>{PLAN.readImageSend}</Button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -170,9 +184,6 @@ export function TreatmentPlanReader({ onConfirmed }: TreatmentPlanReaderProps) {
             <p className={cn("tpr-ribbon", result.mode === "live" && "is-live")}>
               {result.ribbon && <span>{result.ribbon}</span>}{result.ribbon && result.note ? " " : null}{result.note && <span>{result.note}</span>}
             </p>
-          )}
-          {result.needs_image_consent && pendingImage && (
-            <div className="bs-actions"><Button type="button" size="touch" onClick={() => readFile(pendingImage, true)} disabled={!!busy}>{PLAN.readImageSend}</Button></div>
           )}
           <ol className="tpr-stages" aria-label={PLAN.readStagesTitle}>
             {result.stages.map((s) => <li key={s.key} className={s.done ? "is-done" : "is-not"}><span aria-hidden="true">{s.done ? "✓" : "·"}</span> {s.label}</li>)}

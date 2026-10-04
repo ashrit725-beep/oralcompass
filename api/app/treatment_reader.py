@@ -2,7 +2,11 @@
 
 Pipeline for one read, in order (the response lists the stages that ran):
 1. reading: pasted text (JSON {text}) or a file (multipart {file}: PNG, JPEG or WebP image, or a PDF; at most 10 MB). A PDF is read
-   through its PyMuPDF text layer; a PDF without one is rendered to page images (live mode only).
+   through its PyMuPDF text layer; a PDF without one is rendered to page images (live mode only). Before an image leaves the server it
+   is re-encoded as a bounded PNG (`sanitize_image`, alias `strip_image_metadata`), so EXIF (GPS position, device, time) never reaches a
+   model; WebP keeps its pixels and loses its EXIF/XMP/ICC chunks. In live mode an image or a scanned PDF is sent only when the request
+   carries `image_consent=1` (multipart field; alias `confirm_image_sent_unredacted=true`); without it the reader answers 200 with
+   `needs_image_consent: true` and READER_IMAGE_NOTICE, and calls no model.
 2. redacting: `redaction.redact` before any model call. Only redacted text reaches a model. An image cannot be redacted, which the
    response states (ribbon); every string the model returns is redacted again before it is returned.
 3. reading_lines:
@@ -310,15 +314,16 @@ def read_live(redacted_text: Optional[str], images: list[tuple[str, bytes]]) -> 
 
 # ---------------------------------------------------------------- input
 async def _read_input(request: Request) -> tuple[str, Optional[str], list[tuple[str, bytes]], Optional[str], bool]:
-    """→ (source, text, images, note, image_consent). source: text | pdf | image. image_consent is the multipart field `image_consent`
-    ("1"/"true"), sent only after the visitor confirmed READER_IMAGE_NOTICE; without it no image leaves the server."""
+    """→ (source, text, images, note, image_consent). source: text | pdf | pdf_scanned | image. image_consent is the multipart field
+    `image_consent` (or its alias `confirm_image_sent_unredacted`; "1"/"true"/"yes"), sent only after the visitor confirmed
+    READER_IMAGE_NOTICE; without it no image leaves the server."""
     declared = request.headers.get("content-length")
     if declared and declared.isdigit() and int(declared) > MAX_BYTES + 64 * 1024:
         raise HTTPException(status_code=413, detail={"error": "file_too_large", "max_bytes": MAX_BYTES})
     ctype = (request.headers.get("content-type") or "").lower()
     if ctype.startswith("multipart/form-data"):
         form = await request.form()
-        consent = str(form.get("image_consent") or "").strip().lower() in ("1", "true", "yes")
+        consent = any(str(form.get(k) or "").strip().lower() in ("1", "true", "yes") for k in ("image_consent", "confirm_image_sent_unredacted"))
         f = form.get("file")
         if f is None or not hasattr(f, "read"):
             text = form.get("text")
@@ -436,6 +441,9 @@ def sanitize_image(mime: str, data: bytes) -> tuple[str, bytes]:
         doc.close()
 
 
+strip_image_metadata = sanitize_image      # the name the security tests and docs use
+
+
 def _stages(done_through: str, skipped: tuple[str, ...] = ()) -> list[dict]:
     """The stages that ran. A skipped stage (an image cannot be redacted) is listed as not done and marked skipped."""
     idx = STAGES.index(done_through)
@@ -455,6 +463,7 @@ def _finish(items: list[dict]) -> list[dict]:
 async def read_treatment_plan(request: Request, user: User = Depends(current_user)):
     ai_support.local_rate_limit(user.sub, KIND, RATE_N, RATE_WINDOW_S, request)
     source, text, images, note, image_consent = await _read_input(request)
+    mode = ai_support.llm_mode()
     if text is not None and len(text) > MAX_TEXT_CHARS:
         raise HTTPException(status_code=422, detail={"error": "text_too_long", "max_chars": MAX_TEXT_CHARS})
     redacted, removed = (await run_in_threadpool(redact, text)) if text is not None else (None, [])
@@ -467,7 +476,6 @@ async def read_treatment_plan(request: Request, user: User = Depends(current_use
     resp: dict[str, Any] = {"mode": "demo", "source": "image" if source == "image" else ("pdf" if source.startswith("pdf") else "text"), "items": [],
                             "ignored_text": ignored_server, "redaction": {"removed": removed, "image_not_redacted": bool(images)}, "ribbon": None, "note": note,
                             "stages": _stages("redacting", skipped), "fixture": None, "dropped_unverified": 0}
-    mode = ai_support.llm_mode()
     reason = None
     if mode == "live" and images and not image_consent:
         # an image cannot be redacted: nothing leaves the server until the visitor has read the notice and confirmed (privacy, item 11)

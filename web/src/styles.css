@@ -263,6 +263,10 @@ table.grid thead th { background: var(--paper-deep); position: sticky; top: 0; }
 /* ---- documents ---- */
 .documents { display: grid; gap: 1.25rem; grid-template-columns: minmax(0, 1.5fr) minmax(280px, 1fr); }
 .doc-plan { grid-row: span 3; } .doc-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .5rem 1rem; align-items: end; }
+/* mobile-11: the plan select takes the column's width, never its longest option's (main clips horizontal overflow) */
+.doc-head .plan-pick { flex: 1 1 18rem; min-width: 0; max-width: 100%; } .doc-head .plan-pick select { width: 100%; min-height: 44px; text-overflow: ellipsis; }
+/* slop-23: clauses grouped by plan section */
+.clause-group { border-top: 1px solid var(--rule); } .clause-group-head { min-height: 44px; display: flex; align-items: center; gap: .4rem; cursor: pointer; font-family: var(--serif); font-weight: 600; }
 .doc-card { background: var(--paper-deep); border: 1px solid var(--rule); border-radius: 12px; padding: .75rem .9rem; margin: .5rem 0; }
 .doc-card h3 { font-size: 1rem; }
 .filter input { max-width: 320px; }
@@ -275,9 +279,17 @@ table.grid thead th { background: var(--paper-deep); position: sticky; top: 0; }
 .privacy .actions { flex-direction: row; flex-wrap: wrap; }
 .audit { width: 100%; border-collapse: collapse; font-size: .8rem; margin-top: .5rem; } .audit th, .audit td { text-align: left; padding: .2rem .4rem; border-bottom: 1px solid var(--rule); }
 .pdf-host { display: grid; gap: 12px; margin: .75rem 0; } .pdf-page { position: relative; margin: 0 auto; box-shadow: var(--shadow); background: #fff; }
-.pdf-stitch { position: absolute; font-size: .72rem; border: 1px solid var(--ink); background: var(--paper); border-radius: 5px; padding: 0 .3rem; cursor: pointer; }
-.pdf-stitch-margin { position: absolute; }
-.pdf-stitch::after { content: ""; position: absolute; inset: -6px -2px; }
+/* stitch pins sit in the page's left margin (lib/pageview clusterPins keeps them >= 48 px apart; a run of lines shares one pin);
+   the 24 px pin carries a 44 px hit area (::before) */
+.pdf-pin { position: absolute; z-index: 1; }
+.pdf-stitch { display: inline-flex; align-items: center; min-height: 24px; min-width: 24px; font-size: .72rem; line-height: 1; white-space: nowrap; color: var(--ink); border: 1px solid var(--ink); background: var(--paper); border-radius: 5px; padding: 0 .35rem; cursor: pointer; }
+.pdf-stitch { position: relative; }
+.pdf-stitch::before { content: ""; position: absolute; top: -10px; bottom: -10px; left: -10px; right: -10px; }
+.pdf-stitch[aria-expanded="true"] { background: var(--gold-soft); }
+.pdf-stitch-list { position: absolute; top: calc(100% + 4px); left: 0; z-index: 2; list-style: none; margin: 0; padding: var(--s-1); min-width: 14rem; max-height: 18rem; overflow-y: auto; background: var(--paper); border: 1px solid var(--rule); border-radius: var(--r-2); box-shadow: var(--shadow-1); }
+.pdf-stitch-margin .pdf-stitch-list { left: auto; right: 0; }
+.pdf-stitch-item { display: flex; width: 100%; min-height: 44px; align-items: center; gap: .4rem; padding: 0 var(--s-2); text-align: left; font-size: .8rem; color: var(--ink); background: none; border: 0; border-radius: var(--r-1); cursor: pointer; }
+.pdf-stitch-item:hover, .pdf-stitch-item[aria-pressed="true"] { background: var(--paper-deep); }
 
 /* ---- clause card ---- */
 /* max-height + its own scroll + a sticky header: a tall card (depth 3 + the Ask composer) never pushes its title and close button off-screen (layout-3) */

@@ -97,8 +97,8 @@ WHERE_FROM = {
     "step": "{{ref:0}} is computed by the engine from the plan's cited rule and your records; the step is stitched to its clause.",
 }
 
-WHAT_IF = ("This assistant does not compute hypotheticals. Estimates use the figures in your records; a figure that changes is entered as a "
-           "new benefit statement or allowed amount, with its source.")
+WHAT_IF = ("This assistant does not compute hypotheticals. The Harbor Light has a network 'what if', labeled as assumed on the estimate; "
+           "other figures are entered as a new benefit statement or allowed amount, with their source.")
 CLARIFY = "This question could refer to {k} procedures on the route: {names}. Which one?"
 OUT_OF_SCOPE = ("This assistant answers about the selected procedure, its checkpoints and the plan clauses behind them. "
                 "Clinical questions are for your dental team.")

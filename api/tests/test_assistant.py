@@ -371,4 +371,5 @@ def test_one_live_switch_redacted_question_and_bare_amounts_dropped(alex, monkey
     ask("My member ID: ABC123456, call 919-555-0100. What share does the plan pay?", estimate_id=alex["est"]["id"], line_index=0, step_key="CO")
     sent = json.loads(seen["body"]["messages"][1]["content"])
     assert "ABC123456" not in sent["question"] and "919-555-0100" not in sent["question"] and "What share" in sent["question"]
-    assert "Harbor Light" not in assistant.T.WHAT_IF and "does not compute hypotheticals" in assistant.T.WHAT_IF          # info-only-7
+    # info-only-7: the answer names only controls that exist (the Harbor Light network "what if", demo-5) and computes nothing itself
+    assert "does not compute hypotheticals" in assistant.T.WHAT_IF and "network 'what if'" in assistant.T.WHAT_IF

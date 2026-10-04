@@ -102,7 +102,7 @@ READER_RIBBON_LIVE = "Read by the model from the redacted text. Every line, toot
 READER_RIBBON_LIVE_IMAGE = ("Read by the model from the image. A photo cannot be redacted before reading, so personal details in it reach the model; "
                             "the server removes them from the model's answer. Nothing is added until you confirm.")
 READER_RIBBON_DEMO = "Demo mode: this text matches a stored fictional estimate, so its lines come from the stored record, not from a model."
-READER_DEMO_CANNOT_READ = ("Demo mode cannot read new documents. No model is configured here; only the two stored fictional estimates are recognised. "
+READER_DEMO_CANNOT_READ = ("Demo mode cannot read new documents. No model is configured here; only the two stored fictional estimates are recognized. "
                            "Lines can still be added one at a time below.")
 READER_LIMIT_NOTE = "The reading limit for this session or for today has been reached, so the model was not called."
 READER_MODEL_FAILED = "The model did not answer in time, so the document was not read."

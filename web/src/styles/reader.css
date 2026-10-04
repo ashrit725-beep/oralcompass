@@ -82,10 +82,11 @@
 /* ---- clause explainer: "Plain words" ---- */
 .plain-words { display: grid; gap: 4px; }
 .plain-words .pw-sentence { margin: 0; }
-.pw-eyebrow { font-size: 11px; line-height: 14px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-soft); }
+.pw-eyebrow { font-family: var(--serif); font-style: italic; font-size: 13px; line-height: 18px; color: var(--ink-soft); }   /* slop-25: a sentence-case kicker, not a tracked caps eyebrow */
 .pw-meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; margin: 0; font-size: 12px; line-height: 16px; color: var(--ink-soft); }
 .pw-label { font-weight: 600; }
 .pw-label-live { color: var(--water-ink-text); }
 .pw-note { margin: 0; font-size: 12px; line-height: 16px; color: var(--ink-soft); }
 .plain-words.is-compact .pw-sentence { font-family: var(--serif); font-size: 14px; line-height: 21px; }
 .evidence-item .evidence-plain { grid-column: 2; margin-top: 4px; padding: 6px 10px; background: var(--paper-deep); border-radius: var(--r-2); }
+.tpr-image-confirm { margin-top: var(--s-2); border-left: 3px solid var(--terracotta); padding-left: var(--s-3); }

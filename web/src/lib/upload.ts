@@ -127,10 +127,13 @@ export async function prepareFile(file: File, onPhase?: (p: PreparePhase) => voi
 
 export const isTerminal = (status: string | undefined | null) => !!status && TERMINAL.has(status);
 
+const abortError = () => new DOMException("aborted", "AbortError");
+/** web-correctness-20: an already-aborted signal rejects at once (an abort that lands during a fetch fires no later event). */
 const sleep = (ms: number, signal?: AbortSignal) =>
   new Promise<void>((resolve, reject) => {
+    if (signal?.aborted) { reject(abortError()); return; }
     const t = setTimeout(resolve, ms);
-    signal?.addEventListener("abort", () => { clearTimeout(t); reject(new DOMException("aborted", "AbortError")); }, { once: true });
+    signal?.addEventListener("abort", () => { clearTimeout(t); reject(abortError()); }, { once: true });
   });
 
 /** Poll GET /me/documents/{id}/extraction until a terminal status; every reading is reported to `onStatus`. */
@@ -144,7 +147,9 @@ export async function pollExtraction(
   const max = opts.maxPolls ?? Infinity;
   let n = 0;
   for (;;) {
+    if (opts.signal?.aborted) throw abortError();
     const st = await fetcher(id);
+    if (opts.signal?.aborted) throw abortError();
     onStatus(st);
     if (isTerminal(st.status)) return st;
     if (++n >= max) return st;
@@ -217,6 +222,13 @@ function listText(value: unknown): string {
 
 export const isDecided = (f: ExtractedField) => !!f.decision;
 
+/** One review request at a time (web-correctness-21): each response replaces the whole field list, so a slower earlier response must
+ *  never land after a later decision. `enter()` is false while a request is in flight; `leave()` ends it. */
+export function createSerialGate(): { enter: () => boolean; leave: () => void; readonly busy: boolean } {
+  let busy = false;
+  return { enter: () => (busy ? false : (busy = true)), leave: () => { busy = false; }, get busy() { return busy; } };
+}
+
 /** Mirrors `uploads.undecided_required`: required rows without a decision; class_of.* rows count as one group ("class_of"). */
 export function undecidedRequired(fields: ExtractedField[]): string[] {
   const out = fields.filter((f) => f.required && !f.decision && !f.field_path.startsWith("class_of.")).map((f) => f.field_path);
@@ -259,7 +271,13 @@ export const decisionCandidate = (f: ExtractedField, index: number): ReviewDecis
 export const decisionEdit = (f: ExtractedField, value: unknown, source: string): ReviewDecision => ({ field_path: f.field_path, decision: "edited", value, source });
 
 type Body = { error?: string; fields?: string[]; type?: string; field_path?: string; unit?: string } | undefined;
-const body = (e: unknown): Body => (e instanceof ApiError ? (e.body as Body) : undefined);
+/** The API's error object: FastAPI wraps an HTTPException's dict in `detail` ({"detail": {"error": …}}); a bare object is accepted too. */
+export const errorBody = (e: unknown): Body => {
+  if (!(e instanceof ApiError) || !e.body || typeof e.body !== "object") return undefined;
+  const b = e.body as { detail?: unknown };
+  return (b.detail && typeof b.detail === "object" ? b.detail : b) as Body;
+};
+const body = errorBody;
 
 /** Upload failure → one UPLOAD sentence (the server's error codes, foundation notes §3.2 item 1). */
 export function uploadErrorCopy(e: unknown): string {
@@ -272,6 +290,11 @@ export function uploadErrorCopy(e: unknown): string {
     case "sha256_mismatch": return UPLOAD.shaMismatch;
     default: return UPLOAD.uploadFailed;
   }
+}
+
+/** web-correctness-19: POST /extract failed (anything but 409, which means a run already exists). */
+export function startErrorCopy(e: unknown): string {
+  return e instanceof ApiError && e.status === 429 ? UPLOAD.startLimited : UPLOAD.startFailed;
 }
 
 export function reviewErrorCopy(e: unknown): string {

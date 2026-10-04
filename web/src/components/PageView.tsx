@@ -4,6 +4,7 @@ import * as pdfjs from "pdfjs-dist";
 import type { Stitch } from "../lib/types";
 import { circled } from "../lib/stitches";
 import { renderSequential, stitchKey } from "../lib/pdfRender";
+import { clusterPins, quoteItemRange } from "../lib/pageview";
 
 // Vite-friendly worker
 pdfjs.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url).toString();
@@ -15,53 +16,70 @@ const norm = (s: string) => s.replace(/\s+/g, " ").trim().toLowerCase();
 /** One rendered page: the pdf.js page, its viewport, the visible canvas and an untouched copy of the render (the overlay restores from it). */
 interface RenderedPage { p: number; page: pdfjs.PDFPageProxy; vp: pdfjs.PageViewport; wrap: HTMLDivElement; canvas: HTMLCanvasElement; base: HTMLCanvasElement; rects: Map<string, Promise<number[][]>> }
 
-/** Find viewport rectangles for a quote on a page by matching the text layer. Returns [] when not found (margin-stitch fallback). */
+/** Find viewport rectangles for a quote on a page by matching the text layer. Returns [] when not found (margin-stitch fallback).
+ *  Only the items the quote covers (lib/pageview quoteItemRange, raw offsets) are measured, so the highlight stays on the quoted line. */
 async function locate(page: pdfjs.PDFPageProxy, viewport: pdfjs.PageViewport, quote: string): Promise<number[][]> {
   const tc = await page.getTextContent();
   const items = tc.items.filter((it: any) => "str" in it) as any[];
-  let joined = ""; const spans: [number, number][] = [];
-  for (const it of items) { const start = joined.length; joined += it.str + " "; spans.push([start, joined.length]); }
-  const idx = norm(joined).indexOf(norm(quote));
-  if (idx < 0) return [];
-  // map normalized index back approximately: normalization only collapses whitespace, so positions shift little; use a tolerant window
-  const end = idx + norm(quote).length;
+  const range = quoteItemRange(items.map((it) => String(it.str)), quote);
+  if (!range) return [];
   const rects: number[][] = [];
-  items.forEach((it, i) => {
-    const [a, b] = spans[i];
-    if (b < idx || a > end) return;
+  for (let i = range[0]; i <= range[1]; i++) {
+    const it = items[i];
+    if (!String(it.str).trim()) continue;
     const [sx, , , sy, x, y] = it.transform;
     const h = Math.hypot(sy, it.transform[2]) || sy;
     const r = viewport.convertToViewportRectangle([x, y, x + it.width * (sx / Math.abs(sx || 1)), y + h]);
     rects.push([Math.min(r[0], r[2]), Math.min(r[1], r[3]), Math.abs(r[2] - r[0]), Math.abs(r[3] - r[1])]);
-  });
+  }
   return rects;
 }
 
-/**
- * Stitch chips whose quotes sit on the same line used to land on top of each other (one chip hid the next, and their hit areas
- * overlapped). After a chip is placed, nudge it right of any chip it collides with, wrapping to the next row at the page edge.
- */
-function place(tag: HTMLElement, placed: Box[], pageWidth: number) {
-  const w = tag.offsetWidth, h = tag.offsetHeight;
-  if (!w || !h) { placed.push(boxOf(tag)); return; }
-  let x = tag.offsetLeft, y = tag.offsetTop;
-  for (let i = 0; i < 24; i++) {
-    const hit = placed.find((b) => x < b.x + b.w + CHIP_GAP && x + w + CHIP_GAP > b.x && y < b.y + b.h + CHIP_GAP && y + h + CHIP_GAP > b.y);
-    if (!hit) break;
-    x = hit.x + hit.w + CHIP_GAP;
-    if (x + w > pageWidth) { x = Math.max(0, tag.offsetLeft); y = hit.y + hit.h + CHIP_GAP; }
+const PIN_GAP = 48;   // a 24 px pin with its 44 px hit area plus air: closer lines share one grouped pin (layout-4)
+
+/** One pin in the left margin, ending just before the text column; a run of close lines shares one pin that opens a list. */
+function makePin(group: { s: Stitch; top: number; x: number }[], page: number, pageWidth: number, selectedId: string | undefined, onSelect: (s: Stitch) => void): HTMLElement {
+  const first = group[0].s;
+  const ns = group.map((g) => g.s.n);
+  const lo = Math.min(...ns), hi = Math.max(...ns);
+  const box = document.createElement("div"); box.className = "pdf-pin";
+  const tag = document.createElement("button"); tag.type = "button"; tag.className = "unstyled pdf-stitch";
+  const top = Math.max(0, Math.min(...group.map((g) => g.top)) - 6);
+  const x = Math.min(...group.map((g) => g.x));
+  box.style.top = `${top}px`;
+  if (x >= 64) box.style.right = `${pageWidth - x + 10}px`; else box.style.left = "2px";
+  if (group.length === 1) {
+    tag.textContent = `${first.doc} ${circled(first.n)}`;
+    tag.setAttribute("aria-label", `Stitch ${first.n}, ${first.topic.replace(/[_:]/g, " ")}, page ${page}`);
+    tag.dataset.stitch = first.id; tag.setAttribute("aria-pressed", "false");
+    tag.onclick = () => onSelect(first);
+    box.appendChild(tag);
+    return box;
   }
-  tag.style.left = `${x}px`; tag.style.top = `${y}px`; tag.style.right = "auto";
-  placed.push({ x, y, w, h });
+  tag.textContent = `${first.doc} ${circled(lo)}–${circled(hi)}`;
+  tag.setAttribute("aria-label", `Stitches ${lo} to ${hi}, ${group.length} clauses, page ${page}`);
+  const list = document.createElement("ul"); list.className = "pdf-stitch-list";
+  const open = group.some((g) => g.s.id === selectedId);
+  list.hidden = !open; tag.setAttribute("aria-expanded", String(open)); tag.dataset.group = group.map((g) => g.s.id).join(" ");
+  for (const g of group) {
+    const li = document.createElement("li");
+    const b = document.createElement("button"); b.type = "button"; b.className = "unstyled pdf-stitch-item";
+    b.textContent = `${circled(g.s.n)} ${g.s.topic.replace(/[_:]/g, " ")}`;
+    b.dataset.stitch = g.s.id; b.setAttribute("aria-pressed", "false");
+    b.onclick = () => onSelect(g.s);
+    li.appendChild(b); list.appendChild(li);
+  }
+  tag.onclick = () => { list.hidden = !list.hidden; tag.setAttribute("aria-expanded", String(!list.hidden)); };
+  list.onkeydown = (e) => { if (e.key === "Escape") { list.hidden = true; tag.setAttribute("aria-expanded", "false"); tag.focus(); } };
+  box.appendChild(tag); box.appendChild(list);
+  return box;
 }
-type Box = { x: number; y: number; w: number; h: number };
-const CHIP_GAP = 6;
-const boxOf = (el: HTMLElement): Box => ({ x: el.offsetLeft, y: el.offsetTop, w: el.offsetWidth, h: el.offsetHeight });
 
 const token = (name: string, fallback: string) => (typeof document === "undefined" ? fallback : getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback);
 
 /**
- * The Page: real document pages; everything dimmed except stitched sentences, which stay at full opacity and wear chips.
+ * The Page: real document pages; everything dimmed except stitched sentences, which stay at full opacity under a highlighter wash, with
+ * one margin pin per line (close lines share a grouped pin).
  * The canvases are rendered ONCE per `url` (web-correctness-16); the dim + highlight + chips are an overlay pass that repaints from the
  * untouched copy of each page when the stitch set, the selection or `dim` changes, so typing in the clause filter or pressing a stitch no
  * longer re-downloads and re-renders the document. Selecting a stitch only restyles the outline box and chip that already exist, so the
@@ -91,37 +109,39 @@ export function PageView({ url, stitches, selected, onSelect, dim = true, title 
     if (gen !== overlayGen.current) return;                     // a newer overlay pass owns the canvas now
     const ctx = rp.canvas.getContext("2d")!;
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(rp.base, 0, 0); ctx.restore();
-    rp.wrap.querySelectorAll(".pdf-stitch, .pdf-outline").forEach((n) => n.remove());
+    rp.wrap.querySelectorAll(".pdf-pin, .pdf-outline").forEach((n) => n.remove());
     if (!pageStitches.length) return;
     const dpr = rp.canvas.width / rp.vp.width;
-    const placed: Box[] = [];
-    // dim everything, then re-draw highlighted regions at full opacity (+ outline)
+    // dim everything, then re-draw the quoted lines at full opacity with a highlighter wash and a thin margin rule (layout-25)
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 0.33; ctx.fillStyle = token("--paper", "#f6f0e3"); ctx.fillRect(0, 0, rp.canvas.width, rp.canvas.height); ctx.restore();
+    const highlight = token("--gold-soft", "#e7cf8f"), rule = token("--gold", "#c59a3c");
+    const pins: { s: Stitch; top: number; x: number }[] = [];
+    const margin: Stitch[] = [];
     pageStitches.forEach((s, i) => {
       const rects = located[i];
-      const tag = document.createElement("button"); tag.type = "button"; tag.className = "pdf-stitch"; tag.textContent = `${s.doc} ${circled(s.n)}`;
-      tag.setAttribute("aria-label", `Stitch ${s.n}, ${s.topic.replace(/[_:]/g, " ")}, page ${rp.p}`);
-      tag.dataset.stitch = s.id; tag.setAttribute("aria-pressed", "false");
-      tag.onclick = () => latest.current.onSelect(s);
-      if (rects.length) {
-        const minX = Math.min(...rects.map((r) => r[0])), minY = Math.min(...rects.map((r) => r[1]));
-        const maxX = Math.max(...rects.map((r) => r[0] + r[2])), maxY = Math.max(...rects.map((r) => r[1] + r[3]));
-        const pad = 2;
-        ctx.save(); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        ctx.drawImage(rp.base, (minX - pad) * dpr, (minY - pad) * dpr, (maxX - minX + 2 * pad) * dpr, (maxY - minY + 2 * pad) * dpr,
-          minX - pad, minY - pad, maxX - minX + 2 * pad, maxY - minY + 2 * pad);
-        ctx.restore();
-        // the outline is a positioned box, not canvas ink, so selection restyles it without repainting the page (a11y-9)
-        const box = document.createElement("span"); box.className = "pdf-outline"; box.dataset.stitch = s.id; box.setAttribute("aria-hidden", "true");
-        Object.assign(box.style, { left: `${minX - pad}px`, top: `${minY - pad}px`, width: `${maxX - minX + 2 * pad}px`, height: `${maxY - minY + 2 * pad}px` });
-        rp.wrap.appendChild(box);
-        tag.style.top = `${Math.max(0, minY - 22)}px`; tag.style.left = `${Math.max(0, minX)}px`;
-      } else {
-        tag.classList.add("pdf-stitch-margin"); tag.style.top = "8px"; tag.style.right = "8px";   // fallback: margin stitch
-      }
-      rp.wrap.appendChild(tag);
-      place(tag, placed, rp.vp.width);
+      if (!rects.length) { margin.push(s); return; }
+      const minX = Math.min(...rects.map((r) => r[0])), minY = Math.min(...rects.map((r) => r[1]));
+      const maxX = Math.max(...rects.map((r) => r[0] + r[2])), maxY = Math.max(...rects.map((r) => r[1] + r[3]));
+      const pad = 2, bx = minX - pad, by = minY - pad, bw = maxX - minX + 2 * pad, bh = maxY - minY + 2 * pad;
+      ctx.save(); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.drawImage(rp.base, bx * dpr, by * dpr, bw * dpr, bh * dpr, bx, by, bw, bh);
+      ctx.globalCompositeOperation = "multiply"; ctx.globalAlpha = 0.55; ctx.fillStyle = highlight; ctx.fillRect(bx, by, bw, bh);
+      ctx.globalCompositeOperation = "source-over"; ctx.globalAlpha = 1; ctx.fillStyle = rule; ctx.fillRect(Math.max(0, bx - 5), by, 2, bh);
+      ctx.restore();
+      // the selection ring is a positioned box, not canvas ink, so selecting restyles it without repainting the page (a11y-9)
+      const box = document.createElement("span"); box.className = "pdf-outline"; box.dataset.stitch = s.id; box.setAttribute("aria-hidden", "true");
+      Object.assign(box.style, { left: `${bx}px`, top: `${by}px`, width: `${bw}px`, height: `${bh}px` });
+      rp.wrap.appendChild(box);
+      pins.push({ s, top: minY, x: minX });
     });
+    const sel = latest.current.selected?.id, pick = (st: Stitch) => latest.current.onSelect(st);
+    // one pin per line in the left margin; lines closer than PIN_GAP share one grouped pin (layout-4)
+    for (const g of clusterPins(pins.map((q) => q.top), PIN_GAP)) rp.wrap.appendChild(makePin(g.map((i) => pins[i]), rp.p, rp.vp.width, sel, pick));
+    if (margin.length) {   // fallback: quotes not found in the text layer share one margin pin at the top right
+      const box = makePin(margin.map((s) => ({ s, top: 8, x: 0 })), rp.p, rp.vp.width, sel, pick);
+      box.classList.add("pdf-stitch-margin"); box.style.left = ""; box.style.right = "8px";
+      rp.wrap.appendChild(box);
+    }
     markSelected(rp.wrap, latest.current.selected?.id);
   }
 
@@ -196,5 +216,11 @@ function markSelected(root: HTMLElement, id: string | undefined) {
     const on = !!id && n.dataset.stitch === id;
     n.classList.toggle("is-selected", on);
     if (n.tagName === "BUTTON") n.setAttribute("aria-pressed", String(on));
+  });
+  // a grouped pin opens its list when it holds the selected stitch (it never closes one the reader opened)
+  root.querySelectorAll<HTMLElement>("[data-group]").forEach((tag) => {
+    if (!id || !(tag.dataset.group ?? "").split(" ").includes(id)) return;
+    const list = tag.nextElementSibling as HTMLElement | null;
+    if (list) { list.hidden = false; tag.setAttribute("aria-expanded", "true"); }
   });
 }

@@ -1,7 +1,7 @@
 // Magic UI "Highlighter" (https://magicui.design/docs/components/highlighter, registry @magicui/highlighter; rough-notation 0.5.1), MIT,
 // installed 2026-10-03. Patched for OralCompass (component plan §2 N8/N12): defaults `underline`, terracotta, strokeWidth 1.2,
 // iterations 1 (one evidential mark per answer/card), wrapper `inline-block` → `inline`. Reduced motion: `animate: false`, duration 0 —
-// the underline is drawn instantly. Lazy-load this file with React.lazy (rough-notation stays out of the main chunk).
+// the underline is drawn instantly. Redraws after the first draw are instant and only follow the element's own size (motion-11). Lazy-load this file with React.lazy (rough-notation stays out of the main chunk).
 import { useLayoutEffect, useRef } from "react"
 import type React from "react"
 import { useInView, useReducedMotion } from "motion/react"
@@ -71,6 +71,9 @@ export function Highlighter({
       const currentAnnotation = annotate(element, annotationConfig)
       annotation = currentAnnotation
       currentAnnotation.show()
+      // motion-11: the mark draws once; a later redraw (the element's own box changed) is instant, and page-height changes elsewhere
+      // (a drawer opening, an answer appended) no longer redraw it at all
+      currentAnnotation.animate = false
 
       resizeObserver = new ResizeObserver(() => {
         currentAnnotation.hide()
@@ -78,7 +81,6 @@ export function Highlighter({
       })
 
       resizeObserver.observe(element)
-      resizeObserver.observe(document.body)
     }
 
     return () => {

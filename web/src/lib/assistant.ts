@@ -6,6 +6,7 @@
  *   template `label`, clarify `text` and the `tools_used` id strings (foundation notes §2.3 / §3.1).
  */
 import { ASSIST } from "./copy/assistant";
+import { PROCEDURE_NAMES } from "./clauses";
 import { stitchForLabel } from "./stitches";
 import type { AssistRef, AssistResponse, AssistScope, Benefits, CoverageRule, Evidence, LedgerLine, PlanFixture, SavedEstimate, Step, Stitch, TreatmentItem, VJson } from "./types";
 
@@ -30,6 +31,21 @@ export interface AssistData {
   stitches: Stitch[];
 }
 export const EMPTY_DATA: AssistData = { estimate: null, plan: null, benefits: null, rules: [], items: [], stitches: [] };
+
+/** What the app shell provides once (AssistDataProvider): the payloads it already holds for the selected plan. */
+export interface AssistProvided extends Partial<AssistData> { planRef?: string }
+
+/** web-correctness-34: the shell's payloads answer only questions about the same plan (a Compare clause asks about another plan), and its
+ *  estimate only questions about the same estimate id; anything else is left for the lazy fetch. Items are the user's own records and
+ *  apply to every plan. */
+export function scopedProvided(ctx: AssistProvided | null, scope: Pick<AssistScope, "plan_ref" | "estimate_id">): Partial<AssistData> {
+  if (!ctx) return {};
+  const { planRef, ...data } = ctx;
+  if (planRef !== undefined && planRef !== scope.plan_ref) return data.items ? { items: data.items } : {};
+  const out: Partial<AssistData> = { ...data };
+  if (!scope.estimate_id || data.estimate?.id !== scope.estimate_id) delete out.estimate;
+  return out;
+}
 
 /** Identical to api/app/assistant.py MONEY_IN_TEXT / ISO_DATE / PLACEHOLDER: currency signs and codes, percent, comma thousands, decimals,
  *  any 3+ digit number and spelled-out numbers next to dollars/percent/cents; ISO dates are removed first. */
@@ -257,6 +273,36 @@ export function toolLabel(tool: string): string {
   return m[2] ? `${name} ${m[2]}` : name;
 }
 
+/** demo-19: one tool id in plain words, resolved against the estimate the client holds (`get_estimate_line(line 1)` → "Crown (tooth 19):
+ *  estimate line"; `explain_step(line 0, step 2)` → "Root canal (tooth 19): plan share step"). Step names come from the rule code, never
+ *  the step label, so no amount appears; lines and steps count from 1 when no name is known. */
+export function lookupLabel(tool: string, data?: Pick<AssistData, "estimate"> | null): string {
+  const m = /^([a-z_]+)(?:\((.*)\))?$/.exec(tool.trim());
+  if (!m) return tool;
+  const arg = (m[2] ?? "").trim();
+  const lines = data?.estimate?.ledger.lines ?? [];
+  const lineName = (i: number) => lines[i]?.label || ASSIST.lookupLineN(i + 1);
+  switch (m[1]) {
+    case "get_benefits": return ASSIST.lookupBenefits(arg);
+    case "get_estimate_line": { const i = Number(/(\d+)/.exec(arg)?.[1]); return Number.isFinite(i) ? ASSIST.lookupLine(lineName(i)) : toolLabel(tool); }
+    case "explain_step": {
+      const nums = arg.match(/\d+/g)?.map(Number) ?? [];
+      if (nums.length < 2) return toolLabel(tool);
+      const [li, si] = nums;
+      const step = lines[li]?.steps[si];
+      const rule = step && ASSIST.stepRule[step.rule];
+      return rule ? ASSIST.lookupStep(lineName(li), rule) : ASSIST.lookupStepUnnamed(lineName(li), si + 1);
+    }
+    case "get_plan_rules": return ASSIST.lookupRules(PROCEDURE_NAMES[arg] ?? arg.replace(/_/g, " "));
+    case "get_clause": return ASSIST.lookupClause(arg);
+    case "resolve_procedure": return ASSIST.lookupProcedures;
+    default: return toolLabel(tool);
+  }
+}
+
+/** The answer's lookups, in plain words, each listed once. */
+export const lookupLabels = (tools: string[], data?: Pick<AssistData, "estimate"> | null): string[] => [...new Set(tools.map((t) => lookupLabel(t, data)))];
+
 /** Client-side mirror of the server's amount check: a sentence that still carries a bare amount is not rendered and counted as dropped. */
 export function clientGuard(blocks: AssistBlockX[]): { blocks: AssistBlockX[]; dropped: number } {
   let dropped = 0;
@@ -270,4 +316,11 @@ export function templateLabel(b: Extract<AssistBlockX, { type: "template" }>): s
   if (b.key === "advice_question") return b.label ?? ASSIST.adviceLabel;
   if (b.key === "out_of_scope") return ASSIST.outOfScopeLabel;
   return b.label ?? ASSIST.whatIfLabel;
+}
+
+/** Latest-request gate (web-correctness-14): a response is applied only when no newer question was sent and the scope did not change
+ *  since it was sent. `begin()` returns the request's ticket; `invalidate()` (scope change) makes every in-flight ticket stale. */
+export function createRequestGate(): { begin: () => number; isCurrent: (ticket: number) => boolean; invalidate: () => void } {
+  let current = 0;
+  return { begin: () => ++current, isCurrent: (ticket) => ticket === current, invalidate: () => { current++; } };
 }

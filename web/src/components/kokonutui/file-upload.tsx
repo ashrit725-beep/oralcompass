@@ -6,9 +6,11 @@
  * message is persistent (no 3 s auto-dismiss); drag ring `border-sage border-dashed`; grays/blues → tokens. Strings are props with
  * neutral defaults — `UploadWizard` passes the UPLOAD copy namespace. Reduced motion: MotionConfig drops the y/scale transitions; the
  * arc's dashoffset derives from `progress` (`motion-reduce:transition-none`), so every end state is exact.
+ * Patched 2026-10-04 (layout-6): the panes flow in the document (min-height, no `absolute inset-0`), so the zone grows with its content
+ * and never slices the Choose button; AnimatePresence `mode="wait"` keeps one pane mounted at a time.
  */
 
-import { Upload } from "lucide-react";
+import { FileText, Upload } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { type DragEvent, useCallback, useId, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
@@ -65,7 +67,7 @@ export const formatBytes = (bytes: number, decimals = 2): string => {
   return `${Number.parseFloat((bytes / k ** i).toFixed(dm))} ${unit}`;
 };
 
-/** One sea arc on a sand track; determinate when `progress` is given, otherwise a static three-quarter arc. */
+/** One sea arc on a sand track while a file is prepared; determinate when `progress` is given, otherwise a static three-quarter arc. */
 const UploadArc = ({ progress, label }: { progress: number | null; label: string }) => {
   const r = 42, c = 2 * Math.PI * r;
   const p = progress == null ? 0.75 : Math.max(0, Math.min(1, progress / 100));
@@ -173,13 +175,14 @@ export default function FileUpload({
               {status !== "uploading" ? (
                 <motion.div
                   animate={{ opacity: status === "dragging" ? 0.85 : 1, y: 0 }}
-                  className="absolute inset-0 flex flex-col items-center justify-center p-6"
+                  className="flex min-h-[220px] flex-col items-center justify-center p-6"
                   exit={{ opacity: 0, y: -8 }}
                   initial={{ opacity: 0, y: 8 }}
                   key="dropzone"
                   transition={{ duration: 0.2 }}
                 >
-                  <div className="mb-4"><UploadArc progress={null} label="" /></div>
+                  {/* layout-27: a static document glyph while idle; the arc appears only once a file is being prepared */}
+                  <FileText className="mb-4 h-12 w-12 text-ink-soft" strokeWidth={1.25} aria-hidden="true" />
                   <div className="mb-4 space-y-1.5 text-center">
                     <p className="font-serif text-lg text-ink">{labels.hint}</p>
                     {labels.limits && <p className="text-xs text-ink-soft">{labels.limits(formatBytes(maxFileSize))}</p>}
@@ -192,9 +195,11 @@ export default function FileUpload({
                     <span>{labels.choose}</span>
                     <Upload className="h-4 w-4" aria-hidden="true" />
                   </button>
+                  {/* a11y-15: the visible button is the one control; the native input is not a second, invisible tab stop */}
                   <input
                     accept={acceptedFileTypes?.join(",")}
-                    aria-label={labels.choose}
+                    aria-hidden="true"
+                    tabIndex={-1}
                     className="sr-only"
                     onChange={handleFileInputChange}
                     ref={fileInputRef}
@@ -204,7 +209,7 @@ export default function FileUpload({
               ) : (
                 <motion.div
                   animate={{ opacity: 1 }}
-                  className="absolute inset-0 flex flex-col items-center justify-center p-6"
+                  className="flex min-h-[220px] flex-col items-center justify-center p-6"
                   exit={{ opacity: 0 }}
                   initial={{ opacity: 0 }}
                   key="uploading"

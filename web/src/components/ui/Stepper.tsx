@@ -8,8 +8,9 @@
 // the entering pane slides 12 px from the side it comes from over 200 ms, the leaving pane only fades (140 ms); direction follows the
 // controlled step; optional `stepName` prints each stage name under its indicator (a "Step n of m · name" line on phones); optional
 // `allComplete` turns every indicator forest after publish.
+// Fix pass (2026-10-04, layout-7): the pane height is re-measured with a ResizeObserver, so a pane that grows is never clipped.
 import React, { useState, Children, useRef, useLayoutEffect, type HTMLAttributes, type ReactNode } from 'react';
-import { motion, AnimatePresence, type Variants } from 'motion/react';
+import { motion, AnimatePresence, useReducedMotion, type Variants } from 'motion/react';
 import { cn } from '@/lib/utils';
 
 interface StepperProps extends HTMLAttributes<HTMLDivElement> {
@@ -197,12 +198,17 @@ interface StepContentWrapperProps {
 
 function StepContentWrapper({ isCompleted, currentStep, direction, children, className = '' }: StepContentWrapperProps) {
   const [parentHeight, setParentHeight] = useState<number>(0);
+  // layout-7: MotionConfig does not stop a height spring; under reduced motion the wrapper takes the measured height at once, so a pane
+  // that grows is never clipped while a 0.4 s spring catches up
+  const reduce = useReducedMotion();
 
   return (
     <motion.div
-      style={{ position: 'relative', overflow: 'hidden' }}
+      // `clip`, not `hidden`: it clips the slide the same way but is not a scroll container, so a `position: sticky` child (the upload
+      // review footer, mobile-17) sticks to the dialog's scroll box instead of this wrapper
+      style={{ position: 'relative', overflow: 'clip' }}
       animate={{ height: isCompleted ? 0 : parentHeight }}
-      transition={{ type: 'spring', duration: 0.4, bounce: 0 }}
+      transition={reduce ? { duration: 0 } : { type: 'spring', duration: 0.4, bounce: 0 }}
       className={className}
     >
       <AnimatePresence initial={false} mode="wait" custom={direction}>
@@ -225,11 +231,19 @@ interface SlideTransitionProps {
 function SlideTransition({ children, direction, onHeightReady }: SlideTransitionProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
 
+  // layout-7: re-measure whenever the pane's own content grows or shrinks (an error alert, an added redaction term, a late button), not
+  // only when the Stepper re-renders; otherwise the overflow-hidden wrapper keeps a stale height and clips the pane.
+  const report = useRef(onHeightReady);
+  report.current = onHeightReady;
   useLayoutEffect(() => {
-    if (containerRef.current) {
-      onHeightReady(containerRef.current.offsetHeight);
-    }
-  }, [children, onHeightReady]);
+    const el = containerRef.current;
+    if (!el) return undefined;
+    report.current(el.offsetHeight);
+    if (typeof ResizeObserver === 'undefined') return undefined;
+    const ro = new ResizeObserver(() => report.current(el.offsetHeight));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   return (
     <motion.div

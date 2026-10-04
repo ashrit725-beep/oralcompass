@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
+import { ApiError } from "./api";
 import type { ExtractedField } from "./types";
 import {
   checkPages, checkSize, decisionCandidate, decisionEdit, formatProposed, groupByLandmark, isPdfMagic, isTerminal, labelFor, MAX_BYTES, parseValueInput,
-  pollExtraction, problemCopy, sha256Hex, stageCopy, stageProgress, undecidedRequired, urlBase64ToUint8Array, verifiedUndecided, type ExtractionStatusFull,
+  pollExtraction, createSerialGate, startErrorCopy, problemCopy, publishErrorCopy, reviewErrorCopy, uploadErrorCopy, errorBody, sha256Hex, stageCopy, stageProgress, undecidedRequired, urlBase64ToUint8Array, verifiedUndecided, type ExtractionStatusFull,
 } from "./upload";
 
 const field = (over: Partial<ExtractedField>): ExtractedField => ({
@@ -119,5 +120,56 @@ describe("review helpers", () => {
   it("builds review decisions in the API's shape", () => {
     expect(decisionEdit(fields[0], 6000, "EOB dated 2026-02-01")).toEqual({ field_path: "deductible_individual", decision: "edited", value: 6000, source: "EOB dated 2026-02-01" });
     expect(decisionCandidate(fields[3], 1)).toEqual({ field_path: "class_of.crown", decision: "candidate", candidate_index: 1 });
+  });
+});
+
+describe("API error copy (FastAPI wraps the error object in `detail`)", () => {
+  it("reads the server's error code from {detail: {error}}", () => {
+    expect(uploadErrorCopy(new ApiError(422, "/me/documents/upload", { detail: { error: "sha256_mismatch" } }))).toContain("checksum computed here differs");
+    expect(uploadErrorCopy(new ApiError(413, "/me/documents/upload", { detail: { error: "file_too_large", max_bytes: 1 } }))).toBe("The server limits uploads to 32 MB.");
+    expect(reviewErrorCopy(new ApiError(422, "/me/documents/x/review", { detail: { error: "source_required" } }))).toBe("A source is required for an entered value.");
+    expect(publishErrorCopy(new ApiError(409, "/me/documents/x/publish", { detail: { error: "undecided_fields", fields: ["class_of"] } }), [])).toContain("at least one coverage class row");
+    expect(errorBody(new ApiError(422, "/x", { error: "term_too_long" }))?.error).toBe("term_too_long");
+    expect(errorBody(new Error("x"))).toBeUndefined();
+    expect(uploadErrorCopy(new ApiError(500, "/x", undefined))).toContain("could not be stored");
+  });
+});
+
+describe("review decisions are serialized (web-correctness-21)", () => {
+  it("refuses a second decision while one is in flight and reopens after it settles", () => {
+    const gate = createSerialGate();
+    expect(gate.enter()).toBe(true);
+    expect(gate.busy).toBe(true);
+    expect(gate.enter()).toBe(false);          // row B while row A's request runs: ignored, so A's response cannot overwrite B
+    gate.leave();
+    expect(gate.busy).toBe(false);
+    expect(gate.enter()).toBe(true);
+  });
+});
+
+describe("polling stops on abort (web-correctness-20)", () => {
+  it("rejects with AbortError when the abort lands during a fetch, and fetches no more", async () => {
+    const ctl = new AbortController();
+    let calls = 0;
+    const fetcher = async () => { calls++; ctl.abort(); return status({ status: "identifying_fields" }); };
+    const seen: string[] = [];
+    await expect(pollExtraction("d1", (st) => seen.push(st.status), { intervalMs: 5, signal: ctl.signal, fetcher })).rejects.toMatchObject({ name: "AbortError" });
+    await new Promise((r) => setTimeout(r, 40));
+    expect(calls).toBe(1);
+    expect(seen).toEqual([]);                    // a reading that arrives after the abort is not reported
+  });
+  it("does not start when the signal is already aborted", async () => {
+    const ctl = new AbortController(); ctl.abort();
+    let calls = 0;
+    await expect(pollExtraction("d1", () => undefined, { signal: ctl.signal, fetcher: async () => { calls++; return status({ status: "ready" }); } })).rejects.toMatchObject({ name: "AbortError" });
+    expect(calls).toBe(0);
+  });
+});
+
+describe("extraction start failures (web-correctness-19)", () => {
+  it("says the run did not start, with its own sentence for the rate limit", () => {
+    expect(startErrorCopy(new ApiError(429, "/x"))).toContain("Too many extractions");
+    expect(startErrorCopy(new ApiError(500, "/x"))).toContain("did not start");
+    expect(startErrorCopy(new TypeError("network"))).toContain("did not start");
   });
 });

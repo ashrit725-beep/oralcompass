@@ -1,6 +1,7 @@
 // React Bits "StatusMark" (https://reactbits.dev/components/status-mark, registry @react-bits/StatusMark-TS-TW), MIT + Commons Clause,
 // installed 2026-10-03. Patched for OralCompass (component plan §2 N6): `doneColor` forest, `errorColor` terracotta, `strike` off. Determinate
-// `progress` drives the arc for real stages. Reduced motion handled internally (motion values jump to the final arc).
+// `progress` drives the arc for real stages. Reduced motion handled internally (motion values jump to the final arc); under reduced motion an
+// indeterminate running stage is a static arc beside its label (motion-10: the 1.4 s opacity loop is gone).
 import React, { useEffect, useLayoutEffect, useRef, type CSSProperties, type ReactNode } from 'react';
 import { animate, useMotionValue, useReducedMotion } from 'motion/react';
 
@@ -39,7 +40,6 @@ const TEXT: Record<StatusMarkStatus, string> = {
   cancelled: 'Cancelled'
 };
 const IDLE_DASH = 0.3;
-const STYLE = '@keyframes sm-breathe{50%{opacity:.45}}';
 
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 
@@ -157,7 +157,6 @@ const StatusMark: React.FC<StatusMarkProps> = ({
         } as CSSProperties
       }
     >
-      <style>{STYLE}</style>
       <svg
         className="shrink-0 overflow-visible [color:var(--sm-color)] [transition:color_200ms_ease] group-data-[status=done]:[color:var(--sm-done)] group-data-[status=failed]:[color:var(--sm-error)]"
         viewBox="0 0 24 24"
@@ -176,7 +175,7 @@ const StatusMark: React.FC<StatusMarkProps> = ({
         />
         <circle
           ref={ringRef}
-          className="fill-none [stroke:currentColor] [stroke-width:var(--sm-stroke)] [stroke-linecap:round] opacity-[0.55] [transition:opacity_200ms_ease] group-data-[status=running]:opacity-100 group-data-[status=done]:opacity-100 group-data-[status=failed]:opacity-100 motion-reduce:group-data-[indeterminate]:animate-[sm-breathe_1400ms_cubic-bezier(0.77,0,0.175,1)_infinite]"
+          className="fill-none [stroke:currentColor] [stroke-width:var(--sm-stroke)] [stroke-linecap:round] opacity-[0.55] [transition:opacity_200ms_ease] group-data-[status=running]:opacity-100 group-data-[status=done]:opacity-100 group-data-[status=failed]:opacity-100"
           cx="12"
           cy="12"
           r={r}

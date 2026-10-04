@@ -4,8 +4,9 @@ import { Button } from "@/components/ui/button";
 import { api, ApiError } from "@/lib/api";
 import { UPLOAD } from "@/lib/copy/upload";
 import type { PlanRef, UploadedPlanSummary } from "@/lib/types";
-import { isTerminal, pollExtraction, type ExtractionStatusFull, type UploadResponseX } from "@/lib/upload";
+import { isTerminal, pollExtraction, startErrorCopy, type ExtractionStatusFull, type UploadResponseX } from "@/lib/upload";
 import { ExtractionProgress } from "./ExtractionProgress";
+import { PaneHeading } from "./PaneHeading";
 import { PlanUpload } from "./PlanUpload";
 import { RedactionPreview } from "./RedactionPreview";
 import { ReviewTable, type PublishResult } from "./ReviewTable";
@@ -20,6 +21,8 @@ import { ReviewTable, type PublishResult } from "./ReviewTable";
 export interface UploadWizardBodyProps {
   planRef: PlanRef;
   onPublished?: (summary: UploadedPlanSummary, planRef: PlanRef) => void;
+  /** demo-17: the published panel's explicit "Use UPn for this journey" choice. */
+  onUsePlan?: (planRef: PlanRef) => void;
   onClose: () => void;
   /** The dialog shell widens for the review step. */
   onStepChange?: (step: number) => void;
@@ -29,7 +32,7 @@ type Health = { llm_mode: "demo" | "live"; llm_model?: string | null };
 let healthCache: Promise<Health> | null = null;
 const health = () => (healthCache ??= api.health().then((h) => ({ llm_mode: h.llm_mode, llm_model: h.llm_model ?? null })).catch(() => { healthCache = null; return { llm_mode: "demo" as const, llm_model: null }; }));
 
-export function UploadWizardBody({ onPublished, onClose, onStepChange }: UploadWizardBodyProps) {
+export function UploadWizardBody({ onPublished, onUsePlan, onClose, onStepChange }: UploadWizardBodyProps) {
   const [step, setStep] = useState(1);
   useEffect(() => { onStepChange?.(step); }, [step, onStepChange]);
   const [mode, setMode] = useState<Health | null>(null);
@@ -38,6 +41,7 @@ export function UploadWizardBody({ onPublished, onClose, onStepChange }: UploadW
   const [starting, setStarting] = useState(false);
   const [status, setStatus] = useState<ExtractionStatusFull | null>(null);
   const [pollError, setPollError] = useState<string | null>(null);
+  const [startError, setStartError] = useState<string | null>(null);   // shown on step 2, where the person still is (web-correctness-19)
   const [published, setPublished] = useState<PublishResult | null>(null);
   const abort = useRef<AbortController | null>(null);
 
@@ -48,12 +52,12 @@ export function UploadWizardBody({ onPublished, onClose, onStepChange }: UploadW
 
   const startExtraction = useCallback(async () => {
     if (!upload || starting) return;
-    setStarting(true); setPollError(null);
+    setStarting(true); setPollError(null); setStartError(null);
     try {
       await api.extract(upload.id);
     } catch (e) {
       // 409 extraction_in_progress: a run already exists; fall through to polling it
-      if (!(e instanceof ApiError && e.status === 409)) { setPollError(UPLOAD.pollingFailed); setStarting(false); return; }
+      if (!(e instanceof ApiError && e.status === 409)) { setStartError(startErrorCopy(e)); setStarting(false); return; }
     }
     setStep(3);
     setStarting(false);
@@ -84,18 +88,22 @@ export function UploadWizardBody({ onPublished, onClose, onStepChange }: UploadW
           <PlanUpload onUploaded={onUploaded} mode={mode?.llm_mode ?? null} model={mode?.llm_model} />
         </Step>
         <Step>
-          {upload && preview && <RedactionPreview docId={upload.id} preview={preview} onPreview={setPreview} onContinue={startExtraction} busy={starting} />}
+          {upload && preview && <RedactionPreview docId={upload.id} preview={preview} onPreview={setPreview} onContinue={startExtraction} busy={starting} startError={startError} />}
         </Step>
         <Step>
           <ExtractionProgress status={status} starting={starting} pollError={pollError} onReview={() => setStep(4)} />
         </Step>
         <Step>
           {published ? (
-            <div className="up-published" role="status" aria-live="polite">
-              <h3 className="up-h3">{UPLOAD.published(published.version_label)}</h3>
+            <div className="up-published">
+              <PaneHeading>{UPLOAD.published(published.version_label)}</PaneHeading>
               <p>{UPLOAD.publishedBody(published.version_label)}</p>
               {published.summary.is_fictional && <p className="ribbon up-ribbon">{UPLOAD.fictional}</p>}
-              <div className="up-actions"><Button type="button" size="touch" onClick={onClose}>{UPLOAD.close}</Button></div>
+              {onUsePlan && <p className="up-caption">{UPLOAD.publishedKept}</p>}
+              <div className="up-actions">
+                {onUsePlan && <Button type="button" variant="outline" size="touch" onClick={() => onUsePlan(published.plan_ref)}>{UPLOAD.usePlan(published.version_label)}</Button>}
+                <Button type="button" size="touch" onClick={onClose}>{UPLOAD.close}</Button>
+              </div>
             </div>
           ) : upload && status && terminal ? (
             <ReviewTable docId={upload.id} status={status} onFields={onFields} onPublished={onPublishedLocal} />

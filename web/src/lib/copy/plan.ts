@@ -113,7 +113,6 @@ export const PLAN = {
   readFileLimits: (max: string) => `PNG, JPEG, WebP or PDF, up to ${max}`,
   readFileTooLarge: "The file is larger than 10 MB.",
   readFileWrongType: "Only PNG, JPEG or WebP images and PDF files are read.",
-  readImageSend: "Send the image to the model",
   readImageNote: "A photo cannot be redacted before reading. In live mode the image itself reaches the model; the server removes personal details from the model's answer.",
   readWorking: "Reading the estimate. Personal details are removed from the text before anything reaches a model.",
   readWorkingFile: "Reading the file. A photo or a scanned page cannot be redacted; the image itself reaches the model.",
@@ -132,6 +131,10 @@ export const PLAN = {
   readRemoved: (labels: string) => `Removed before reading: ${labels}.`,
   readNothingRemoved: "No personal details were found to remove.",
   readImageNotRedacted: "The image was not redacted before reading.",
+  // security-3 (owner note 11): the notice the server returns with needs_image_consent (image_notice); this copy is the fallback
+  readImageNotice: "This image is sent to the model as is; names, member IDs and dates on it are not removed. Pasting the text instead lets OralCompass remove them first.",
+  readImageSend: "Send the image as is",
+  readImagePaste: "Paste the text instead",
   readDropped: (n: number) => `${n} ${n === 1 ? "line" : "lines"} the model returned ${n === 1 ? "is" : "are"} not in the text and ${n === 1 ? "is" : "are"} not shown.`,
   readReviewTitle: "Review each line",
   readReviewIntro: "Nothing is ticked in advance. A line is added only when it has a procedure identifier, a fee and your tick.",

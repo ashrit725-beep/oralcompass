@@ -226,7 +226,13 @@ def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-pref
 
     # ---- the inline assistant inside the drawer (spec §12 "assistant demo") ----
     ta = page.locator(".drawer textarea").first
-    ta.scroll_into_view_if_needed(); ta.fill("What happens to the annual maximum on this line?")
+    ta.scroll_into_view_if_needed()
+    # a11y-20: the question box has its own accessible name and a visible terracotta focus ring on its shell
+    ta.focus(); page.keyboard.press("Shift+Tab"); page.keyboard.press("Tab")
+    ring = page.evaluate("""(() => { const t = document.activeElement; if (!t || t.tagName !== 'TEXTAREA') return null; const sh = t.closest('.ai-prompt-shell'); const s = sh && getComputedStyle(sh);
+        return { name: t.getAttribute('aria-label') || '', style: s ? s.outlineStyle : '', width: s ? parseFloat(s.outlineWidth) : 0 }; })()""")
+    check(f"{device}: assistant question box labelled with a visible focus ring", bool(ring) and ring["name"].startswith("Ask about") and ring["style"] == "solid" and ring["width"] >= 2, str(ring))
+    ta.fill("What happens to the annual maximum on this line?")
     page.locator(".drawer").get_by_role("button", name="Ask", exact=True).first.click(); page.wait_for_timeout(2500)
     ans = page.locator(".drawer .as-answer")
     ribbon = page.locator(".drawer .as-ribbon").first.inner_text() if page.locator(".drawer .as-ribbon").count() else ""
@@ -235,6 +241,11 @@ def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-pref
     check(f"{device}: assistant demo answer grounded", ans.locator(".as-sentence").count() >= 1 and ans.locator(".stitch").count() >= 1 and ribbon.startswith("Demo mode") and page.locator(".drawer", has_text="Looked up:").count() > 0 and not bare and un_as == 0,
           f"sentences={ans.locator('.as-sentence').count()} stitches={ans.locator('.stitch').count()} ribbon={ribbon[:30]!r} bare$={bare} unbadged={un_as}")
     shot("16-assistant")
+    # demo-19 / slop-25: lookups in plain words, listed once, no "0.0s" timer artifact, suggestions as a ruled list (not pills)
+    tools_txt = page.evaluate("[...document.querySelectorAll('.drawer .as-tools')].map(t => t.textContent).join(' | ')")
+    timer = page.evaluate("[...document.querySelectorAll('.drawer .as-thought')].some(t => /\\d\\.\\ds/.test(t.textContent))")
+    pill = page.evaluate("(() => { const b = document.querySelector('.drawer .as-suggestion'); return b ? parseFloat(getComputedStyle(b).borderTopLeftRadius) : 0; })()")
+    check(f"{device}: assistant lookups in plain words", bool(tools_txt) and not re.search(r"ledger line|step line|line \d+, step|_", tools_txt) and not timer and pill <= 10, f"{tools_txt[:120]!r} timer={timer} radius={pill}")
     # the clause composer: a stitch chip in the answer opens the ClauseCard with its own composer
     ans.locator(".stitch").first.click(); page.wait_for_timeout(600)
     card = page.locator(".clause[role=dialog]")
@@ -508,6 +519,13 @@ def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-pref
     page.get_by_role("tab", name="Documents").click(); page.wait_for_timeout(1500)
     check(f"{device}: official source link present", page.locator("a[href^='https://oshr.nc.gov']").count() > 0)
     check(f"{device}: clauses listed with page references", page.locator("ol.clauses li").count() > 20)
+    # slop-23: one row per distinct sentence, plain-word captions, meta lines without stray dots; mobile-11: the plan select fits the column
+    dump = page.evaluate(r"""(() => { const rows = [...document.querySelectorAll('ol.clauses li')]; const keys = rows.map(li => (li.querySelector('.scope')?.textContent || '') + '|' + (li.querySelector('.where')?.textContent || '').split(' · ')[0] + '|' + (li.querySelector('q')?.textContent || ''));
+        const raw = rows.filter(li => /\bcite\b|_/.test(li.querySelector('.where')?.textContent || '')).length;
+        const meta = [...document.querySelectorAll('.doc-card p.muted.small')].filter(p => /^\s*·|Not stated/.test(p.textContent)).length;
+        const pick = document.querySelector('.doc-head label.plan-pick'); const over = pick ? Math.round(pick.getBoundingClientRect().right - document.documentElement.clientWidth) : 0;
+        return { dupes: keys.length - new Set(keys).size, raw, meta, over, sections: document.querySelectorAll('details.clause-group').length }; })()""")
+    check(f"{device}: documents clause list readable", dump["dupes"] == 0 and dump["raw"] == 0 and dump["meta"] == 0 and dump["sections"] >= 2 and dump["over"] <= 0, str(dump))
     check(f"{device}: conflicts preserved", page.get_by_text("Where sources disagree", exact=False).count() > 0)
     check(f"{device}: source inventory listed", page.locator("ul.sources li").count() >= 12)
     groups = page.locator("label.plan-pick select optgroup").evaluate_all("gs => gs.map(g => g.label)")
@@ -656,12 +674,32 @@ def upload_walk(page, device: str, shot):
     txt = OUT / "not-a-pdf.txt"; txt.write_text("plain text, not a PDF")
     page.locator("input[type=file]").first.set_input_files(str(txt)); page.wait_for_timeout(500)
     check(f"{device}: upload dialog validates type", page.get_by_role("alert").filter(has_text="This file is not a PDF.").count() > 0)
+    # layout-6: the drop zone grows with its content; the Choose button is never cut by the zone's overflow-hidden box
+    cut = page.evaluate("""(() => { const b = [...document.querySelectorAll('[role=dialog] button')].find(x => x.textContent.trim() === 'Choose a PDF'); if (!b) return -1;
+        let a = b.parentElement; while (a && !/hidden|clip/.test(getComputedStyle(a).overflow)) a = a.parentElement; if (!a) return 0;
+        const r = b.getBoundingClientRect(), c = a.getBoundingClientRect(); return Math.round(Math.max(0, r.bottom - c.bottom, c.top - r.top)); })()""")
+    check(f"{device}: upload choose button not clipped", cut == 0, f"cut={cut}px")
+    # a11y-15: the hidden native file input is not a tab stop and not a second control for screen readers
+    fi = page.evaluate("(() => { const i = document.querySelector('[role=dialog] input[type=file]'); return i ? [i.tabIndex, i.getAttribute('aria-hidden')] : null; })()")
+    check(f"{device}: upload file input out of the tab order", fi == [-1, "true"], str(fi))
+    # layout-27: no progress ring while nothing is being uploaded
+    check(f"{device}: idle drop zone shows no progress ring", page.locator("[role=dialog] section svg circle.stroke-sea").count() == 0)
+    # layout-7: the stepper pane re-measures when its content grows (the type alert), so the mode line below it stays visible
+    page.wait_for_timeout(500)
+    hidden = page.evaluate("""(() => { const c = document.querySelector('[role=dialog] .up-stepper-content'); const m = c && c.querySelector('.up-mode-line'); if (!c || !m) return -1;
+        return Math.round(Math.max(0, m.getBoundingClientRect().bottom - c.getBoundingClientRect().bottom)); })()""")
+    check(f"{device}: upload pane grows with its content", hidden == 0, f"hidden={hidden}px")
     page.locator("input[type=file]").first.set_input_files(str(ROOT / "fixtures/documents/harborview_certificate.pdf"))
     page.wait_for_selector("text=Removed before any model call", timeout=30000); page.wait_for_timeout(300)
     page.get_by_role("button", name="Continue with these redactions").click()
     page.wait_for_selector("text=Review the fields", timeout=240000); page.wait_for_timeout(500)
     stage_rows = page.locator(".up-stage-row").count()
+    focus_h = lambda: page.evaluate("(() => { const a = document.activeElement; return a && a.tagName === 'H3' ? a.textContent.trim() : (a ? a.tagName : ''); })()")
+    at_extraction = focus_h()
     page.get_by_role("button", name="Review the fields").click(); page.wait_for_timeout(800)
+    at_review = focus_h()
+    # a11y-7: each new wizard step moves focus to its heading
+    check(f"{device}: upload step changes move focus to the new heading", at_extraction == "Extraction" and at_review == "Review the extracted fields", f"{at_extraction!r} / {at_review!r}")
     confirmed = page.locator(".up-row[data-confidence=confirmed]").count()
     decided = page.locator(".up-row[data-decided]").count()
     hb_disabled = page.evaluate("(() => { const b = document.querySelector('[role=dialog] .hb-root'); return !!b && (b.disabled || b.getAttribute('aria-disabled') === 'true'); })()")
@@ -669,13 +707,39 @@ def upload_walk(page, device: str, shot):
     un_up = page.evaluate("[...document.querySelectorAll('.up-table .amt')].filter(a => !a.parentElement.querySelector('.badge')).length")
     check(f"{device}: every amount in the review table badged", un_up == 0, f"{un_up} unbadged")
     shot("15-upload-review")
+    # mobile-17: on phones the publish control and the undecided count stay in view while the rows scroll
+    if page.viewport_size["width"] < 768:
+        vis = page.evaluate("(() => { const b = document.querySelector('[role=dialog] .hb-root'); if (!b) return null; const r = b.getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight; })()")
+        check(f"{device}: review publish control in view on phones", vis is True, str(vis))
     page.get_by_role("button", name="Confirm all verified quotes").click(); page.wait_for_timeout(1500)
+    # a11y-6: a decision made from the keyboard keeps focus on the pressed button while (and after) the request runs
+    first = page.locator(".up-row:not([data-decided])").filter(has=page.locator(".up-req")).first
+    if first.count():
+        first.get_by_role("button", name="Not in document").first.focus(); page.keyboard.press("Enter"); page.wait_for_timeout(700)
+        kept = page.evaluate("(() => { const a = document.activeElement; return !!a && a.textContent.trim() === 'Not in document' && !!a.closest('.up-row'); })()")
+        check(f"{device}: review decision keeps keyboard focus", kept, page.evaluate("document.activeElement?.tagName + ' ' + (document.activeElement?.textContent || '').slice(0, 30)"))
+    # a11y-30: Edit moves focus into the form, an empty entry marks the value field invalid, Cancel returns focus to Edit
+    erow = page.locator(".up-row:not([data-decided])").first
+    if erow.count():
+        erow.get_by_role("button", name="Edit", exact=True).first.click(); page.wait_for_timeout(300)
+        in_form = page.evaluate("!!document.activeElement?.closest('.up-edit')")
+        erow.get_by_role("button", name="Enter this value").first.click(); page.wait_for_timeout(200)
+        marked = page.evaluate("(() => { const a = document.activeElement; return !!a && a.getAttribute('aria-invalid') === 'true' && !!document.getElementById(a.getAttribute('aria-describedby') || '-'); })()")
+        erow.get_by_role("button", name="Cancel", exact=True).first.click(); page.wait_for_timeout(200)
+        back = page.evaluate("(() => { const a = document.activeElement; return !!a && a.textContent.trim() === 'Edit' && a.getAttribute('aria-expanded') === 'false'; })()")
+        check(f"{device}: review edit form manages focus and errors", in_form and marked and back, f"in_form={in_form} marked={marked} back={back}")
     for _ in range(60):
         if page.locator(".up-count[data-undecided='0']").count(): break
         row = page.locator(".up-row:not([data-decided])").filter(has=page.locator(".up-req")).first
         if not row.count(): row = page.locator(".up-row:not([data-decided])").first
         if not row.count(): break
         row.get_by_role("button", name="Not in document").first.click(); page.wait_for_timeout(500)
+    # a11y-1 (WCAG 2.1.1): an AT click (detail 0, no hold) opens a "Confirm publish" step that takes focus; "Not yet" closes it
+    page.evaluate("document.querySelector('[role=dialog] .hb-root').click()"); page.wait_for_timeout(300)
+    confirm_btn = page.get_by_role("button", name="Confirm publish", exact=True)
+    confirm_focused = page.evaluate("document.activeElement?.textContent?.trim() === 'Confirm publish'")
+    check(f"{device}: publish has a single-activation path", confirm_btn.count() == 1 and confirm_focused, f"confirm={confirm_btn.count()} focused={confirm_focused}")
+    if confirm_btn.count(): page.get_by_role("button", name="Not yet", exact=True).click(); page.wait_for_timeout(200)
     page.locator("[role=dialog] .hb-root").first.focus()
     page.keyboard.down("Space"); page.wait_for_timeout(1100); page.keyboard.up("Space")
     page.wait_for_selector("text=/Published as UP\\d+/", timeout=30000); page.wait_for_timeout(600)
@@ -683,7 +747,11 @@ def upload_walk(page, device: str, shot):
     label = label.group(1) if label else "UP1"
     published = label.startswith("UP")
     shot("26-published")
+    use_btn = page.get_by_role("button", name=re.compile(r"^Use UP\d+ for this journey$")).count()
     page.keyboard.press("Escape"); page.wait_for_timeout(800)
+    # demo-17: publishing does not switch the journey's plan; the published panel offers the switch as an explicit choice
+    kept = page.locator("label.plan-pick select").first.input_value()
+    check(f"{device}: publish keeps the journey's plan", use_btn == 1 and not kept.startswith("upload:"), f"use button={use_btn} plan={kept}")
     opts = page.locator("label.plan-pick select option").evaluate_all("os => os.map(o => [o.value, o.textContent])")
     up_opt = next((o for o in opts if label in (o[1] or "")), None)
     if up_opt:
@@ -727,6 +795,10 @@ def static_checks():
             if pat.search(line) and not re.search(r"bounce:\s*0|no-bounce|no bounce", line):
                 hits.append(f"{f.relative_to(ROOT)}:{i}")
     check("anti-slop: no forbidden motion keywords", not hits, "; ".join(hits)[:200])
+    # motion-10: no sub-2 s loop under reduced motion in StatusMark; motion-11: the highlighter never redraws on page-height changes
+    sm = (ROOT / "web/src/components/ui/StatusMark.tsx").read_text(encoding="utf-8")
+    hl = (ROOT / "web/src/components/magicui/highlighter.tsx").read_text(encoding="utf-8")
+    check("motion: no reduced-motion loop, no body-resize redraw", "sm-breathe" not in sm and "observe(document.body)" not in hl and ".animate = false" in hl)
     r = subprocess.run([sys.executable, str(ROOT / "tools/advice_lint.py"), str(ROOT / "web/src/lib"), str(ROOT / "api/app/templates.py"), str(ROOT / "api/app/assistant_templates.py")], capture_output=True, text=True)
     check("lint: copy lints clean", r.returncode == 0, (r.stdout.strip().splitlines() or [""])[-1][:120])
 

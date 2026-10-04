@@ -16,8 +16,9 @@ const UploadWizardBody = lazy(() => import("./UploadWizardBody").then((m) => ({ 
  * Props (frozen contract, unchanged):
  * - `planRef`: the plan currently selected (presets or an earlier upload); informational, the wizard never writes to it.
  * - `onPublished(summary, planRef)`: called once `POST /me/documents/{id}/publish` returns 201, with the `UploadedPlanSummary`
- *   (`plan_code` = `"upload:<document_id>"`, `version_label` "UP1"…) and that `plan_ref`. The caller then runs
- *   `selectPlan(summary.plan_code)` and `reestimate()` (foundation notes §2.1). Default: no-op; the dialog shows the published label either way.
+ *   (`plan_code` = `"upload:<document_id>"`, `version_label` "UP1"…) and that `plan_ref`. The caller refreshes its upload list; it does NOT
+ *   switch the journey's plan (demo-17). `onUsePlan(planRef)` (optional) backs the published panel's "Use UPn for this journey" button,
+ *   where the caller runs `selectPlan` and `reestimate()`. Default: no-op; the dialog shows the published label either way.
  * - `open` / `onOpenChange`: controlled dialog state; uncontrolled when omitted.
  * - `trigger`: an inline trigger rendered with `DialogTrigger asChild`; when omitted and the dialog is uncontrolled, a 44 px
  *   "Add a plan document" button renders. Strings come from `UPLOAD` (lib/copy/upload.ts); styles from styles/upload.css.
@@ -28,6 +29,8 @@ export interface UploadWizardProps {
   planRef: PlanRef;
   /** Called with the published version; the foundation then calls `selectPlan(summary.plan_code)` / `reestimate()`. */
   onPublished?: (summary: UploadedPlanSummary, planRef: PlanRef) => void;
+  /** demo-17: publishing never switches the journey's plan; when given, the published panel offers "Use UPn for this journey". */
+  onUsePlan?: (planRef: PlanRef) => void;
   /** Controls the dialog from the outside (PlanSelector Upload branch, Documents "Your documents" slot). */
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
@@ -35,7 +38,7 @@ export interface UploadWizardProps {
   trigger?: React.ReactNode;
 }
 
-export function UploadWizard({ planRef, onPublished, open, onOpenChange, trigger }: UploadWizardProps) {
+export function UploadWizard({ planRef, onPublished, onUsePlan, open, onOpenChange, trigger }: UploadWizardProps) {
   const [innerOpen, setInnerOpen] = useState(false);
   const [step, setStep] = useState(1);
   const isOpen = open ?? innerOpen;
@@ -67,7 +70,7 @@ export function UploadWizard({ planRef, onPublished, open, onOpenChange, trigger
         </DialogHeader>
         {isOpen && (
           <Suspense fallback={<StageLoader label={UPLOAD.loadingWizard} size="sm" />}>
-            <UploadWizardBody planRef={planRef} onPublished={onPublished} onClose={() => setOpen(false)} onStepChange={setStep} />
+            <UploadWizardBody planRef={planRef} onPublished={onPublished} onUsePlan={onUsePlan ? (ref) => { onUsePlan(ref); setOpen(false); } : undefined} onClose={() => setOpen(false)} onStepChange={setStep} />
           </Suspense>
         )}
       </DialogContent>
