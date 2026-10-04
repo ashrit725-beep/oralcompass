@@ -214,7 +214,7 @@ export default function FileUpload({
                     <p className="truncate text-sm font-semibold text-ink">{currentFile?.name}</p>
                     <div className="flex items-center justify-center gap-2 text-xs">
                       <span className="text-ink-soft">{formatBytes(currentFile?.size || 0)}</span>
-                      {progress != null && <span className="font-medium tabular-nums text-forest">{Math.round(progress)}%</span>}
+                      {progress != null && <span className="font-medium tabular-nums text-forest-text">{Math.round(progress)}%</span>}
                     </div>
                   </div>
                   {onCancel && (

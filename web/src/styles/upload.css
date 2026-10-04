@@ -41,7 +41,7 @@
 .up-stages { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
 .up-stage-row { min-height: 40px; display: flex; align-items: center; color: var(--ink); }
 .up-stage-row[data-status="pending"] { color: var(--ink-soft); }
-.up-stage-row[data-status="failed"] { color: var(--terracotta); }
+.up-stage-row[data-status="failed"] { color: var(--terracotta-text); }
 
 /* step 4: review */
 .up-review { display: flex; flex-direction: column; gap: var(--s-2); }
@@ -60,7 +60,7 @@
 .up-cell-field { min-width: 8rem; }
 .up-field-label { display: block; font-weight: 600; color: var(--ink); }
 .up-req { display: inline-block; font-size: 11px; line-height: 14px; color: var(--ink-soft); border: 1px solid var(--rule); border-radius: var(--r-1); padding: 0 var(--s-1); margin-top: var(--s-1); margin-right: var(--s-1); }
-.up-decided { display: block; font-size: 12px; line-height: 16px; color: var(--forest); margin-top: var(--s-1); }
+.up-decided { display: block; font-size: 12px; line-height: 16px; color: var(--forest-text); margin-top: var(--s-1); }
 .up-cell-value .up-value { font-variant-numeric: tabular-nums; }
 .up-cell-value .up-caption { display: block; }
 .up-none { color: var(--ink-soft); font-style: italic; }
@@ -118,8 +118,8 @@
 .rm-note { font-size: 13px; line-height: 18px; color: var(--ink-soft); margin: var(--s-2) 0 0; border-top: 1px dashed var(--rule); padding-top: var(--s-2); }
 .rm-push { display: flex; flex-direction: column; gap: var(--s-2); margin-top: var(--s-3); border-top: 1px solid var(--rule); padding-top: var(--s-3); }
 .rm-push-state { margin: 0; font-size: 14px; }
-.rm-push-state[data-state="on"] { color: var(--forest); }
-.rm-push-state[data-state="denied"], .rm-push-state[data-state="nokey"], .rm-push-state[data-state="unsupported"], .rm-push-state[data-state="insecure"] { color: var(--terracotta); }
+.rm-push-state[data-state="on"] { color: var(--forest-text); }
+.rm-push-state[data-state="denied"], .rm-push-state[data-state="nokey"], .rm-push-state[data-state="unsupported"], .rm-push-state[data-state="insecure"] { color: var(--terracotta-text); }
 .rm-actions { display: flex; flex-wrap: wrap; gap: var(--s-2); }
 .rm-status { margin: 0; font-size: 13px; color: var(--ink-soft); min-height: 18px; }
 

@@ -19,6 +19,8 @@
   --gold: #c59a3c; --gold-soft: #e7cf8f; --terracotta: #b86a4b; --wood: #8a6a45; --rule: rgba(35, 48, 61, .18);
   --sky: #e9e2cf; --hill-far: #b9c2b3; --hill-near: #8fa78a;
   --ok: #3f7d4e; --warn: #9a5b1f; --danger: #9b3b2f;
+  /* text-safe twins (a11y-14): >= 4.5:1 on paper, paper-deep and parchment. The scenery colours above stay for fills, strokes and borders. */
+  --terracotta-text: #94492e; --water-ink-text: #3a6764; --forest-text: #4d6641; --ok-text: #356b43; --wood-text: #73573a;
   --serif: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Palatino, Georgia, "Times New Roman", serif;
   --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -27,11 +29,11 @@
 
   /* semantic aliases (spec §5.1) */
   --bg: var(--paper); --surface: var(--paper-deep); --surface-raised: #fffdf8; --surface-map: var(--water);
-  --text: var(--ink); --text-soft: var(--ink-soft); --text-muted: var(--muted); --border: var(--rule);
+  --text: var(--ink); --text-soft: var(--ink-soft); --text-muted: var(--ink-soft); --border: var(--rule);
   --accent: var(--gold); --accent-soft: var(--gold-soft); --select: var(--terracotta); --select-ring: rgba(184, 106, 75, .35);
-  --you-pay: var(--terracotta); --plan-pays: var(--water-ink); --basis: var(--wood); --nobody: var(--ink-soft);
-  --owner-patient: var(--terracotta); --owner-plan: var(--water-ink); --owner-nobody: var(--ink-soft); --owner-basis: var(--wood);
-  --fog: rgba(246, 240, 227, .85); --closed: var(--terracotta); --visited: var(--sage);
+  --you-pay: var(--terracotta-text); --plan-pays: var(--water-ink-text); --basis: var(--wood-text); --nobody: var(--ink-soft);
+  --owner-patient: var(--terracotta-text); --owner-plan: var(--water-ink-text); --owner-nobody: var(--ink-soft); --owner-basis: var(--wood-text);
+  --fog: rgba(246, 240, 227, .85); --closed: var(--terracotta-text); --visited: var(--sage);
   --focus: var(--terracotta);
 
   /* spacing, radius, shadows (spec §5.3) */
@@ -231,7 +233,7 @@ label { display: flex; flex-direction: column; gap: .25rem; font-size: .9rem; co
 .sub { color: var(--ink-soft); }
 .line-tabs { display: flex; gap: .4rem; flex-wrap: wrap; margin: .5rem 0; }
 .line-tabs button { background: transparent !important; color: var(--ink) !important; border: 1px solid var(--rule) !important; } .line-tabs button.is-on { background: var(--parchment) !important; border-color: var(--gold) !important; }
-.line-tabs small { color: var(--ink-soft); }
+.line-tabs small { color: var(--ink-soft); } .line-tabs button.is-on small { color: var(--ink); }
 .trail-steps { list-style: none; margin: .5rem 0; padding: 0; position: relative; }
 .trail-steps::before { content: ""; position: absolute; left: 15px; top: 14px; bottom: 14px; border-left: 2px dashed var(--water-ink); }
 .trail-step { position: relative; padding: .5rem 0 .6rem 2.5rem; }
@@ -239,9 +241,9 @@ label { display: flex; flex-direction: column; gap: .25rem; font-size: .9rem; co
 .trail-step.is-total .ts-n { background: var(--terracotta); color: var(--paper); }
 .ts-head { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; } .ts-head h4 { margin: 0; }
 .ts-amounts { display: grid; grid-template-columns: max-content 1fr; gap: .15rem .8rem; margin: .3rem 0; font-size: .95rem; }
-.ts-amounts dt { color: var(--ink-soft); } .ts-amounts dd { margin: 0; } .ts-amounts .out { font-weight: 700; } .ts-amounts .neg { color: var(--terracotta); }
+.ts-amounts dt { color: var(--ink-soft); } .ts-amounts dd { margin: 0; } .ts-amounts .out { font-weight: 700; } .ts-amounts .neg { color: var(--you-pay); }
 .ts-why { margin: .2rem 0; font-size: .9rem; } .ts-clause { margin: .2rem 0; font-family: var(--serif); font-size: .9rem; color: var(--ink-soft); } .where { font-family: var(--sans); font-size: .8rem; }
-.reconcile { font-size: .9rem; } .reconcile.ok { color: var(--ok); } .reconcile.warn { color: var(--danger); }
+.reconcile { font-size: .9rem; } .reconcile.ok { color: var(--ok-text); } .reconcile.warn { color: var(--danger); }
 .receipt { width: 100%; border-collapse: collapse; font-size: .85rem; } .receipt th, .receipt td { text-align: left; padding: .25rem .4rem; border-bottom: 1px solid var(--rule); } .receipt .amt { text-align: right; white-space: nowrap; }
 .receipt .line-total th, .receipt .line-total td { font-weight: 700; }
 .missing { background: rgba(122, 131, 144, .1); border: 1px dashed var(--ink-soft); border-radius: 10px; padding: .6rem .9rem; margin: .5rem 0; }
@@ -356,6 +358,7 @@ summary { min-height: 32px; padding-block: 4px; }
   --color-sea: var(--water);              --color-sea-light: var(--water-light);  --color-sea-ink: var(--water-ink);
   --color-sage: var(--sage);              --color-sage-light: var(--sage-light);  --color-forest: var(--forest);          --color-sand: var(--sand);
   --color-gold: var(--gold);              --color-gold-soft: var(--gold-soft);    --color-terracotta: var(--terracotta);  --color-wood: var(--wood);
+  --color-terracotta-text: var(--terracotta-text); --color-forest-text: var(--forest-text); --color-sea-ink-text: var(--water-ink-text);
   --color-rule: var(--rule);              --color-ok: var(--ok); --color-warn: var(--warn); --color-danger: var(--danger);
   --color-you-pay: var(--you-pay);        --color-plan-pays: var(--plan-pays);    --color-basis: var(--basis);            --color-nobody: var(--nobody);
 
