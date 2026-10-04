@@ -628,7 +628,11 @@ def upload_walk(page, device: str, shot):
     label = label.group(1) if label else "UP1"
     published = label.startswith("UP")
     shot("26-published")
+    use_btn = page.get_by_role("button", name=re.compile(r"^Use UP\d+ for this journey$")).count()
     page.keyboard.press("Escape"); page.wait_for_timeout(800)
+    # demo-17: publishing does not switch the journey's plan; the published panel offers the switch as an explicit choice
+    kept = page.locator("label.plan-pick select").first.input_value()
+    check(f"{device}: publish keeps the journey's plan", use_btn == 1 and not kept.startswith("upload:"), f"use button={use_btn} plan={kept}")
     opts = page.locator("label.plan-pick select option").evaluate_all("os => os.map(o => [o.value, o.textContent])")
     up_opt = next((o for o in opts if label in (o[1] or "")), None)
     if up_opt:

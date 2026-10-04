@@ -21,6 +21,8 @@ import { ReviewTable, type PublishResult } from "./ReviewTable";
 export interface UploadWizardBodyProps {
   planRef: PlanRef;
   onPublished?: (summary: UploadedPlanSummary, planRef: PlanRef) => void;
+  /** demo-17: the published panel's explicit "Use UPn for this journey" choice. */
+  onUsePlan?: (planRef: PlanRef) => void;
   onClose: () => void;
   /** The dialog shell widens for the review step. */
   onStepChange?: (step: number) => void;
@@ -30,7 +32,7 @@ type Health = { llm_mode: "demo" | "live"; llm_model?: string | null };
 let healthCache: Promise<Health> | null = null;
 const health = () => (healthCache ??= api.health().then((h) => ({ llm_mode: h.llm_mode, llm_model: h.llm_model ?? null })).catch(() => { healthCache = null; return { llm_mode: "demo" as const, llm_model: null }; }));
 
-export function UploadWizardBody({ onPublished, onClose, onStepChange }: UploadWizardBodyProps) {
+export function UploadWizardBody({ onPublished, onUsePlan, onClose, onStepChange }: UploadWizardBodyProps) {
   const [step, setStep] = useState(1);
   useEffect(() => { onStepChange?.(step); }, [step, onStepChange]);
   const [mode, setMode] = useState<Health | null>(null);
@@ -96,7 +98,11 @@ export function UploadWizardBody({ onPublished, onClose, onStepChange }: UploadW
               <PaneHeading>{UPLOAD.published(published.version_label)}</PaneHeading>
               <p>{UPLOAD.publishedBody(published.version_label)}</p>
               {published.summary.is_fictional && <p className="ribbon up-ribbon">{UPLOAD.fictional}</p>}
-              <div className="up-actions"><Button type="button" size="touch" onClick={onClose}>{UPLOAD.close}</Button></div>
+              {onUsePlan && <p className="up-caption">{UPLOAD.publishedKept}</p>}
+              <div className="up-actions">
+                {onUsePlan && <Button type="button" variant="outline" size="touch" onClick={() => onUsePlan(published.plan_ref)}>{UPLOAD.usePlan(published.version_label)}</Button>}
+                <Button type="button" size="touch" onClick={onClose}>{UPLOAD.close}</Button>
+              </div>
             </div>
           ) : upload && status && terminal ? (
             <ReviewTable docId={upload.id} status={status} onFields={onFields} onPublished={onPublishedLocal} />

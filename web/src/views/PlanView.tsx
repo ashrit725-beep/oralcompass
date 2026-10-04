@@ -86,7 +86,7 @@ export function PlanView({ data, mobile, landmark, onLandmark, stitch, onStitch,
   function onBenefitsSaved(b: Benefits) { setSavedBenefits((m) => ({ ...m, [planRef]: b })); setLive(PLAN.benefitsUpdated); loadRecords(); reestimate(); }
 
   const uploadSlot = (
-    <UploadWizard planRef={planRef} onPublished={(s) => { refreshUploads(); selectPlan(s.plan_code); reestimate(); }} />
+    <UploadWizard planRef={planRef} onPublished={() => { refreshUploads(); }} onUsePlan={(ref) => { selectPlan(ref); reestimate(); }} />
   );
 
   return (

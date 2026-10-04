@@ -154,7 +154,7 @@ export function DocumentsView({ planCode, plans, onPlan, evidence, stitches, sel
 
       <section className="doc-mine" aria-labelledby="mine-h">
         <h2 id="mine-h">{PLAN.docsMine}</h2>
-        {uploadSlot ?? <UploadWizard planRef={planCode} onPublished={(s, ref) => { refreshUploads(); onPlan(ref); onPublished?.(s, ref); }} />}
+        {uploadSlot ?? <UploadWizard planRef={planCode} onPublished={(s, ref) => { refreshUploads(); onPublished?.(s, ref); }} onUsePlan={onPlan} />}
         <RemindersPanel refreshKey={planCode} />
         {mine === null ? <p className="muted">{UI.processing}</p> : mine.length === 0 ? <p className="muted">{PLAN.docsNoPrivate}</p> : (
           <ul className="plain-list">{mine.map((d) => <li key={d.id}><strong>{d.label ?? d.filename}</strong> <span className="muted">· {d.type ?? "upload"} · {d.extraction_status ?? UI.notStated}</span>
