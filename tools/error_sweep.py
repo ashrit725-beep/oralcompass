@@ -88,6 +88,10 @@ class Sweep:
             # the browser logs every >=400 response as a console error; responses are judged by status in _response
             if "Failed to load resource" in text:
                 return
+            # motion's development-only notice (framer-motion useReducedMotion, NODE_ENV !== "production") that the OS asks for reduced
+            # motion: it confirms the reduced-motion path is honoured, it is not an app fault and never prints in the production bundle
+            if "You have Reduced Motion enabled on your device" in text:
+                return
             kind = "react-warning" if REACT_WARN.search(text) else f"console-{msg.type}"
             note(kind, text, f"{self.label} / {self.action}")
 
