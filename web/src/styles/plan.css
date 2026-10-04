@@ -261,3 +261,71 @@ td .calc-note, .note .calc-note, .line-tabs .calc-note { display: inline; }
 .pdf-outline.is-selected { border: 2px solid var(--terracotta); }
 .pdf-stitch.is-selected { border-color: var(--terracotta); box-shadow: 0 0 0 2px var(--select-ring); }
 .doc-wording { margin-top: var(--s-4); } .doc-wording h3 { font-size: 1rem; }
+
+/* ---- Documents, phone-native (owner direction "its fully a mobile app", part E): grouped list sections ----
+   Sections stack in one column at every width (inside the 480 px app column on wide screens); rows are 44 px+ with hairline separators
+   drawn as inset shadows (the legacy styles.css borders are later in the cascade, so rules here carry a `.docs` prefix to win). */
+.docs.documents { display: flex; flex-direction: column; gap: var(--s-7); }
+.docs .doc-plan { grid-row: auto; }
+.docs section > h2 { margin: 0 0 var(--s-3); }
+.docs .doc-head { display: grid; gap: var(--s-3); align-items: stretch; margin-bottom: var(--s-3); }
+.docs .doc-head h2 { margin: 0; }
+.docs .doc-head .plan-pick { display: grid; gap: var(--s-1); flex: none; font-size: 14px; line-height: 20px; color: var(--ink-soft); }
+.docs .doc-head .plan-pick select { width: 100%; min-height: 48px; font-size: 16px; color: var(--ink); }
+.ds-sub { margin: 0 0 var(--s-3); font-size: 14px; line-height: 20px; color: var(--ink-soft); text-wrap: pretty; }
+.ds-group { list-style: none; margin: 0; padding: 0; background: var(--surface-raised); border: 1px solid var(--rule); border-radius: var(--r-3); overflow: hidden; }
+.ds-group > * + * { box-shadow: inset 0 1px 0 var(--rule); }
+.docs .ds-group .doc-card { background: none; border-style: none; border-radius: 0; margin: 0; padding: var(--s-3) var(--s-4); }
+.docs .doc-card h3 { margin: 0; font: 600 16px/22px var(--serif); text-wrap: pretty; }
+.docs .doc-card p { margin: var(--s-1) 0 0; }
+.docs .doc-card .flag { margin-top: var(--s-2); }
+.ds-link-row a { display: inline-flex; align-items: center; gap: var(--s-1); min-height: 44px; }
+.ds-icon { width: 14px; height: 14px; flex: none; }
+.ds-more > summary { display: flex; align-items: center; gap: var(--s-2); min-height: 44px; cursor: pointer; list-style: none; -webkit-tap-highlight-color: transparent; }
+.ds-more > summary::-webkit-details-marker { display: none; }
+.ds-chev { width: 16px; height: 16px; flex: none; margin-left: auto; color: var(--ink-soft); transition: transform var(--dur-standard) var(--ease-standard); }
+details[open] > summary > .ds-chev { transform: rotate(90deg); }
+.ds-grow { flex: 1 1 auto; min-width: 0; }
+.ds-count { color: var(--ink-soft); font-weight: 400; font-variant-numeric: tabular-nums; }
+.ds-h3 { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-2); margin: var(--s-6) 0 var(--s-2); font: 600 17px/24px var(--serif); text-wrap: balance; }
+.ds-search { position: relative; display: block; margin: 0 0 var(--s-3); }
+.ds-search-icon { position: absolute; left: 12px; top: 50%; width: 18px; height: 18px; color: var(--ink-soft); transform: translateY(-50%); pointer-events: none; }
+.docs .ds-search input { width: 100%; max-width: none; min-height: 44px; padding: 0 var(--s-3) 0 40px; border: 1px solid var(--rule); border-radius: var(--r-3); background: var(--surface-raised); color: var(--ink); font-size: 16px; -webkit-appearance: none; appearance: none; }
+.docs .ds-search input:focus-visible { outline: 3px solid var(--focus); outline-offset: 1px; }
+.docs .clause-group { border-top: 0; }
+.docs .clause-group-head { display: flex; align-items: center; gap: var(--s-2); min-height: 48px; padding: 0 var(--s-4); list-style: none; font: 600 15px/20px var(--serif); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.docs .clause-group-head::-webkit-details-marker { display: none; }
+.docs .clause-group-head:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; }
+.docs .clause-group[open] > .clause-group-head { box-shadow: inset 0 -1px 0 var(--rule); }
+.docs .clauses { margin: 0; background: var(--paper); }
+.docs .clauses li { border-bottom: 0; }
+.docs .clauses li + li { box-shadow: inset 0 1px 0 var(--rule); }
+.docs .clauses li.is-selected { background: color-mix(in srgb, var(--gold) 16%, transparent); }
+.docs .clause-btn { display: block; min-height: 44px; padding: var(--s-3) var(--s-4); font-size: 15px; line-height: 22px; text-wrap: pretty; -webkit-tap-highlight-color: transparent; transition: background-color var(--dur-micro) var(--ease-standard); }
+.docs .clause-btn:active { background: color-mix(in srgb, var(--parchment) 70%, transparent); }
+.docs .clause-btn .where { margin-top: var(--s-1); font-size: 12px; line-height: 16px; }
+.ds-empty { margin: 0; padding: var(--s-3) var(--s-4); font-size: 14px; line-height: 20px; color: var(--ink-soft); }
+.ds-item { padding: var(--s-3) var(--s-4); min-width: 0; overflow-wrap: anywhere; }
+.ds-item h4 { margin: 0 0 var(--s-1); font-size: 15px; line-height: 21px; }
+.ds-item p { margin: var(--s-1) 0 0; font-size: 14px; line-height: 20px; }
+.ds-actions { margin-bottom: var(--s-3); }
+.ds-row { display: flex; align-items: center; gap: var(--s-3); width: 100%; min-height: 52px; padding: var(--s-2) var(--s-4); background: transparent; color: var(--ink); text-align: left; font: 500 16px/22px var(--sans); cursor: pointer;
+  -webkit-tap-highlight-color: transparent; touch-action: manipulation; transition: background-color var(--dur-micro) var(--ease-standard); }
+.ds-row:active { background: color-mix(in srgb, var(--parchment) 70%, transparent); }
+.ds-row:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; }
+.ds-lead { width: 22px; height: 22px; flex: none; color: var(--ink-soft); }
+.ds-row-title { display: block; }
+.ds-row-sub { display: block; font-size: 13px; line-height: 18px; font-weight: 400; color: var(--ink-soft); }
+.ds-mine strong { display: block; font-weight: 600; }
+.ds-meta { display: block; font-size: 13px; line-height: 18px; }
+.ds-needs { list-style: none; margin: var(--s-1) 0 0; padding: 0; }
+.ds-foot { margin: var(--s-2) 0 0; }
+.docs .sources li { border-bottom: 0; padding: 0; }
+.docs .sources .ds-more > summary { padding: var(--s-2) var(--s-4); font-size: 15px; line-height: 21px; }
+.ds-detail { padding: 0 var(--s-4) var(--s-3); }
+.ds-detail p { margin: var(--s-1) 0; overflow-wrap: anywhere; }
+.ds-audit .ds-item .ds-row-title { font-size: 14px; line-height: 20px; }
+.docs .privacy .delete-hold { margin-top: var(--s-5); }
+.docs .doc-wording { margin-top: 0; }
+@media (prefers-reduced-motion: reduce) { .ds-chev { transition: none; } }
+
