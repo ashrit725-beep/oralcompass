@@ -28,7 +28,9 @@ export function DetailPanel(props: Props) {
   if (!stage) return null;
   const cp = selection.cpId ? stage.checkpoints.find((c) => c.id === selection.cpId) : undefined;
   const crumbs = <p className="crumbs">{stage.title} <span className="muted">· {stage.island}</span>{cp ? <> › {cp.label}</> : null}</p>;
-  const body = cp ? <CheckpointDetail {...props} stage={stage} cp={cp} /> : <StageDetail {...props} stage={stage} />;
+  // keyed: moving to another checkpoint or stage mounts a fresh form, so a date, attribution or instruction typed for one is never
+  // submitted for the next ("Next checkpoint" only changes props)
+  const body = cp ? <CheckpointDetail key={`${stage.id}:${cp.id}`} {...props} stage={stage} cp={cp} /> : <StageDetail key={stage.id} {...props} stage={stage} />;
   if (mobile) {
     return (
       <Sheet open onOpenChange={(o) => { if (!o) onClose(); }} title={cp ? cp.label : stage.title} returnFocus={returnFocus ?? undefined} className="detail-sheet" autoFocus>

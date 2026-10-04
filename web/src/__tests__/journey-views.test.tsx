@@ -5,6 +5,7 @@ vi.mock("@number-flow/react", () => ({ default: ({ value }: { value: number }) =
 
 import { renderToStaticMarkup } from "react-dom/server";
 import alexJson from "../__fixtures__/passage/alex.json";
+import { DetailPanel } from "@/components/DetailPanel";
 import { OverviewList } from "@/components/OverviewList";
 import { labeledSamples } from "@/lib/journey";
 import { buildPassage, type PassageInputs } from "@/lib/passage";
@@ -42,5 +43,18 @@ describe("start screen samples (finding demo-12)", () => {
   it("never offers the empty template as a labeled sample journey", () => {
     const api = [{ id: "sample-alex", label: "Sample journey — Alex Chen (fictional)" }, { id: "sample-sam", label: "Sample journey — Sam Rivera (fictional)" }, { id: "empty", label: "Your journey" }];
     expect(labeledSamples(api).map((s) => s.id)).toEqual(["sample-alex", "sample-sam"]);
+  });
+});
+
+describe("DetailPanel forms (finding web-correctness-7)", () => {
+  const base = { view: f.view, onSelect: noop, onOpenLandmark: noop, onOpenDocuments: noop, onPatch: async () => {}, onInstructions: async () => {}, busy: false, mobile: false, onClose: noop };
+  const stage = f.view.journey.stages.find((s) => s.checkpoints.length >= 2)!;
+  const bodyOf = (el: ReturnType<typeof DetailPanel>) => (el as React.ReactElement<{ children: React.ReactNode[] }>).props.children[1] as React.ReactElement;
+  it("mounts a fresh checkpoint form per checkpoint and a fresh stage form per stage", () => {
+    const a = bodyOf(DetailPanel({ ...base, selection: { stageId: stage.id, cpId: stage.checkpoints[0].id } }));
+    const b = bodyOf(DetailPanel({ ...base, selection: { stageId: stage.id, cpId: stage.checkpoints[1].id } }));
+    expect(a.key).toBe(`${stage.id}:${stage.checkpoints[0].id}`);
+    expect(b.key).not.toBe(a.key);
+    expect(bodyOf(DetailPanel({ ...base, selection: { stageId: stage.id } })).key).toBe(stage.id);
   });
 });
