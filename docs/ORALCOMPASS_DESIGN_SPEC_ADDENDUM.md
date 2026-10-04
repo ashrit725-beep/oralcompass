@@ -12,7 +12,7 @@ immediately after the spec.
 3. Hand entry for fields the extractor could not find is **in scope**: the review table's `Edit` (USER, with a required source) and `Not in document` (UNKNOWN) decisions cover it; no separate form.
 4. Dark mode / dusk palette is out of scope for this release.
 5. The 'you are here' pin is static and lives on the Care timeline rail.
-6. The advice linter runs on copy files (`web/src/lib/copy.ts`, `api/app/templates.py`, `api/app/assistant_templates.py`, reminder templates), not on specs.
+6. The advice linter runs on copy files (`web/src/lib/copy.ts`, `api/app/templates.py`, `api/app/assistant_templates.py`, `api/app/assistant_glossary.py`, reminder templates), not on specs.
 7. The owner wants the component ecosystem used broadly (Tailwind v4 + shadcn infrastructure bridged to the existing tokens; components from the libraries in `docs/ORALCOMPASS_COMPONENT_PLAN.md`); the spec's 'two new dependencies only' sentence is superseded by that plan. Anti-slop rules still apply in full.
 8. Live AI calls go through OpenRouter (`anthropic/claude-haiku-4.5` by default) with server-side quote verification; demo mode works with no key.
 
