@@ -6,8 +6,8 @@ within thirty. Read `docs/ORALCOMPASS_UI_GUIDE.md` (art direction, quality bar, 
 
 Procedure (bounded: ≤ 90 minutes, then report):
 1. Baseline: start the API (`cd api && ORALCOMPASS_DEV_AUTH=1 uvicorn app.main:app --port 8000`) and the preview (`cd web && npm run build && npx vite preview --port 4173`),
-   run `python3 tools/screenshots.py shots/before` and LOOK at `desktop-01-journey.png`, `desktop-05-plan.png`, `desktop-06-lighthouse.png`,
-   `mobile-01-journey.png`, `mobile-06-lighthouse.png`. Write down the three weakest things you see (composition, color, type, motion, spacing).
+   run `python3 tools/screenshots.py shots/before` and LOOK at `iphone13-01-journey.png`, `iphone13-05-plan.png`, `iphone13-12-drawer.png`,
+   `pixel7-01-journey.png`, `wide-01-journey.png` (mobile-only app: the desktop-*/mobile-* names are gone). Write down the three weakest things you see (composition, color, type, motion, spacing).
 2. Pick items from the guide's §8 headroom list and your three findings. Work only in `web/src` (paint in `components/atlas/*`, tokens in `styles.css`,
    copy in `lib/copy.ts`). Keep the painting decorative and the controls real; keep layout derived from data (`lib/journey.ts`).
 3. Painting rules: watercolor paper, soft wobble on every coastline, two to three washes per land mass, mist on the horizon, one warm light source,
