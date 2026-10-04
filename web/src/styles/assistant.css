@@ -105,3 +105,22 @@ body:has(.ask-sheet[data-state="open"]) :is(.dock, .ask-scrim) { pointer-events:
 @media (prefers-reduced-motion: reduce) { .ask-scrim { animation: none; } }
 /* "Calculated from the clauses cited" wraps inside answers (it is nowrap in the drawer's figure rows) */
 .as-answer .fig-calc { white-space: normal; }
+
+/* the prompt box's plan dropdown (owner: Plan A / B / C, one plan per answer) */
+.ask-plan-row { display: flex; align-items: center; gap: var(--s-2); padding: var(--s-2) var(--s-4); border-bottom: 1px solid var(--rule); flex: none; }
+.ask-plan-label { font-size: 15px; font-weight: 600; color: var(--ink); flex: none; }
+.ask-plan-select { flex: 1 1 auto; min-width: 0; min-height: 44px; padding: 0 var(--s-3); font: inherit; font-size: 16px; color: var(--ink); background: var(--paper); border: 1px solid var(--rule); border-radius: var(--r-2); }
+.ask-plan-select:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+/* a cost answer's hero numbers: "You pay" and "Insurance pays" are the biggest, boldest figures; the price sits smaller below */
+.as-hero { margin: var(--s-2) 0 var(--s-3); }
+.as-hero-plan { margin: 0 0 var(--s-2); font-size: 14px; line-height: 20px; color: var(--ink-soft, var(--ink)); }
+.as-hero-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-2); margin: 0; }
+.as-hero-cell { padding: var(--s-2) var(--s-3); border: 1px solid var(--rule); border-radius: var(--r-2); background: var(--paper-deep); min-width: 0; }
+.as-hero-cell dt { font-size: 15px; line-height: 20px; font-weight: 600; color: var(--ink); }
+.as-hero-cell dd { margin: 4px 0 0; }
+.as-hero-amt { display: flex !important; flex-direction: column; align-items: flex-start !important; gap: 4px !important; }
+.as-hero-amt .amt { font-size: 30px; line-height: 36px; font-weight: 800; letter-spacing: -0.01em; }
+.as-hero-you { border-color: var(--ink); }
+.as-hero-fee { margin: var(--s-2) 0 0; font-size: 15px; line-height: 22px; color: var(--ink); display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; }
+.as-hero-fee-amt .amt { font-weight: 600; }

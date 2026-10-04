@@ -9,6 +9,7 @@ import { boxSuggestions, type AskTab } from "@/lib/assistant";
 import { cn } from "@/lib/utils";
 import type { AssistScope } from "@/lib/types";
 import { useAsk, type AskApi } from "@/hooks/useAsk";
+import { ASK_PLANS, askPlanText, readAskPlan, writeAskPlan, type AskPlanChoice } from "@/lib/ask-plans";
 import { useAskKeyboardInset, useMeasuredVar } from "@/hooks/useAskKeyboardInset";
 import { AnswerList } from "./AnswerList";
 
@@ -31,8 +32,8 @@ export interface AskBoxProps {
   onOpenStitch?: (stitchId: string) => void;
 }
 
-function useAskBox(tab: AskTab, scope: AssistScope) {
-  const ask = useAsk({ scope, memoryKey: `askbox:${tab}`, adoptSuggestions: false });
+function useAskBox(tab: AskTab, scope: AssistScope, planChoice: AskPlanChoice) {
+  const ask = useAsk({ scope, memoryKey: `askbox:${tab}`, adoptSuggestions: false, planChoice });
   const chips = useMemo(() => boxSuggestions(tab, ask.data), [tab, ask.data]);
   return { ask, chips };
 }
@@ -123,7 +124,9 @@ function AskSheet({ tab, scope, open, onOpenChange, returnFocus, onOpenStitch }:
   const descId = useId();
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);
-  const { ask, chips } = useAskBox(tab, scope);
+  const [planChoice, setPlanChoice] = useState<AskPlanChoice>(readAskPlan);
+  const { ask, chips } = useAskBox(tab, scope, planChoice);
+  const planSelectId = useId();
   const kb = useAskKeyboardInset(open);
   const wasOpen = useRef(open);
 
@@ -166,6 +169,13 @@ function AskSheet({ tab, scope, open, onOpenChange, returnFocus, onOpenStitch }:
             <DrawerPrimitive.Close asChild>
               <Button variant="ghost" size="icon-touch" aria-label={ASSIST.boxClose} className="-mr-2 shrink-0"><X aria-hidden="true" /></Button>
             </DrawerPrimitive.Close>
+          </div>
+          <div className="ask-plan-row">
+            <label htmlFor={planSelectId} className="ask-plan-label">{ASSIST.planSelectLabel}</label>
+            <select id={planSelectId} className="ask-plan-select" value={planChoice}
+                    onChange={(e) => { const v = e.target.value as AskPlanChoice; setPlanChoice(v); writeAskPlan(v); }}>
+              {ASK_PLANS.map((p) => <option key={p.choice} value={p.choice}>{askPlanText(p)}</option>)}
+            </select>
           </div>
           <AskBoxBody ask={ask} chips={chips} describedBy={descId} inputRef={inputRef} onOpenStitch={onOpenStitch} />
         </DrawerPrimitive.Content>

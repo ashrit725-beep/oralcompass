@@ -69,27 +69,69 @@ beforeEach(() => {
 });
 afterEach(() => { act(() => root.unmount()); host.remove(); document.body.innerHTML = ""; vi.useRealTimers(); });
 
-describe("AskBox chips per tab (in the sheet)", () => {
-  it("My journey: four everyday chips, the comparison built from the journey's procedures", async () => {
+describe("AskBox chips (in the sheet)", () => {
+  it("four kid-simple cost chips, the title and the composer", async () => {
     await openSheet("journey");
     const chips = [...document.querySelectorAll(".askbox-chips-sheet button")].map((b) => b.textContent);
-    expect(chips).toEqual(["What will I pay in total?", "Why does the crown cost more than the root canal?", "What is a deductible?", "How much of my yearly maximum is left?"]);
-    expect(q(".ask-sheet .ask-sheet-title")?.textContent).toBe("Ask in plain words");
+    expect(chips).toEqual(["How much is a cleaning?", "How much is a filling?", "How much is a crown?", "What does deductible mean?"]);
+    expect(q(".ask-sheet .ask-sheet-title")?.textContent).toBe("Ask what it costs");
     const ta = q<HTMLTextAreaElement>(".ask-sheet textarea")!;
-    expect(ta.getAttribute("aria-label")).toBe("Ask in plain words");
-    expect(ta.getAttribute("placeholder")).toBe("Ask anything about your plan, in your own words");
+    expect(ta.getAttribute("aria-label")).toBe("Ask what it costs");
+    expect(ta.getAttribute("placeholder")).toBe(ASSIST.boxPlaceholder);
   });
-  it.each(["plan", "compare", "documents"] as const)("%s: the tab's own chips, as buttons", async (tab) => {
+  it.each(["plan", "documents"] as const)("%s: the same chips, as buttons", async (tab) => {
     await openSheet(tab);
     const chips = [...document.querySelectorAll(".askbox-chips-sheet button")];
-    expect(chips.map((b) => b.textContent)).toEqual(ASSIST.boxChips[tab]);
+    expect(chips.map((b) => b.textContent)).toEqual(ASSIST.boxChips);
     expect(chips.every((b) => b.tagName === "BUTTON" && b.getAttribute("type") === "button")).toBe(true);
   });
-  it("keeps its everyday chips after an answer (the server's step suggestions are for the step composer)", async () => {
+  it("keeps its chips after an answer (the server's step suggestions are for the step composer)", async () => {
     ask.mockResolvedValue(totalAnswer);
     await openSheet("plan");
-    await click(byText("What is a deductible?"));
-    expect([...document.querySelectorAll(".askbox-chips-sheet button")].map((b) => b.textContent)).toEqual(ASSIST.boxChips.plan);
+    await click(byText("What does deductible mean?"));
+    expect([...document.querySelectorAll(".askbox-chips-sheet button")].map((b) => b.textContent)).toEqual(ASSIST.boxChips);
+  });
+});
+
+describe("the Plan dropdown and the hero numbers", () => {
+  const costAnswer = {
+    mode: "demo", intent: "procedure_cost", ribbon: null, suggested: [], tools_used: [], guard: { dropped: 0, grounding_failures: 0 },
+    blocks: [{ type: "sentence", kind: "simple", text: "A crown costs about {{ref:0}}. Insurance pays {{ref:1}}. You pay {{ref:2}}.", refs: [
+      { kind: "quick_estimate", which: "fee", cents: 120000, evidence: "ASSUMED" },
+      { kind: "quick_estimate", which: "plan", cents: 60000, evidence: "DOC" },
+      { kind: "quick_estimate", which: "patient", cents: 60000, evidence: "DOC" },
+    ] }],
+  };
+  it("is a real select labelled Plan with exactly Plan A, B and C", async () => {
+    await openSheet("journey");
+    const sel = q<HTMLSelectElement>(".ask-sheet select")!;
+    expect(sel.tagName).toBe("SELECT");
+    expect(document.querySelector(`label[for="${sel.id}"]`)?.textContent).toBe("Plan");
+    expect([...sel.options].map((o) => o.value)).toEqual(["A", "B", "C"]);
+    expect([...sel.options].map((o) => o.textContent?.split(" · ")[0])).toEqual(["Plan A", "Plan B", "Plan C"]);
+    expect(sel.value).toBe("A");
+  });
+  it("sends plan_choice with the question and remembers the choice for the session", async () => {
+    ask.mockResolvedValue(costAnswer);
+    await openSheet("journey");
+    const sel = q<HTMLSelectElement>(".ask-sheet select")!;
+    await act(async () => { sel.value = "B"; sel.dispatchEvent(new Event("change", { bubbles: true })); });
+    await click(byText("How much is a crown?"));
+    expect(ask).toHaveBeenCalledWith(expect.objectContaining({ message: "How much is a crown?", plan_choice: "B" }));
+    expect(window.sessionStorage.getItem("oc.ask.plan")).toBe("B");
+    window.sessionStorage.removeItem("oc.ask.plan");
+  });
+  it("shows You pay and Insurance pays as the hero numbers, the price smaller as our guess", async () => {
+    ask.mockResolvedValue(costAnswer);
+    await openSheet("journey");
+    await click(byText("How much is a crown?"));
+    const hero = q("[data-testid=cost-hero]")!;
+    expect(hero).toBeTruthy();
+    const terms = [...hero.querySelectorAll("dt")].map((d) => d.textContent);
+    expect(terms).toEqual(["You pay", "Insurance pays"]);
+    expect(hero.querySelectorAll(".as-hero-amt").length).toBe(2);
+    expect(hero.querySelector(".as-hero-fee")?.textContent).toContain("Our guess of the price");
+    expect(hero.querySelector(".as-hero-plan")?.textContent).toContain("Plan A");
   });
 });
 
@@ -97,8 +139,8 @@ describe("answers: simple terms first, details closed, one announcement", () => 
   it("asks with the journey scope and style plain, renders the plain-words lead first and the details behind a closed disclosure", async () => {
     ask.mockResolvedValue(totalAnswer);
     await openSheet("journey");
-    await click(byText("What will I pay in total?"));
-    expect(ask).toHaveBeenCalledWith({ message: "What will I pay in total?", scope, style: "plain" });
+    await click(byText("How much is a crown?"));
+    expect(ask).toHaveBeenCalledWith({ message: "How much is a crown?", scope, style: "plain", plan_choice: "A" });
     const card = q(".as-answer")!;
     const first = card.querySelector(".as-simple, .as-blocks, .as-details");
     expect(first?.className).toContain("as-simple");
@@ -127,9 +169,9 @@ describe("answers: simple terms first, details closed, one announcement", () => 
   it("'Say it more simply' re-asks the same question with style simpler and adds the plainer sentence to the same card", async () => {
     ask.mockResolvedValueOnce(totalAnswer).mockResolvedValueOnce(simplerAnswer);
     await openSheet("journey");
-    await click(byText("What will I pay in total?"));
+    await click(byText("How much is a crown?"));
     await click(byText("Say it more simply"));
-    expect(ask).toHaveBeenLastCalledWith({ message: "What will I pay in total?", scope, style: "simpler" });
+    expect(ask).toHaveBeenLastCalledWith({ message: "How much is a crown?", scope, style: "simpler", plan_choice: "A" });
     expect(document.querySelectorAll(".as-answer")).toHaveLength(1);
     const simpler = q(".as-simpler")!;
     expect(simpler.querySelector(".as-simple-label")?.textContent).toBe("Even simpler");
@@ -143,7 +185,7 @@ describe("answers: simple terms first, details closed, one announcement", () => 
     (api.benefitsFor as unknown as ReturnType<typeof vi.fn>).mockImplementationOnce(() => new Promise(() => {}));
     ask.mockResolvedValue(totalAnswer);
     await openSheet("journey");
-    await click(byText("What will I pay in total?"));
+    await click(byText("How much is a crown?"));
     expect(q("[aria-live]")?.textContent).toBe("");
     await act(async () => { vi.advanceTimersByTime(1600); }); await flush();
     expect(q("[aria-live]")?.textContent).toMatch(/^Answer: For the planned work, you pay \$902\.00/);
@@ -152,7 +194,7 @@ describe("answers: simple terms first, details closed, one announcement", () => 
   it("an older answer without a simple block renders its blocks directly (no disclosure)", async () => {
     ask.mockResolvedValue({ ...totalAnswer, blocks: [totalAnswer.blocks[1]] });
     await openSheet("journey");
-    await click(byText("What will I pay in total?"));
+    await click(byText("How much is a crown?"));
     expect(q(".as-answer")?.getAttribute("data-simple")).toBe("false");
     expect(byText("Show the details")).toBeUndefined();
     expect(q(".as-answer .as-sentence")?.textContent).toContain("$510.00");
@@ -161,8 +203,8 @@ describe("answers: simple terms first, details closed, one announcement", () => 
   it("keeps the newest answer open and earlier ones behind a disclosure", async () => {
     ask.mockResolvedValue(totalAnswer);
     await openSheet("journey");
-    await click(byText("What will I pay in total?"));
-    await click(byText("What is a deductible?"));
+    await click(byText("How much is a crown?"));
+    await click(byText("What does deductible mean?"));
     expect(document.querySelectorAll(".as-answers")[0].querySelectorAll(":scope > .as-answer")).toHaveLength(1);
     expect(q(".as-earlier summary")?.textContent).toBe("1 earlier answer");
   });
@@ -173,35 +215,35 @@ describe("states", () => {
     let resolve!: (v: unknown) => void;
     ask.mockReturnValue(new Promise((r) => { resolve = r; }));
     await openSheet("plan");
-    await click(byText("What is a deductible?"));
+    await click(byText("What does deductible mean?"));
     expect(q(".as-thought")).toBeTruthy();
-    expect(byText("What is a waiting period?")?.disabled).toBe(true);
+    expect(byText("How much is a cleaning?")?.disabled).toBe(true);
     expect(q<HTMLTextAreaElement>(".ask-sheet textarea")?.disabled).toBe(false);
     await act(async () => { resolve(totalAnswer); }); await flush();
     expect(q(".as-thought")).toBeNull();
-    expect(byText("What is a waiting period?")?.disabled).toBe(false);
+    expect(byText("How much is a cleaning?")?.disabled).toBe(false);
   });
   it("rate limited: says so and pauses the chips", async () => {
     ask.mockRejectedValue(new ApiError(429, "/me/assistant"));
     await openSheet("plan");
-    await click(byText("What is a deductible?"));
+    await click(byText("What does deductible mean?"));
     expect(q("[role=alert]")?.textContent).toBe(ASSIST.rateLimited);
-    expect(byText("What is a waiting period?")?.disabled).toBe(true);
+    expect(byText("How much is a cleaning?")?.disabled).toBe(true);
   });
   it("live unavailable and offline have their own words", async () => {
     ask.mockRejectedValueOnce(new ApiError(503, "/me/assistant"));
     await openSheet("plan");
-    await click(byText("What is a deductible?"));
+    await click(byText("What does deductible mean?"));
     expect(q("[role=alert]")?.textContent).toBe(ASSIST.liveUnavailable);
     Object.defineProperty(window.navigator, "onLine", { configurable: true, value: false });
-    await click(byText("What is a waiting period?"));
+    await click(byText("How much is a cleaning?"));
     expect(q("[role=alert]")?.textContent).toBe(ASSIST.offline);
     expect(ask).toHaveBeenCalledTimes(1);
   });
   it("nothing survived: a plain-words lead that states its own amount is dropped and counted", async () => {
     ask.mockResolvedValue({ ...totalAnswer, intent: "explain_step", blocks: [{ type: "sentence", kind: "simple", text: "You pay $902.00.", refs: [] }] });
     await openSheet("journey");
-    await click(byText("What will I pay in total?"));
+    await click(byText("How much is a crown?"));
     expect(q(".as-answer")?.textContent).toContain(ASSIST.boxNothingSurvived);
     expect(q(".as-answer")?.textContent).toContain(ASSIST.guardRemoved(1));
     expect(q(".as-answer")?.textContent).not.toContain("$902.00.");
@@ -209,11 +251,11 @@ describe("states", () => {
   it("remembers a tab's answers when the card is unmounted and mounted again (tab switch)", async () => {
     ask.mockResolvedValue(totalAnswer);
     await openSheet("journey");
-    await click(byText("What will I pay in total?"));
+    await click(byText("How much is a crown?"));
     await openSheet("plan");
     expect(q(".as-answer")).toBeNull();
     await openSheet("journey");
-    expect(q(".as-answer .as-asked")?.textContent).toBe(ASSIST.asked("What will I pay in total?"));
+    expect(q(".as-answer .as-asked")?.textContent).toBe(ASSIST.asked("How much is a crown?"));
   });
 });
 
@@ -222,7 +264,7 @@ describe("the phone field and sheet", () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     render(<AskDock tab="journey" scope={scope} />);
     const field = q<HTMLButtonElement>(".askfield")!;
-    expect(field.textContent).toContain("Ask in plain words");
+    expect(field.textContent).toContain("Ask what it costs");
     expect(field.getAttribute("aria-expanded")).toBe("false");
     expect(q(".ask-sheet")).toBeNull();
     await click(field);
@@ -265,7 +307,7 @@ describe("the phone field and sheet", () => {
     ask.mockResolvedValue(totalAnswer);
     render(<AskDock tab="journey" scope={scope} />);
     await click(q(".askfield"));
-    await click([...document.querySelectorAll(".ask-sheet button")].find((b) => b.textContent === "What will I pay in total?"));
+    await click([...document.querySelectorAll(".ask-sheet button")].find((b) => b.textContent === "How much is a crown?"));
     expect(q(".ask-sheet .as-simple-text")?.textContent).toContain("$902.00");
     expect(q(".ask-sheet .as-disclosure")?.getAttribute("aria-expanded")).toBe("false");
   });
@@ -294,23 +336,18 @@ describe("the step composer still works on the shared pieces", () => {
 });
 
 describe("Compare and Documents scopes, the estimate_total ref", () => {
-  it("Compare: the sheet sends scope.compare with the plans currently compared and shows the compare chips", async () => {
+  it("never sends scope.compare and shows no comparing chip", async () => {
     ask.mockResolvedValue(totalAnswer);
-    const cmp = { ...scope, compare: ["ML26", "HB26"] };
-    await openSheet("compare", cmp);
-    const chips = [...document.querySelectorAll(".askbox-chips-sheet button")].map((b) => b.textContent);
-    expect(chips.slice(0, 2)).toEqual(["What is the difference between these plans' deductibles?", "What does 'allowed amount' mean?"]);
-    await click(byText("What is the difference between these plans' deductibles?"));
-    expect(ask).toHaveBeenCalledWith({ message: "What is the difference between these plans' deductibles?", scope: cmp, style: "plain" });
-  });
-  it("Documents: the first chip is the document overview question", async () => {
-    await openSheet("documents");
-    expect(q(".askbox-chips-sheet button")?.textContent).toBe("What does this document cover?");
+    await openSheet("plan");
+    const chips = [...document.querySelectorAll(".askbox-chips-sheet button")].map((b) => b.textContent ?? "");
+    expect(chips.some((c) => /differen|compar/i.test(c))).toBe(false);
+    await click(byText("How much is a crown?"));
+    expect(ask.mock.calls[0][0].scope).not.toHaveProperty("compare");
   });
   it("renders an estimate_total ref as the journey's calculated total (the facts line's numbers), tabular, with the calculated label", async () => {
     ask.mockResolvedValue({ ...totalAnswer, blocks: [{ type: "sentence", kind: "simple", text: "You pay {{ref:0}} and the plan pays {{ref:1}}.", refs: [{ kind: "estimate_total", which: "patient" }, { kind: "estimate_total", which: "plan" }] }] });
     await openSheet("journey");
-    await click(byText("What will I pay in total?"));
+    await click(byText("How much is a crown?"));
     const text = q(".ask-sheet .as-simple-text")!;
     expect(text.textContent).toContain("$902.00");
     expect(text.textContent).toContain("$1098.00");                   // NumberFlow is mocked with toFixed (no grouping) here

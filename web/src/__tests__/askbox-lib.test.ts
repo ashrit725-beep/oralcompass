@@ -33,27 +33,19 @@ describe("splitAnswer: simple terms first (the plain-words lead, then the detail
   });
 });
 
-describe("boxSuggestions: four everyday chips per tab", () => {
-  it("My journey names the journey's own procedures, the larger you-pay figure first", () => {
-    const chips = boxSuggestions("journey", data);
-    expect(chips).toHaveLength(4);
-    expect(chips).toEqual(["What will I pay in total?", "Why does the crown cost more than the root canal?", "What is a deductible?", "How much of my yearly maximum is left?"]);
+describe("boxSuggestions: four kid-simple cost chips on every tab, none compares", () => {
+  it("is the same list everywhere", () => {
+    for (const tab of ["journey", "plan", "documents"] as const) expect(boxSuggestions(tab, data)).toEqual(["How much is a cleaning?", "How much is a filling?", "How much is a crown?", "What does deductible mean?"]);
+    expect(ASSIST.boxChips.some((c) => /compar|differen|cost more/i.test(c))).toBe(false);
   });
-  it("one planned procedure asks what it costs; none falls back to a definition", () => {
-    const one = { ...alex.estimate, ledger: { ...alex.estimate.ledger, lines: alex.estimate.ledger.lines.slice(0, 1) } } as SavedEstimate;
-    expect(boxSuggestions("journey", { estimate: one, items: alex.items })[1]).toBe("What do I pay for the root canal?");
-    expect(boxSuggestions("journey", { estimate: null, items: [] })[1]).toBe(ASSIST.chipFallback);
-  });
-  it("an unresolved line is not compared (no figure, no claim that it costs more)", () => {
-    const lines = alex.estimate.ledger.lines.map((l, i) => (i === 1 ? { ...l, patient_cents: null } : l));
-    expect(boxSuggestions("journey", { estimate: { ...alex.estimate, ledger: { ...alex.estimate.ledger, lines } } as SavedEstimate, items: alex.items })[1]).toBe("What do I pay for the root canal?");
-  });
-  it("the other tabs use their own fixed chips", () => {
-    for (const tab of ["plan", "compare", "documents"] as const) {
-      expect(boxSuggestions(tab, data)).toEqual(ASSIST.boxChips[tab]);
-      expect(ASSIST.boxChips[tab]).toHaveLength(4);
-    }
-    expect(boxSuggestions("plan", data)).toEqual(["What is a deductible?", "What does plan share mean?", "What is an annual maximum?", "What is a waiting period?"]);
+});
+
+describe("quick_estimate refs (procedure_cost): server-sent figures", () => {
+  it("you pay / insurance pays read calculated; the price is our guess", () => {
+    expect(resolveRef({ kind: "quick_estimate", which: "patient", cents: 4200, evidence: "DOC" }, EMPTY_DATA)).toMatchObject({ kind: "money", cents: 4200, calc: true, label: "You pay" });
+    expect(resolveRef({ kind: "quick_estimate", which: "plan", cents: 9800, evidence: "DOC" }, EMPTY_DATA)).toMatchObject({ kind: "money", cents: 9800, label: "Insurance pays" });
+    expect(resolveRef({ kind: "quick_estimate", which: "fee", cents: 14000 }, EMPTY_DATA)).toMatchObject({ kind: "money", cents: 14000, evidence: "ASSUMED" });
+    expect(resolveRef({ kind: "quick_estimate", which: "patient" }, EMPTY_DATA)).toMatchObject({ cents: null, evidence: "UNKNOWN" });
   });
 });
 
@@ -87,12 +79,10 @@ describe("journey totals resolve from the engine, labelled calculated", () => {
   });
 });
 
-import { askBoxScope as _askBoxScope, compareScope as _compareScope } from "@/lib/assistant";
-describe("scope.compare (Compare tab)", () => {
-  it("passes the compared plans, deduplicated, at most three; none leaves compare off", () => {
-    expect(_compareScope(["ML26", "ml26", "HB26", "FM26H", "UP1"])).toEqual(["ML26", "HB26", "FM26H"]);
-    expect(_compareScope([])).toBeUndefined();
-    expect(_askBoxScope("ML26", null, "j1", ["ML26", "HB26"])).toEqual({ plan_ref: "ML26", journey_id: "j1", compare: ["ML26", "HB26"] });
-    expect(_askBoxScope("ML26", null, "j1", null)).toEqual({ plan_ref: "ML26", journey_id: "j1" });
+import { askBoxScope as _askBoxScope } from "@/lib/assistant";
+describe("no comparing: the ask scope is one plan", () => {
+  it("never carries scope.compare", () => {
+    expect(_askBoxScope("ML26", null, "j1")).toEqual({ plan_ref: "ML26", journey_id: "j1" });
+    expect(_askBoxScope("ML26", null, "j1")).not.toHaveProperty("compare");
   });
 });
