@@ -122,3 +122,11 @@
 .rm-push-state[data-state="denied"], .rm-push-state[data-state="nokey"], .rm-push-state[data-state="unsupported"], .rm-push-state[data-state="insecure"] { color: var(--terracotta); }
 .rm-actions { display: flex; flex-wrap: wrap; gap: var(--s-2); }
 .rm-status { margin: 0; font-size: 13px; color: var(--ink-soft); min-height: 18px; }
+
+/* stepper stage names (delight pass rb-01): where am I in the four-stage privacy pipeline */
+.up-step-ind { position: relative; display: inline-flex; flex-direction: column; align-items: center; gap: 2px; }
+.up-step-name { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); white-space: nowrap; font-size: 12px; line-height: 16px; color: var(--ink-soft); }
+.up-step-ind[data-status="active"] .up-step-name { color: var(--ink); font-weight: 600; }
+.up-stepper ol { padding-bottom: 28px; }
+.up-step-now { margin: -8px 16px 8px; font-size: 13px; line-height: 18px; color: var(--ink); font-weight: 600; }
+@media (max-width: 639px) { .up-stepper ol { padding-bottom: 12px; } }

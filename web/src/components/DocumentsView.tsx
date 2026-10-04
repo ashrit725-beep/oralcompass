@@ -11,6 +11,7 @@ import { RemindersPanel } from "@/components/notifications/RemindersPanel";
 import { EvidenceBadge } from "@/components/Primitives";
 import { StageLoader } from "@/components/StageLoader";
 import { UploadWizard } from "@/components/upload/UploadWizard";
+import HoldButton from "@/components/ui/HoldButton";
 
 // pdf.js (≈107 KB gzip) loads only when a stored PDF is rendered — never in the main chunk (component plan §3.2).
 const PageView = lazy(() => import("./PageView").then((m) => ({ default: m.PageView })));
@@ -60,8 +61,9 @@ export function DocumentsView({ planCode, plans, onPlan, evidence, stitches, sel
     const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "oralcompass-my-data.json"; a.click(); URL.revokeObjectURL(a.href);
     setMsg(PLAN.docsExported);
   }
+  // The one irreversible action is a deliberate 1.6 s hold in the product's palette, with the consequence stated above it (delight pass
+  // rb-04; it replaces the browser's grey confirm dialog). A tap only explains; releasing early undoes the fill.
   async function deleteData() {
-    if (!window.confirm(UI.deleteConfirm)) return;
     const r = await api.deleteMe(); setMsg(PLAN.docsDeleted(Object.entries(r.deleted).map(([k, v]) => `${v} ${k}`).join(", ") || PLAN.docsNothingStored)); setMine([]); onRetry();
   }
   const clauses = (evidence?.clauses ?? []).filter((c) => !filter || c.quote.toLowerCase().includes(filter.toLowerCase()) || c.field.toLowerCase().includes(filter.toLowerCase()));
@@ -163,8 +165,15 @@ export function DocumentsView({ planCode, plans, onPlan, evidence, stitches, sel
         <p>{UI.privacyBody}</p>
         <div className="actions">
           <button type="button" onClick={exportData}>{UI.exportData}</button>
-          <button type="button" className="danger" onClick={deleteData}>{UI.deleteData}</button>
           <button type="button" className="secondary" onClick={() => api.audit().then(setAudit)}>{UI.auditTitle}</button>
+        </div>
+        <div className="delete-hold">
+          <p className="delete-hold-why">{UI.deleteConfirm}</p>
+          <HoldButton onHold={deleteData} onTap={() => setMsg(UI.deleteTap)} holdTime={1600} size="lg" resetAfter={0}
+                      backgroundColor="var(--paper-deep)" fillColor="var(--terracotta)" textColor="var(--ink)" fillTextColor="var(--paper)" doneLabel={UI.deleting}
+                      className="delete-hold-btn">
+            {UI.deleteHold}
+          </HoldButton>
         </div>
         {msg && <p className="note" role="status">{msg}</p>}
         {audit && <table className="audit"><caption>{UI.auditTitle}</caption><thead><tr><th>when</th><th>action</th><th>type</th><th>id</th><th>outcome</th></tr></thead><tbody>{audit.slice(-25).map((e, i) => <tr key={i}><td>{new Date(e.ts * 1000).toLocaleTimeString()}</td><td>{e.action}</td><td>{e.type}</td><td className="mono">{String(e.id).slice(0, 8)}</td><td>{e.outcome}</td></tr>)}</tbody></table>}

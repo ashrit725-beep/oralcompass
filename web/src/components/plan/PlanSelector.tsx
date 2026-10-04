@@ -72,14 +72,14 @@ export function PlanSelector({ plans, uploads, value, onChange, mode, onMode, up
         {mode === "preset" && (
           <div className="ps-cascade" role="group" aria-label={PLAN.modePreset}>
             <label>{PLAN.carrier}
-              <select aria-label={PLAN.carrier} value={carrier?.key ?? ""} onChange={(e) => { const c = carriers.find((x) => x.key === e.target.value); const code = firstCode(c); if (code) onChange(code); }}>
+              <select aria-label={PLAN.carrier} title={carrier?.label} value={carrier?.key ?? ""} onChange={(e) => { const c = carriers.find((x) => x.key === e.target.value); const code = firstCode(c); if (code) onChange(code); }}>
                 {!carrier && <option value="">{PLAN.cmpNone}</option>}
                 {real.length > 0 && <optgroup label={PLAN.publicGroup}>{real.map((c) => <option key={c.key} value={c.key}>{c.label}</option>)}</optgroup>}
                 {fictional.length > 0 && <optgroup label={PLAN.fictionalGroup}>{fictional.map((c) => <option key={c.key} value={c.key}>{c.label}</option>)}</optgroup>}
               </select>
             </label>
             <label>{PLAN.planName}
-              <select aria-label={PLAN.planName} value={plan?.key ?? ""} disabled={!carrier} onChange={(e) => { const p = carrier?.plans.find((x) => x.key === e.target.value); const code = firstCode(carrier, p); if (code) onChange(code); }}>
+              <select aria-label={PLAN.planName} title={plan?.label} value={plan?.key ?? ""} disabled={!carrier} onChange={(e) => { const p = carrier?.plans.find((x) => x.key === e.target.value); const code = firstCode(carrier, p); if (code) onChange(code); }}>
                 {!plan && <option value="">{PLAN.cmpNone}</option>}
                 {carrier?.plans.map((p) => <option key={p.key} value={p.key}>{p.label}</option>)}
               </select>

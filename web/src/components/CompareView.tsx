@@ -58,7 +58,8 @@ export function CompareView({ plans, items, benefits, initial }: Props) {
   const taken = (i: number, code: string) => picked.includes(code) && picked[i] !== code;
   return (
     <section className="compare-view" aria-labelledby="cv-h">
-      <h2 id="cv-h">{UI.availabilityBanner}</h2>
+      <h2 id="cv-h">{PLAN.cmpViewTitle}</h2>
+      <p className="cv-banner">{UI.availabilityBanner}</p>
       <p className="muted">{UI.comparisonNote}</p>
       <div className="pickers">
         {[0, 1, 2].map((i) => (

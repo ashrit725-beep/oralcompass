@@ -354,3 +354,13 @@ table.grid thead th { background: var(--paper-deep); position: sticky; top: 0; }
   [data-vaul-drawer], [data-vaul-overlay] { animation: none !important; }   /* vaul's own slideFromBottom keyframes (the sheet appears in place) */
   .motion-drift { animation: none !important; }          /* class on every scenery loop */
 }
+/* delete-all as a hold (delight pass rb-04): the consequence first, then the deliberate gesture */
+.delete-hold { margin-top: var(--s-4); padding-top: var(--s-3); border-top: 1px solid var(--rule); display: grid; gap: var(--s-2); justify-items: start; }
+.delete-hold-why { margin: 0; max-width: 60ch; font-size: 14px; color: var(--ink-soft); }
+.delete-hold-btn { border: 1px solid var(--terracotta) !important; min-height: 44px; }
+/* Compare (delight pass mo-20c): one banner, a real heading, no visual duplicate rows */
+.cv-banner { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); margin: 0 0 var(--s-2); font-size: 15px; color: var(--ink); }
+table.grid tr.differences td { padding: 0; border: 0; height: 0; }
+table.grid tbody tr:not(.differences) { transition: background-color var(--dur-micro) var(--ease-standard); }
+table.grid tbody tr:not(.differences):hover, table.grid tbody tr:not(.differences):focus-within { background: color-mix(in srgb, var(--parchment) 60%, transparent); }
+.compare > h3 { margin-top: var(--s-5); }

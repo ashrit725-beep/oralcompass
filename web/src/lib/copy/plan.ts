@@ -143,6 +143,8 @@ export const PLAN = {
   readManualTitle: "Add one procedure by hand",
   // ---- compare (CLAUDE.md rule 6) ----
   cmpTitle: "Side by side",
+  cmpViewTitle: "Compare plans",
+  cmpEligibilitySeeDoc: "see the plan document",
   cmpPicker: (i: number) => `Plan ${i}`,
   cmpNone: "none",
   cmpProcedures: (list: string) => `Procedures compared: ${list}.`,

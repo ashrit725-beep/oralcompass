@@ -45,7 +45,7 @@ export function ComparisonGrid({ data, plans }: Props) {
                       <strong>{titleOf(c)}</strong>
                       {p?.is_fictional && <span className="ribbon">{UI.fictional}</span>}
                       {p?.source_document.document_type === "uploaded_plan_document" && <span className="ribbon">{PLAN.uploadedRibbon(p.source_document.version_label)}</span>}
-                      <small>{p?.catalog?.where_offered?.text ? `${p.catalog.where_offered.text} · ` : ""}{PLAN.cmpEligibility}: {p?.catalog?.eligibility?.text ?? UI.availabilityBanner}</small>
+                      <small>{p?.catalog?.where_offered?.text ? `${p.catalog.where_offered.text} · ` : ""}{PLAN.cmpEligibility}: {eligibilityOnly(p?.catalog?.eligibility?.text) || PLAN.cmpEligibilitySeeDoc}</small>
                     </div>
                   </TableHead>
                 );
@@ -63,7 +63,8 @@ export function ComparisonGrid({ data, plans }: Props) {
                     </TableCell>
                   ))}
                 </TableRow>
-                <TableRow className="differences"><TableCell colSpan={cols.length + 1} className="whitespace-normal italic">{row.differences}</TableCell></TableRow>
+                {/* the factual-differences sentence repeats the row's figures for screen readers; visually the row already shows them */}
+                <TableRow className="differences"><TableCell colSpan={cols.length + 1} className="p-0"><span className="sr-only">{row.differences}</span></TableCell></TableRow>
               </Fragment>
             ))}
           </TableBody>
@@ -86,7 +87,7 @@ export function ComparisonGrid({ data, plans }: Props) {
                     <span className="sub">{UI.planPays}: <Money cents={L.plan_total_cents} evidence={ledgerEvidence(L)} />{L.plan_total_is_upper_bound ? ` ${PLAN.cmpUpperBound}` : ""}</span>
                   </p>
                 )}
-                {L?.flags.map((f, i) => <p key={i} className="flag">{f}</p>)}
+                {[...new Set(L?.flags ?? [])].map((f) => <p key={f} className="flag">{f}</p>)}
                 <p className="note">{PLAN.cmpPremium}: {premium?.value != null ? <Money cents={premium.value} evidence={premium.status} /> : <><span>{UI.notStated}</span> <EvidenceBadge status="UNKNOWN" /></>}</p>
               </article>
             );
@@ -94,6 +95,12 @@ export function ComparisonGrid({ data, plans }: Props) {
         </div>
       </section>
   );
+}
+
+/** The catalog's eligibility text ends with the availability banner, which the view prints once above the grid; keep the rest. */
+function eligibilityOnly(text?: string | null): string {
+  if (!text) return "";
+  return text.replace(UI.availabilityBanner, "").replace(/Listed here means the document is public[^.]*\./, "").replace(/\s+/g, " ").trim();
 }
 
 /** A grid cell: value + badge as a 44 px trigger; the paired clause opens in a Popover (desktop) or the Drawer (phone). */

@@ -4,6 +4,10 @@
 // `#5227FF #222 #a3a3a3 #120F17 bg-green-500` are gone (sand inactive · gold active · forest complete, connector fills gold),
 // slide distance ±24 px at 0.3 s. Button labels have no shipped defaults: the wrapper passes copy. Reduced motion: MotionConfig drops
 // the x slide and height spring; the final layout is identical.
+// Delight pass (2026-10-04, rb-01): AnimatePresence mode="wait" (the old mode="sync" overlapped the leaving and entering panes),
+// the entering pane slides 12 px from the side it comes from over 200 ms, the leaving pane only fades (140 ms); direction follows the
+// controlled step; optional `stepName` prints each stage name under its indicator (a "Step n of m · name" line on phones); optional
+// `allComplete` turns every indicator forest after publish.
 import React, { useState, Children, useRef, useLayoutEffect, type HTMLAttributes, type ReactNode } from 'react';
 import { motion, AnimatePresence, type Variants } from 'motion/react';
 import { cn } from '@/lib/utils';
@@ -27,6 +31,10 @@ interface StepperProps extends HTMLAttributes<HTMLDivElement> {
   /** Accessible names for the indicator buttons, e.g. (n) => `Step ${n}: Upload` */
   stepLabel?: (step: number) => string;
   disableStepIndicators?: boolean;
+  /** Visible stage names under the indicators (and a "Step n of m · name" line on narrow screens). */
+  stepName?: (step: number) => string;
+  /** Every stage finished (e.g. published): all indicators show the forest check. */
+  allComplete?: boolean;
   renderStepIndicator?: (props: {
     step: number;
     currentStep: number;
@@ -51,13 +59,18 @@ export default function Stepper({
   completeButtonText = '',
   stepLabel = (n) => `Step ${n}`,
   disableStepIndicators = false,
+  stepName,
+  allComplete = false,
   renderStepIndicator,
   className,
   ...rest
 }: StepperProps) {
   const [innerStep, setInnerStep] = useState<number>(initialStep);
   const currentStep = step ?? innerStep;
-  const [direction, setDirection] = useState<number>(0);
+  const [direction, setDirection] = useState<number>(1);
+  // a controlled step moves without handleNext/handleBack: derive the direction from the previous step
+  const prevStep = useRef(currentStep);
+  if (prevStep.current !== currentStep) { const d = currentStep > prevStep.current ? 1 : -1; prevStep.current = currentStep; if (d !== direction) setDirection(d); }
   const stepsArray = Children.toArray(children);
   const totalSteps = stepsArray.length;
   const isCompleted = currentStep > totalSteps;
@@ -114,8 +127,9 @@ export default function Stepper({
                     <StepIndicator
                       step={stepNumber}
                       label={stepLabel(stepNumber)}
+                      name={stepName?.(stepNumber)}
                       disableStepIndicators={disableStepIndicators}
-                      currentStep={currentStep}
+                      currentStep={allComplete ? totalSteps + 1 : currentStep}
                       onClickStep={clicked => {
                         setDirection(clicked > currentStep ? 1 : -1);
                         updateStep(clicked);
@@ -128,6 +142,10 @@ export default function Stepper({
             );
           })}
         </ol>
+
+        {stepName && currentStep <= totalSteps && (
+          <p className="up-step-now sm:hidden" aria-hidden="true">Step {currentStep} of {totalSteps} · {stepName(currentStep)}</p>
+        )}
 
         <StepContentWrapper
           isCompleted={isCompleted}
@@ -187,7 +205,7 @@ function StepContentWrapper({ isCompleted, currentStep, direction, children, cla
       transition={{ type: 'spring', duration: 0.4, bounce: 0 }}
       className={className}
     >
-      <AnimatePresence initial={false} mode="sync" custom={direction}>
+      <AnimatePresence initial={false} mode="wait" custom={direction}>
         {!isCompleted && (
           <SlideTransition key={currentStep} direction={direction} onHeightReady={h => setParentHeight(h)}>
             {children}
@@ -221,7 +239,6 @@ function SlideTransition({ children, direction, onHeightReady }: SlideTransition
       initial="enter"
       animate="center"
       exit="exit"
-      transition={{ duration: 0.3, ease: 'easeOut' }}
       style={{ position: 'absolute', left: 0, right: 0, top: 0 }}
     >
       {children}
@@ -230,9 +247,9 @@ function SlideTransition({ children, direction, onHeightReady }: SlideTransition
 }
 
 const stepVariants: Variants = {
-  enter: (dir: number) => ({ x: dir >= 0 ? -24 : 24, opacity: 0 }),
-  center: { x: 0, opacity: 1 },
-  exit: (dir: number) => ({ x: dir >= 0 ? 24 : -24, opacity: 0 })
+  enter: (dir: number) => ({ x: dir >= 0 ? 12 : -12, opacity: 0 }),
+  center: { x: 0, opacity: 1, transition: { duration: 0.2, ease: [0.2, 0.7, 0.2, 1] } },
+  exit: { opacity: 0, transition: { duration: 0.14, ease: [0.4, 0, 1, 1] } }
 };
 
 interface StepProps {
@@ -246,12 +263,13 @@ export function Step({ children }: StepProps) {
 interface StepIndicatorProps {
   step: number;
   label: string;
+  name?: string;
   currentStep: number;
   onClickStep: (clicked: number) => void;
   disableStepIndicators?: boolean;
 }
 
-function StepIndicator({ step, label, currentStep, onClickStep, disableStepIndicators = false }: StepIndicatorProps) {
+function StepIndicator({ step, label, name, currentStep, onClickStep, disableStepIndicators = false }: StepIndicatorProps) {
   const status = currentStep === step ? 'active' : currentStep < step ? 'inactive' : 'complete';
 
   const handleClick = () => {
@@ -260,7 +278,7 @@ function StepIndicator({ step, label, currentStep, onClickStep, disableStepIndic
     }
   };
 
-  return (
+  const button = (
     <motion.button
       type="button"
       onClick={handleClick}
@@ -289,6 +307,13 @@ function StepIndicator({ step, label, currentStep, onClickStep, disableStepIndic
         )}
       </motion.span>
     </motion.button>
+  );
+  if (!name) return button;
+  return (
+    <span className="up-step-ind" data-status={status}>
+      {button}
+      <span className="up-step-name hidden sm:block" aria-hidden="true">{name}</span>
+    </span>
   );
 }
 

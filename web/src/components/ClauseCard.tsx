@@ -7,7 +7,8 @@ import { transitions } from "../lib/motion";
 import { money } from "../lib/stitches";
 import type { AssistScope, LedgerLine, Stitch } from "../lib/types";
 import { AskAboutStep } from "./assistant/AskAboutStep";
-import { DepthDial, EvidenceBadge, StitchChip } from "./Primitives";
+import { DepthDial } from "./DepthDial";
+import { EvidenceBadge, StitchChip } from "./Primitives";
 import { PlainWords } from "./PlainWords";
 
 interface Props {

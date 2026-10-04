@@ -5,8 +5,9 @@ import { cn } from "@/lib/utils";
 
 /**
  * DepthDial (component plan N14): the three explanation depths (Plain words · Your numbers · Exact wording) on the React Bits
- * RubberSegment, tuned as a brass dial click rather than rubber (`stretch` 25, `squash` 1, `draggable` off, 44 px slots, serif).
- * Same props as the legacy `DepthDial` in Primitives.tsx (left untouched; ClauseCard still uses it). A11y comes from the vendored
+ * RubberSegment, tuned as a brass dial glide with no rubber deformation (`stretch` 0, `squash` 0, `draggable` off, 44 px slots,
+ * serif). The one depth control in the app: My plan landmarks and the clause card both use it (delight pass rb-06; the legacy Primitives
+ * dial was removed). A11y comes from the vendored
  * component: role=radiogroup / role=radio with aria-checked, roving tabindex, arrow/Home/End keys and a 3 px focus outline; the radio's
  * accessible name is the depth word, so `get_by_role("radio", name="Exact wording")` keeps working. Spec §9.2 adds the digit keys 1 2 3.
  * Reduced motion: handled inside RubberSegment (the thumb jumps to the selected slot; end state exact).
@@ -40,8 +41,8 @@ export function DepthDial({ depth, onChange, className, label = "Explanation dep
         value={String(depth)}
         onChange={(v) => onChange(Number(v) as 1 | 2 | 3)}
         size="lg"
-        stretch={25}
-        squash={1}
+        stretch={0}
+        squash={0}
         draggable={false}
         radius={12}
         className="font-serif"

@@ -1,4 +1,6 @@
 import { forwardRef, type ReactNode } from "react";
+import { motion } from "motion/react";
+import { EASE } from "@/lib/motion";
 import { DRAWER } from "@/lib/copy/drawer";
 import { signed } from "@/lib/stitches";
 import type { CheckpointRule, Evidence, Stitch } from "@/lib/types";
@@ -30,6 +32,8 @@ export interface PipelineNodeProps {
   showArrow?: boolean;
   isTotal?: boolean;
   isClosed?: boolean;
+  /** Vertical ledger reveal: the row's place in processing order, or null for no entrance (already shown / reduced motion). */
+  revealIndex?: number | null;
 }
 
 /**
@@ -39,12 +43,14 @@ export interface PipelineNodeProps {
  * the beam anchors (right edge out, left edge in). The `.node` class is the container the trust check inspects for a badge or stitch.
  */
 export const PipelineNode = forwardRef<HTMLLIElement, PipelineNodeProps>(function PipelineNode(
-  { rule, term, amountOut, change, owner, split, stitch, stitches, evidence, onSelectStitch, children, showArrow, isTotal, isClosed }, ref,
+  { rule, term, amountOut, change, owner, split, stitch, stitches, evidence, onSelectStitch, children, showArrow, isTotal, isClosed, revealIndex = null }, ref,
 ) {
   const ownerWord = owner === "patient" ? DRAWER.ownerPatient : owner === "plan" ? DRAWER.ownerPlan : owner === "nobody" ? DRAWER.ownerNobody : owner === "basis" ? DRAWER.ownerBasis : null;
   const chips = stitches && stitches.length ? stitches : stitch ? [stitch] : [];
   return (
-    <li ref={ref} className={cn("node", `node-owner-${owner}`, isTotal && "node-total", isClosed && "node-closed", rule === "missing" && "node-fog")} data-rule={rule}>
+    <motion.li ref={ref} className={cn("node", `node-owner-${owner}`, isTotal && "node-total", isClosed && "node-closed", rule === "missing" && "node-fog")} data-rule={rule}
+               initial={revealIndex == null ? false : { opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+               transition={{ duration: 0.24, ease: EASE.standard, delay: revealIndex == null ? 0 : 0.24 + revealIndex * 0.12 }}>
       <span className="pipe-port pipe-port-in" aria-hidden="true" />
       <span className="pipe-port pipe-port-out" aria-hidden="true" />
       {showArrow && (
@@ -74,7 +80,7 @@ export const PipelineNode = forwardRef<HTMLLIElement, PipelineNodeProps>(functio
         {chips.length ? chips.slice(0, 3).map((s) => <StitchChip key={s.id} stitch={s} onSelect={onSelectStitch} />) : <EvidenceBadge status={evidence} />}
         {isTotal && <span className="node-total-word">{DRAWER.ownerTotal}</span>}
       </p>
-    </li>
+    </motion.li>
   );
 });
 

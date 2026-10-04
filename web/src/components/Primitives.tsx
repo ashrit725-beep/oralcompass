@@ -28,14 +28,3 @@ export function StitchChip({ stitch, selected, prominent, onSelect }: { stitch: 
 }
 
 /** Depth dial: three depths rendered inside one card, never a new screen. */
-export function DepthDial({ depth, onChange }: { depth: 1 | 2 | 3; onChange: (d: 1 | 2 | 3) => void }) {
-  return (
-    <div className="dial" role="radiogroup" aria-label="Explanation depth">
-      {([1, 2, 3] as const).map((d) => (
-        <button key={d} type="button" role="radio" aria-checked={depth === d} className={depth === d ? "dial-on" : ""} onClick={() => onChange(d)}>
-          <span aria-hidden="true">{d}</span> <span className="dial-label">{UI.depth[d - 1]}</span>
-        </button>
-      ))}
-    </div>
-  );
-}

@@ -44,7 +44,7 @@
 details[open] > .dsec-summary .dsec-toggle { transform: rotate(-135deg); margin-top: 6px; }
 .dsec-body { min-width: 0; }
 .dsec-lede { margin: 0 0 var(--s-2); font-size: 16px; line-height: 24px; }
-.dsec-dl { display: grid; grid-template-columns: minmax(120px, max-content) minmax(0, 1fr); gap: var(--s-2) var(--s-3); margin: var(--s-2) 0; font-size: 15px; line-height: 22px; }
+.dsec-dl { display: grid; grid-template-columns: 128px minmax(0, 1fr); gap: var(--s-2) var(--s-3); margin: var(--s-2) 0; font-size: 15px; line-height: 22px; }
 .dsec-dl dt { color: var(--text-soft); font-size: 13px; line-height: 18px; font-weight: 500; padding-top: 2px; }
 .dsec-dl dd { margin: 0; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .dsec-note { display: block; font-size: 12px; line-height: 16px; color: var(--text-soft); }
@@ -198,3 +198,18 @@ details[open] > .dsec-summary .dsec-toggle { transform: rotate(-135deg); margin-
 .clause-in-sheet { position: absolute; left: 0; right: 0; bottom: 0; width: auto; max-height: 70%; overflow-y: auto; border-radius: 18px 18px 0 0; z-index: 45; box-shadow: var(--shadow-3); }
 .thread-pull-in-sheet { position: absolute; z-index: 44; }
 .fig-calc { font-size: 12px; line-height: 18px; color: var(--ink-soft); white-space: nowrap; }
+
+/* ---- vertical ledger (delight pass mo-10): the drawer and the phone sheet ---- */
+.pipeline-vertical .pipeline-ledger { position: relative; }
+.pipeline-vertical .pipeline { flex-direction: column; gap: 8px; }
+.pipeline-vertical .pipeline-rail { position: absolute; left: 21px; top: 12px; bottom: 12px; width: 2px; background: var(--rule); transform-origin: top center; z-index: 0; border-radius: 1px; }
+.pipeline-vertical .node { max-width: none; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: var(--s-3); row-gap: 2px; align-items: baseline; padding: 10px var(--s-3) 10px 12px; }
+.pipeline-vertical .node-term { grid-column: 1; grid-row: 1; font-size: 14px; color: var(--ink); }
+.pipeline-vertical .node-amounts { grid-column: 2; grid-row: 1 / span 2; align-items: flex-end; text-align: right; }
+.pipeline-vertical .node-split { justify-content: flex-end; }
+.pipeline-vertical .node-change { grid-column: 1; grid-row: 2; padding-left: 20px; }
+.pipeline-vertical .node-change:empty { display: none; }
+.pipeline-vertical .node-mark, .pipeline-vertical .node-missing, .pipeline-vertical .node-closed-why { grid-column: 1 / -1; padding-left: 20px; }
+.pipeline-vertical .node-total { border-color: var(--you-pay); background: var(--paper); }
+.pipeline-vertical .node-total .node-term { font-weight: 600; }
+.pipeline-vertical .node-change { justify-self: start; }

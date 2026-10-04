@@ -1,5 +1,8 @@
 import { createRef, useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { motion } from "motion/react";
 import { AnimatedBeam } from "@/components/magicui/animated-beam";
+import { hasDrawn, markDrawn } from "@/lib/drawRegistry";
+import { EASE, useReducedMotion } from "@/lib/motion";
 import { EvidenceBadge } from "@/components/Primitives";
 import { UI } from "@/lib/copy";
 import { DRAWER } from "@/lib/copy/drawer";
@@ -24,6 +27,8 @@ export interface CostPipelineProps {
   onSelectStitch: (s: Stitch) => void;
   /** Rendered under the reconciliation line (e.g. the upper-bound flag). */
   className?: string;
+  /** The vertical ledger (the 440 px drawer and the phone sheet): one full-width row per node, top to bottom in processing order. */
+  vertical?: boolean;
 }
 
 /** The existing warn sentence (kept verbatim from the lighthouse cost trail; the em dash is pre-existing copy). */
@@ -36,8 +41,16 @@ export const RECONCILE_WARN = "Amounts do not reconcile in this view — the eng
  * in-port is the only arrow in the UI (it encodes flow direction). Phone: a 2-column grid without beams (arrows only). Unresolved line:
  * the fee node and a fog node listing the missing inputs; no numbers invented. One `aria-live` region announces "Estimate updated".
  * Reduced motion: NumberFlow snaps, beams render the static connection, nothing else moves.
+ * `vertical` (delight pass mo-10; spec §5.7 decision "vertical pipeline in the drawer"): in the 440 px drawer the horizontal track hid the
+ * You pay node behind a sideways scroll. The ledger stacks the nodes; a 2 px rail behind them draws top to bottom once while each row
+ * settles in processing order (fee → allowed → deductible → share → maximum → you pay, 120 ms apart), the receipt rolling into place.
+ * It runs once per line and estimate in a session (lib/drawRegistry), so reopening an island shows the settled ledger.
  */
-export function CostPipeline({ line, item, rule, plan, stitches, estimateId, missing = [], mobile = false, onSelectStitch, className }: CostPipelineProps) {
+export function CostPipeline({ line, item, rule, plan, stitches, estimateId, missing = [], mobile = false, onSelectStitch, className, vertical = false }: CostPipelineProps) {
+  const reduce = useReducedMotion();
+  const revealKey = `pipe:${line.treatment_item_id ?? line.label}:${estimateId ?? "e"}`;
+  const [reveal] = useState(() => vertical && !reduce && !hasDrawn(revealKey));
+  useEffect(() => { if (vertical) markDrawn(revealKey); }, [vertical, revealKey]);
   const trail = useMemo(() => buildTrail(line), [line]);
   const lineMissing = useMemo(() => missingForLine(missing, line), [missing, line]);
   const cps = useMemo(() => checkpointsForLine(line, item, rule, plan, stitches, lineMissing), [line, item, rule, plan, stitches, lineMissing]);
@@ -72,7 +85,7 @@ export function CostPipeline({ line, item, rule, plan, stitches, estimateId, mis
   const nodes: React.ReactNode[] = [];
   if (unresolved && item) {
     const i = idx++;
-    nodes.push(<PipelineNode key="fee" ref={(el) => { nodeEls.current[i] = el; }} rule="fee" term={DRAWER.dentistFee} amountOut={itemFeeCents(item)} owner="info" evidence="USER" onSelectStitch={onSelectStitch} />);
+    nodes.push(<PipelineNode key="fee" ref={(el) => { nodeEls.current[i] = el; }} rule="fee" term={DRAWER.dentistFee} amountOut={itemFeeCents(item)} owner="info" evidence="USER" onSelectStitch={onSelectStitch} revealIndex={reveal ? i : null} />);
   }
   for (const cp of cps) {
     const i = idx++;
@@ -80,7 +93,7 @@ export function CostPipeline({ line, item, rule, plan, stitches, estimateId, mis
     nodes.push(
       <PipelineNode key={cp.key} ref={(el) => { nodeEls.current[i] = el; }} rule={cp.rule} term={cp.term} amountOut={cp.amountOut} change={cp.rule === "fee" || isTotal ? undefined : cp.change}
                     owner={cp.owner} split={cp.split} stitch={cp.stitch} stitches={isTotal ? lineStitches : undefined} evidence={cp.badge} onSelectStitch={onSelectStitch}
-                    showArrow={i > 0} isTotal={isTotal} isClosed={cp.rule === "X" || cp.rule === "W" || cp.rule === "F"}>
+                    showArrow={i > 0 && !vertical} isTotal={isTotal} isClosed={cp.rule === "X" || cp.rule === "W" || cp.rule === "F"} revealIndex={reveal ? i : null}>
         {cp.rule === "missing" && (
           <ul className="node-missing">
             {lineMissing.map((m, k) => <li key={k}><strong>{m.input}</strong> <span className="muted">{m.how}</span></li>)}
@@ -89,6 +102,24 @@ export function CostPipeline({ line, item, rule, plan, stitches, estimateId, mis
         )}
         {(cp.rule === "X" || cp.rule === "W" || cp.rule === "F") && <p className="node-closed-why">{cp.explanation}</p>}
       </PipelineNode>,
+    );
+  }
+
+  if (vertical) {
+    return (
+      <div className={cn("pipeline-wrap pipeline-vertical", className)}>
+        <div ref={containerRef} className="pipeline-ledger">
+          <motion.span className="pipeline-rail" aria-hidden="true" initial={reveal ? { scaleY: 0 } : false} animate={{ scaleY: 1 }}
+                       transition={{ duration: 0.24 + nodeCount * 0.12, ease: EASE.inOut, delay: 0.24 }} />
+          <ol className="pipeline" aria-label={label} data-nodes={nodeCount}>
+            {nodes}
+          </ol>
+        </div>
+        <p className="sr-only" aria-live="polite">{live}</p>
+        {trail.reconciles === true && <p className="reconcile ok">✓ {UI.reconciles}</p>}
+        {trail.reconciles === false && <p className="reconcile warn" role="alert">{RECONCILE_WARN}</p>}
+        {unresolved && <p className="pipeline-unresolved"><EvidenceBadge status="UNKNOWN" /> {UI.missingTitle}</p>}
+      </div>
     );
   }
 
@@ -102,7 +133,7 @@ export function CostPipeline({ line, item, rule, plan, stitches, estimateId, mis
           {!mobile && nodeCount > 1 && (
             <div key={`${estimateId ?? "e"}-${portsReady}`} className="pipeline-beams" aria-hidden="true">
               {Array.from({ length: nodeCount - 1 }, (_, i) => (
-                <AnimatedBeam key={i} containerRef={containerRef} fromRef={outRefs[i]} toRef={inRefs[i + 1]} delay={i * 0.12} repeat={1} duration={0.9} pathWidth={2} />
+                <AnimatedBeam key={i} containerRef={containerRef} fromRef={outRefs[i]} toRef={inRefs[i + 1]} delay={i * 0.12} repeat={0} duration={0.9} pathWidth={2} />
               ))}
             </div>
           )}

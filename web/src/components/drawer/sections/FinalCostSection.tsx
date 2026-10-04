@@ -35,7 +35,7 @@ export function FinalCostSection(props: SectionProps & { estimateId?: string; fi
           <p className="dsec-note">{DRAWER.notCoveredLine}</p>
         </>
       )}
-      <CostPipeline line={line} item={item} rule={rule} plan={plan} stitches={stitches} estimateId={estimateId ?? estimate?.id} missing={estimate?.missing_inputs ?? island.missing} mobile={mobile} onSelectStitch={onSelectStitch} />
+      <CostPipeline line={line} item={item} rule={rule} plan={plan} stitches={stitches} estimateId={estimateId ?? estimate?.id} missing={estimate?.missing_inputs ?? island.missing} mobile={mobile} onSelectStitch={onSelectStitch} vertical />
       {otherFlags.map((f, i) => <Flag key={i} text={f} />)}
       <p className="could-change">{estimate?.ledger.could_change ?? ""}</p>
     </Section>

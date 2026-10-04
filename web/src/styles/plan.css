@@ -16,8 +16,11 @@
 .plan-banner .ribbon { margin-left: 0; margin-right: .4rem; }
 .plan-empty { font-family: var(--serif); color: var(--ink-soft); margin: var(--s-2) 0 0; }
 .plan-head { align-items: start; }
+/* the full plan name gets its own row; the cascade sits under it with room for the longest carrier and plan names (orchestrator note 3) */
 @media (min-width: 761px) {
-  .ps-row { grid-template-columns: minmax(220px, 1fr) minmax(0, 2fr); }
+  .ps-row { grid-template-columns: minmax(0, 1fr); }
+  .plan-selector .plan-pick select { max-width: 640px; }
+  .ps-cascade { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1.6fr) minmax(120px, .5fr); }
 }
 @media (max-width: 760px) {
   .ps-cascade { display: none; }                 /* phones keep the single grouped select (addendum B2: fewer controls at 360 px) */

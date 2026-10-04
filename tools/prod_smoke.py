@@ -230,7 +230,9 @@ def walk(base: str, label: str) -> None:
         check(f"{label}: the dev header is ignored in production", spoof.ok and spoof.json() == {"items": []})
 
         # ---- Delete all my data (the UI control) ----
-        a.get_by_role("button", name="Delete all my data").click()
+        hold = a.get_by_role("button", name="Delete all my data")      # "Hold to delete all my data": a 1.6 s press-and-hold
+        hold.scroll_into_view_if_needed(); box = hold.bounding_box()
+        a.mouse.move(box["x"] + box["width"] / 2, box["y"] + box["height"] / 2); a.mouse.down(); a.wait_for_timeout(1900); a.mouse.up()
         a.wait_for_timeout(2000)
         after = ctx_a.request.get(base + "/api/journeys").json()["items"]
         new_cookie = {c["name"]: c["value"] for c in ctx_a.cookies()}.get("oc_session")
