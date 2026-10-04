@@ -578,6 +578,10 @@ def upload_walk(page, device: str, shot):
     un_up = page.evaluate("[...document.querySelectorAll('.up-table .amt')].filter(a => !a.parentElement.querySelector('.badge')).length")
     check(f"{device}: every amount in the review table badged", un_up == 0, f"{un_up} unbadged")
     shot("15-upload-review")
+    # mobile-17: on phones the publish control and the undecided count stay in view while the rows scroll
+    if page.viewport_size["width"] < 768:
+        vis = page.evaluate("(() => { const b = document.querySelector('[role=dialog] .hb-root'); if (!b) return null; const r = b.getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight; })()")
+        check(f"{device}: review publish control in view on phones", vis is True, str(vis))
     page.get_by_role("button", name="Confirm all verified quotes").click(); page.wait_for_timeout(1500)
     # a11y-6: a decision made from the keyboard keeps focus on the pressed button while (and after) the request runs
     first = page.locator(".up-row:not([data-decided])").filter(has=page.locator(".up-req")).first

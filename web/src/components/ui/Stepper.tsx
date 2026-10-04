@@ -201,7 +201,9 @@ function StepContentWrapper({ isCompleted, currentStep, direction, children, cla
 
   return (
     <motion.div
-      style={{ position: 'relative', overflow: 'hidden' }}
+      // `clip`, not `hidden`: it clips the slide the same way but is not a scroll container, so a `position: sticky` child (the upload
+      // review footer, mobile-17) sticks to the dialog's scroll box instead of this wrapper
+      style={{ position: 'relative', overflow: 'clip' }}
       animate={{ height: isCompleted ? 0 : parentHeight }}
       transition={{ type: 'spring', duration: 0.4, bounce: 0 }}
       className={className}

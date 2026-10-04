@@ -141,6 +141,8 @@ export function ReviewTable({ docId, status, onFields, onPublished }: ReviewTabl
         </section>
       )}
 
+      <p className="up-note">{status.notes_for_review?.publish ?? UPLOAD.publishNote}</p>
+      {/* mobile-17: on phones this footer (the live count + publish) is sticky at the foot of the dialog's scroll box */}
       <footer className="up-footer">
         <p className="up-count" data-undecided={undecided.length}>
           {undecided.length ? UPLOAD.waitingCount(undecided.length) : UPLOAD.allDecided}
@@ -162,7 +164,6 @@ export function ReviewTable({ docId, status, onFields, onPublished }: ReviewTabl
           <p role="status" aria-live="polite" className="up-status">{message}</p>
           {publishError && <p role="alert" className="up-error">{publishError}</p>}
         </div>
-        <p className="up-note">{status.notes_for_review?.publish ?? UPLOAD.publishNote}</p>
       </footer>
     </div>
   );

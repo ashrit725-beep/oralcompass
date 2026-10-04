@@ -93,6 +93,12 @@
 .up-status { margin: 0; font-size: 14px; color: var(--ink-soft); min-height: 20px; }
 .up-published { display: flex; flex-direction: column; gap: var(--s-2); }
 
+/* mobile-17: phones keep the undecided count and the publish control in the thumb zone while the rows scroll (the dialog is the scroller;
+   the Stepper wrapper uses overflow: clip so it is not one) */
+@media (max-width: 767px) {
+  .up-footer { position: sticky; bottom: 0; z-index: 2; margin-left: calc(-1 * var(--s-4)); margin-right: calc(-1 * var(--s-4)); padding: var(--s-3) var(--s-4) calc(var(--s-3) + env(safe-area-inset-bottom)); background: var(--paper-deep); box-shadow: 0 -1px 0 var(--rule), var(--shadow-1); }
+}
+
 /* below 1000 px the five columns do not fit the dialog: the table folds into stacked rows (each cell carries its column name) so nothing scrolls sideways, down to 360 px */
 @media (max-width: 1000px) {
   .up-table thead { display: none; }
