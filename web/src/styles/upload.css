@@ -15,7 +15,7 @@
 .up-error { font-size: 14px; line-height: 20px; color: var(--danger); border: 1px solid var(--danger); border-radius: var(--r-2); padding: var(--s-2) var(--s-3); margin: var(--s-2) 0; background: var(--paper); }
 .up-actions { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-3); align-items: center; }
 .up-mode-line { font-size: 13px; line-height: 18px; color: var(--ink-soft); margin: var(--s-2) 0 0; }
-.up-ribbon { display: inline-block; margin: 0 0 var(--s-2); white-space: normal; line-height: 1.35; }
+.up-ribbon { display: inline-block; align-self: flex-start; max-width: 100%; margin: 0 0 var(--s-2); white-space: normal; line-height: 1.35; }   /* slop-24: sized to its text, not stretched by the flex column */
 .up-file-line { margin: 0; overflow-wrap: anywhere; }
 
 /* step 1 */
@@ -73,8 +73,13 @@
 .up-page { margin: var(--s-2) 0 0; }
 .up-page-canvas canvas { display: block; max-width: 100%; height: auto; border: 1px solid var(--rule); border-radius: var(--r-2); }
 .up-page figcaption q { font-family: var(--serif); font-style: italic; }
-.up-cell-decision { min-width: 10rem; }
-.up-decide { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+.up-cell-decision { min-width: 19.5rem; }
+/* slop-24: the three decisions read as one segmented control (the recorded one is the filled segment); it wraps only below ~330 px */
+.up-decide { display: flex; flex-wrap: wrap; gap: 0; }
+.up-decide > [data-slot="button"] { flex: 1 1 auto; border-radius: 0; margin: 0 -1px -1px 0; }
+.up-decide > [data-slot="button"]:first-child { border-top-left-radius: var(--r-2); border-bottom-left-radius: var(--r-2); }
+.up-decide > [data-slot="button"]:last-child { border-top-right-radius: var(--r-2); border-bottom-right-radius: var(--r-2); }
+.up-decide > [data-slot="button"]:focus-visible { position: relative; z-index: 1; }
 .up-candidates { border: 1px solid var(--rule); border-radius: var(--r-2); padding: var(--s-2) var(--s-3); margin: var(--s-2) 0 0; display: flex; flex-direction: column; gap: var(--s-2); }
 .up-candidate { display: grid; grid-template-columns: 44px 1fr; align-items: start; gap: var(--s-2); font-size: 14px; color: var(--ink); }
 .up-candidate input[type="radio"] { width: 20px; height: 20px; margin: 12px; accent-color: var(--terracotta); }
@@ -105,6 +110,7 @@
   .up-table, .up-table tbody, .up-table tr, .up-table td { display: block; width: 100%; }
   .up-row { border-bottom: 1px solid var(--rule); padding: var(--s-2) 0; }
   .up-cell { padding: var(--s-1) var(--s-3); min-width: 0; max-width: none; }
+  .up-decide > [data-slot="button"] { padding-left: var(--s-3); padding-right: var(--s-3); font-size: 15px; }
   .up-cell::before { content: attr(data-label); display: block; font-size: 12px; line-height: 16px; color: var(--ink-soft); margin-bottom: 2px; }
   .up-stage-row { min-height: 44px; }
 }
