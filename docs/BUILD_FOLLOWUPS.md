@@ -3,10 +3,10 @@
 Status legend: OPEN · DONE · DEFERRED (with reason). Every item names the file(s) and the acceptance check.
 
 ## API (from the API build and merge, 2026-10-03)
-1. OPEN — `api/app/assistant.py` (`get_benefits`, `resolve_plan_ref`) and `api/app/notifications.py` (`reminders_for_plan`) resolve plans via `PLANS[code]`
+1. DONE (fix/api 2026-10-04: one resolver `uploads.resolve_plan_ref`, version-aware for saved estimates; tests `test_assistant_on_an_uploaded_plan_uses_benefits_versions_and_never_the_ignored_wording`, `test_reminders_cover_uploaded_plans_and_only_documents_really_awaiting_decisions`) — `api/app/assistant.py` (`get_benefits`, `resolve_plan_ref`) and `api/app/notifications.py` (`reminders_for_plan`) resolve plans via `PLANS[code]`
    only; route `upload:<id>` refs through `uploads.resolve_plan_ref` so published UPn plans get assistant answers and reminders. Check: assistant test with an
    uploaded HB26 (UP1) scope answers with UP1 stitches; reminders for UP1 list the benefit-year end.
-2. OPEN — `api/app/main.py` `/me/export` must include the `push_subscription` record type (DELETE /me already clears it). Check: export after subscribing lists it.
+2. DONE (fix/api 2026-10-04: `EXPORT_TYPES` covers every stored type, plan versions too; test `test_export_lists_every_stored_record_type`) — `api/app/main.py` `/me/export` must include the `push_subscription` record type (DELETE /me already clears it). Check: export after subscribing lists it.
 3. OPEN — UI distinction: with the server in live mode, `out_of_scope` and `advice_request` intents return fixed templates labelled `mode: "demo"` with the demo
    ribbon by design; the web answer card should say "fixed template" rather than "demo environment" in that case (API: add `template_only: true`, or the UI
    derives it from `intent`). Check: live mode + "Should I get the crown?" shows the template label, not the demo-environment ribbon.
@@ -81,7 +81,7 @@ statically; `vite.config.ts` splits react/radix/vaul into `ui-vendor` (main 121 
    `explain` → `explainer` (60/day). The explainer cache uses the new `repo.find_owned` (keyed, no audit entry for a miss) on both repositories.
    `api/.env` is no longer read when `ORALCOMPASS_ENV=production` (a developer's file carried `ORALCOMPASS_DEV_AUTH=1`, which switched the local
    production smoke into dev auth after the config check).
-29. DEFERRED (privacy, stated in the UI) — a photo cannot be regex-redacted before reading: in live mode the image reaches the model; the server redacts the model's answer
+29. PARTLY DONE (fix/api 2026-10-04: in live mode an image or scan is sent only after the notice `READER_IMAGE_NOTICE` is confirmed (`image_consent=1`), re-encoded without EXIF/metadata and bounded in size; `docs/SECURITY.md`). Still open: a photo cannot be regex-redacted before reading: once confirmed, the image reaches the model; the server redacts the model's answer
    and the ribbon says so. A scanned PDF is rendered to page images the same way. An OCR-then-redact step would close this.
 30. DEFERRED (model) — clause fragments without context (e.g. ML26 p.25 "Not eligible for dependent children under age 14", an unsupported-rules row) can be restated
    too broadly ("…are not eligible for coverage"). The explainer now passes the clause's `section` and rejects "this service"-style referents; fragments with no section
