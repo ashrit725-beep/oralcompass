@@ -21,6 +21,7 @@ import { UploadWizard } from "@/components/upload/UploadWizard";
 import { ServerRedactionLine } from "@/components/upload/ServerRedactionLine";
 import { serverRedactionSummary } from "@/lib/redaction-summary";
 import HoldButton from "@/components/ui/HoldButton";
+import { fieldPathLabel } from "@/lib/upload";
 
 /** A readable word for an API code; unknown codes lose their underscores rather than showing raw. */
 const words = (map: Record<string, string>, code: string) => map[code] ?? code.replace(/_/g, " ");
@@ -217,7 +218,7 @@ export function DocumentsView({ planCode, plans, onPlan, evidence, stitches, sel
         </Sheet>
         {mine === null ? <p className="muted">{UI.processing}</p> : mine.length === 0 ? <p className="ds-empty">{PLAN.docsNoPrivate}</p> : (
           <ul className="ds-group ds-mine">{mine.map((d) => <li key={d.id} className="ds-item"><strong>{plainNote(d.label ?? d.filename)}</strong> <span className="muted ds-meta">{words(DOC_WORDS.kind, d.type ?? "upload")} · {d.extraction_status ? words(DOC_WORDS.status, d.extraction_status) : UI.notStated}</span>
-            {(d.fields_needing_confirmation?.length ?? 0) > 0 && <ul className="small ds-needs">{d.fields_needing_confirmation!.map((f) => <li key={f}><EvidenceBadge status="AMBIGUOUS" /> {PLAN.docsNeedsConfirmation} {f}</li>)}</ul>}
+            {(d.fields_needing_confirmation?.length ?? 0) > 0 && <ul className="small ds-needs">{d.fields_needing_confirmation!.map((f) => <li key={f}><EvidenceBadge status="AMBIGUOUS" /> {PLAN.docsNeedsConfirmation} {fieldPathLabel(f)}</li>)}</ul>}
             {d.redaction_preview && (() => {
               const removed = serverRedactionSummary(d);
               return removed ? <ServerRedactionLine summary={removed} detail={false} className="doc-redaction ds-redaction" />
