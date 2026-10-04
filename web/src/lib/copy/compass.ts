@@ -48,7 +48,11 @@ export const COMPASS = {
   // compact strip (drawer header) and accessible names
   stripDeductible: "Deductible remaining",
   stripMax: "Annual maximum remaining",
-  panelLabel: (title: string, ded: string, max: string) => `Benefits compass for ${title}: deductible ${ded} remaining, annual maximum ${max} remaining.`,
+  // info-only-12: each figure reads on its own ("deductible remaining: not provided"), never "deductible Not provided remaining"
+  panelLabel: (title: string, ded: string, max: string) => {
+    const low = (v: string) => (/^[A-Z][a-z]/.test(v) ? v[0].toLowerCase() + v.slice(1) : v);
+    return `Benefits compass for ${title}: deductible remaining: ${low(ded)}; annual maximum remaining: ${low(max)}.`;
+  },
   meterName: (what: string, used: string, total: string) => `${what}: ${used} of ${total}`,
   tableCaption: "Benefits compass figures",
   colFigure: "Figure",

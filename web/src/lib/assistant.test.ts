@@ -1,3 +1,5 @@
+import { ASSIST } from "./copy/assistant";
+import { COMPASS } from "./copy/compass";
 import { describe, expect, it } from "vitest";
 import type { AssistScope, Benefits, CoverageRule, PlanFixture, SavedEstimate, Stitch, TreatmentItem } from "./types";
 import {
@@ -163,5 +165,15 @@ describe("lookups in plain words (demo-19)", () => {
     const all = lookupLabels(["explain_step(line 0, step 1)", "explain_step(line 0, step 1)", "get_estimate_line(line 0)"], d);
     expect(all).toEqual(["Root canal (tooth 19): deductible step", "Root canal (tooth 19): estimate line"]);
     for (const l of all) expect(l).not.toMatch(/\$|%|\d+\.\d/);
+  });
+});
+
+describe("copy grammar (info-only-12)", () => {
+  it("agrees in number and reads each compass figure on its own", () => {
+    expect(ASSIST.guardRemoved(1)).toBe("1 sentence was removed by the information-only check.");
+    expect(ASSIST.guardRemoved(2)).toBe("2 sentences were removed by the information-only check.");
+    expect(ASSIST.groundingRemoved(1)).toContain("1 sentence named a figure the records do not hold and was not shown.");
+    expect(ASSIST.groundingRemoved(3)).toContain("3 sentences named");
+    expect(COMPASS.panelLabel("ML26", COMPASS.notProvided, "$672.00")).toBe("Benefits compass for ML26: deductible remaining: not provided; annual maximum remaining: $672.00.");
   });
 });
