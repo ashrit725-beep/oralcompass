@@ -3,6 +3,10 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 
+// Parallel local runs (worktrees, review agents) point the dev/preview proxy at their own API port; the default matches docs/WEB_FOUNDATION_NOTES.md.
+const apiTarget = process.env.ORALCOMPASS_API_TARGET ?? "http://127.0.0.1:8000";
+const apiProxy = { "/api": { target: apiTarget, changeOrigin: true, rewrite: (p: string) => p.replace(/^\/api/, "") } };
+
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   resolve: { alias: { "@": path.resolve(__dirname, "./src") } },
@@ -28,10 +32,10 @@ export default defineConfig({
   },
   server: {
     port: 5173,
-    proxy: { "/api": { target: "http://127.0.0.1:8000", changeOrigin: true, rewrite: (p) => p.replace(/^\/api/, "") } },
+    proxy: apiProxy,
   },
   preview: {
     port: 4173,
-    proxy: { "/api": { target: "http://127.0.0.1:8000", changeOrigin: true, rewrite: (p) => p.replace(/^\/api/, "") } },
+    proxy: apiProxy,
   },
 });
