@@ -339,6 +339,8 @@ select:not([multiple]):not([size]) {
 p[role="status"]:empty { margin: 0; padding: 0; border: 0; min-height: 0; }
 /* <main id="main"> takes focus only from the "Skip to content" link (tabindex -1); the link itself shows the ring (a11y-4) */
 #main:focus { outline: none; }
+/* the route skip link parks beside "Skip to content", not on top of it */
+.skip-link + .skip-link { left: calc(1rem + 164px); }
 /* a failed view or lazy surface keeps a labelled recovery message inside the shell (web-correctness-3) */
 .surface-error { margin: var(--s-4) 0; }
 
