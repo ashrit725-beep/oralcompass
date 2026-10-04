@@ -10,11 +10,17 @@ Order of precedence (sessions.py holds the mode switches):
 from __future__ import annotations
 
 import os
+import re
 from dataclasses import dataclass
 
 from fastapi import Header, HTTPException, Request
 
 from .sessions import cognito_mode, dev_mode, session_sub
+
+
+# A dev user id becomes a directory name under ORALCOMPASS_DATA_DIR (uploads.doc_path), so only a short safe slug is accepted:
+# "../x" or a 5,000-character header is 401, never a path outside the data dir.
+_DEV_USER_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,63}")
 
 
 @dataclass(frozen=True)
@@ -28,7 +34,7 @@ def _dev_mode() -> bool:          # kept for callers of the old name
 
 def current_user(request: Request, authorization: str | None = Header(default=None), x_dev_user: str | None = Header(default=None)) -> User:
     if dev_mode():
-        if not x_dev_user:
+        if not x_dev_user or not _DEV_USER_RE.fullmatch(x_dev_user) or ".." in x_dev_user:
             raise HTTPException(status_code=401, detail={"error": "unauthenticated"})
         return User(sub=x_dev_user)
     if cognito_mode():

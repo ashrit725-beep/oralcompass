@@ -14,6 +14,8 @@ from typing import Annotated, Any, Literal, Optional
 from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from fastapi.encoders import jsonable_encoder
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from starlette.middleware.gzip import GZipMiddleware
 
@@ -48,6 +50,14 @@ PRESET_META = {code: extractor.by_code[code] for code in PRESETS}
 
 from .templates import FOOTER, COMPARISON_BANNER, PRESET_BANNER  # noqa: E402
 from . import assistant, journeys, notifications, records, uploads  # noqa: E402
+
+@app.exception_handler(RequestValidationError)
+async def _validation_error(request: Request, exc: RequestValidationError) -> JSONResponse:
+    """422 bodies name the field and the rule only. FastAPI's default echoes the submitted value ("input") and rule context ("ctx") back,
+    which would reflect pasted document or treatment-plan text into responses and logs (SECURITY.md: no document text in responses)."""
+    detail = [{"type": e.get("type"), "loc": list(e.get("loc", ())), "msg": e.get("msg")} for e in exc.errors()]
+    return JSONResponse(status_code=422, content={"detail": detail})
+
 
 app.include_router(records.router)
 app.include_router(journeys.router)
@@ -90,14 +100,17 @@ class ListedFee(BaseModel):
     cents: int = Field(ge=0, le=100_000_000, strict=True)
 
 
+MAX_LINES = 60          # a treatment plan has at most a few dozen lines; an unbounded list made one request cost minutes of engine time
+
+
 class LineIn(BaseModel):
-    key: str
+    key: str = Field(max_length=80)
     label: str = Field(max_length=200)
     tooth: Optional[str] = Field(None, max_length=20)
     charge_cents: int = Field(ge=0, le=100_000_000)
     completion: Optional[ISODate] = None
     prep: Optional[ISODate] = None
-    listed_fees: list[ListedFee] = []
+    listed_fees: list[ListedFee] = Field(default_factory=list, max_length=20)
 
     def to_line(self) -> EstimateLine:
         if self.key not in PROC_BY_KEY:
@@ -108,8 +121,8 @@ class LineIn(BaseModel):
 
 
 class EstimateIn(BaseModel):
-    plan_ref: str                       # preset code (e.g. "HB26") or "upload:<document_id>"
-    lines: list[LineIn]
+    plan_ref: str = Field(max_length=120)  # preset code (e.g. "HB26") or "upload:<document_id>"
+    lines: list[LineIn] = Field(max_length=MAX_LINES)
     state: StateIn = StateIn()
     dos_rule: str = "completion"
     order: str = "listed"
@@ -117,7 +130,7 @@ class EstimateIn(BaseModel):
 
 class ComparisonIn(BaseModel):
     plan_refs: list[str] = Field(min_length=2, max_length=3)
-    lines: list[LineIn]
+    lines: list[LineIn] = Field(max_length=MAX_LINES)
     states: dict[str, StateIn] = {}     # keyed by plan_ref; a missing key means nothing entered for that plan
 
 

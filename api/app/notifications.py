@@ -11,11 +11,13 @@ Reminders state facts with their source and clause; they never urge. Dates come 
 """
 from __future__ import annotations
 
+import ipaddress
 import json
 import logging
 import os
 from datetime import date, datetime, timedelta, timezone
 from typing import Optional
+from urllib.parse import urlsplit
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field, field_validator
@@ -59,7 +61,30 @@ class SubscriptionIn(BaseModel):
     def _https_only(cls, v: str) -> str:
         if not v.startswith("https://") or len(v) < 12 or " " in v:
             raise ValueError("endpoint must be an https URL")
+        if not _public_push_host(v):
+            raise ValueError("endpoint must be a public push service URL")
         return v
+
+
+def _public_push_host(url: str) -> bool:
+    """The server POSTs to this URL (/me/push/test), so it must name a public host: no IP literal, localhost, single-label or
+    internal-suffix name, credentials or non-443 port (no requests to the platform's metadata address or the server's own network)."""
+    try:
+        parts = urlsplit(url)
+        port = parts.port
+    except ValueError:
+        return False
+    host = (parts.hostname or "").rstrip(".").lower()
+    if not host or parts.username or parts.password or (port not in (None, 443)):
+        return False
+    try:
+        ipaddress.ip_address(host)
+        return False
+    except ValueError:
+        pass
+    if "." not in host or host == "localhost" or host.endswith((".localhost", ".local", ".internal", ".lan", ".home", ".arpa")):
+        return False
+    return True
 
 
 def _public(sub: dict) -> dict:

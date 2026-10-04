@@ -22,7 +22,7 @@ from .data import (CODES_BY_KEY, FEE_BENCHMARKS, PLANS, PLAN_META, PROC_BY_KEY, 
 from .templates import BENCHMARK_NOTE, PRESET_BANNER
 from .store import NOT_FOUND, repo
 from .templates import FOOTER, PRESET_BANNER
-from .uploads import norm_ref, resolve_plan_ref
+from .uploads import norm_ref, resolve_plan_ref, rules_for
 
 router = APIRouter()
 
@@ -47,11 +47,11 @@ class ClaimIn(BaseModel):
     date: ISODate
     procedure_key: str
     tooth: Optional[str] = None
-    dentist_fee_cents: Optional[int] = Field(None, ge=0)
-    allowed_cents: Optional[int] = Field(None, ge=0)
-    plan_paid_cents: int = Field(ge=0)
-    patient_paid_cents: Optional[int] = Field(None, ge=0)
-    deductible_applied_cents: int = Field(0, ge=0)
+    dentist_fee_cents: Optional[int] = Field(None, ge=0, le=100_000_000)
+    allowed_cents: Optional[int] = Field(None, ge=0, le=100_000_000)
+    plan_paid_cents: int = Field(ge=0, le=100_000_000)
+    patient_paid_cents: Optional[int] = Field(None, ge=0, le=100_000_000)
+    deductible_applied_cents: int = Field(0, ge=0, le=100_000_000)
     source: str
 
 
@@ -60,10 +60,10 @@ class BenefitsIn(BaseModel):
     coverage_start: Optional[ISODate] = None
     coverage_end: Optional[ISODate] = None
     network_default: Optional[Network] = None        # in | out
-    deductible_met_cents: Optional[int] = Field(None, ge=0)       # None = not provided
-    benefits_used_cents: Optional[int] = Field(None, ge=0)        # insurer payments so far this benefit year; None = not provided
-    deductible_met_out_cents: Optional[int] = Field(None, ge=0)   # only for plans whose out-of-network deductible is tracked separately
-    benefits_used_out_cents: Optional[int] = Field(None, ge=0)    # only for plans whose out-of-network maximum is tracked separately
+    deductible_met_cents: Optional[int] = Field(None, ge=0, le=100_000_000)       # None = not provided
+    benefits_used_cents: Optional[int] = Field(None, ge=0, le=100_000_000)        # insurer payments so far this benefit year; None = not provided
+    deductible_met_out_cents: Optional[int] = Field(None, ge=0, le=100_000_000)   # only for plans whose out-of-network deductible is tracked separately
+    benefits_used_out_cents: Optional[int] = Field(None, ge=0, le=100_000_000)    # only for plans whose out-of-network maximum is tracked separately
     source: dict = Field(default_factory=dict)       # {type, label, date, entered_by}
     last_updated: Optional[str] = None
     claims: list[ClaimIn] = []
@@ -75,8 +75,8 @@ class TreatmentItemIn(BaseModel):
     procedure_name: Optional[str] = Field(None, max_length=200)   # as written on the estimate; defaults to the catalog name
     tooth: Optional[str] = Field(None, max_length=20)
     quantity: int = Field(1, ge=1, le=32)
-    dentist_fee_cents: int = Field(ge=0)             # what the dentist charges — never mixed with the allowed amount
-    allowed_cents: Optional[int] = Field(None, ge=0)             # the plan's allowed amount if the user knows it (pre-treatment estimate, EOB); else UNKNOWN
+    dentist_fee_cents: int = Field(ge=0, le=100_000_000)             # what the dentist charges — never mixed with the allowed amount
+    allowed_cents: Optional[int] = Field(None, ge=0, le=100_000_000)             # the plan's allowed amount if the user knows it (pre-treatment estimate, EOB); else UNKNOWN
     allowed_source: Optional[str] = Field(None, max_length=300)   # where the allowed amount came from, e.g. "pre-treatment estimate response 2026-09-30"
     code_as_written: Optional[str] = Field(None, max_length=20)   # procedure code printed on the user's own estimate/claim (USER) — never inferred
     network: Optional[Network] = None                # in | out | None (falls back to benefits.network_default, else UNKNOWN)
@@ -118,7 +118,7 @@ class Hypotheticals(BaseModel):
 
 class EstimateRequest(BaseModel):
     plan_code: str                                   # a plan reference: preset code or "upload:<document_id>"
-    treatment_item_ids: list[str] = []               # defaults to all items with status planned/scheduled
+    treatment_item_ids: list[str] = Field(default_factory=list, max_length=100)   # defaults to all items with status planned/scheduled
     journey_id: Optional[str] = None                 # scope the default to one journey's items (a sample's records never mix into another journey)
     dos_rule: Optional[str] = None                   # defaults to the plan's stated rule (or completion)
     hypotheticals: Hypotheticals = Field(default_factory=Hypotheticals)   # labeled ASSUMED
@@ -244,8 +244,7 @@ def get_plan(code: str, user: User = Depends(current_user)):
 def get_rules(code: str, procedure_keys: str = "", user: User = Depends(current_user)):
     if code.upper() not in PLANS:
         raise HTTPException(status_code=404, detail=NOT_FOUND)
-    keys = [k for k in procedure_keys.split(",") if k] or None
-    return {"plan_code": code.upper(), "rules": coverage_rules(PLANS[code.upper()], keys)}
+    return {"plan_code": code.upper(), "rules": rules_for(PLANS[code.upper()], procedure_keys)}
 
 
 def _code_summary(key: str) -> dict:

@@ -542,6 +542,12 @@ def publish(doc_id: str, user: User = Depends(current_user)):
 def _publish_locked(user: User, doc_id: str) -> dict:
     doc = _owned_upload(user, doc_id)             # re-read inside the lock
     st = doc["extraction"]
+    last_id = doc.get("latest_version_id")
+    if last_id:                                   # a repeated publish with no review change since (double click, retry) is the same version
+        last = repo.find_owned(user.sub, "plan_version", last_id)
+        if last and last.get("fields_snapshot") == st["fields"] and last.get("sha256") == doc["sha256"]:
+            return {"plan_ref": f"upload:{doc_id}", "version_label": last["version_label"], "published_at": last["published_at"],
+                    "sha256": last["sha256"], "summary": upload_summary(last, doc)}
     n = len(repo.list_owned(user.sub, "plan_version")) + 1
     label = f"UP{n}"
     published_at = _now()
@@ -575,6 +581,26 @@ class PlanRefResolution:
     is_upload: bool
     document_id: Optional[str]
     evidence_endpoint: str
+
+
+MAX_PROCEDURE_KEYS = 64
+
+
+def parse_procedure_keys(raw: str) -> Optional[list[str]]:
+    """`?procedure_keys=a,b` → known procedure keys, de-duplicated in order; None when none were asked for. Unknown keys are dropped (no
+    invented UNKNOWN row for a procedure that does not exist) and more than MAX_PROCEDURE_KEYS is 422."""
+    from .data import PROC_BY_KEY
+    asked = [k.strip() for k in raw.split(",") if k.strip()]
+    if not asked:
+        return None
+    if len(asked) > MAX_PROCEDURE_KEYS:
+        raise HTTPException(status_code=422, detail={"error": "too_many_procedure_keys", "max": MAX_PROCEDURE_KEYS})
+    return list(dict.fromkeys(k for k in asked if k in PROC_BY_KEY))
+
+
+def rules_for(plan: PlanModel, raw_keys: str) -> list:
+    keys = parse_procedure_keys(raw_keys)
+    return coverage_rules(plan, keys) if keys is None or keys else []
 
 
 def norm_ref(ref: str) -> str:
@@ -635,8 +661,7 @@ def my_plan_versions(doc_id: str, user: User = Depends(current_user)):
 @router.get("/me/plans/{doc_id}/rules")
 def my_plan_rules(doc_id: str, procedure_keys: str = "", version: Optional[str] = None, user: User = Depends(current_user)):
     res = resolve_plan_ref(user, f"upload:{doc_id}", version)
-    keys = [k for k in procedure_keys.split(",") if k] or None
-    return {"plan_code": res.ref, "version_label": res.version_label, "rules": coverage_rules(res.plan, keys)}
+    return {"plan_code": res.ref, "version_label": res.version_label, "rules": rules_for(res.plan, procedure_keys)}
 
 
 @router.get("/me/plans/{doc_id}/evidence")
