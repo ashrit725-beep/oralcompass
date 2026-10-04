@@ -231,7 +231,7 @@ def run(pw, device: str, reduced_motion: str = "no-preference"):
     # and the journey pickers live in the "Journey details" disclosure below the map
     facts = page.locator(".cin-fact-line").first.inner_text() if page.locator(".cin-fact-line").count() else ""
     check(f"{device}: compact journey header (one facts line over the painting)", "checkpoints completed" in facts and page.evaluate(HAS_AMOUNT_JS, [".cin-fact-line", "$902.00"]) and page.evaluate(HAS_AMOUNT_JS, [".cin-fact-line", "$1,098.00"])
-          and page.locator(".cin-calc", has_text="Calculated from the clauses cited").count() == 1, facts[:90])
+          and page.locator(".cin-calc", has_text="We did the math with the plan rules").count() == 1, facts[:90])
     stage_top = page.evaluate("(() => { const s = document.querySelector('.cin-stage'); const p = document.querySelector('.passage-vertical-wrap'); return s && p ? [Math.round(s.getBoundingClientRect().top), Math.round(p.getBoundingClientRect().top), innerHeight] : null; })()")
     check(f"{device}: the painted map starts inside the first viewport", bool(stage_top) and stage_top[0] < 200 and stage_top[1] < stage_top[2] - 120, str(stage_top))
     box = page.evaluate("(() => { const s = getComputedStyle(document.querySelector('.cin-stage')); return [s.borderTopWidth, s.borderRadius, s.boxShadow]; })()")
@@ -409,7 +409,7 @@ def run(pw, device: str, reduced_motion: str = "no-preference"):
     shot("22-harbor-drawer")
     close_drawer()
     open_island("Occlusal night guard", 900)
-    check(f"{device}: marginal drawer states not covered", page.locator(".drawer", has_text="Not covered · excluded by the plan").count() > 0 and page.locator(".drawer .final-hero").count() == 0 and page.locator(".drawer .pipeline").count() == 0)
+    check(f"{device}: marginal drawer states not covered", page.locator(".drawer", has_text="Insurance won't pay for this").count() > 0 and page.locator(".drawer .final-hero").count() == 0 and page.locator(".drawer .pipeline").count() == 0)
     close_drawer()
     page.locator("button[data-island^='visited:'], [aria-labelledby='pv-visited-h'] button").first.click(); page.wait_for_timeout(900)
     check(f"{device}: visited drawer is statement-sourced", page.locator(".drawer .badge-user").count() >= 4 and page.locator(".drawer .pipeline").count() == 0, f"user badges={page.locator('.drawer .badge-user').count()}")
@@ -576,7 +576,7 @@ def run(pw, device: str, reduced_motion: str = "no-preference"):
     open_island("Root canal", 1000)
     fog_nodes = page.locator(".drawer .pipeline .node")
     un_fog = page.evaluate(UNBADGED_JS, ".drawer")
-    check(f"{device}: fogged drawer waits for information", page.locator(".drawer", has_text="Waiting for information").count() > 0 and "$0.00" not in hero_text() and fog_nodes.count() == 2 and page.locator(".drawer .pipeline .node-fog").count() == 1 and un_fog == 0,
+    check(f"{device}: fogged drawer waits for information", page.locator(".drawer", has_text="We need more info").count() > 0 and "$0.00" not in hero_text() and fog_nodes.count() == 2 and page.locator(".drawer .pipeline .node-fog").count() == 1 and un_fog == 0,
           f"hero={hero_text()!r} nodes={fog_nodes.count()} fog={page.locator('.drawer .pipeline .node-fog').count()} unbadged={un_fog}")
     shot("25-fog-drawer")
     close_drawer()

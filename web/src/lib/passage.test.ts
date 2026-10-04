@@ -67,13 +67,13 @@ describe("buildPassage — Alex on ML26 (CLAUDE.md rule 8: $902.00 you / $1,098.
     expect(ng.checkpoints[0].rule).toBe("X");
     expect(ng.checkpoints[0].stitch?.page).toBe(26);
     expect(ng.youPay).toBeNull();
-    expect(islandAmountText(ng)).toBe("not covered");
-    expect(ng.notices[0]).toMatch(/Mentioned at the consultation/);
+    expect(islandAmountText(ng)).toBe("insurance won't pay");
+    expect(ng.notices[0]).toMatch(/Talked about at the visit/);
   });
   it("START reads the plan_details stage; the Light lists the stages after the route including the last one", () => {
     expect(vm.start.title).toBe("Starting point");
     expect(vm.start.place).toBe("Harbor of Beginnings");
-    expect(vm.start.subtitle).toBe("ML26 · in-network");
+    expect(vm.start.subtitle).toBe("ML26 · on your plan's list");
     expect(vm.start.stageIds).toEqual(["start"]);
     expect(vm.destination.stageIds).toEqual(["followup"]);                    // last linked stage is followup (crown) → nothing after; last stage kept
     expect(vm.destination.subtitle).toBe("Follow-up · Compass Rest");
@@ -81,25 +81,25 @@ describe("buildPassage — Alex on ML26 (CLAUDE.md rule 8: $902.00 you / $1,098.
   });
   it("answers log never prints $0.00 for a missing estimate and reads the five answers", () => {
     const rows = answersLog(vm, alex.journey, alex.plan, alexEstimate);
-    expect(rows.map((r) => r.dt)).toEqual(["Where you are", "On the route", "Estimated you pay", "Rules applied", "From"]);
+    expect(rows.map((r) => r.dt)).toEqual(["Where you are", "Your care", "You pay", "Plan rules used", "From"]);
     expect(rows[0].dd).toBe("Before your visit · 1 of 3 checkpoints completed");
-    expect(rows[1].dd).toBe("2 procedures, 4 completed on your statement");
-    expect(rows[2].dd).toBe("$902.00 · plan $1,098.00");
-    expect(rows[3].dd).toBe("6 steps cited · 2 rules not stated");
+    expect(rows[1].dd).toBe("2 care items, 4 done, says your insurance letter");
+    expect(rows[2].dd).toBe("$902.00 · insurance $1,098.00");
+    expect(rows[3].dd).toBe("6 steps from the papers · 2 rules not in the papers");
     expect(rows[4].dd).toMatch(/^ML26 · 2026 NCFlex Dental/);
     const none = answersLog(buildPassage({ ...alex, estimate: null }), alex.journey, alex.plan, null);
-    expect(none[2].dd).toBe("No estimate yet");
+    expect(none[2].dd).toBe("No numbers yet");
     const unresolved: SavedEstimate = { ...alexEstimate, status: "unresolved", user_estimated_payment_cents: null, missing_inputs: [{ input: "remaining deductible", how: "x" }], ledger: { ...alexEstimate.ledger, lines: [] } };
     const u = answersLog(buildPassage({ ...alex, estimate: unresolved }), alex.journey, alex.plan, unresolved);
-    expect(u[2].dd).toBe("Waiting for information (1 input)");
+    expect(u[2].dd).toBe("We need more info (1 thing)");
     expect(u[2].dd).not.toContain("$0.00");
     expect(answersLog(vm, alex.journey, alex.plan, alexEstimate, true)[2].dd).toBe("Recalculating…");
   });
   it("checkpoint accessible names carry the whole fact", () => {
     const cps = vm.islands[0].checkpoints;
-    expect(checkpointAria(cps[1])).toBe("Allowed amount: −$170.00, amount out $980.00, not owed by you, clause ML26 page 25");
-    expect(checkpointAria(cps[2])).toBe("Deductible: no change, amount out $980.00, clause ML26 page 25");
-    expect(checkpointAria(cps[3])).toBe("Plan share: plan 60% $588.00, you 40% $392.00, clause ML26 page 25");
+    expect(checkpointAria(cps[1])).toBe("Allowed amount: −$170.00, after this step $980.00, you don't pay this, rule ML26 page 25");
+    expect(checkpointAria(cps[2])).toBe("Deductible: same, after this step $980.00, rule ML26 page 25");
+    expect(checkpointAria(cps[3])).toBe("Plan share: insurance 60% $588.00, you 40% $392.00, rule ML26 page 25");
     expect(checkpointAria(cps[5])).toBe("You pay: $392.00");
     expect(islandAmountText(vm.islands[0])).toBe("you pay $392.00");
   });
@@ -129,7 +129,7 @@ describe("fog, closed channels and the index fallback", () => {
     expect(vm.status).toBe("unresolved");
     expect(vm.islands.every((i) => i.state === "unresolved")).toBe(true);
     expect(vm.start.missing).toHaveLength(2);
-    expect(vm.start.notices[0]).toBe("Waiting for information");
+    expect(vm.start.notices[0]).toBe("We need more info");
     expect(vm.destination.youPay).toBeNull();
     expect(vm.islands[0].soundingsAfter).toBeNull();
   });
@@ -144,7 +144,7 @@ describe("fog, closed channels and the index fallback", () => {
     expect(isl.checkpoints.map((c) => c.rule)).toEqual(["fee", "F"]);
     expect(isl.checkpoints[1].term).toBe("Frequency limit");
     expect(isl.checkpoints[1].explanation).toBe("Not covered: frequency limit (2 of 2 used this benefit year)");
-    expect(islandAmountText(isl)).toBe("not covered · $1,150.00");
+    expect(islandAmountText(isl)).toBe("insurance won't pay · $1,150.00");
   });
   it("falls back to the index only when the engine's label matches; otherwise the island is fogged with a notice", () => {
     const lines = alexEstimate.ledger.lines.map((l) => ({ ...l, treatment_item_id: undefined }));
@@ -154,7 +154,7 @@ describe("fog, closed channels and the index fallback", () => {
     const est: SavedEstimate = { ...alexEstimate, ledger: { ...alexEstimate.ledger, lines: [lines[1], lines[0]] } };
     const vm = buildPassage({ ...alex, estimate: est });
     expect(vm.islands[0].state).toBe("unresolved");
-    expect(vm.islands[0].notices[0]).toMatch(/Could not match/);
+    expect(vm.islands[0].notices[0]).toMatch(/couldn.t match/);
     expect(vm.islands[0].youPay).toBeNull();
   });
   it("the pending state (items, no estimate) draws outline islands without checkpoints", () => {
@@ -192,7 +192,7 @@ describe("plan code on the START pennant (finding demo-14)", () => {
     const vm = buildPassage({ ...alex, plan, planRef: "upload:c5fd44ebabc8d1e2" });
     expect(vm.start.subtitle).toMatch(/^UP1 · /);
     expect(vm.start.subtitle).not.toContain("upload:");
-    expect(planDisplayCode("upload:c5fd44ebabc8d1e2", null)).toBe("your uploaded document");
+    expect(planDisplayCode("upload:c5fd44ebabc8d1e2", null)).toBe("your plan papers");
     expect(planDisplayCode("ML26", alex.plan)).toBe("ML26");
   });
 });
@@ -221,7 +221,7 @@ describe("what if (finding demo-5)", () => {
   it("the Answers log says when the estimate uses a hypothetical the person entered", () => {
     const vm = buildPassage(alex);
     const est = { ...alexEstimate, inputs: { ...alexEstimate.inputs, hypotheticals: { network: "out" } } };
-    expect(answersLog(vm, alex.journey, alex.plan, est).find((r) => r.key === "cost")?.dd).toBe("$902.00 · plan $1,098.00 (with a hypothetical you entered)");
-    expect(answersLog(vm, alex.journey, alex.plan, alexEstimate).find((r) => r.key === "cost")?.dd).toBe("$902.00 · plan $1,098.00");
+    expect(answersLog(vm, alex.journey, alex.plan, est).find((r) => r.key === "cost")?.dd).toBe("$902.00 · insurance $1,098.00 (with a guess you typed)");
+    expect(answersLog(vm, alex.journey, alex.plan, alexEstimate).find((r) => r.key === "cost")?.dd).toBe("$902.00 · insurance $1,098.00");
   });
 });
