@@ -122,6 +122,7 @@ def test_readability_with_the_assistants_own_check_when_it_exists():
 def test_each_definition_names_its_own_term_first(key):
     """The first glossary term a definition names is its own (so the answer is about what was asked)."""
     assert lookup_term(GLOSSARY[key]["simple"]) == key
+    assert lookup_term(SENTENCES.split(GLOSSARY[key]["simple"].strip())[0]) == key
     assert lookup_term(GLOSSARY[key]["simpler"]) == key
 
 

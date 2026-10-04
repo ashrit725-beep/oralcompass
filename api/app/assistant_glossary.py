@@ -4,7 +4,8 @@ GLOSSARY[key] = {"term", "aka", "simple", "simpler", "plan_field"}:
 - term: the name shown to the reader.
 - aka: other ways people write or say it (synonyms, the wording the plan documents in fixtures/ use, common misspellings). Matching is
   case-insensitive and tolerant of plurals, possessives, hyphens and punctuation (see lookup_term).
-- simple: at most two short sentences in everyday words; the "plain" answer.
+- simple: at most two short sentences in everyday words; the "plain" answer. The first sentence names the term and stands alone, so an
+  answer can keep it and add the plan's own value after it ("Your plan's deductible is {{ref:0}}.") within two sentences.
 - simpler: one even plainer sentence; the "Say it more simply" answer.
 - plan_field: the plan model's money field that holds this plan's own value, as a field_ref path ("plan.<attribute>"), or None. When the
   plan states the value, the assistant adds a sentence such as "Your plan's deductible is {{ref:0}}." with the document's badge and stitch.
@@ -43,14 +44,14 @@ GLOSSARY: dict[str, GlossaryEntry] = {
         "term": "plan share",
         "aka": ["plan share", "plan's share", "coinsurance", "co-insurance", "co insurance", "coinsurence", "covered percentage",
                 "plan percentage", "benefit percentage", "percentage the plan pays"],
-        "simple": ("Plan share is the part of the allowed amount the plan pays, written as a percentage. "
-                   "The rest is your part, often called coinsurance, and the split can differ for cleanings, fillings and crowns."),
+        "simple": ("Plan share is the part of the allowed amount the plan pays, and coinsurance is the part you pay. "
+                   "Both are written as percentages, and the split can differ for cleanings, fillings and crowns."),
         "simpler": "Plan share is the part the plan pays, and the rest is yours to pay.",
         "plan_field": None,
     },
     "allowed_amount": {
         "term": "allowed amount",
-        "aka": ["allowed amount", "allowed charge", "allowed fee", "allowable charge", "maximum allowable charge", "maximum allowed charge",
+        "aka": ["allowed amount", "alowed amount", "allowed ammount", "allowed charge", "allowed fee", "allowable charge", "maximum allowable charge", "maximum allowed charge",
                 "mac", "plan allowance", "allowance", "negotiated fee", "contracted fee", "reasonable and customary", "r&c",
                 "usual and customary", "usual customary and reasonable", "ucr"],
         "simple": ("The allowed amount is the price your plan counts for a service, which can be lower than what the dentist charges. "
@@ -61,7 +62,8 @@ GLOSSARY: dict[str, GlossaryEntry] = {
     "annual_max": {
         "term": "annual maximum",
         "aka": ["annual maximum", "annual max", "yearly maximum", "yearly max", "maximum", "max", "benefit maximum", "maximum benefit",
-                "calendar year maximum", "annual limit", "yearly limit", "plan maximum", "annual benefit maximum"],
+                "calendar year maximum", "annual limit", "yearly limit", "plan maximum", "annual benefit maximum", "maximun", "maxium",
+                "yearly maximun"],
         "simple": ("The annual maximum is the most the plan will pay for your care in one benefit year. "
                    "Once the plan has paid that much, you pay the rest of the cost until the year starts over, and some plans have no maximum."),
         "simpler": "The annual maximum is the most the plan pays in a year, and after that you pay.",
@@ -147,8 +149,8 @@ GLOSSARY: dict[str, GlossaryEntry] = {
     "copay": {
         "term": "copay",
         "aka": ["copay", "co-pay", "co pay", "copayment", "co-payment", "co payment", "copays"],
-        "simple": ("A copay is a set price you pay for a service, the same each time. "
-                   "The plans in OralCompass use a plan share instead: the plan pays a part of the cost and you pay the rest."),
+        "simple": ("A copay is a set price you pay each visit, but the plans here use a plan share instead. "
+                   "With a plan share, the plan pays a part of the cost and you pay the rest."),
         "simpler": "A copay is a set price per visit, and the plans here use a plan share instead.",
         "plan_field": None,
     },
