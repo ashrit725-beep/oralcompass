@@ -142,6 +142,7 @@ imports, so a live `api/.env` cannot switch it on. A test that needs a real call
 | `tools/build_fictional_plans.py`, `tools/build_harborview_pdf.py` | Generate the fictional plans and the Harborview PDF. |
 | `tools/seed_presets.py` | Downloads, hashes and verifies the real plan PDFs where the network allows. |
 | `tools/screenshots.py`, `tools/layout_audit.py` | Desktop and phone walk with acceptance checks; layout overlap audit. |
+| `tools/error_sweep.py` | Zero-errors gate: clicks through every view on desktop and phone profiles and fails on any console error or failed request. |
 | `tools/prod_smoke.py` | Smoke test of the single-server production configuration. |
 
 ## Deployment
