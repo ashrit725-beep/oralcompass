@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useId, useState } from "react";
+import { EvidenceBadge } from "@/components/Primitives";
 import { Button } from "@/components/ui/button";
 import { ApiError } from "@/lib/api";
 import { REMINDERS } from "@/lib/copy/upload";
@@ -12,7 +13,12 @@ import { remindersApi, type ReminderItem, type RemindersResponse } from "./remin
  * with DELETE. The push body is fixed and generic (sw.js never shows payload text). "Send a test push" renders only when the dev-auth
  * header was accepted (the API exposes the test route in dev mode only; a 404 hides the button). One `role="status"` live region.
  */
-export interface RemindersPanelProps { asOf?: string; className?: string }
+export interface RemindersPanelProps {
+  asOf?: string;
+  className?: string;
+  /** Change it when the records change (new journey, benefits saved, document added) to re-read the list. */
+  refreshKey?: string | number;
+}
 
 type PushState = "unsupported" | "insecure" | "checking" | "off" | "on" | "working" | "denied" | "nokey";
 
@@ -21,7 +27,7 @@ async function currentSubscription(): Promise<PushSubscription | null> {
   return reg ? reg.pushManager.getSubscription() : null;
 }
 
-export function RemindersPanel({ asOf, className }: RemindersPanelProps) {
+export function RemindersPanel({ asOf, className, refreshKey }: RemindersPanelProps) {
   const [data, setData] = useState<RemindersResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [push, setPush] = useState<PushState>("checking");
@@ -35,7 +41,7 @@ export function RemindersPanel({ asOf, className }: RemindersPanelProps) {
     let cancelled = false;
     remindersApi.reminders(asOf).then((r) => { if (!cancelled) { setData(r); setDevAuth(true); } }).catch(() => { if (!cancelled) setError(REMINDERS.failed); });
     return () => { cancelled = true; };
-  }, [asOf]);
+  }, [asOf, refreshKey]);
 
   useEffect(() => {
     let cancelled = false;
@@ -120,7 +126,12 @@ export function RemindersPanel({ asOf, className }: RemindersPanelProps) {
                 <li key={`${it.kind}-${i}`} className="rm-item" data-kind={it.kind}>
                   <span className="rm-kind">{REMINDERS.kind[it.kind] ?? it.kind}</span>
                   <time className="rm-date" dateTime={it.date ?? undefined}>{it.date ?? REMINDERS.noDate}</time>
-                  <p className="rm-text">{it.text}</p>
+                  <p className="rm-text">
+                    {it.text}
+                    {/* every figure in the sentence comes from the cited clause (DOC) and, when a statement is named, from the user's records (USER) */}
+                    {it.cite && <> <EvidenceBadge status="DOC" /></>}
+                    {/statement/i.test(it.source) && <> <EvidenceBadge status="USER" /></>}
+                  </p>
                   <p className="rm-source">
                     {it.cite && <span className="rm-cite"><span className="scope" aria-hidden="true">{it.cite.doc}</span> {REMINDERS.cite(it.cite.doc, it.cite.page)} <q>{it.cite.quote}</q></span>}
                     <span>{REMINDERS.source(it.source)}</span>

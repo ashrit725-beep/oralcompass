@@ -43,7 +43,7 @@ export const ASSIST = {
   whatIfLabel: "Hypotheticals",
   toolsUsed: "Looked up:",
   toolName: {
-    get_estimate_line: "ledger line", explain_step: "step", get_plan_rules: "plan rules", get_clause: "clause", get_benefits: "benefit statement", resolve_procedure: "procedure names",
+    get_estimate_line: "ledger", explain_step: "step", get_plan_rules: "rules for", get_clause: "clause", get_benefits: "benefits of", resolve_procedure: "procedure names",
   } as Record<string, string>,
   refStep: (label: string) => `Step: ${label}`,
   refPatientTotal: "You pay on this line",

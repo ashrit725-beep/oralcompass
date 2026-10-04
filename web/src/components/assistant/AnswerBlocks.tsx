@@ -39,7 +39,7 @@ function Chip({ r, data, scope, onOpenStitch, onOpenStep }: { r: AssistRef; data
   if (res.kind === "clause") return res.stitch ? <StitchChip stitch={res.stitch} onSelect={(s) => onOpenStitch?.(s.id)} /> : <span className="as-chip">{res.label}</span>;
   if (r.kind === "step") {
     const body = <><span className="as-chip-label">{res.label}</span> <Inline r={res} /></>;
-    return onOpenStep ? <Button type="button" variant="outline" size="touch" className="as-chip-btn" onClick={() => onOpenStep(r.line_index, r.step_index)}>{body}</Button> : <span className="as-chip">{body}</span>;
+    return onOpenStep ? <Button type="button" variant="outline" size="touch" className="as-chip-btn h-auto max-w-full whitespace-normal text-left" onClick={() => onOpenStep(r.line_index, r.step_index)}>{body}</Button> : <span className="as-chip">{body}</span>;
   }
   return <span className="as-chip"><span className="as-chip-label">{res.label}</span> <Inline r={res} onOpenStitch={onOpenStitch} /></span>;
 }

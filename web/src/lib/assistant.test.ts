@@ -127,7 +127,8 @@ describe("scope, suggestions, ribbons, tools", () => {
   });
   it("turns tool ids into words (ids only, never amounts)", () => {
     expect(toolLabel("get_clause(ML26#p25)")).toBe("clause ML26#p25");
-    expect(toolLabel("get_estimate_line(line 0)")).toBe("ledger line line 0");
+    expect(toolLabel("get_estimate_line(line 0)")).toBe("ledger line 0");
+    expect(toolLabel("get_benefits(ML26)")).toBe("benefits of ML26");
     expect(toolLabel("resolve_procedure")).toBe("procedure names");
     expect(templateLabel({ type: "template", key: "advice_question", text: "" })).toBe("Information, not a choice");
     expect(templateLabel({ type: "template", key: "out_of_scope", text: "" })).toBe("Outside this assistant's scope");

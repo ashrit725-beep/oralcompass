@@ -21,14 +21,17 @@ export interface UploadWizardBodyProps {
   planRef: PlanRef;
   onPublished?: (summary: UploadedPlanSummary, planRef: PlanRef) => void;
   onClose: () => void;
+  /** The dialog shell widens for the review step. */
+  onStepChange?: (step: number) => void;
 }
 
 type Health = { llm_mode: "demo" | "live"; llm_model?: string | null };
 let healthCache: Promise<Health> | null = null;
 const health = () => (healthCache ??= api.health().then((h) => ({ llm_mode: h.llm_mode, llm_model: h.llm_model ?? null })).catch(() => { healthCache = null; return { llm_mode: "demo" as const, llm_model: null }; }));
 
-export function UploadWizardBody({ onPublished, onClose }: UploadWizardBodyProps) {
+export function UploadWizardBody({ onPublished, onClose, onStepChange }: UploadWizardBodyProps) {
   const [step, setStep] = useState(1);
+  useEffect(() => { onStepChange?.(step); }, [step, onStepChange]);
   const [mode, setMode] = useState<Health | null>(null);
   const [upload, setUpload] = useState<UploadResponseX | null>(null);
   const [preview, setPreview] = useState<UploadResponseX["redaction_preview"] | null>(null);

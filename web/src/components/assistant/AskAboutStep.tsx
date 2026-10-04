@@ -52,6 +52,7 @@ export function AskAboutStep({ scope, onOpenStitch, onOpenStep, className, data:
   const [mode, setMode] = useState<ServerMode | null>(null);
   const [asked, setAsked] = useState(false);
   const seq = useRef(0);
+  const [cycle, setCycle] = useState(0);   // one ThoughtLine instance per question, so its timer runs from send to settle
   const { data, loading } = useAssistData(scope, dataProp, asked);
 
   useEffect(() => { serverMode().then(setMode); }, []);
@@ -71,7 +72,7 @@ export function AskAboutStep({ scope, onOpenStitch, onOpenStep, className, data:
     const q = message.trim().slice(0, 400);
     if (!q || pending) return;
     const effective = { ...applyScopeChoice(scope, choice), ...(patch ?? {}) };
-    setError(null); setAsked(true); setPending(q);
+    setError(null); setAsked(true); setPending(q); setCycle((c) => c + 1);
     if (typeof navigator !== "undefined" && navigator.onLine === false) { setError(ASSIST.offline); setPending(null); return; }
     try {
       const resp = (await api.ask({ message: q, scope: effective })) as AssistResponseX;
@@ -110,12 +111,12 @@ export function AskAboutStep({ scope, onOpenStitch, onOpenStep, className, data:
       />
       <ul className="as-suggestions" aria-label={ASSIST.suggestionsLabel}>
         {suggested.map((q) => (
-          <li key={q}><Button type="button" variant="outline" size="touch" className="as-suggestion" disabled={!!pending || paused} onClick={() => { void ask(q); }}>{q}</Button></li>
+          <li key={q}><Button type="button" variant="outline" size="touch" className="as-suggestion h-auto max-w-full whitespace-normal text-left" disabled={!!pending || paused} onClick={() => { void ask(q); }}>{q}</Button></li>
         ))}
       </ul>
       {(pending || latest) && (
         <ThoughtLine
-          key={pending ? "working" : `done-${latest?.id}`}
+          key={cycle}
           working={!!pending}
           label={isClause ? ASSIST.sendingClause : ASSIST.sending}
           doneLabel={ASSIST.readIn(traceSteps.length)}

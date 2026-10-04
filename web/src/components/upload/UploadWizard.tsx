@@ -1,9 +1,10 @@
 import { Suspense, lazy, useCallback, useState } from "react";
 import { StageLoader } from "@/components/StageLoader";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { UPLOAD } from "@/lib/copy/upload";
 import type { PlanRef, UploadedPlanSummary } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 const UploadWizardBody = lazy(() => import("./UploadWizardBody").then((m) => ({ default: m.UploadWizardBody })));
 
@@ -36,8 +37,9 @@ export interface UploadWizardProps {
 
 export function UploadWizard({ planRef, onPublished, open, onOpenChange, trigger }: UploadWizardProps) {
   const [innerOpen, setInnerOpen] = useState(false);
+  const [step, setStep] = useState(1);
   const isOpen = open ?? innerOpen;
-  const setOpen = useCallback((v: boolean) => { setInnerOpen(v); onOpenChange?.(v); }, [onOpenChange]);
+  const setOpen = useCallback((v: boolean) => { setInnerOpen(v); onOpenChange?.(v); if (!v) setStep(1); }, [onOpenChange]);
   const showDefaultTrigger = trigger === undefined && open === undefined;
 
   return (
@@ -45,12 +47,18 @@ export function UploadWizard({ planRef, onPublished, open, onOpenChange, trigger
       {trigger !== undefined && trigger !== null && <DialogTrigger asChild>{trigger}</DialogTrigger>}
       {showDefaultTrigger && (
         <DialogTrigger asChild>
-          <Button type="button" variant="outline" size="touch" className="up-trigger">{UPLOAD.trigger}</Button>
+          {/* a native button: the shadcn Button is a plain function component and cannot take the trigger's ref */}
+          <button type="button" className={cn(buttonVariants({ variant: "outline", size: "touch" }), "up-trigger")}>{UPLOAD.trigger}</button>
         </DialogTrigger>
       )}
       <DialogContent
         closeLabel={UPLOAD.close}
-        className="up-dialog sm:max-w-[560px] max-h-[92dvh] overflow-y-auto max-md:top-0 max-md:left-0 max-md:h-dvh max-md:max-h-dvh max-md:w-full max-md:max-w-full max-md:translate-x-0 max-md:translate-y-0 max-md:rounded-none max-md:border-0"
+        data-step={step}
+        className={cn(
+          // min-w-0: the legacy `.grid { min-width: 640px }` rule in styles.css (comparison grid) also matches Tailwind's `grid` on DialogContent
+          "up-dialog min-w-0 max-h-[92dvh] overflow-y-auto max-md:top-0 max-md:left-0 max-md:h-dvh max-md:max-h-dvh max-md:w-full max-md:max-w-full max-md:translate-x-0 max-md:translate-y-0 max-md:rounded-none max-md:border-0",
+          step === 4 ? "sm:max-w-[min(960px,calc(100%-2rem))]" : "sm:max-w-[560px]",   // the review table earns the width; the earlier panes keep the spec's 560 px
+        )}
         onOpenAutoFocus={(e) => { e.preventDefault(); (e.currentTarget as HTMLElement | null)?.querySelector<HTMLElement>("h2")?.focus(); }}
       >
         <DialogHeader>
@@ -59,7 +67,7 @@ export function UploadWizard({ planRef, onPublished, open, onOpenChange, trigger
         </DialogHeader>
         {isOpen && (
           <Suspense fallback={<StageLoader label={UPLOAD.loadingWizard} size="sm" />}>
-            <UploadWizardBody planRef={planRef} onPublished={onPublished} onClose={() => setOpen(false)} />
+            <UploadWizardBody planRef={planRef} onPublished={onPublished} onClose={() => setOpen(false)} onStepChange={setStep} />
           </Suspense>
         )}
       </DialogContent>
