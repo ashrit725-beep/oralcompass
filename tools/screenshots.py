@@ -4,7 +4,8 @@ desktop reduced-motion pass that diffs end states against the full-motion run).
 
 Walks: new-user start → labeled sample journey (Alex, real NC plan) → the Passage map (answers log, START, islands, soundings, closed channel)
 → the ProcedureDrawer (sections, Final cost hero, pipeline, equation rows, receipt table, checkpoint strip, thread to the clause card, the
-inline assistant with a demo answer, an advice question, the clause composer) → arriving from a checkpoint → START / Harbor Light /
+inline assistant with a demo answer, an advice question, the clause composer; the AskBox "Ask in plain words" on My journey: two
+everyday questions answered simple terms first, the details disclosure, "Say it more simply", the phone field above the dock and its sheet) → arriving from a checkpoint → START / Harbor Light /
 marginal / visited drawers → care stage / checkpoint detail → record a checkpoint (attribution) → Overview list → My plan (selector
 cascade, preset/upload switch, benefits compass, restriction → cove, depth dial, benefit statement form) → cost trail (reconciles) → FM26H
 (nothing transfers: fog, compass without a maximum, fogged drawer) → Compare (grid, clause popover/sheet, rails) → Documents (clauses,
@@ -80,6 +81,82 @@ def passage_names(page) -> list[str]:
 
 def has_amount(page, sel: str, amt: str) -> bool:
     return bool(page.evaluate(HAS_AMOUNT_JS, [sel, amt]))
+
+
+def open_answer_details(page, root: str):
+    """Simple-terms answers keep the step / clause / where-from blocks behind "Show the details" (closed by default): open every one in
+    `root` so the grounding checks below see the detailed blocks. Answers from an API without a simple block have no disclosure."""
+    for b in page.locator(f"{root} .as-answer button[aria-expanded='false']", has_text="Show the details").all():
+        try:
+            b.scroll_into_view_if_needed(); b.click(); page.wait_for_timeout(300)
+        except Exception:  # noqa: BLE001
+            pass
+
+
+# The simple block's own words, with every ref (figure, badge, stitch) removed: what is left must state no amount (MONEY_IN_TEXT core).
+SIMPLE_JS = r"""(sel) => { const li = document.querySelector(sel); if (!li) return null;
+  const kids = [...li.children].filter(c => !c.matches('.as-asked, .as-caption, .sr-only'));
+  const simple = li.querySelector('.as-simple');
+  if (!simple) return { first: kids[0] ? kids[0].className : null, simple: false };
+  const clone = simple.cloneNode(true); clone.querySelectorAll('.as-ref, .as-chips, .stitch').forEach(n => n.remove());
+  const words = clone.textContent.replace(/In simple terms|Even simpler/g, ' ');
+  const bare = /\$\s?\d|\d\s?%|\d\s*(?:dollars|percent|cents)\b|\d{1,3}(?:,\d{3})+|\b\d+\.\d{1,2}\b|\b\d{3,}\b/i.test(words);
+  const amts = [...simple.querySelectorAll('.amt')];
+  const unbadged = amts.filter(a => !a.parentElement.querySelector('.badge, .fig-calc')).length;
+  const details = li.querySelector('button[aria-controls]');
+  return { first: kids[0] ? kids[0].className : null, simple: true, bare, amts: amts.length, unbadged, words: words.trim().slice(0, 140),
+           detailsExpanded: details ? details.getAttribute('aria-expanded') : null, detailsHidden: details ? document.getElementById(details.getAttribute('aria-controls')).hidden : null }; }"""
+
+
+def askbox_walk(page, device: str, shot, mobile: bool):
+    """The AskBox ("Ask in plain words", the owner's prompt box) on My journey: desktop card above the map / phone field above the dock →
+    bottom sheet. Asks two everyday questions from the chips; each answer leads with the plain-words block (first, no bare amount outside
+    a ref, every figure badged), keeps the details closed until asked, and "Say it more simply" adds the plainer sentence."""
+    page.get_by_role("tab", name="My journey").click(); page.wait_for_timeout(1500)
+    page.evaluate("window.scrollTo(0, 0)"); page.wait_for_timeout(300)
+    if mobile:
+        geo = page.evaluate("""(() => { const f = document.querySelector('.askfield-bar'), d = document.querySelector('.dock'); if (!f || !d) return null;
+          const a = f.getBoundingClientRect(), b = d.getBoundingClientRect(), btn = f.querySelector('button').getBoundingClientRect();
+          return { gap: Math.round(b.top - a.bottom), fieldH: Math.round(btn.height), inThumbZone: a.top >= innerHeight * 2 / 3, name: f.querySelector('button').textContent.trim() }; })()""")
+        check(f"{device}: AskBox field sits directly above the dock (thumb zone)", bool(geo) and abs(geo["gap"]) <= 1 and geo["fieldH"] >= 44 and geo["inThumbZone"] and geo["name"] == "Ask in plain words", str(geo))
+        page.locator(".askfield").click(); page.wait_for_timeout(700)
+        root_sel = ".ask-sheet"
+        opened = page.evaluate("""(() => { const s = document.querySelector('.ask-sheet[data-state=open]'), d = document.querySelector('.dock'); if (!s || !d) return null;
+          const a = s.getBoundingClientRect(), b = d.getBoundingClientRect();
+          return { role: s.getAttribute('role'), focus: !!(document.activeElement && s.contains(document.activeElement) && document.activeElement.tagName === 'TEXTAREA'),
+                   dockVisible: getComputedStyle(d).visibility === 'visible' && b.top >= a.bottom - 1, title: s.querySelector('h2')?.textContent }; })()""")
+        check(f"{device}: AskBox sheet opens with the composer focused and the dock reachable", bool(opened) and opened["role"] == "dialog" and opened["focus"] and opened["dockVisible"] and opened["title"] == "Ask in plain words", str(opened))
+    else:
+        root_sel = "section.askbox"
+        top = page.evaluate("(() => { const m = document.querySelector('#passage-map'); return m ? Math.round(m.getBoundingClientRect().top) : null; })()")
+        check(f"{device}: AskBox card above the map; the map still starts in the first viewport", page.locator(root_sel).count() == 1 and top is not None and top < 900 and page.locator(f"{root_sel} h3", has_text="Ask in plain words").count() == 1, f"map top={top}")
+    root = page.locator(root_sel)
+    chips = root.locator("ul[aria-label='Questions people often ask'] button").all_inner_texts()
+    check(f"{device}: AskBox journey chips in everyday words", len(chips) == 4 and chips[0] == "What will I pay in total?" and "What is a deductible?" in chips and chips[1].startswith("Why does the "), str(chips))
+    for q, slug in (("What is a deductible?", "deductible"), ("What will I pay in total?", "total")):
+        root.get_by_role("button", name=q, exact=True).first.click(); page.wait_for_timeout(2200)
+        latest = f"{root_sel} .as-answers > .as-answer"
+        r = page.evaluate(SIMPLE_JS, latest)
+        asked = page.locator(f"{latest} .as-asked").first.inner_text() if page.locator(f"{latest} .as-asked").count() else ""
+        check(f"{device}: AskBox '{q}' leads with simple terms (first block, no bare amount, figures badged, details closed)",
+              bool(r) and r["simple"] and "as-simple" in (r["first"] or "") and not r["bare"] and r["unbadged"] == 0 and asked.endswith(q)
+              and (r["detailsExpanded"] in (None, "false")) and (r["detailsHidden"] in (None, True)) and (slug != "total" or r["amts"] >= 1), str(r))
+        shot(f"30-askbox-{slug}")
+    toggle = page.locator(f"{root_sel} .as-answers > .as-answer button[aria-controls]").first
+    if toggle.count():
+        toggle.click(); page.wait_for_timeout(500)
+        shown = page.evaluate("(sel) => { const b = document.querySelector(sel + ' .as-answers > .as-answer button[aria-controls]'); return b && [b.getAttribute('aria-expanded'), !document.getElementById(b.getAttribute('aria-controls')).hidden, document.getElementById(b.getAttribute('aria-controls')).textContent.length > 0]; }", root_sel)
+        check(f"{device}: AskBox details disclosure opens on request", shown == ["true", True, True], str(shown))
+    simpler = root.get_by_role("button", name="Say it more simply").first
+    if simpler.count():
+        simpler.click(); page.wait_for_timeout(2000)
+        r2 = page.evaluate("(sel) => { const s = document.querySelector(sel + ' .as-answers > .as-answer .as-simpler'); return s ? s.textContent.slice(0, 120) : null; }", root_sel)
+        check(f"{device}: AskBox 'Say it more simply' adds a plainer sentence", bool(r2) and "Even simpler" in r2, str(r2))
+        shot("31-askbox-simpler")
+    if mobile:
+        page.locator(".ask-sheet").get_by_role("button", name="Close").last.click(); page.wait_for_timeout(700)
+        back = page.evaluate("(() => ({ closed: !document.querySelector('.ask-sheet[data-state=open]'), focus: document.activeElement && document.activeElement.classList.contains('askfield') }))()")
+        check(f"{device}: AskBox sheet closes and focus returns to the field", back["closed"] and back["focus"], str(back))
 
 
 def dev_context(browser, **kwargs):
@@ -234,6 +311,7 @@ def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-pref
     check(f"{device}: assistant question box labelled with a visible focus ring", bool(ring) and ring["name"].startswith("Ask about") and ring["style"] == "solid" and ring["width"] >= 2, str(ring))
     ta.fill("What happens to the annual maximum on this line?")
     page.locator(".drawer").get_by_role("button", name="Ask", exact=True).first.click(); page.wait_for_timeout(2500)
+    open_answer_details(page, ".drawer")
     ans = page.locator(".drawer .as-answer")
     ribbon = page.locator(".drawer .as-ribbon").first.inner_text() if page.locator(".drawer .as-ribbon").count() else ""
     bare = page.evaluate("""() => [...document.querySelectorAll('.drawer .as-answer .as-text')].some(t => /\\$\\s?\\d/.test([...t.childNodes].filter(n => n.nodeType === 3 || !n.closest || !n.classList.contains('amt')).map(n => n.nodeType === 3 ? n.textContent : (n.querySelector('.amt') ? '' : n.textContent)).join('')))""")
@@ -254,6 +332,7 @@ def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-pref
     ta = page.locator(".drawer textarea").first
     ta.scroll_into_view_if_needed(); ta.fill("Should I get the crown?")
     page.locator(".drawer").get_by_role("button", name="Ask", exact=True).first.click(); page.wait_for_timeout(2000)
+    open_answer_details(page, ".drawer")
     bare2 = page.evaluate("""() => { const c = document.querySelector('.drawer .as-answer, .drawer .as-card'); if (!c) return true; const clone = c.cloneNode(true); clone.querySelectorAll('.amt').forEach(a => a.remove()); return /\\$\\s?\\d/.test(clone.textContent); }""")
     check(f"{device}: advice question gets template", page.locator(".drawer", has_text="Information, not a choice").count() > 0 and not bare2, f"bare$={bare2}")
 
@@ -662,6 +741,10 @@ def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-pref
                 api(f"/me/treatment-items/{it['id']}", "PATCH", {"status": "cancelled"})
       except Exception as e:  # noqa: BLE001
         print("WARN revert failed:", e)
+    try:
+        askbox_walk(page, device, shot, mobile)
+    except Exception as e:  # noqa: BLE001
+        check(f"{device}: AskBox walk", False, str(e).splitlines()[0][:160])
     if mobile:
         check(f"{device}: no horizontal scroll", all(w == width for w in widths), f"widths={sorted(set(widths))}")
     check(f"{device}: no page errors", not errors, "; ".join(errors)[:200])

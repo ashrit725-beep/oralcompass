@@ -234,6 +234,27 @@ describe("the phone field and sheet", () => {
     expect(q(".ask-sheet[data-state=open]")).toBeNull();
     expect(document.activeElement).toBe(field);
   });
+  it("the on-screen keyboard lifts the sheet: its bottom follows the visual viewport (the composer is never covered)", async () => {
+    const vv = Object.assign(new EventTarget(), { height: window.innerHeight, offsetTop: 0, width: window.innerWidth, scale: 1 });
+    const had = Object.getOwnPropertyDescriptor(window, "visualViewport");
+    Object.defineProperty(window, "visualViewport", { configurable: true, value: vv });
+    try {
+      render(<AskDock tab="journey" scope={scope} />);
+      await click(q(".askfield"));
+      const sheet = q<HTMLElement>(".ask-sheet")!;
+      expect(sheet.style.bottom).toBe("");                  // no keyboard: the sheet sits on the dock (CSS var --dock-h)
+      vv.height = window.innerHeight - 320;                 // keyboard up: 320 px of the layout viewport hidden
+      await act(async () => { vv.dispatchEvent(new Event("resize")); }); await flush();
+      expect(sheet.style.bottom).toBe("320px");
+      expect(sheet.style.maxHeight).toBe(`${window.innerHeight - 320 - 8}px`);
+      vv.height = window.innerHeight;                        // keyboard down
+      await act(async () => { vv.dispatchEvent(new Event("resize")); }); await flush();
+      expect(sheet.style.bottom).toBe("");
+    } finally {
+      if (had) Object.defineProperty(window, "visualViewport", had); else delete (window as { visualViewport?: unknown }).visualViewport;
+    }
+  });
+
   it("answers inside the sheet with the same simple-first card", async () => {
     ask.mockResolvedValue(totalAnswer);
     render(<AskDock tab="journey" scope={scope} />);
