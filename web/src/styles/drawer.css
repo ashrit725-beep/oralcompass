@@ -88,6 +88,13 @@ details[open] > .dsec-summary .dsec-toggle { transform: rotate(-135deg); margin-
 .final-hero-unresolved .fig-hero .amt { color: var(--text-soft); }
 .final-sub { margin: 0 0 var(--s-3); font-size: 15px; line-height: 22px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 6px; }
 .final-sub .amt { font-weight: 600; color: var(--plan-pays); }
+/* phones: the benefit year drops to its own caption line without the orphaned "·" separator; the remaining strip reads label, then one figure per line */
+@media (max-width: 767px) {
+  .final-year { flex-basis: 100%; }
+  .final-year-sep { display: none; }
+  .drawer-remaining { row-gap: var(--s-1); }
+  .drawer-remaining-k, .drawer-remaining-item { flex-basis: 100%; }
+}
 @media (max-width: 760px) { .final-hero-amt .fig-hero .amt, .fig-hero .amt { font-size: 28px; line-height: 32px; } }
 
 /* coverage share bar (dataviz: 8 px, water for the plan, sand for you, 2 px surface gap, labels in ink) */

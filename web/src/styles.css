@@ -390,6 +390,14 @@ summary { min-height: 32px; padding-block: 4px; }
   .dock [role="tab"][data-state="active"] { color: var(--ink); background: var(--paper); }
   /* the procedure sheet and the stage sheet sit where the dock is: the dock steps aside while either is open */
   body:has([data-vaul-drawer][data-state="open"]) .dock, body:has(.detail.sheet:not(.is-empty)) .dock { visibility: hidden; }
+  /* the dock is fixed edge to edge, so it keeps clear of the notch / rounded corners in landscape itself (body's safe-area padding does not reach it) */
+  .dock { padding-left: max(8px, env(safe-area-inset-left)); padding-right: max(8px, env(safe-area-inset-right)); }
+}
+/* landscape phones (~340-430 px tall): icon beside the label in a 44 px row, so the dock takes ~56 px of the height instead of ~65 */
+@media (max-width: 760px) and (max-height: 500px) and (orientation: landscape) {
+  .app { padding-bottom: calc(56px + env(safe-area-inset-bottom)); }
+  .dock { padding-top: 5px; padding-bottom: calc(5px + env(safe-area-inset-bottom)); }
+  .dock [role="tab"] { flex-direction: row !important; min-height: 44px !important; gap: 6px !important; }
 }
 @media (max-width: 760px) and (prefers-reduced-motion: no-preference) {
   .dock [role="tab"] { transition: color var(--dur-micro) var(--ease-standard), background-color var(--dur-micro) var(--ease-standard), transform var(--dur-micro) var(--ease-standard); }

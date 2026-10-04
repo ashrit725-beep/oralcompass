@@ -30,7 +30,7 @@ export function FinalCostSection(props: SectionProps & { estimateId?: string; fi
         <span>{DRAWER.estimatedPlanPayment}</span>{" "}
         <Figure cents={line.plan_cents} evidence="DOC" calc inputs={inputs} calcLabel={null} stitch={shareStitch} onSelectStitch={onSelectStitch} className="fig-plan" />
         {line.plan_is_upper_bound ? <span className="muted"> {DRAWER.upperBoundWord}</span> : null}
-        {line.benefit_year ? <span className="muted"> · {DRAWER.benefitYear(line.benefit_year)}</span> : null}
+        {line.benefit_year ? <span className="muted final-year"><span className="final-year-sep" aria-hidden="true"> · </span>{DRAWER.benefitYear(line.benefit_year)}</span> : null}
       </p>
       {line.status === "not_covered" && (
         <>
