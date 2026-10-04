@@ -42,7 +42,7 @@ All images are in `docs/screenshots/` (the walk's `checks.json` sits beside them
 
 ## 60-second start
 
-Requirements: Python 3.11+, Node 20+, and a browser at or above the Tailwind v4 floor (Safari 16.4+, Chrome 111+, Firefox 128+).
+Requirements: Python 3 (the container uses 3.12), Node with npm (the container build stage pins its version in `Dockerfile`), and a browser at or above the Tailwind v4 floor (Safari 16.4+, Chrome 111+, Firefox 128+).
 
 ```bash
 # 1. Environment. api/.env is gitignored; never commit it.
