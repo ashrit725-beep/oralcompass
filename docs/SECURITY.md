@@ -12,11 +12,117 @@ nothing leaves the server: answers come from templates and stored fictional fixt
 
 | Input | What the model receives | Where |
 | --- | --- | --- |
-| Uploaded plan PDF (text layer) | Redacted page text only (`redaction.redact` plus the visitor's own terms), previewed before extraction | `api/app/extraction.py`, `api/app/uploads.py` |
-| Treatment plan, pasted text or a PDF with a text layer | Redacted text only; every string the model returns is redacted again | `api/app/treatment_reader.py` |
+| Uploaded plan PDF (text layer) | Page text with every identifier the visitor confirmed on the device removed, then the server's own patterns and the visitor's own terms (see "Redaction before AI analysis") <!-- verify: feat/client-redaction --> | `api/app/extraction.py`, `api/app/uploads.py`, `api/app/redaction.py` |
+| Treatment plan, pasted text or a PDF with a text layer | Text redacted on the device first, then again on the server; every string the model returns is redacted again <!-- verify: feat/client-redaction --> | `api/app/treatment_reader.py` |
 | Treatment plan, photo (PNG, JPEG, WebP) | The image itself, unredacted, only after the visitor confirms the notice (below) | `api/app/treatment_reader.py` |
 | Treatment plan, PDF with no text layer | Up to 3 rendered page images, unredacted, only after the same confirmation | `api/app/treatment_reader.py` |
-| Assistant and clause explainer | Facts from the stored ledger and plan clauses; amounts appear only as placeholders | `api/app/assistant.py`, `api/app/explain.py` |
+| Assistant (Ask in plain words, Ask about this step) and clause explainer | Facts from the stored ledger and plan clauses with names and identifiers redacted, and the visitor's question redacted; amounts appear only as placeholders | `api/app/assistant.py`, `api/app/explain.py` |
+
+## Redaction before AI analysis
+
+<!-- verify: feat/client-redaction (this whole section: web/src/lib/redact.ts, the upload step's review screen, api/app/redaction.py
+redact_detailed and the client_redaction intake in api/app/uploads.py) -->
+
+When a person picks a plan document or a benefits statement, personal details are found and reviewed on their own device before anything
+is uploaded, removed again on the server before any model call, and counted. The screen says, with the real count, "12 personal
+identifiers removed before AI analysis". This is a privacy measure, not a certification: see "Limits and known gaps" below.
+
+### Categories detected
+
+The device detector (`web/src/lib/redact.ts`, deterministic, `REDACTION_VERSION = 1`) and the server patterns (`api/app/redaction.py`)
+cover the same ten categories:
+
+| Category | What is matched | Shown in the text as |
+| --- | --- | --- |
+| `name` | 2 to 5 capitalised words after a label (Patient, Member, Subscriber, Insured, Employee, Dependent, Policyholder, Primary, Name, Dear, Attn), and every later occurrence of the same name anywhere in the document | `[name removed]` |
+| `address` | A street line (number, words, a street suffix such as St, Ave, Rd, Blvd, Dr, Ln, Ct, Way, Pl, Pkwy, Ter, Cir, with an optional Apt, Suite or Unit) and a "City, ST 12345" line | `[address removed]` |
+| `member_id` | A value after a Member, Subscriber, ID, Identification or Policy ID label that contains a digit (5 to 20 letters, digits, hyphens) | `[member ID removed]` |
+| `group_number` | A value after Group or Grp (No., Number, #) that contains a digit | `[group number removed]` |
+| `claim_number`, `account_number` | A value after a Claim or Account / Acct label (#, No.) | `[claim number removed]`, `[account number removed]` |
+| `ssn` | NNN-NN-NNNN, or 9 digits after an SSN / Social Security label | `[SSN removed]` |
+| `dob` | A date in a common format after DOB, Date of birth or Birth date | `[date of birth removed]` |
+| `phone` | Personal phone and fax numbers; toll-free numbers (800, 833, 844, 855, 866, 877, 888) are the carrier's and are never removed | `[phone removed]` |
+| `email` | Email addresses | `[email removed]` |
+
+Never removed, because the AI needs them: procedure codes (D0120, D2740, ...), dollar amounts, percentages, plan-year and effective dates
+without a birth label, deductible and maximum figures, frequency limits ("1 per 6 months"), waiting periods, tooth numbers, plan and
+carrier names, and plan prose such as "member services" or "group dental plan" (identifier patterns require a value that contains a digit).
+
+The count is of **distinct** identifiers, de-duplicated by a normalised value (case-insensitive, spacing collapsed, and for IDs and phone
+numbers punctuation-insensitive); occurrences are counted separately ("removed in 4 places"). Every pattern on both sides is linear-time
+(bounded repetitions, no nested open-ended runs), because it runs on visitor-supplied text.
+
+### What stays on the device, what is uploaded and stored privately
+
+| Stays on the device | Uploaded, stored privately in the owner's data directory |
+| --- | --- |
+| The pdf.js text the browser read, the detector's run, the redacted-text preview, and any value revealed with **Show** (values are masked by default). | The PDF itself, unredacted (mode 0600 under `ORALCOMPASS_DATA_DIR`): the server reads its text for extraction, verifies quotes against its pages, and shows its pages to the owner. |
+| Identifiers the person switched to **Keep in text** are not sent in the list. | The `client_redaction` list: `{"version":1,"identifiers":[{"category","value"}],"extra_terms":[...]}` with the confirmed values, stored with the document, never logged and never returned in full. |
+
+The upload contract (`POST /me/documents/upload`, optional multipart field `client_redaction`): at most 300 identifiers, 20 extra terms
+of at most 64 characters, values of 2 to 120 characters, 64 KB in all; anything invalid is refused with
+`422 {"error": "invalid_client_redaction"}`, a constant body that never echoes the input, and nothing is stored. Responses (the upload's
+redaction preview, `GET` extraction and the document record) carry categories, counts and masked values only. Uploads made without the
+field (older clients, scripts) still get the server patterns and the visitor's own terms; `PUT /me/documents/{id}/redaction` keeps
+working. "Delete all my data" removes the PDF, the list and every record.
+
+### What the AI receives
+
+Before any model call the server builds the model input only from the PyMuPDF text of the stored PDF after two layers of removal:
+
+1. **Confirmed values.** Every occurrence of every value confirmed on the device (and every extra term) is removed, whatever its case,
+   spacing, punctuation or line breaks, so differences between the pdf.js text on the device and the PyMuPDF text on the server do not
+   matter. Matching is anchored to word boundaries ("Sam" never matches inside "Sample").
+2. **The server's safety net.** Its own label-anchored patterns for the same ten categories run over the result. The union of both layers
+   is what the model never sees.
+
+The authoritative count comes from the server: `summary = {total, by_category, occurrences, from_device, from_server_check, masked}`,
+where `total` is the distinct identifiers removed from what the model receives. After upload the progress line, the review table and the
+Documents card show that number, and say so when the server's own check found more than the device. Quote verification stays against
+the PDF's text layer; clause quotes contain no identifiers.
+
+The treatment-plan reader runs the same on-device step on pasted text and on PDFs with a text layer, then the server removes the values
+and runs its patterns before any call.
+
+### Limits and known gaps
+
+- **Names without a label.** Names are found after a label, and then everywhere the same name appears. A name that appears only in running
+  prose, with no label anywhere in the document, is not detected; the person can add it in the "Add a word or number to remove" field.
+- **Scanned pages and photos.** A page with no text layer gives the device nothing to read (the review step says so). For plan uploads, a
+  page with fewer than 20 characters of text counts as scanned and contributes no text; a document that is mostly scanned ends in a
+  failed extraction with no model call. A treatment-plan photo or scanned PDF is sent to the model as is, only after the consent notice
+  below. There is no OCR-based redaction.
+- **Pattern limits.** Formats the patterns do not know (non-US addresses, international phone numbers, IDs without a label or without a
+  digit) can be missed; a false positive can be kept with the switch. The preview shows the result before anything is uploaded.
+- **"Keep in text" is a device-side choice.** The server's safety net does not receive the kept list, so a kept value that also matches a
+  server pattern is still removed from the model input, and the server's count includes it (the screen notes when the server found more).
+- **The original is stored.** The uploaded PDF is kept unredacted in the owner's private space, because quotes are verified against it.
+  It is never sent to a model as a file.
+- Model answers on the treatment-plan reader are redacted again before they are returned.
+
+## Ask in plain words: the assistant's guards
+
+<!-- verify: feat/ask-plain (this whole section: api/app/assistant.py, api/app/assistant_glossary.py, web/src/components/assistant/*) -->
+
+The prompt box on every tab ("Ask in plain words") and the scoped "Ask about this step" use the same pipeline (`POST /me/assistant`).
+
+- **Scope lock.** The scope is the current plan, the journey's estimate and the journey; every id goes through the owner check
+  (`repo.get_owned`), so another visitor's records are a constant 404.
+- **Deterministic first.** Questions are classified without a model (keywords, the glossary in `api/app/assistant_glossary.py` with its
+  plural, possessive and spelling variants, and procedure names on the journey). Demo mode composes every answer from templates.
+- **Information only.** "Should I" questions get a fixed plain-language template ("OralCompass explains what your documents say; it does
+  not choose for you.") followed by what the document says; clinical questions get "This is a question for your dentist; OralCompass only
+  explains your plan and your costs." Templates and the glossary pass `tools/advice_lint.py`, and every sentence passes the runtime advice
+  guard.
+- **No arithmetic, no bare amounts.** Every figure is a `{{ref:n}}` placeholder resolved from the engine's stored ledger with its
+  evidence badge; a sentence with a bare amount or percentage is dropped (`MONEY_IN_TEXT`). Glossary definitions contain no numbers.
+- **What a live model receives.** The facts the read-only tools gathered (names and identifiers redacted) and the visitor's question,
+  redacted. In live mode the model only rewrites the simple sentence within the same refs.
+- **Plain-language readability fallback.** A deterministic Flesch-Kincaid grade check (Python, no new dependency) runs on the simple
+  block; above grade 9 the answer falls back to the template. "Say it more simply" uses a stricter one-sentence prompt in live mode and a
+  second template variant in demo mode.
+- **Cost guard.** Assistant calls count against the per-visitor limit (30 per 10 minutes) and the global daily caps; a refusal falls back
+  to the template and the answer says so. The test suite never reaches a live model (fake client).
 
 ## Photos and scanned PDFs (implemented)
 
@@ -63,6 +169,6 @@ nothing leaves the server: answers come from templates and stored fictional fixt
 - **No OCR-based redaction:** names, member IDs and dates printed inside an image reach the model when the visitor confirms the notice.
   That is why images need the confirmation above and why the paste path is offered first.
 - **No image cropping:** the whole image is sent once confirmed.
-- Redaction is pattern-based (`api/app/redaction.py`: member/subscriber/policy ids that contain a digit, SSN, date of birth, phone, email,
-  "Patient:/Name:/Insured:/Employee:" lines, street addresses) plus the visitor's own terms, matched without regard to case or spacing. It can miss a name
-  written in running prose; the preview shows the result before anything is sent.
+- Redaction is pattern-based, on the device and on the server, plus the visitor's own terms, matched without regard to case or spacing.
+  It can miss a name written only in running prose with no label; the review step shows the result before anything is uploaded (see
+  "Limits and known gaps" above). <!-- verify: feat/client-redaction -->
