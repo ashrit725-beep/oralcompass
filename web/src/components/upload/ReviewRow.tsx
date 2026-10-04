@@ -104,7 +104,7 @@ export function ReviewRow({ docId, field: f, classNames, busy, error, onDecide }
               {f.page_note && <> · {UPLOAD.pageNote(f.page_note)}</>}
             </span>
             {f.page !== null && (
-              <Button type="button" variant="outline" size="touch" className="up-open-page" aria-expanded={pageOpen} onClick={() => setPageOpen((v) => !v)} disabled={busy}>
+              <Button type="button" variant="outline" size="touch" className="up-open-page" aria-expanded={pageOpen} onClick={() => setPageOpen((v) => !v)}>
                 {pageOpen ? UPLOAD.closePage : UPLOAD.openPage}
               </Button>
             )}
@@ -114,19 +114,19 @@ export function ReviewRow({ docId, field: f, classNames, busy, error, onDecide }
       </TableCell>
       <TableCell data-label={UPLOAD.colDecision} className="up-cell whitespace-normal align-top up-cell-decision">
         <div className="up-decide" role="group" aria-label={`${UPLOAD.colDecision}: ${f.label}`}>
-          <Button type="button" variant={kind === "confirmed" ? "default" : "outline"} size="touch" aria-pressed={kind === "confirmed"} disabled={busy || !canConfirm} onClick={() => onDecide(decisionConfirm(f))}>{UPLOAD.looksRight}</Button>
-          <Button type="button" variant={kind === "edited" ? "default" : "outline"} size="touch" aria-pressed={kind === "edited"} aria-expanded={editing} disabled={busy} onClick={() => { setEditing((v) => !v); setFormError(null); }}>{UPLOAD.edit}</Button>
-          <Button type="button" variant={kind === "not_in_document" ? "default" : "outline"} size="touch" aria-pressed={kind === "not_in_document"} disabled={busy} onClick={() => onDecide(decisionNotInDocument(f))}>{UPLOAD.notInDocument}</Button>
+          <Button type="button" variant={kind === "confirmed" ? "default" : "outline"} size="touch" aria-pressed={kind === "confirmed"} disabled={!canConfirm} aria-disabled={busy || undefined} onClick={() => { if (!busy) onDecide(decisionConfirm(f)); }}>{UPLOAD.looksRight}</Button>
+          <Button type="button" variant={kind === "edited" ? "default" : "outline"} size="touch" aria-pressed={kind === "edited"} aria-expanded={editing} aria-disabled={busy || undefined} onClick={() => { if (!busy) { setEditing((v) => !v); setFormError(null); } }}>{UPLOAD.edit}</Button>
+          <Button type="button" variant={kind === "not_in_document" ? "default" : "outline"} size="touch" aria-pressed={kind === "not_in_document"} aria-disabled={busy || undefined} onClick={() => { if (!busy) onDecide(decisionNotInDocument(f)); }}>{UPLOAD.notInDocument}</Button>
         </div>
         {f.candidates.length > 0 && (
-          <fieldset className="up-candidates" disabled={busy}>
+          <fieldset className="up-candidates" aria-disabled={busy || undefined}>
             <legend className="up-caption">{UPLOAD.candidates}</legend>
             {f.candidates.map((c, i) => {
               const p = formatProposed(f.unit, c.value);
               const text = p.kind === "text" ? p.text : UPLOAD.valueNone;
               return (
                 <label key={i} className="up-candidate">
-                  <input type="radio" name={ids.cands} className="min-h-11 min-w-11" checked={kind === "candidate" && f.decision?.candidate_index === i} onChange={() => onDecide(decisionCandidate(f, i))} />
+                  <input type="radio" name={ids.cands} className="min-h-11 min-w-11" checked={kind === "candidate" && f.decision?.candidate_index === i} onChange={() => { if (!busy) onDecide(decisionCandidate(f, i)); }} />
                   <span>
                     {p.kind === "money" ? <Money cents={p.cents} evidence="AMBIGUOUS" /> : <span className="up-value">{text}</span>} · {UPLOAD.page(c.page)}
                     <q className="up-candidate-quote">{c.quote}</q>

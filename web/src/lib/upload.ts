@@ -217,6 +217,13 @@ function listText(value: unknown): string {
 
 export const isDecided = (f: ExtractedField) => !!f.decision;
 
+/** One review request at a time (web-correctness-21): each response replaces the whole field list, so a slower earlier response must
+ *  never land after a later decision. `enter()` is false while a request is in flight; `leave()` ends it. */
+export function createSerialGate(): { enter: () => boolean; leave: () => void; readonly busy: boolean } {
+  let busy = false;
+  return { enter: () => (busy ? false : (busy = true)), leave: () => { busy = false; }, get busy() { return busy; } };
+}
+
 /** Mirrors `uploads.undecided_required`: required rows without a decision; class_of.* rows count as one group ("class_of"). */
 export function undecidedRequired(fields: ExtractedField[]): string[] {
   const out = fields.filter((f) => f.required && !f.decision && !f.field_path.startsWith("class_of.")).map((f) => f.field_path);

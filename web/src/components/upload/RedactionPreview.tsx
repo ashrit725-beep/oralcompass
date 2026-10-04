@@ -1,4 +1,4 @@
-import { useId, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
 import { UPLOAD } from "@/lib/copy/upload";
@@ -25,9 +25,12 @@ export function RedactionPreview({ docId, preview, onPreview, onContinue, busy }
   const inputId = useId();
   const hintId = useId();
 
+  const inputRef = useRef<HTMLInputElement>(null);
+  // a11y-6: "Remove this term" stays enabled (aria-disabled while working) and validates on submit, so it never drops keyboard focus
   const addTerm = async () => {
     const t = term.trim();
-    if (!t || working) return;
+    if (working) return;
+    if (!t) { inputRef.current?.focus(); return; }
     if (t.length > 64) { setError(UPLOAD.termTooLong); return; }
     const next = [...terms, t].slice(-20);
     setWorking(true); setError(null);
@@ -35,6 +38,7 @@ export function RedactionPreview({ docId, preview, onPreview, onContinue, busy }
       const r = await api.redaction(docId, next);
       setTerms(next); setTerm("");
       onPreview(r.redaction_preview);
+      inputRef.current?.focus();
     } catch (e) {
       setError(errorBody(e)?.error === "term_too_long" ? UPLOAD.termTooLong : UPLOAD.reviewFailed);
     } finally { setWorking(false); }
@@ -50,8 +54,8 @@ export function RedactionPreview({ docId, preview, onPreview, onContinue, busy }
       <form className="up-term" onSubmit={(e) => { e.preventDefault(); void addTerm(); }}>
         <label htmlFor={inputId}>{UPLOAD.addTerm}</label>
         <div className="up-term-row">
-          <input id={inputId} value={term} maxLength={64} onChange={(e) => setTerm(e.target.value)} aria-describedby={hintId} className="min-h-11" autoComplete="off" />
-          <Button type="submit" variant="outline" size="touch" disabled={!term.trim() || working}>{UPLOAD.addTermButton}</Button>
+          <input ref={inputRef} id={inputId} value={term} maxLength={64} onChange={(e) => setTerm(e.target.value)} aria-describedby={hintId} className="min-h-11" autoComplete="off" />
+          <Button type="submit" variant="outline" size="touch" aria-disabled={working || undefined}>{UPLOAD.addTermButton}</Button>
         </div>
         <p id={hintId} className="up-caption">{UPLOAD.addTermHint}</p>
         {error && <p role="alert" className="up-error">{error}</p>}

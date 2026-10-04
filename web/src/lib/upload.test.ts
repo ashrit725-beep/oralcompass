@@ -3,7 +3,7 @@ import { ApiError } from "./api";
 import type { ExtractedField } from "./types";
 import {
   checkPages, checkSize, decisionCandidate, decisionEdit, formatProposed, groupByLandmark, isPdfMagic, isTerminal, labelFor, MAX_BYTES, parseValueInput,
-  pollExtraction, problemCopy, publishErrorCopy, reviewErrorCopy, uploadErrorCopy, errorBody, sha256Hex, stageCopy, stageProgress, undecidedRequired, urlBase64ToUint8Array, verifiedUndecided, type ExtractionStatusFull,
+  pollExtraction, createSerialGate, problemCopy, publishErrorCopy, reviewErrorCopy, uploadErrorCopy, errorBody, sha256Hex, stageCopy, stageProgress, undecidedRequired, urlBase64ToUint8Array, verifiedUndecided, type ExtractionStatusFull,
 } from "./upload";
 
 const field = (over: Partial<ExtractedField>): ExtractedField => ({
@@ -132,5 +132,17 @@ describe("API error copy (FastAPI wraps the error object in `detail`)", () => {
     expect(errorBody(new ApiError(422, "/x", { error: "term_too_long" }))?.error).toBe("term_too_long");
     expect(errorBody(new Error("x"))).toBeUndefined();
     expect(uploadErrorCopy(new ApiError(500, "/x", undefined))).toContain("could not be stored");
+  });
+});
+
+describe("review decisions are serialized (web-correctness-21)", () => {
+  it("refuses a second decision while one is in flight and reopens after it settles", () => {
+    const gate = createSerialGate();
+    expect(gate.enter()).toBe(true);
+    expect(gate.busy).toBe(true);
+    expect(gate.enter()).toBe(false);          // row B while row A's request runs: ignored, so A's response cannot overwrite B
+    gate.leave();
+    expect(gate.busy).toBe(false);
+    expect(gate.enter()).toBe(true);
   });
 });

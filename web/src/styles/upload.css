@@ -132,3 +132,6 @@
 .up-stepper ol { padding-bottom: 28px; }
 .up-step-now { margin: -8px 16px 8px; font-size: 13px; line-height: 18px; color: var(--ink); font-weight: 600; }
 @media (max-width: 639px) { .up-stepper ol { padding-bottom: 12px; } }
+
+/* a11y-6: busy controls keep focus (aria-disabled + click guard instead of the disabled attribute) and read as unavailable */
+.up-wizard [aria-disabled="true"]:is(button, fieldset) { opacity: .55; cursor: default; }

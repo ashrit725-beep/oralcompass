@@ -562,6 +562,12 @@ def upload_walk(page, device: str, shot):
     check(f"{device}: every amount in the review table badged", un_up == 0, f"{un_up} unbadged")
     shot("15-upload-review")
     page.get_by_role("button", name="Confirm all verified quotes").click(); page.wait_for_timeout(1500)
+    # a11y-6: a decision made from the keyboard keeps focus on the pressed button while (and after) the request runs
+    first = page.locator(".up-row:not([data-decided])").filter(has=page.locator(".up-req")).first
+    if first.count():
+        first.get_by_role("button", name="Not in document").first.focus(); page.keyboard.press("Enter"); page.wait_for_timeout(700)
+        kept = page.evaluate("(() => { const a = document.activeElement; return !!a && a.textContent.trim() === 'Not in document' && !!a.closest('.up-row'); })()")
+        check(f"{device}: review decision keeps keyboard focus", kept, page.evaluate("document.activeElement?.tagName + ' ' + (document.activeElement?.textContent || '').slice(0, 30)"))
     for _ in range(60):
         if page.locator(".up-count[data-undecided='0']").count(): break
         row = page.locator(".up-row:not([data-decided])").filter(has=page.locator(".up-req")).first

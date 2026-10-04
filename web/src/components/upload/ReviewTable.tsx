@@ -5,7 +5,7 @@ import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components
 import { api } from "@/lib/api";
 import { UPLOAD } from "@/lib/copy/upload";
 import type { ExtractedField, PlanRef, ReviewDecision, UploadedPlanSummary } from "@/lib/types";
-import { groupByLandmark, labelFor, publishErrorCopy, reviewErrorCopy, undecidedRequired, verifiedUndecided, type ExtractionStatusFull } from "@/lib/upload";
+import { createSerialGate, groupByLandmark, labelFor, publishErrorCopy, reviewErrorCopy, undecidedRequired, verifiedUndecided, type ExtractionStatusFull } from "@/lib/upload";
 import { ReviewRow } from "./ReviewRow";
 
 export interface PublishResult { plan_ref: PlanRef; version_label: string; published_at: string; sha256: string; summary: UploadedPlanSummary }
@@ -43,7 +43,11 @@ export function ReviewTable({ docId, status, onFields, onPublished }: ReviewTabl
   const closeConfirm = () => { setConfirming(false); publishBox.current?.querySelector<HTMLElement>(".hb-root")?.focus(); };
   useEffect(() => { if (confirming) publishBox.current?.querySelector<HTMLElement>(".up-confirm-publish")?.focus(); }, [confirming]);
 
+  // web-correctness-21: decisions are serialized (every row is aria-disabled while one is in flight), so responses cannot overtake each other.
+  // a11y-6: busy controls use aria-disabled + a click guard, never the disabled attribute, so the focused button keeps focus.
+  const gate = useRef(createSerialGate());
   const decide = useCallback(async (decisions: ReviewDecision[], path: string) => {
+    if (!gate.current.enter()) return;
     setBusyPath(path); setRowErrors((e) => ({ ...e, [path]: "" })); setPublishError(null);
     try {
       const r = (await api.review(docId, decisions)) as ReviewResult;
@@ -52,7 +56,7 @@ export function ReviewTable({ docId, status, onFields, onPublished }: ReviewTabl
       setMessage(left.length ? UPLOAD.waitingCount(left.length) : UPLOAD.allDecided);
     } catch (e) {
       setRowErrors((errs) => ({ ...errs, [path]: reviewErrorCopy(e) }));
-    } finally { setBusyPath(null); }
+    } finally { gate.current.leave(); setBusyPath(null); }
   }, [docId, onFields]);
 
   const confirmAll = () => decide(verified.map((f) => ({ field_path: f.field_path, decision: "confirmed" as const })), "*");
@@ -82,7 +86,7 @@ export function ReviewTable({ docId, status, onFields, onPublished }: ReviewTabl
 
       {verified.length > 0 && (
         <div className="up-confirm-all">
-          <Button type="button" variant="outline" size="touch" onClick={confirmAll} disabled={busyPath !== null}>{UPLOAD.confirmAllVerified}</Button>
+          <Button type="button" variant="outline" size="touch" onClick={() => { if (busyPath === null) void confirmAll(); }} aria-disabled={busyPath !== null || undefined}>{UPLOAD.confirmAllVerified}</Button>
           <span className="up-caption">{UPLOAD.confirmAllNote(verified.length)}</span>
           {rowErrors["*"] && <p role="alert" className="up-error">{rowErrors["*"]}</p>}
         </div>
@@ -103,7 +107,7 @@ export function ReviewTable({ docId, status, onFields, onPublished }: ReviewTabl
             </TableHeader>
             <TableBody>
               {g.fields.map((f) => (
-                <ReviewRow key={f.field_path} docId={docId} field={f} classNames={classNames} busy={busyPath === f.field_path || busyPath === "*"} error={rowErrors[f.field_path] || null} onDecide={(d) => decide([d], f.field_path)} />
+                <ReviewRow key={f.field_path} docId={docId} field={f} classNames={classNames} busy={busyPath !== null} error={rowErrors[f.field_path] || null} onDecide={(d) => decide([d], f.field_path)} />
               ))}
             </TableBody>
           </Table>
