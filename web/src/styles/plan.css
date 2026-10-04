@@ -1,81 +1,150 @@
 /* OralCompass plan view styles (plan selector, benefits compass, benefit statement form, treatment plan importer, compare cells, depth dial).
    Owner: web foundation + map agent. Imported by src/styles.css inside @layer components; colours come from the :root tokens in
    styles.css only (no hex here). Motion: the meter fills use one transform transition (--dur-standard); it is zeroed under reduced motion
-   and the end state (the final width) is set by the inline style, so nothing is lost. Nothing in this file loops. */
+   and the end state (the final width) is set by the inline style, so nothing is lost. The only loop is the stage plate's idle drift
+   (40 s, paused while the tab is hidden, off under reduced motion). */
 
-/* ---- plan selector ---- */
-.plan-selector { display: grid; gap: var(--s-3); width: 100%; }
-.ps-mode { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2) var(--s-4); }
-.ps-mode-label { font-size: .9rem; color: var(--ink-soft); }
+/* The app is phone-only (owner direction 06:00): every rule below is the phone layout, unconditionally. On a wide screen the same app sits
+   in the 480 px column, so a viewport media query would branch to a layout nobody sees; the desktop rules were removed, not hidden. */
+
+/* ---- CinematicStage (STUB, mob/plan; replaced by the journey builder's component at integration) ----
+   Full bleed across the app column (no box, border or radius): the painted plate, the title card on a parchment scrim, the map layer,
+   the bottom fade into the parchment and the vignette. Transform/opacity only; no blur, glow or bounce. The plate settles once per
+   session (1.6 s) and then drifts 1 → 1.02 over 40 s (paused while the tab is hidden, off under reduced motion). A map layer may move
+   the camera through `--camera-y` / `data-camera="focus"` on the stage: the plate follows at 0.3× (far water) and the title steps aside. */
+.cstage { position: relative; isolation: isolate; overflow: clip; margin: calc(-1 * var(--view-pad, 1rem)) calc(-1 * var(--view-pad, 1rem)) 0; background: var(--water); }
+.cstage-plate { position: absolute; inset: -14% 0; z-index: 0; transform: translate3d(0, calc(var(--camera-y, 0px) * .3), 0); transition: transform 700ms cubic-bezier(.76, 0, .24, 1); }
+.cstage-settle { position: absolute; inset: 0; transform-origin: 50% 30%; }
+.cstage-settle.is-establishing { animation: cstage-establish 1.6s cubic-bezier(.16, 1, .3, 1) both; }
+.cstage-settle img { display: block; width: 100%; height: 100%; object-fit: cover; transform-origin: 40% 40%; animation: cstage-drift 40s ease-in-out 1.6s infinite alternate both; }
+.cstage[data-paused] .cstage-settle img { animation-play-state: paused; }
+@keyframes cstage-establish { from { transform: scale(1.06); } to { transform: scale(1); } }
+@keyframes cstage-drift { from { transform: scale(1); } to { transform: scale(1.02); } }
+.cstage-vignette { position: absolute; inset: 0; z-index: 1; pointer-events: none; background: radial-gradient(ellipse 120% 90% at 50% 42%, transparent 58%, rgba(35, 48, 61, .30) 100%); }
+.cstage-title { position: relative; z-index: 3; padding: 18px 16px 40px; transition: opacity var(--dur-standard) var(--ease-standard);
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--paper) 95%, transparent) 0%, color-mix(in srgb, var(--paper) 90%, transparent) 62%, transparent 100%); }
+.cstage[data-camera="focus"] .cstage-title { opacity: 0; }
+/* while the camera is in focus (a bottom sheet is open over the page) the painting may travel past the stage's edges, so the selected
+   stop can rise into the strip above the sheet even when the stage starts lower on the screen */
+.cstage[data-camera="focus"] { overflow: visible; }
+.cstage-map { position: relative; z-index: 2; }
+.cstage-fade { position: absolute; left: 0; right: 0; bottom: 0; height: 140px; z-index: 1; pointer-events: none;
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--paper) 0%, transparent) 0%, color-mix(in srgb, var(--paper) 70%, transparent) 55%, var(--paper) 100%); }
+@media (prefers-reduced-motion: reduce) {
+  .cstage-settle.is-establishing, .cstage-settle img { animation: none; }
+  .cstage-plate, .cstage-title { transition: none; }
+}
+
+/* ---- My plan title card (inside the stage) ---- */
+.pa-title { margin: 0 0 6px; font-size: 1.6rem; line-height: 1.15; font-weight: 600; text-wrap: balance; overflow-wrap: anywhere; }
+.pa-facts { margin: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px; font-size: 15px; line-height: 1.35; color: var(--ink); }
+.pa-facts .ribbon { margin-left: 0; }
+.pa-facts-line { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 0 4px; font-variant-numeric: tabular-nums; }
+.pa-facts-line .amt { font-weight: 600; }
+.pa-facts-line .calc-note { display: inline; margin-left: 4px; }
+
+/* ---- PlanAtlas: five painted stops on the inked route (pixel layout from atlas/PlanAtlas.tsx planLayout) ---- */
+.pa { position: relative; width: 100%; }
+.pa-camera { position: absolute; inset: 0; transition: transform 700ms cubic-bezier(.76, 0, .24, 1); }
+.pa-camera.is-instant { transition: none; }
+.pa-route { position: absolute; left: 0; top: 0; z-index: 0; overflow: visible; pointer-events: none; }
+.pa-stop { position: absolute; left: 0; right: 0; z-index: 1; display: block; margin: 0; padding: 0; border: 0; background: none; color: var(--ink); font: inherit; text-align: left;
+  cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+.pa-plate { position: absolute; display: block; pointer-events: none; transform-origin: 50% 60%;
+  transition: transform 600ms var(--ease-land), opacity var(--dur-standard) var(--ease-standard); }
+.pa-plate-img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.pa-plate-img.plate-cove { transform: scaleX(-1); filter: sepia(.22) saturate(.9) hue-rotate(-10deg); }   /* the cove: the same plate mirrored and warmed */
+.pa-harbor { display: block; width: 100%; height: 100%; overflow: visible; }
+.pa-bridge { position: absolute; left: 6%; top: 34%; width: 88%; height: auto; }
+.pa-fog { position: absolute; left: -22%; top: 16%; width: 144%; height: auto; opacity: .9; }
+.pa.has-selection .pa-stop:not(.is-selected) .pa-plate { opacity: .72; }
+.pa-stop.is-selected .pa-plate { transform: scale(1.04); }
+/* the label: a parchment lozenge in the Passage island-label style (never text straight on the painting) */
+.pa-label { position: absolute; top: 50%; transform: translateY(-50%); display: grid; gap: 1px; justify-items: start; width: max-content; min-width: 112px; padding: 7px 10px 8px;
+  background: var(--paper); border: 1px solid var(--rule); border-radius: var(--r-2); box-shadow: var(--shadow-2); line-height: 1.2; overflow-wrap: anywhere;
+  transition: transform var(--dur-micro) var(--ease-standard), background-color var(--dur-micro) var(--ease-standard), box-shadow var(--dur-micro) var(--ease-standard); }
+.side-right .pa-label { justify-items: end; text-align: right; }
+.pa-term { font-family: var(--serif); font-weight: 600; font-size: 16px; line-height: 20px; text-wrap: balance; }
+.pa-place { font-family: var(--serif); font-style: italic; font-size: 13px; line-height: 17px; color: var(--ink-soft); }
+.pa-value { margin-top: 4px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 5px; font-size: 15px; line-height: 20px; font-variant-numeric: tabular-nums; }
+.side-right .pa-value { justify-content: flex-end; }
+.pa-value .amt, .pa-pct { font-weight: 600; }
+.pa-word { color: var(--ink-soft); }
+.pa-ev { display: block; min-width: 0; font-size: 12px; line-height: 16px; }
+.pa-ev .badge { display: inline; white-space: normal; }   /* inline: the glyph stays with the first word when the words wrap */
+.pa-ev .badge .badge-glyph { display: inline; vertical-align: -2px; margin-right: 3px; }
+.pa-ev .fig-calc { font-size: 12px; font-style: italic; color: var(--ink-soft); white-space: normal; }
+.compass .fig-calc { white-space: normal; }   /* drawer.css keeps engine notes on one line; in the one-column compass they wrap (no sideways scroll at 360 px) */
+.pa-ev .pa-ribbon { margin: 3px 0 0; font-size: 11.5px; line-height: 15px; padding: 1px 7px; }
+.pa-stop.is-unknown .pa-label, .pa-stop.is-fog .pa-label { border-style: dashed; border-color: var(--ink-soft); }
+.pa-stop.is-unknown .pa-value, .pa-stop.is-fog .pa-value { font-style: italic; color: var(--ink-soft); font-weight: 400; }
+.pa-stop.is-selected .pa-label { border-color: var(--select); box-shadow: 0 0 0 3px var(--select-ring), var(--shadow-2); }
+.pa-stop:active .pa-label { transform: translateY(-50%) scale(.97); background: var(--parchment); }
+.pa-stop:focus-visible { outline: none; }
+.pa-stop:focus-visible .pa-label { outline: 3px solid var(--focus); outline-offset: 2px; }
+/* the stops arrive as the pen reaches them (first view per session only; the delay is set inline from the route timing) */
+.pa-enter { animation: pa-rise 480ms var(--ease-land) both; }
+@keyframes pa-rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .pa-enter { animation: none; }
+  .pa-camera, .pa-plate, .pa-label { transition: none; }
+  .pa-stop:active .pa-label { transform: translateY(-50%); }
+}
+
+/* ---- the landmark bottom sheet ---- */
+.pa-sheet-place { margin-left: 6px; font-family: var(--serif); font-style: italic; font-weight: 400; font-size: 15px; color: var(--ink-soft); }
+.plan-sheet .lm-kicker { display: none; }    /* the sheet title already names the place */
+.plan-sheet #lm-h { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.plan-sheet .landmark .lm-head { margin-bottom: var(--s-3); }
+
+/* ---- My plan sections below the map ---- */
+.plan-view { min-width: 0; }
+.plan-hint { position: relative; z-index: 1; margin: -6px 0 var(--s-5); font-family: var(--serif); font-style: italic; font-size: 14px; line-height: 1.45; color: var(--ink-soft); text-wrap: pretty; }
+.plan-sec { display: grid; gap: var(--s-3); margin: 0 0 var(--s-5); min-width: 0; }
+.plan-sec-h { margin: 0; font-size: 1.1rem; }
+.plan-banner { margin: 0; line-height: 1.45; }
+.plan-empty { font-family: var(--serif); color: var(--ink-soft); margin: 0; }
+
+/* ---- plan selector (compact: the source switch and one grouped select; the full title under it) ---- */
+.plan-selector { display: grid; gap: var(--s-3); width: 100%; min-width: 0; }
+.ps-mode { display: grid; gap: var(--s-2); }
+.ps-mode-label { font-size: 14px; color: var(--ink-soft); }
 /* controls are set in the sans face (spec §5.2); a long label wraps inside its segment instead of spilling past the border (mobile-19) */
-.ps-toggle [data-slot="toggle-group-item"] { font-family: var(--sans); white-space: normal; height: auto; line-height: 1.2; text-align: center; }
-.ps-row { display: grid; gap: var(--s-3); align-items: end; grid-template-columns: minmax(0, 1fr); }
-.ps-cascade { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-3); }
-.ps-cascade select, .ps-upload select, .plan-selector .plan-pick select { width: 100%; min-height: 44px; }
-.ps-upload { display: grid; gap: var(--s-3); padding: var(--s-3) var(--s-4); border: 1px dashed var(--rule); border-radius: var(--r-3); background: var(--paper-deep); }
+.ps-toggle { display: flex; width: 100%; }
+.ps-toggle [data-slot="toggle-group-item"] { flex: 1 1 0; min-width: 0; font-family: var(--sans); white-space: normal; height: auto; line-height: 1.2; text-align: center; }
+.ps-row { display: grid; gap: var(--s-2); min-width: 0; }
+.plan-selector .plan-pick { display: grid; gap: 4px; min-width: 0; font-size: 14px; color: var(--ink-soft); }
+/* 16 px text: iOS does not zoom into the select; the closed select shows the short label, the full title is the line under it */
+.ps-upload select, .plan-selector .plan-pick select { width: 100%; min-width: 0; height: 48px; min-height: 48px; font-size: 16px; color: var(--ink); text-overflow: ellipsis; }
+.ps-upload { display: grid; gap: var(--s-3); padding: var(--s-3); border: 1px dashed var(--rule); border-radius: var(--r-3); background: var(--paper-deep); }
+.ps-upload label { display: grid; gap: 4px; min-width: 0; }
 .ps-noup { margin: 0; }
+.ps-current { margin: 0; overflow-wrap: anywhere; }
 .plan-banner .ribbon { margin-left: 0; margin-right: .4rem; }
-.plan-empty { font-family: var(--serif); color: var(--ink-soft); margin: var(--s-2) 0 0; }
-.plan-head { align-items: start; }
-.ps-current { display: none; margin: 0; overflow-wrap: anywhere; }
-/* the plan select gets its own row; the cascade puts carrier + year on one row and the long plan name on a full row of its own, so the
-   longest carrier and plan names fit at 898 px (a landmark open) as well as at full width (orchestrator note 3, layout-8, slop-20) */
-@media (min-width: 761px) {
-  .ps-row { grid-template-columns: minmax(0, 1fr); }
-  .plan-selector .plan-pick select { max-width: 640px; }
-  .ps-cascade { grid-template-columns: minmax(0, 1fr) 8rem; grid-template-areas: "carrier year" "plan plan"; max-width: 760px; }
-  .ps-carrier { grid-area: carrier; } .ps-plan { grid-area: plan; } .ps-year { grid-area: year; }
-}
-@media (max-width: 760px) {
-  .ps-cascade { display: none; }                 /* phones keep the single grouped select (addendum B2: fewer controls at 360 px) */
-  .ps-current { display: block; }
-  .ps-mode { flex-direction: column; align-items: stretch; }
-  .ps-toggle { width: 100%; } .ps-toggle [data-slot="toggle-group-item"] { flex: 1; }
-}
-
-/* ---- My plan layout: with no landmark open the 420 px detail column is not reserved (demo-18); from 1200 px the page splits in two
-   halves (slop-21): plan selector, atlas, hint and "Add a procedure" on the left, the Benefits compass on the right from the top, instead
-   of a dead third of the page. A landmark opens the detail column as before (the compass then sits under the atlas). ---- */
-@media (min-width: 761px) { .plan-layout.is-solo { grid-template-columns: minmax(0, 1fr); } }
-@media (min-width: 1200px) {
-  .plan-layout.is-solo .plan-main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto auto auto auto 1fr; column-gap: var(--s-5); align-items: start; }
-  .plan-layout.is-solo .plan-main > * { grid-column: 1; }
-  .plan-layout.is-solo .plan-main > .plan-head { grid-row: 1; }
-  .plan-layout.is-solo .plan-main > .plan-map { grid-row: 2; margin-top: var(--s-4); }
-  .plan-layout.is-solo .plan-main > .hint { grid-row: 3; }
-  .plan-layout.is-solo .plan-main > .plan-add { grid-row: 4; }
-  .plan-layout.is-solo .plan-main > .compass { grid-column: 2; grid-row: 1 / -1; margin-top: 0; }
-}
 
 /* ---- depth dial (RubberSegment wrapper) ---- */
-.depth-dial { margin-left: auto; max-width: 100%; }
-.depth-dial .depth-n { font-family: var(--sans); font-size: .75rem; opacity: .75; margin-right: .3rem; }
+.depth-dial { width: 100%; max-width: 100%; }
+.depth-dial > div { width: 100%; }
 /* Two cascade repairs for the vendored RubberSegment: (1) the legacy `.grid` table rule in styles.css (width 100 %, min-width 640 px)
    also matches Tailwind's `grid` utility on the thumb layer; (2) the `[font:inherit]` utility is emitted after `text-[length:var(--rs-font)]`,
-   so the slot font falls back to the inherited size. Setting the size on the track restores it through inheritance on both layers. */
-.depth-dial [role="radiogroup"] { font-size: 14px; }
+   so the slot font falls back to the inherited size. Setting the size on the track restores it through inheritance on both layers.
+   3 slots in ~326 px: the inline `--rs-pad: 18px` is overridden here (author !important beats an inline normal declaration). */
+.depth-dial [role="radiogroup"] { font-size: 14px; --rs-pad: 8px !important; }
 .depth-dial [role="radiogroup"] > .grid { min-width: 0; width: auto; border-collapse: separate; }
-@media (max-width: 760px) {
-  .depth-dial { margin-left: 0; width: 100%; } .depth-dial > div { width: 100%; }
-  /* 3 slots in ~326 px: the inline `--rs-pad: 18px` is overridden here (author !important beats an inline normal declaration) and the digit is dropped */
-  .depth-dial [role="radiogroup"] { --rs-pad: 8px !important; }
-  .depth-dial .depth-n { display: none; }
-}
+.depth-dial .depth-n { display: none; }
 
-/* ---- benefits compass ---- */
-.compass { margin-top: var(--s-5); padding: var(--s-4) var(--s-5); background: var(--paper-deep); border: 1px solid var(--rule); border-radius: var(--r-4); }
-.cmp-head { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--s-4); align-items: center; padding-bottom: var(--s-4); border-bottom: 1px solid var(--rule); }
-.cmp-chest { width: 72px; height: 72px; object-fit: contain; display: block; }
+/* ---- benefits compass (one column of four sections; the question titles it) ---- */
+.compass { margin: 0 0 var(--s-5); padding: var(--s-4); background: var(--paper-deep); border: 1px solid var(--rule); border-radius: var(--r-4); min-width: 0; }
+.cmp-head { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-2); padding-bottom: var(--s-4); border-bottom: 1px solid var(--rule); }
 .cmp-kicker { margin: 0; font-family: var(--serif); font-style: italic; color: var(--ink-soft); font-size: .9rem; }
-.cmp-q { margin: .1rem 0 0; font-size: 1.2rem; line-height: 1.35; }
+.cmp-q { margin: .1rem 0 0; font-size: 1.05rem; line-height: 1.35; text-wrap: pretty; }
 .cmp-q .amt { font-family: var(--sans); font-size: 1.05em; }
 .cmp-a { margin: .25rem 0 0; display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); }
 .cmp-a-amt .amt { font-size: 1.75rem; font-weight: 700; line-height: 1.1; }
 .cmp-a .cmp-calc { flex-basis: 100%; }
-.cmp-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.cmp-quad { padding: var(--s-4) var(--s-4) var(--s-4) 0; min-width: 0; }
-.cmp-ne, .cmp-se { padding-left: var(--s-4); padding-right: 0; border-left: 1px solid var(--rule); }
-.cmp-sw, .cmp-se { border-top: 1px solid var(--rule); }
+.cmp-grid { display: grid; grid-template-columns: minmax(0, 1fr); }
+.cmp-quad { padding: var(--s-4) 0; min-width: 0; border-top: 1px solid var(--rule); }
+.cmp-nw { border-top: 0; }
 .cmp-h { margin: 0 0 var(--s-2); font-size: 1rem; }
 .cmp-limit { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-1) var(--s-2); margin-bottom: var(--s-2); }
 .cmp-limit .amt { font-size: 1.15rem; font-weight: 600; }
@@ -93,9 +162,6 @@
 .cmp-figures { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: var(--s-1) var(--s-3); margin: 0; font-size: .95rem; align-items: baseline; }
 .cmp-figures dt { color: var(--ink-soft); } .cmp-figures dd { margin: 0; min-width: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-1) var(--s-2); }
 .cmp-figures dd > span, .cmp-limit > span, .cmp-a > span, .cmp-strip-item > span { flex-wrap: wrap; }   /* <Money> is an inline-flex pair; let the badge drop to the next line at 360 px */
-/* the phone landmark rows opt out of the legacy pill-button rule (styles.css) through `.unstyled`; restore their own look */
-.landmark-list .landmark-row.unstyled { background: var(--paper); color: var(--ink); border: 1px solid var(--rule); border-radius: 10px; padding: .45rem .7rem; min-height: 44px; }
-.landmark-list .landmark-row.unstyled.is-selected { border-color: var(--terracotta); box-shadow: 0 0 0 3px var(--select-ring); }
 .cmp-derivation { margin: var(--s-2) 0 0; font-size: .8rem; color: var(--ink-soft); }
 .cmp-classes { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s-2); }
 .cmp-class-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s-2); flex-wrap: wrap; font-size: .9rem; }
@@ -104,18 +170,11 @@
 .cmp-restrictions { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s-1); }
 .cmp-restriction { min-height: 44px; text-align: left; font-size: .95rem; display: inline-flex; align-items: center; }
 .cmp-conflict, .cmp-note { font-size: .85rem; color: var(--ink-soft); margin: var(--s-3) 0 0; }
+/* the compact strip (drawer headers): items wrap as whole units, so the separator never sits alone on a line at 360 px */
 .cmp-strip { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-1) var(--s-2); margin: 0; padding: var(--s-2) var(--s-3); background: var(--paper-deep); border: 1px solid var(--rule); border-radius: var(--r-2); font-size: .9rem; }
 .cmp-strip-item { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-1) var(--s-2); color: var(--ink-soft); }
 .cmp-strip-sep { color: var(--ink-soft); }
 .cmp-gauge.is-compact .cmp-meter { margin-bottom: 0; }
-@media (max-width: 760px) {
-  .compass { padding: var(--s-4); }
-  .cmp-grid { grid-template-columns: minmax(0, 1fr); }
-  .cmp-quad { padding: var(--s-4) 0; border-left: 0; border-top: 1px solid var(--rule); }
-  .cmp-nw { border-top: 0; }
-  .cmp-head { grid-template-columns: minmax(0, 1fr); } .cmp-chest { display: none; }
-  .cmp-q { font-size: 1.05rem; }
-}
 @media (prefers-reduced-motion: reduce) { .cmp-fill { transition: none; } }
 
 /* ---- landmark card additions ---- */
@@ -127,33 +186,30 @@
 .bs-form, .tpi-form { display: grid; gap: var(--s-3); padding: var(--s-4); background: var(--paper); border: 1px solid var(--rule); border-radius: var(--r-3); }
 .bs-h { margin: 0; font-size: 1rem; }
 .bs-note { margin: 0; font-size: .85rem; color: var(--ink-soft); }
-.bs-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-3); }
+.bs-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-3); }
 .bs-grid label, .bs-grid .bs-field { min-width: 0; } .bs-grid select { height: 44px; }   /* WebKit ignores min-height on a native select */ .bs-field { display: grid; gap: .25rem; align-content: start; }
-.bs-error-summary:empty { display: none; } .bs-grid input, .bs-grid select { min-height: 44px; width: 100%; }
+.bs-error-summary:empty { display: none; } .bs-grid input, .bs-grid select { min-height: 44px; width: 100%; font-size: 16px; }
 .bs-span { grid-column: 1 / -1; margin: 0; }
 .bs-error { color: var(--danger); font-size: .8rem; }
 .bs-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-3); }
 .bs-user { display: inline-flex; align-items: center; gap: var(--s-2); }
 .bs-status { margin: 0; font-size: .9rem; }
 .bs-derivation { margin: 0; font-size: .85rem; } .bs-derivation dt { color: var(--ink-soft); } .bs-derivation dd { margin: .2rem 0 0; }
-.is-compact .bs-grid { grid-template-columns: minmax(0, 1fr); }
 /* "Add a procedure" reads as a control (layout-26, slop-22): a card header with a chevron that turns when open and a one-line sub-title */
-.plan-add { margin-top: var(--s-4); background: var(--paper-deep); border: 1px solid var(--rule); border-radius: var(--r-4); }
+.plan-add { margin: 0 0 var(--s-5); background: var(--paper-deep); border: 1px solid var(--rule); border-radius: var(--r-4); }
 .plan-add > summary { cursor: pointer; list-style: none; min-height: 56px; display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: var(--s-3); align-content: center;
-  padding: var(--s-2) var(--s-4); border-radius: var(--r-4); }
+  padding: var(--s-2) var(--s-4); border-radius: var(--r-4); -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
 .plan-add > summary::-webkit-details-marker { display: none; }
 .plan-add > summary::after { content: ""; grid-column: 2; grid-row: 1 / span 2; align-self: center; width: 9px; height: 9px; border-right: 2px solid var(--ink); border-bottom: 2px solid var(--ink);
   transform: rotate(45deg); transition: transform var(--dur-standard) var(--ease-standard); }
 .plan-add[open] > summary::after { transform: rotate(225deg); }
 .plan-add-title { font-family: var(--serif); font-weight: 600; font-size: 1.05rem; }
 .plan-add-sub { grid-column: 1; font-size: .85rem; color: var(--ink-soft); }
-.plan-add > summary:hover { background: var(--parchment); }
+.plan-add > summary:active { background: var(--parchment); }
 .plan-add > summary:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 .plan-add[open] > summary { margin-bottom: var(--s-2); border-bottom: 1px solid var(--rule); border-radius: var(--r-4) var(--r-4) 0 0; }
-.plan-add > :not(summary) { padding: 0 var(--s-4) var(--s-4); }
+.plan-add > :not(summary) { padding: 0 var(--s-1) var(--s-3); }   /* keeps the reader's drop zone at full width */
 @media (prefers-reduced-motion: reduce) { .plan-add > summary::after { transition: none; } }
-@media (max-width: 760px) { .plan-add > :not(summary) { padding: 0 var(--s-1) var(--s-3); } }   /* keep the reader's drop zone at full width on phones */
-@media (max-width: 760px) { .bs-grid { grid-template-columns: minmax(0, 1fr); } }
 
 /* ---- treatment plan reader: the send gate for files (orchestrator note 11) ---- */
 .tpr-gate { display: grid; gap: var(--s-2); padding: var(--s-3) var(--s-4); background: var(--paper-deep); border: 1px solid var(--rule); border-left: 3px solid var(--terracotta); border-radius: var(--r-2); }
