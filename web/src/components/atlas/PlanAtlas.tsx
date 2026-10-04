@@ -164,7 +164,7 @@ export function PlanAtlas({ selected, onSelect, stops, label = "Plan map" }: Pla
           const stop = stops[s.id] ?? {};
           const isSel = selected === s.id;
           return (
-            <button key={s.id} type="button" data-stop={s.id}
+            <button key={s.id} type="button" data-stop={s.id} data-stage-focus={isSel ? "true" : undefined}
                     className={`unstyled pa-stop side-${s.side} ${isSel ? "is-selected" : ""} ${stop.state ? `is-${stop.state}` : ""} ${enter ? "pa-enter" : ""}`}
                     style={{ top: s.top, height: s.height, animationDelay: enter ? `${arrival(i)}s` : undefined } as React.CSSProperties}
                     aria-pressed={isSel} aria-label={`${meta.term} (${meta.place})${stop.aria ? `: ${stop.aria}` : ""}`}
