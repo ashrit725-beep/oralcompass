@@ -163,3 +163,15 @@ def test_second_sample_journey_does_not_mix_into_the_first():
     assert not any(k.startswith("ti-a-") or k.startswith("ti-j-") for k in view_s["links"]["treatment_items"]) and view_s["links"]["latest_estimate"]["plan_code"] == "HB26"
     # another owner's journey id is a constant 404
     assert client.post("/me/estimates", json={"plan_code": "ML26", "journey_id": alex["id"]}, headers=B).status_code == 404
+
+
+def test_amounts_are_non_negative_and_remainders_never_go_below_zero():
+    """api-correctness-20: negative cents and zero quantities are 422; a statement above the plan's limits gives $0 remaining with a note."""
+    h = {"X-Dev-User": "neg-amounts"}
+    assert client.put("/me/benefits/HB26", json={"deductible_met_cents": -5000}, headers=h).status_code == 422
+    assert client.put("/me/benefits/HB26", json={"claims": [{"date": "2026-01-02", "procedure_key": "exam", "plan_paid_cents": -1, "source": "x"}]}, headers=h).status_code == 422
+    b = client.put("/me/benefits/HB26", json={"deductible_met_cents": 10_000_000, "benefits_used_cents": 100_000_000}, headers=h).json()
+    assert b["remaining_deductible_cents"] == 0 and b["remaining_max_cents"] == 0 and len(b["over_limit"]) == 2
+    assert "-" not in b["derivation"]["remaining_deductible"].split("=")[-1]
+    for bad in ({"dentist_fee_cents": -5000}, {"dentist_fee_cents": 5000, "quantity": 0}, {"dentist_fee_cents": 5000, "allowed_cents": -1}):
+        assert client.post("/me/treatment-items", json={"procedure_key": "crown", **bad}, headers=h).status_code == 422

@@ -33,11 +33,11 @@ class ClaimIn(BaseModel):
     date: str
     procedure_key: str
     tooth: Optional[str] = None
-    dentist_fee_cents: Optional[int] = None
-    allowed_cents: Optional[int] = None
-    plan_paid_cents: int
-    patient_paid_cents: Optional[int] = None
-    deductible_applied_cents: int = 0
+    dentist_fee_cents: Optional[int] = Field(None, ge=0)
+    allowed_cents: Optional[int] = Field(None, ge=0)
+    plan_paid_cents: int = Field(ge=0)
+    patient_paid_cents: Optional[int] = Field(None, ge=0)
+    deductible_applied_cents: int = Field(0, ge=0)
     source: str
 
 
@@ -46,10 +46,10 @@ class BenefitsIn(BaseModel):
     coverage_start: Optional[str] = None
     coverage_end: Optional[str] = None
     network_default: Optional[str] = None            # in | out
-    deductible_met_cents: Optional[int] = None       # None = not provided
-    benefits_used_cents: Optional[int] = None        # insurer payments so far this benefit year; None = not provided
-    deductible_met_out_cents: Optional[int] = None   # only for plans whose out-of-network deductible is tracked separately
-    benefits_used_out_cents: Optional[int] = None    # only for plans whose out-of-network maximum is tracked separately
+    deductible_met_cents: Optional[int] = Field(None, ge=0)       # None = not provided
+    benefits_used_cents: Optional[int] = Field(None, ge=0)        # insurer payments so far this benefit year; None = not provided
+    deductible_met_out_cents: Optional[int] = Field(None, ge=0)   # only for plans whose out-of-network deductible is tracked separately
+    benefits_used_out_cents: Optional[int] = Field(None, ge=0)    # only for plans whose out-of-network maximum is tracked separately
     source: dict = Field(default_factory=dict)       # {type, label, date, entered_by}
     last_updated: Optional[str] = None
     claims: list[ClaimIn] = []
@@ -60,9 +60,9 @@ class TreatmentItemIn(BaseModel):
     procedure_key: str
     procedure_name: Optional[str] = None             # as written on the estimate; defaults to the catalog name
     tooth: Optional[str] = None
-    quantity: int = 1
-    dentist_fee_cents: int                           # what the dentist charges — never mixed with the allowed amount
-    allowed_cents: Optional[int] = None              # the plan's allowed amount if the user knows it (pre-treatment estimate, EOB); else UNKNOWN
+    quantity: int = Field(1, ge=1, le=32)
+    dentist_fee_cents: int = Field(ge=0)             # what the dentist charges — never mixed with the allowed amount
+    allowed_cents: Optional[int] = Field(None, ge=0)             # the plan's allowed amount if the user knows it (pre-treatment estimate, EOB); else UNKNOWN
     allowed_source: Optional[str] = None             # where the allowed amount came from, e.g. "pre-treatment estimate response 2026-09-30"
     code_as_written: Optional[str] = None            # procedure code printed on the user's own estimate/claim (USER) — never inferred
     network: Optional[str] = None                    # in | out | None (falls back to benefits.network_default, else UNKNOWN)
@@ -82,13 +82,21 @@ class EstimateRequest(BaseModel):
 
 
 # ---------- helpers ----------
+def _remaining(limit: int, used: int, what: str, notes: list[str]) -> int:
+    """limit − used, never below zero: a statement figure above the plan's stated limit is noted, not turned into a negative remainder."""
+    if used > limit:
+        notes.append(f"the {what} on your statement (${used/100:,.2f}) is above the plan's stated limit (${limit/100:,.2f}); the remaining figure is shown as $0.00")
+    return max(0, limit - used)
+
+
 def derived_benefits(plan: PlanModel, b: dict, plan_ref: str) -> dict:
     out = {**b, "plan_code": plan_ref}
     ded = plan.deductible_individual
     mx = plan.annual_max
     src_label = (b.get("source") or {}).get("label", "not provided")
-    out["remaining_deductible_cents"] = (ded.value - b["deductible_met_cents"]) if (ded.known and b.get("deductible_met_cents") is not None) else None
-    out["remaining_max_cents"] = (mx.value - b["benefits_used_cents"]) if (mx.known and b.get("benefits_used_cents") is not None) else None
+    over: list[str] = []
+    out["remaining_deductible_cents"] = _remaining(ded.value, b["deductible_met_cents"], "deductible met", over) if (ded.known and b.get("deductible_met_cents") is not None) else None
+    out["remaining_max_cents"] = _remaining(mx.value, b["benefits_used_cents"], "plan paid so far", over) if (mx.known and b.get("benefits_used_cents") is not None) else None
     out["annual_max_unlimited"] = plan.annual_max_unlimited
     out["derivation"] = {
         "remaining_deductible": (f"plan deductible ${ded.value/100:,.2f} (document) − met ${b.get('deductible_met_cents', 0)/100:,.2f} ({src_label}) = ${out['remaining_deductible_cents']/100:,.2f}"
@@ -99,13 +107,15 @@ def derived_benefits(plan: PlanModel, b: dict, plan_ref: str) -> dict:
     }
     # separate out-of-network figures, only when the document states separate out-of-network limits
     if plan.deductible_individual_out.known:
-        out["remaining_deductible_out_cents"] = (plan.deductible_individual_out.value - b["deductible_met_out_cents"]) if b.get("deductible_met_out_cents") is not None else None
+        out["remaining_deductible_out_cents"] = _remaining(plan.deductible_individual_out.value, b["deductible_met_out_cents"], "out-of-network deductible met", over) if b.get("deductible_met_out_cents") is not None else None
         out["derivation"]["remaining_deductible_out"] = (f"out-of-network deductible ${plan.deductible_individual_out.value/100:,.2f} (document) − met ${b.get('deductible_met_out_cents', 0)/100:,.2f} ({src_label})"
                                                          if out["remaining_deductible_out_cents"] is not None else "out-of-network deductible met: not provided")
     if plan.annual_max_out.known:
-        out["remaining_max_out_cents"] = (plan.annual_max_out.value - b["benefits_used_out_cents"]) if b.get("benefits_used_out_cents") is not None else None
+        out["remaining_max_out_cents"] = _remaining(plan.annual_max_out.value, b["benefits_used_out_cents"], "out-of-network plan paid so far", over) if b.get("benefits_used_out_cents") is not None else None
         out["derivation"]["remaining_max_out"] = (f"out-of-network maximum ${plan.annual_max_out.value/100:,.2f} (document) − plan paid ${b.get('benefits_used_out_cents', 0)/100:,.2f} ({src_label})"
                                                   if out["remaining_max_out_cents"] is not None else "out-of-network benefits used: not provided")
+    if over:
+        out["over_limit"] = over
     itemized = sum(c.get("plan_paid_cents", 0) for c in b.get("claims", []))
     if b.get("claims") and b.get("benefits_used_cents") is not None and itemized != b["benefits_used_cents"]:
         out["conflict"] = {"status": "CONFLICT", "note": f"itemized claims total {itemized/100:.2f} but the stated 'benefits used' is {b['benefits_used_cents']/100:.2f}; both are shown, neither is chosen"}
