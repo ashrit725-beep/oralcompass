@@ -56,7 +56,7 @@ describe("start screen samples (finding demo-12)", () => {
 });
 
 describe("DetailPanel forms (finding web-correctness-7)", () => {
-  const base = { view: f.view, estimate: f.estimate, onSelect: noop, onOpenLandmark: noop, onOpenDocuments: noop, onPatch: async () => {}, onInstructions: async () => {}, busy: false, mobile: false, onClose: noop };
+  const base = { view: f.view, estimate: f.estimate, onSelect: noop, onOpenLandmark: noop, onOpenDocuments: noop, onPatch: async () => {}, onInstructions: async () => {}, busy: false, onClose: noop };
   const stage = f.view.journey.stages.find((s) => s.checkpoints.length >= 2)!;
   const bodyOf = (el: ReturnType<typeof DetailPanel>) => (el as React.ReactElement<{ children: React.ReactNode[] }>).props.children[1] as React.ReactElement;
   it("mounts a fresh checkpoint form per checkpoint and a fresh stage form per stage", () => {
@@ -68,15 +68,18 @@ describe("DetailPanel forms (finding web-correctness-7)", () => {
   });
 });
 
+/** The panel body as markup: DetailPanel renders the phone Sheet (a portal, empty in static markup), whose second child is the body. */
+const panelBody = (props: Parameters<typeof DetailPanel>[0]) => renderToStaticMarkup((DetailPanel(props) as React.ReactElement<{ children: React.ReactNode[] }>).props.children[1] as React.ReactElement);
+
 describe("DetailPanel costs (finding web-correctness-28)", () => {
   it("prints the live estimate, not the journey view's stale latest_estimate snapshot", () => {
     const stale = { ...f.view, links: { ...f.view.links, latest_estimate: { id: "old", plan_code: "ML26", status: "estimate", calculated_at: "2026-01-01", user_estimated_payment_cents: 12345, insurer_estimated_payment_cents: 67890 } } };
-    const props = { view: stale, estimate: f.estimate, onSelect: noop, onOpenLandmark: noop, onOpenDocuments: noop, onPatch: async () => {}, onInstructions: async () => {}, busy: false, mobile: false, onClose: noop };
-    const stageHtml = renderToStaticMarkup(<DetailPanel {...props} selection={{ stageId: "before" }} />);
+    const props = { view: stale, estimate: f.estimate, onSelect: noop, onOpenLandmark: noop, onOpenDocuments: noop, onPatch: async () => {}, onInstructions: async () => {}, busy: false, onClose: noop };
+    const stageHtml = panelBody({ ...props, selection: { stageId: "before" } });
     expect(stageHtml).toContain("$902.00");
     expect(stageHtml).toContain("$1,098.00");
     expect(stageHtml).not.toContain("$123.45");
-    const cpHtml = renderToStaticMarkup(<DetailPanel {...props} selection={{ stageId: "before", cpId: "estimate-reviewed" }} />);
+    const cpHtml = panelBody({ ...props, selection: { stageId: "before", cpId: "estimate-reviewed" } });
     expect(cpHtml).toContain("$902.00");
     expect(cpHtml).not.toContain("$678.90");
   });
@@ -84,8 +87,8 @@ describe("DetailPanel costs (finding web-correctness-28)", () => {
 
 describe("completion disclaimer printed once (finding slop-29)", () => {
   it("is not repeated in the stage panel or the overview list", () => {
-    const props = { view: f.view, estimate: f.estimate, onSelect: noop, onOpenLandmark: noop, onOpenDocuments: noop, onPatch: async () => {}, onInstructions: async () => {}, busy: false, mobile: false, onClose: noop };
-    expect(renderToStaticMarkup(<DetailPanel {...props} selection={{ stageId: "before" }} />)).not.toContain(UI.progressNote.slice(0, 40));
+    const props = { view: f.view, estimate: f.estimate, onSelect: noop, onOpenLandmark: noop, onOpenDocuments: noop, onPatch: async () => {}, onInstructions: async () => {}, busy: false, onClose: noop };
+    expect(panelBody({ ...props, selection: { stageId: "before" } })).not.toContain(UI.progressNote.slice(0, 40));
     expect(renderToStaticMarkup(<OverviewList journey={f.view.journey} vm={vm} onSelect={noop} />)).not.toContain(UI.progressNote.slice(0, 40));
   });
 });
@@ -145,13 +148,14 @@ describe("chart controls keyboard model (finding a11y-17)", () => {
   });
 });
 
-describe("care rail (finding slop-27)", () => {
+describe("care timeline (finding slop-27; the phone timeline since the mobile-only direction)", () => {
   it("shows a single 'Show on the chart' link, on the current stage", () => {
-    const html = renderToStaticMarkup(<CareTimeline journey={f.view.journey} progress={f.view.progress} selected={null} onSelect={noop} currentStageId="before" mobile={false} linkedIsland={() => vm.islands[0].id} onShowOnChart={noop} />);
+    const html = renderToStaticMarkup(<CareTimeline journey={f.view.journey} progress={f.view.progress} selected={null} onSelect={noop} currentStageId="before" linkedIsland={() => vm.islands[0].id} onShowOnChart={noop} />);
     expect(html.match(/Show on the chart/g) ?? []).toHaveLength(1);
-    const at = html.indexOf('aria-current="step"'), link = html.indexOf("Show on the chart"), nextCard = html.indexOf('class="care-card', at);
+    const at = html.indexOf('data-stage-btn="before"'), link = html.indexOf("Show on the chart"), nextStage = html.indexOf("data-stage-btn=", at + 1);
+    expect(at).toBeGreaterThan(-1);
     expect(link).toBeGreaterThan(at);
-    expect(nextCard === -1 || link < nextCard).toBe(true);
+    expect(nextStage === -1 || link < nextStage).toBe(true);
   });
 });
 
@@ -174,14 +178,13 @@ describe("journey motion rules (findings motion-5, motion-4, slop-26, motion-12)
   });
 });
 
-describe("island strip pages (finding web-correctness-30)", () => {
-  it("offers page buttons past twelve procedures", () => {
+describe("island strip (finding web-correctness-30; the phone select since the mobile-only direction)", () => {
+  it("lists every procedure in one select, chosen first and opened with the Show button (a11y-16)", () => {
     const many = { ...vm, islands: Array.from({ length: 14 }, (_, i) => ({ ...vm.islands[i % 2], id: `island:z${i}`, order: i + 1 })) };
-    const html = renderToStaticMarkup(<IslandStrip vm={many} selected={null} onSelect={noop} mobile={false} />);
-    expect(html).toContain("Procedures 1 to 12");
-    expect(html).toContain("Procedures 13 to 14");
-    expect((html.match(/class="unstyled island-chip[^"]*"[^>]*aria-pressed="false"/g) ?? []).length).toBeGreaterThanOrEqual(12);
-    expect(renderToStaticMarkup(<IslandStrip vm={vm} selected={null} onSelect={noop} mobile={false} />)).not.toContain("Procedures 1 to");
+    const html = renderToStaticMarkup(<IslandStrip vm={many} selected={null} onSelect={noop} />);
+    expect(html.match(/<option value="island:z\d+"/g) ?? []).toHaveLength(14);
+    expect(html).toMatch(/<button type="submit"[^>]*disabled=""/);
+    expect(html).not.toContain("island-chip");
   });
 });
 

@@ -10,7 +10,6 @@
 /* ---- layout (spec §4.1): the detail column exists only while a selection is open ---- */
 .passage-layout { position: relative; display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-5); align-items: start; }
 .passage-layout.has-detail { grid-template-columns: minmax(0, 1fr) 440px; }
-@media (min-width: 1700px) { .passage-layout.has-detail { grid-template-columns: minmax(0, 1fr) 480px; } .passage-layout { max-width: 1680px; margin: 0 auto; } }
 .passage-main { min-width: 0; display: flex; flex-direction: column; gap: var(--s-4); }
 .passage-detail { min-width: 0; position: sticky; top: var(--s-4); }
 .passage-detail > .detail { max-height: calc(100vh - 136px); }
@@ -24,14 +23,13 @@
 .log dd { margin: 0; min-width: 0; }
 /* rows wrap to two lines instead of cutting a sentence with "…" (the full text is also the button's title) */
 .log-link { font-family: var(--serif); font-size: 15px; line-height: 22px; text-align: left; max-width: 100%; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow-wrap: anywhere; color: var(--ink); min-height: 32px; }
-@media (max-width: 760px) {
+/* phone layout, always on (mobile-only app) */
   .log { grid-template-columns: minmax(0, 1fr); }
   .log-row { grid-template-columns: minmax(0, 1fr); gap: 2px; padding: 6px 0; }
   .log-row:nth-last-child(-n + 2) { border-bottom: 1px solid var(--rule); }
   .log-row:last-child { border-bottom: 0; }
   .log dt { font-size: 11px; line-height: 14px; }
   .log-link { white-space: normal; overflow-wrap: anywhere; }
-}
 
 /* ---- journey header and segment row (delight pass mo-05: the chart starts inside the first 1366×900 viewport) ---- */
 .journey-head h2 { text-wrap: balance; margin-bottom: var(--s-1); }
@@ -49,13 +47,12 @@
 .journey-pickers { display: flex; flex-wrap: wrap; gap: var(--s-2); flex: 1 1 320px; min-width: 0; }
 .journey-pickers select { min-height: 44px; min-width: 0; flex: 1 1 220px; max-width: 360px; }
 .journey-pickers select.add-journey { flex: 0 1 220px; }
-@media (max-width: 760px) {
+/* phone layout, always on (mobile-only app) */
   .journey-controls { flex-direction: column; align-items: stretch; gap: var(--s-2); }
   .segmented { display: grid; width: 100%; }
   .segmented > button.seg-btn { min-height: 44px; padding: 0 var(--s-2); font-size: 14px; }
   .journey-pickers { flex-direction: column; flex: none; }
   .journey-pickers select, .journey-pickers select.add-journey { max-width: none; flex: none; width: 100%; height: auto; min-height: 44px; }
-}
 
 /* ---- the passage plate ---- */
 .passage-block { min-width: 0; }
@@ -86,7 +83,7 @@
 .ocean-seigaiha { position: absolute; inset: -5% -40% -5% 0; }
 .ocean-fog { position: absolute; left: -10%; right: -10%; top: -4%; width: 120%; height: auto; opacity: .28; }
 .ocean-horizon-tint { position: absolute; left: 0; right: 0; top: 0; height: 22%; background: linear-gradient(to bottom, color-mix(in srgb, var(--paper) 28%, transparent), transparent); z-index: 2; }
-@media (max-width: 760px), (hover: none) { .ocean-fog, .ocean-horizon-tint { display: none; } }
+.ocean-fog, .ocean-horizon-tint { display: none; }
 
 /* ---- island / frame / visited / marginal buttons (parchment lozenges; never text on the painting) ---- */
 .passage-controls .island-btn, .passage-controls .frame-btn, .passage-controls .visited-btn {
@@ -102,7 +99,7 @@
 .passage-controls .marginal-btn { border-style: dashed; }
 .passage-layout.is-dense .passage-controls .island-btn { width: 104px; max-width: 104px; min-height: 44px; }
 .passage-layout.is-dense .ctl-title { -webkit-line-clamp: 1; }
-.passage-controls .island-btn:hover, .passage-controls .frame-btn:hover, .passage-controls .visited-btn:hover { background: var(--parchment); }
+@media (hover: hover) { .passage-controls .island-btn:hover, .passage-controls .frame-btn:hover, .passage-controls .visited-btn:hover { background: var(--parchment); } }   /* no sticky hover tint after a tap on touch screens */
 .passage-controls .island-btn:active, .passage-controls .frame-btn:active { transform: translate(-50%, -50%) scale(.98); }
 .passage-controls .island-btn.is-selected, .passage-controls .frame-btn.is-selected, .passage-controls .visited-btn.is-selected { border-color: var(--select); box-shadow: 0 0 0 3px var(--select-ring), var(--shadow-1); }
 /* a non-selected island keeps full-contrast text (opacity .72 put its 11-12 px lines near 3.3:1); only its lift goes, the painted plate dims */
@@ -129,7 +126,7 @@
 /* ---- checkpoint buttons: 32 px visual inside a 44 × 44 hit box ---- */
 .passage-controls .cp-btn { width: 44px; height: 44px; padding: 0; background: transparent; border: 0; display: grid; place-items: center; cursor: pointer; border-radius: 50%; }
 .cp-visual { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: var(--paper); border: 1.6px solid var(--ink); color: var(--ink); box-shadow: var(--shadow-1); transition: box-shadow var(--dur-micro) var(--ease-standard), background-color var(--dur-micro) var(--ease-standard); }
-.cp-btn:hover .cp-visual { background: var(--parchment); }
+@media (hover: hover) { .cp-btn:hover .cp-visual { background: var(--parchment); } }   /* no sticky hover tint after a tap on touch screens */
 .cp-btn:active .cp-visual { transform: scale(.98); }
 .cp-btn.is-selected .cp-visual { box-shadow: 0 0 0 3px var(--select-ring), 0 0 0 1.5px var(--select); border-color: var(--select); }
 .cp-btn:focus-visible { outline: 3px solid var(--focus); outline-offset: 0; }
@@ -176,7 +173,7 @@
 .care-card { flex: 0 0 220px; min-width: 220px; background: var(--paper-deep); border: 1px solid var(--rule); border-radius: var(--r-3); padding: var(--s-3) var(--s-4); position: relative; display: flex; flex-direction: column; gap: 6px; scroll-snap-align: start; }
 .care-card.is-current { border-color: var(--gold); }
 .care-stage-btn { position: relative; display: grid; gap: 1px; width: 100%; text-align: left; background: transparent; border: 1px solid transparent; border-radius: var(--r-2); padding: 4px 6px 4px 6px; color: var(--ink); min-height: 44px; cursor: pointer; font: inherit; }
-.care-stage-btn:hover { background: var(--parchment); }
+@media (hover: hover) { .care-stage-btn:hover { background: var(--parchment); } }   /* no sticky hover tint after a tap on touch screens */
 .care-stage-btn.is-selected { border-color: var(--select); box-shadow: 0 0 0 3px var(--select-ring); }
 .care-stage-btn.is-current .care-title { padding-left: 20px; }
 .care-pin { position: absolute; left: 4px; top: 7px; display: inline-flex; }
@@ -185,7 +182,7 @@
 .care-progress { font-size: 13px; line-height: 18px; color: var(--ink-soft); }
 .care-cps { list-style: none; margin: 0; padding: 0; display: flex; gap: 0; flex-wrap: wrap; }
 .care-cp { width: 44px; height: 44px; display: grid; place-items: center; background: transparent; border: 0; padding: 0; cursor: pointer; border-radius: 50%; color: var(--ink); }
-.care-cp:hover .care-cp-glyph circle:first-child { stroke-width: 2.4; }
+@media (hover: hover) { .care-cp:hover .care-cp-glyph circle:first-child { stroke-width: 2.4; } }   /* no sticky hover tint after a tap on touch screens */
 .care-cp.is-selected { box-shadow: inset 0 0 0 3px var(--select-ring); }
 .care-cp:focus-visible { outline: 3px solid var(--focus); outline-offset: -2px; }
 .care-show-chart { font-size: 13px; align-self: flex-start; }
@@ -240,12 +237,11 @@
 .pv-amt.is-closed { color: var(--closed); }
 .pv-split, .pv-nochange, .pv-wait { font-size: 13px; color: var(--ink-soft); }
 /* phones: the figure outweighs its label (600 vs 400), and "not owed by you" sits on its own caption line instead of orphaning "· not" */
-@media (max-width: 767px) {
+/* phone layout, always on (mobile-only app) */
   .pv-amt .amt, .pv-split .amt { font-weight: 600; color: var(--ink); }
   .pv-amt.is-yours .amt { color: var(--owner-patient); }
   .pv-owner { display: block; line-height: 16px; }
   .pv-owner-sep { display: none; }
-}
 .pv-evidence { display: inline-flex; padding-right: 4px; }
 .pv-notices { margin: 6px 0 0; font-size: 12px; color: var(--ink-soft); }
 .pv-side { margin: var(--s-4) 0 0; }
@@ -280,7 +276,7 @@
 .ov-table.ov-visited, .ov-table.ov-marginal, .ov-table.ov-stage { min-width: 560px; }
 .ov-table th, .ov-table td { vertical-align: baseline; }
 .ov-scroll-hint { display: none; margin: 0 0 .25rem; }
-@media (max-width: 760px) { .ov-scroll-hint { display: block; } }
+.ov-scroll-hint { display: block; }
 .ov-frame th, .ov-frame td { background: var(--paper-deep); }
 .ov-cp-details { margin: .25rem 0 .75rem; }
 .ov-cp-details summary { cursor: pointer; min-height: 44px; padding: 10px 0; font-weight: 600; }
@@ -291,20 +287,15 @@
 
 .pv-mini.pv-marginal .pv-amt { min-width: 0; max-width: 9rem; white-space: normal; text-align: right; }   /* words ("not covered") may wrap; a fixed length, not a circular percentage */
 /* care rail (delight pass mo-20d): on desktop every stage card fits the column instead of the last one being cut at the edge */
-@media (min-width: 1100px) {
-  .care-rail { overflow-x: visible; gap: var(--s-2); }
-  .care-card { flex: 1 1 0; min-width: 0; padding: var(--s-3); }
-}
 /* layout audit (delight pass): the marginal chip is a two-line 44 px control, not a 60 px island card (it was cut by the plate's bottom
    edge); the care rail's text button gets a 32 px target */
 .passage-controls .island-btn.marginal-btn { min-height: 44px; }
 .care-show-chart { min-height: 32px; display: inline-flex; align-items: center; }
 .segmented > button.seg-btn { cursor: pointer; font-family: inherit; }
-@media (max-width: 760px) {
+/* phone layout, always on (mobile-only app) */
   .log-link, .care-show-chart { min-height: 44px; }
   .progress-note > summary { min-height: 44px; }
   .skip-link { min-height: 44px; }
-}
 /* phone passage: the 20 px stitch chips keep their look but get a 44 px tall hit area */
 .passage-vertical .stitch { position: relative; }
 .passage-vertical .stitch::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 44px; transform: translateY(-50%); }
@@ -319,7 +310,7 @@
 /* engine totals on the journey surfaces say how they were made (finding info-only-5; same treatment as the drawer's .fig-calc) */
 .log-cost dd { display: flex; flex-wrap: wrap; align-items: center; gap: 0 8px; }
 .log-calc { display: inline-block; }
-@media (max-width: 760px) { .log-cost dd { display: block; } .log-calc { display: block; margin: 2px 0 0; } }
+.log-cost dd { display: block; } .log-calc { display: block; margin: 2px 0 0; }
 .pv-side-note { margin: 0 0 .4rem; font-size: 13px; line-height: 18px; color: var(--ink-soft); display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; }
 .pv-card .fig-calc { white-space: normal; }
 
@@ -328,20 +319,18 @@
 .ov-table .linklike, .ov-stages h3 .linklike { min-height: 32px; display: inline-flex; align-items: center; }
 .ov-table .stitch { position: relative; }
 .ov-table .stitch::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 32px; transform: translateY(-50%); }
-@media (max-width: 760px) {
+/* phone layout, always on (mobile-only app) */
   .ov-table .linklike, .ov-stages h3 .linklike { min-height: 44px; }
   .ov-table .stitch::after { height: 44px; }
-}
 
 /* phone journey header (findings slop-3, layout-20, layout-9, demo-10; orchestrator note 5): a smaller balanced heading, the Answers log
    as label | value rows, and the journey pickers inside a 44 px disclosure, so the passage starts about 200 px higher */
 .journey-switch > summary { display: flex; align-items: center; min-height: 44px; cursor: pointer; color: var(--ink); font-weight: 600; text-decoration: underline; text-decoration-color: var(--gold); text-underline-offset: 3px; }
 .journey-switch[open] > summary { margin-bottom: var(--s-2); }
-@media (max-width: 760px) {
+/* phone layout, always on (mobile-only app) */
   .journey-head h2 { font-size: 1.2rem; line-height: 1.35; }
   .log-row { grid-template-columns: 6.5rem minmax(0, 1fr); gap: var(--s-2); align-items: start; padding: 2px 0; }
   .log dt { font-size: 12px; line-height: 16px; padding-top: 12px; }
-}
 .segment-target { min-width: 0; }
 
 /* pressed feedback on the phone touch surfaces (finding mobile-21): an on-palette press within 120 ms instead of WebKit's grey tap

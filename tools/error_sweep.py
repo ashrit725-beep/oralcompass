@@ -1,18 +1,19 @@
 #!/usr/bin/env python3
 """Zero-errors gate: drive every view of the web app and fail on any runtime error.
 
-Devices: desktop 1366x900 Chromium (motion on and reduced), iPhone 13 WebKit (reduced motion), Pixel 7 Chromium (motion on).
+Devices (mobile-only app, owner direction 2026-10-04: the phone layout is the only layout): iPhone 13 WebKit (reduced motion), Pixel 7
+Chromium (motion on), and a 1440x900 Chromium window where the same phone app renders in its centred 480 px column (motion on and reduced).
 On every tab (My journey, My plan, Compare, Documents) it clicks every visible button, link, tab, checkpoint, stitch chip, dial stop and
 summary, cycles every <select> option, opens and closes every drawer / sheet / dialog / popover (pointer, then Escape), submits the
 benefit-statement form invalid then valid, runs the upload wizard with a .txt (rejected) and the fixture PDF (demo extraction), asks the
-assistant five questions (one an advice question), and exercises Back/Forward plus a desktop<->phone resize with a drawer open.
+assistant five questions (one an advice question), and exercises Back/Forward plus a phone<->wide-window resize with a drawer open.
 
 Captured: console errors and warnings, pageerror, unhandled rejections, failed requests (status >= 400 except the deliberate
 404/409/415/422 answers), React warnings (keys, act, controlled/uncontrolled, findDOMNode, Radix missing Title/Description).
 Each distinct problem is printed once with the action that first triggered it; exit 1 when any is found.
 
 Requires the API (ORALCOMPASS_DEV_AUTH=1, ORALCOMPASS_LLM_PROVIDER=none, fresh ORALCOMPASS_DATA_DIR) behind the web preview;
-ORALCOMPASS_WEB_BASE points at the preview (default http://127.0.0.1:4173). `--quick` runs desktop + Pixel 7 only; `--only <text>`
+ORALCOMPASS_WEB_BASE points at the preview (default http://127.0.0.1:4173). `--quick` runs Pixel 7 + the wide window only; `--only <text>`
 runs the device whose label contains the text (e.g. `--only iphone`), so the four runs can go in parallel. React warnings only print in
 a development bundle: point ORALCOMPASS_WEB_BASE at `npx vite` (dev server) as well as the production preview.
 Never clicks destructive controls (delete my data, sign out, hold-to-publish) or external links.
@@ -381,12 +382,12 @@ class Sweep:
                     opts = j.first.locator("option").evaluate_all("os => os.map(o => o.value)")
                     if len(opts) > 1:
                         j.first.select_option(opts[-1]); self.wait(800); j.first.select_option(opts[0]); self.wait(800)
-                self.action = "race: resize desktop<->phone with a drawer open"
+                self.action = "race: resize phone<->wide window (the app column) with a drawer open"
                 isl = p.locator("#passage-islands button")
                 if isl.count() > 2:
                     isl.nth(2).click(timeout=2000); self.wait(400)
                 vp = p.viewport_size
-                p.set_viewport_size({"width": 1366, "height": 900} if phone else {"width": 360, "height": 780}); self.wait(900)
+                p.set_viewport_size({"width": 1440, "height": 900} if phone else {"width": 360, "height": 780}); self.wait(900)
                 p.set_viewport_size(vp); self.wait(900)
                 self.close_overlays()
             except PWError:
@@ -420,9 +421,10 @@ class Sweep:
 
 def main() -> int:
     with sync_playwright() as pw:
-        runs = [("desktop 1366x900 chromium motion", "chromium", {"viewport": {"width": 1366, "height": 900}, "reduced_motion": "no-preference"}, False)]
+        # `phone` picks the resize race's other size: a phone device grows to the wide window, the wide window shrinks to a phone
+        runs = [("wide 1440x900 chromium motion (app column)", "chromium", {"viewport": {"width": 1440, "height": 900}, "reduced_motion": "no-preference"}, False)]
         if not QUICK:
-            runs.append(("desktop 1366x900 chromium reduced-motion", "chromium", {"viewport": {"width": 1366, "height": 900}, "reduced_motion": "reduce"}, False))
+            runs.append(("wide 1440x900 chromium reduced-motion (app column)", "chromium", {"viewport": {"width": 1440, "height": 900}, "reduced_motion": "reduce"}, False))
             runs.append(("iPhone 13 webkit reduced-motion", "webkit", {**pw.devices["iPhone 13"], "reduced_motion": "reduce"}, True))
         runs.append(("Pixel 7 chromium motion", "chromium", {**pw.devices["Pixel 7"], "reduced_motion": "no-preference"}, True))
         for label, engine, kwargs, phone in runs:

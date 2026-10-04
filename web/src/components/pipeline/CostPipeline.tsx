@@ -1,6 +1,5 @@
-import { createRef, useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "motion/react";
-import { AnimatedBeam } from "@/components/magicui/animated-beam";
 import { hasDrawn, markDrawn } from "@/lib/drawRegistry";
 import { EASE, useReducedMotion } from "@/lib/motion";
 import { EvidenceBadge } from "@/components/Primitives";
@@ -25,7 +24,6 @@ export interface CostPipelineProps {
   /** The saved estimate id: a new id re-fires the beams once (source → target, pipeline order) and announces "Estimate updated". */
   estimateId?: string;
   missing?: MissingInput[];
-  mobile?: boolean;
   onSelectStitch: (s: Stitch) => void;
   /** Rendered under the reconciliation line (e.g. the upper-bound flag). */
   className?: string;
@@ -40,7 +38,8 @@ export const RECONCILE_WARN = UI.reconcileWarn;
  * CostPipeline (spec §4.5, component plan N2-A): a horizontal flow of nodes for one ledger line, built from `buildTrail(line).steps` through
  * `checkpointsForLine`. Connectors are Magic UI AnimatedBeam (ink path, sea → gold sweep, `repeat` 0 (one sweep), `delay = i × 0.12`, keyed on the
  * estimate id so the sweep fires once per recompute in pipeline order; static path under reduced motion). The arrowhead on each node's
- * in-port is the only arrow in the UI (it encodes flow direction). Phone: a 2-column grid without beams (arrows only). Unresolved line:
+ * in-port is the only arrow in the UI (it encodes flow direction). Non-vertical: a 2-column grid without beams (arrows only; the
+ * desktop beam track was removed with the desktop layout). Unresolved line:
  * the fee node and a fog node listing the missing inputs; no numbers invented. The host surface's live region announces "Estimate updated" (no second region here).
  * Reduced motion: NumberFlow snaps, beams render the static connection, nothing else moves.
  * `vertical` (delight pass mo-10; spec §5.7 decision "vertical pipeline in the drawer"): in the 440 px drawer the horizontal track hid the
@@ -48,7 +47,7 @@ export const RECONCILE_WARN = UI.reconcileWarn;
  * settles in processing order (fee → allowed → deductible → share → maximum → you pay, 120 ms apart), the receipt rolling into place.
  * It runs once per line and estimate in a session (lib/drawRegistry), so reopening an island shows the settled ledger.
  */
-export function CostPipeline({ line, item, rule, plan, stitches, benefits = null, estimateId, missing = [], mobile = false, onSelectStitch, className, vertical = false }: CostPipelineProps) {
+export function CostPipeline({ line, item, rule, plan, stitches, benefits = null, estimateId, missing = [], onSelectStitch, className, vertical = false }: CostPipelineProps) {
   const reduce = useReducedMotion();
   const revealKey = `pipe:${line.treatment_item_id ?? line.label}:${estimateId ?? "e"}`;
   const [reveal] = useState(() => vertical && !reduce && !hasDrawn(revealKey));
@@ -62,17 +61,6 @@ export function CostPipeline({ line, item, rule, plan, stitches, benefits = null
 
   const containerRef = useRef<HTMLDivElement>(null);
   const nodeEls = useRef<(HTMLLIElement | null)[]>([]);
-  const outRefs = useMemo(() => Array.from({ length: nodeCount }, () => createRef<HTMLElement | null>() as RefObject<HTMLElement | null>), [nodeCount]);
-  const inRefs = useMemo(() => Array.from({ length: nodeCount }, () => createRef<HTMLElement | null>() as RefObject<HTMLElement | null>), [nodeCount]);
-  const [portsReady, setPortsReady] = useState(0);
-  useLayoutEffect(() => {
-    nodeEls.current.forEach((li, i) => {
-      if (!li) return;
-      (outRefs[i] as { current: HTMLElement | null }).current = li.querySelector<HTMLElement>(".pipe-port-out");
-      (inRefs[i] as { current: HTMLElement | null }).current = li.querySelector<HTMLElement>(".pipe-port-in");
-    });
-    setPortsReady((n) => n + 1);
-  }, [nodeCount, mobile, outRefs, inRefs]);
 
   // no live region here (a11y-25): the host surface (JourneyView, PlanView) owns the one polite region that announces a recompute
 
@@ -124,20 +112,12 @@ export function CostPipeline({ line, item, rule, plan, stitches, benefits = null
   return (
     <div className={cn("pipeline-wrap", className)}>
       <div className="pipeline-scroll">
-        <div ref={containerRef} className={cn("pipeline-track", mobile && "pipeline-track-grid")}>
+        <div ref={containerRef} className="pipeline-track pipeline-track-grid">
           <ol className="pipeline" aria-label={label} data-nodes={nodeCount}>
             {nodes}
           </ol>
-          {!mobile && nodeCount > 1 && (
-            <div key={`${estimateId ?? "e"}-${portsReady}`} className="pipeline-beams" aria-hidden="true">
-              {Array.from({ length: nodeCount - 1 }, (_, i) => (
-                <AnimatedBeam key={i} containerRef={containerRef} fromRef={outRefs[i]} toRef={inRefs[i + 1]} delay={i * 0.12} repeat={0} duration={0.9} pathWidth={2} />
-              ))}
-            </div>
-          )}
         </div>
       </div>
-      {!mobile && nodeCount > 3 && <p className="pipeline-hint muted small">{DRAWER.pipelineHint}</p>}
       {trail.reconciles === true && <p className="reconcile ok">✓ {UI.reconciles}</p>}
       {trail.reconciles === false && <p className="reconcile warn" role="alert">{RECONCILE_WARN}</p>}
       {unresolved && <p className="pipeline-unresolved"><EvidenceBadge status="UNKNOWN" /> {UI.missingTitle}</p>}

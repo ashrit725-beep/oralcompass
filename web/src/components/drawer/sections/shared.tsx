@@ -26,7 +26,6 @@ export interface SectionProps {
   stitches: Stitch[];
   onSelectStitch: (s: Stitch) => void;
   onOpenDocuments: () => void;
-  mobile: boolean;
   /** The checkpoint the drawer was opened from (its section opens and its heading takes focus). */
   arrivedAt?: DrawerSectionKey;
   /** Additive: the Allowance section PATCHes an item and asks the host to re-estimate. */

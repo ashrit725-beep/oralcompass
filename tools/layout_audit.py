@@ -5,10 +5,11 @@ Opens every view and every open state (start screen, journey map with no selecti
 drawer, the procedure drawer with every section expanded, the clause card at each depth, the inline assistant with an answer, the care
 timeline and a stage/checkpoint detail, the overview list, My plan with each landmark open, the compass and the add-procedure / reader
 panel, the fog state (FM26H) on My plan, the journey and the drawer, Compare with a clause popover, Documents with its clause card and
-reminders, and every upload wizard step including the review table and the published state) on five devices:
+reminders, and every upload wizard step including the review table and the published state) on four devices (mobile-only app:
+the phone layout is the only layout):
 
-    desktop-1366  Chromium 1366×900          desktop-1920  Chromium 1920×1080         phone-360  Chromium 360×780 (touch)
-    iphone-13     WebKit, Playwright "iPhone 13" descriptor                         pixel-7    Chromium, "Pixel 7" descriptor
+    phone-360     Chromium 360×780 (touch)       iphone-13  WebKit, Playwright "iPhone 13" descriptor
+    pixel-7       Chromium, "Pixel 7" descriptor  wide-1440  Chromium 1440×900: the phone app in its centred 480 px column
 
 and reports, per view/state/device:
 
@@ -27,7 +28,7 @@ and reports, per view/state/device:
                fail the run: the panel covers the page by design while it is open.
   4 OVERFLOW   horizontal page overflow (scrollWidth > clientWidth) and elements extending past the viewport's left/right edge that no
                ancestor scroller or clipper contains (html/body clipping does not count: it hides the defect rather than fixing it).
-  5 TINY       interactive elements smaller than 44×44 on phones (32×32 on desktop) after counting an expanded hit area (::before/::after
+  5 TINY       interactive elements smaller than 44×44 (every device is a phone) after counting an expanded hit area (::before/::after
                with negative insets, a wrapping label); inline links and inline-level buttons inside running text are exempt (WCAG 2.5.8 inline exception).
   6 ALIGNMENT  (smell, never fails the run) sibling controls in one row whose top edges differ by 1–3 px at equal heights, and table rows
                whose first-line text baselines differ by 1–3 px, and table header cells that do not sit over their body column.
@@ -40,7 +41,7 @@ preview on :4173 (override with ORALCOMPASS_WEB_BASE). Each device signs in as i
 screen and publishes its upload as UP1. WebKit refuses some ports outright ("restricted network port", e.g. 4190): serve the preview on
 4173 or another unrestricted port.
 
-Usage:  python3 tools/layout_audit.py [out_dir=shots/layout-audit] [--devices desktop-1366,phone-360,...]
+Usage:  python3 tools/layout_audit.py [out_dir=shots/layout-audit] [--devices=phone-360,iphone-13,pixel-7,wide-1440]
 Writes <out>/<device>/<NN>-<state>.png, <out>/report.json, prints a table per device; exit 1 when categories 1–5 find anything.
 """
 from __future__ import annotations
@@ -64,12 +65,14 @@ FAIL_KINDS = ("overlap", "clipping", "occlusion", "overflow", "tiny")
 ALL_KINDS = FAIL_KINDS + ("alignment", "clipping_named", "occlusion_panel")
 SHORT = {"overlap": "ovl", "clipping": "clip", "occlusion": "occ", "overflow": "ovf", "tiny": "tiny", "alignment": "align", "clipping_named": "clip(named)", "occlusion_panel": "panel"}
 
+# Mobile-only app (owner direction 2026-10-04, "its fully a mobile app"): the phone devices, plus a wide window where the same phone app
+# renders in the centred 480 px column (audited as a phone: 44 px targets; overflow measured against the column). The desktop-1366 and
+# desktop-1920 layouts no longer exist and were removed.
 DEVICES = [
-    {"name": "desktop-1366", "engine": "chromium", "viewport": {"width": 1366, "height": 900}, "phone": False},
-    {"name": "desktop-1920", "engine": "chromium", "viewport": {"width": 1920, "height": 1080}, "phone": False},
     {"name": "phone-360", "engine": "chromium", "viewport": {"width": 360, "height": 780}, "phone": True, "touch": True},
     {"name": "iphone-13", "engine": "webkit", "descriptor": "iPhone 13", "phone": True},
     {"name": "pixel-7", "engine": "chromium", "descriptor": "Pixel 7", "phone": True},
+    {"name": "wide-1440", "engine": "chromium", "viewport": {"width": 1440, "height": 900}, "phone": True},
 ]
 
 # ------------------------------------------------------------------------------------------------------------------------------------
@@ -285,20 +288,25 @@ for (const el of document.querySelectorAll('select')) {
 const docW = Math.max(document.documentElement.scrollWidth, document.body.scrollWidth);
 const overflow = [];
 if (docW > VW + 0.5) overflow.push({ el: 'document', ctx: '', detail: 'page scrollWidth ' + docW + ' > viewport ' + VW });
+// mobile-only app: on a window wider than the phone, the 480 px app column IS the screen, so content must stay inside the column; the
+// painted cinema behind it and full-window scrims are decorative backdrops
+const appEl = document.querySelector('.app'), appR = appEl ? appEl.getBoundingClientRect() : null;
+const COL = appR && appR.width < VW - 1 ? { left: appR.left, right: appR.right } : { left: 0, right: VW };
+const BACKDROP = '.cinema, [data-vaul-overlay], [data-slot=drawer-overlay], [data-slot=dialog-overlay], [data-slot=sheet-overlay], .clause-scrim, .cast-line, .thread-pull';
 const offenders = [];
 for (const el of document.body.querySelectorAll('*')) {
   if (!(el instanceof HTMLElement) || el.closest('svg') || !inScope(el)) continue;
   const r = el.getBoundingClientRect();
-  if (r.width < 1 || r.height < 1 || (r.right <= VW + 1 && r.left >= -1)) continue;
+  if (r.width < 1 || r.height < 1 || (r.right <= COL.right + 1 && r.left >= COL.left - 1)) continue;
   if (r.right <= 0 || r.left >= VW) continue;               // wholly off-canvas: a parked skip link / closed panel, not overflow
-  if (hiddenByStyle(el)) continue;
+  if (hiddenByStyle(el) || el.closest(BACKDROP)) continue;
   const b = clipBounds(el, false);
   const vis = inter(r, b); if (!vis) continue;
-  if (vis.right > VW + 1 || vis.left < -1) offenders.push({ el, vis });
+  if (vis.right > COL.right + 1 || vis.left < COL.left - 1) offenders.push({ el, vis });
 }
 for (const o of offenders) {
   if (offenders.some(p => p !== o && p.el.contains(o.el))) continue;   // report the outermost offender
-  overflow.push({ el: desc(o.el), ctx: ctx(o.el), detail: 'spans x ' + r1(o.vis.left) + '…' + r1(o.vis.right) + ' (viewport 0…' + VW + ')' });
+  overflow.push({ el: desc(o.el), ctx: ctx(o.el), detail: 'spans x ' + r1(o.vis.left) + '…' + r1(o.vis.right) + ' (screen ' + r1(COL.left) + '…' + r1(COL.right) + ')' });
 }
 
 // ---- 5 tiny targets and 3 occlusion
@@ -596,17 +604,13 @@ def walk(pw, device: dict) -> dict:
             close_all()
         step(f"island: {short}", one)
 
-    # ---- arriving from a checkpoint marker (desktop route markers)
-    def checkpoint():
-        b = page.locator("button[data-cp-of]")
-        if b.count() and b.first.is_visible():
-            b.first.click(); page.wait_for_timeout(900); A.audit("checkpoint marker → drawer"); close_all()
+    # ---- arriving from a checkpoint row on the passage (the desktop route markers went with the desktop layout)
     def checkpoint_phone():
         close_all(); seg("Map view")
         b = page.locator("#passage-islands .pv-cp")
         if b.count():
             b.first.scroll_into_view_if_needed(); b.first.click(); page.wait_for_timeout(900); A.audit("checkpoint row → drawer"); close_all()
-    step("checkpoint", checkpoint_phone if phone else checkpoint)
+    step("checkpoint", checkpoint_phone)
 
     # ---- root canal drawer: clause card at each depth, assistant answer, advice template
     def clause_depths():

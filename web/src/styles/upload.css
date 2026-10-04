@@ -11,7 +11,6 @@
 /* slop-24: the sliding pane is absolutely positioned (Stepper), so the wrapper's px padding never reached it and every pane heading sat on
    the card edge; the pane carries the padding itself */
 .up-stepper-content > div { padding-left: var(--s-4); padding-right: var(--s-4); }
-@media (min-width: 640px) { .up-stepper-content > div { padding-left: var(--s-6); padding-right: var(--s-6); } }
 .up-wizard h3[tabindex="-1"]:focus-visible { outline: none; }   /* a11y-7: a pane heading takes focus by script to announce the step; it is not a control */
 .up-h3 { font-family: var(--serif); font-size: 17px; line-height: 24px; font-weight: 600; margin: 0 0 var(--s-2); }
 .up-h4 { font-family: var(--serif); font-size: 15px; line-height: 22px; font-weight: 600; margin: var(--s-4) 0 var(--s-2); color: var(--ink); }
@@ -80,12 +79,6 @@
 .up-page-canvas canvas { display: block; max-width: 100%; height: auto; border: 1px solid var(--rule); border-radius: var(--r-2); }
 .up-page figcaption q { font-family: var(--serif); font-style: italic; }
 .up-cell-decision { min-width: 10rem; }
-@media (min-width: 1001px) {   /* the five-column table inside the 960 px dialog: the segments join vertically in the narrow column */
-  .up-decide { flex-direction: column; }
-  .up-decide > [data-slot="button"] { width: 100%; margin: 0 0 -1px; min-height: 40px; font-size: 15px; }
-  .up-decide > [data-slot="button"]:first-child { border-radius: var(--r-2) var(--r-2) 0 0; }
-  .up-decide > [data-slot="button"]:last-child { border-radius: 0 0 var(--r-2) var(--r-2); }
-}
 /* slop-24: the three decisions read as one segmented control (the recorded one is the filled segment); it wraps only below ~330 px */
 .up-decide { display: flex; flex-wrap: wrap; gap: 0; }
 .up-decide > [data-slot="button"] { flex: 1 1 auto; border-radius: 0; margin: 0 -1px -1px 0; }
@@ -112,12 +105,11 @@
 
 /* mobile-17: phones keep the undecided count and the publish control in the thumb zone while the rows scroll (the dialog is the scroller;
    the Stepper wrapper uses overflow: clip so it is not one) */
-@media (max-width: 767px) {
+/* phone layout, always on (mobile-only app) */
   .up-footer { position: sticky; bottom: 0; z-index: 2; margin-left: calc(-1 * var(--s-4)); margin-right: calc(-1 * var(--s-4)); padding: var(--s-3) var(--s-4) calc(var(--s-3) + env(safe-area-inset-bottom)); background: var(--paper-deep); box-shadow: 0 -1px 0 var(--rule), var(--shadow-1); }
-}
 
 /* below 1000 px the five columns do not fit the dialog: the table folds into stacked rows (each cell carries its column name) so nothing scrolls sideways, down to 360 px */
-@media (max-width: 1000px) {
+/* phone layout, always on (mobile-only app) */
   .up-table thead { display: none; }
   .up-table, .up-table tbody, .up-table tr, .up-table td { display: block; width: 100%; }
   .up-row { border-bottom: 1px solid var(--rule); padding: var(--s-2) 0; }
@@ -125,7 +117,6 @@
   .up-decide > [data-slot="button"] { padding-left: var(--s-3); padding-right: var(--s-3); font-size: 15px; }
   .up-cell::before { content: attr(data-label); display: block; font-size: 12px; line-height: 16px; color: var(--ink-soft); margin-bottom: 2px; }
   .up-stage-row { min-height: 44px; }
-}
 
 /* ---- reminders panel + push subscription (components/notifications/RemindersPanel.tsx; same owner) ---- */
 .rm-panel { display: flex; flex-direction: column; gap: var(--s-2); background: var(--paper-deep); border: 1px solid var(--rule); border-radius: var(--r-3); padding: var(--s-4); }
@@ -155,7 +146,7 @@
 .up-step-ind[data-status="active"] .up-step-name { color: var(--ink); font-weight: 600; }
 .up-stepper ol { padding-bottom: 28px; }
 .up-step-now { margin: -8px 16px 8px; font-size: 13px; line-height: 18px; color: var(--ink); font-weight: 600; }
-@media (max-width: 639px) { .up-stepper ol { padding-bottom: 12px; } }
+.up-stepper ol { padding-bottom: 12px; }
 
 /* a11y-6: busy controls keep focus (aria-disabled + click guard instead of the disabled attribute) and read as unavailable */
 .up-wizard [aria-disabled="true"]:is(button, fieldset) { opacity: .55; cursor: default; }

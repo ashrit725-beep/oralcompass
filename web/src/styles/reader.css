@@ -22,7 +22,7 @@
 .tpr-samples-label { font-size: .8rem; color: var(--ink-soft); }
 .tpr .tpr-sample { min-height: 44px; padding: 0 var(--s-3); font-size: .85rem; text-align: left; white-space: normal; background: var(--paper) !important; color: var(--ink) !important;
   border: 1px dashed var(--wood) !important; border-radius: var(--r-2); max-width: 100%; }
-.tpr .tpr-sample:hover { background: var(--parchment) !important; }
+@media (hover: hover) { .tpr .tpr-sample:hover { background: var(--parchment) !important; } }   /* no sticky hover tint after a tap on touch screens */
 .tpr-or { display: none; }
 .tpr-file { display: grid; gap: var(--s-2); min-width: 0; }
 .tpr-file > section { max-width: none; }

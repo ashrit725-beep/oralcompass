@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
-
-/** The app's phone breakpoint (760 px) — matches the `@media (max-width: 760px)` rules in styles.css. (shadcn's `useIsMobile` in
- *  hooks/use-mobile.ts uses 768 px and is only for vendored components.) */
-export function useMobile() {
-  const [m, setM] = useState(() => typeof window !== "undefined" && window.matchMedia("(max-width: 760px)").matches);
-  useEffect(() => { const q = window.matchMedia("(max-width: 760px)"); const f = () => setM(q.matches); q.addEventListener("change", f); return () => q.removeEventListener("change", f); }, []);
-  return m;
+/**
+ * Pinned to the phone branch (owner direction 2026-10-04, "its fully a mobile app"): the phone layout is the only layout, and a window
+ * wider than 480 px shows the same phone app in a centred column (styles.css `.app`), so there is no desktop branch left to choose.
+ * The app no longer calls this; it stays (always `true`) so code written against it on other branches keeps compiling and renders the
+ * phone markup when merged. New code must not branch on the window width.
+ */
+export function useMobile(): true {
+  return true;
 }

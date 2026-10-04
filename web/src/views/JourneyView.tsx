@@ -1,14 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
-import { AnimatePresence, motion } from "motion/react";
+import { motion } from "motion/react";
 import { PASSAGE } from "@/lib/copy/passage";
 import { UI, type LandmarkId } from "@/lib/copy";
 import { currentStageId, labeledSamples, shortJourneyLabel } from "@/lib/journey";
-import { transitions, useReducedMotion } from "@/lib/motion";
+import { useReducedMotion } from "@/lib/motion";
 import { answerSegment, buildPassage, denseFrom, itemRef, planDisplayCode, type AnswerTarget, type JourneySegment } from "@/lib/passage";
 import type { MapSelection, Stage, Stitch } from "@/lib/types";
 import type { AppData } from "@/hooks/useAppData";
 import type { JourneySelectionApi } from "@/hooks/useJourneySelection";
-import { PassageMap } from "@/components/atlas/PassageMap";
 import { PassageVertical } from "@/components/atlas/PassageVertical";
 import { DetailPanel } from "@/components/DetailPanel";
 import { ProcedureDrawer } from "@/components/drawer/ProcedureDrawer";
@@ -20,7 +19,6 @@ import { OverviewList } from "@/components/OverviewList";
 export interface JourneyViewProps {
   data: AppData;
   selection: JourneySelectionApi;
-  mobile: boolean;
   onOpenLandmark: (id: LandmarkId) => void;
   onOpenDocuments: () => void;
   /** Opens the ClauseCard for a stitch pressed on the passage or in the drawer (wired by App). */
@@ -32,22 +30,21 @@ type Segment = JourneySegment;
 /**
  * My journey (spec §2, §4.1, §4.3, §6 `JourneyView`): the start screen for a new user, or the journey head (label, progress line),
  * the Answers log, the three-segment toggle "Map view · Care timeline · Overview list" (exact button names; screenshots.py clicks
- * them), then the Passage (desktop PassageMap + Care timeline rail; phone PassageVertical) / the Care timeline / the Overview list,
- * and the detail surface: the ProcedureDrawer for islands and checkpoints, the existing DetailPanel for care stages. Desktop grid
- * `minmax(0,1fr) 440px` exists only while a selection is open (AnimatePresence + layout, 240 ms; instant under reduced motion).
+ * them), then the Passage (PassageVertical) / the Care timeline / the Overview list, and the detail surface: the ProcedureDrawer
+ * bottom sheet for islands and checkpoints, the DetailPanel sheet for care stages. Mobile-only (owner direction 2026-10-04): the
+ * phone layout is the only layout (the desktop PassageMap plate, care rail and detail column were removed from this view).
  * One aria-live region per surface: "Recalculating…" while a new estimate runs, "Estimate updated" when it lands.
  * Keyboard: Escape closes the top-most surface (the ClauseCard first, then the drawer) and returns focus to its opener.
  */
 /** Journey labels arrive with an em dash ("Sample journey — Alex Chen …"); the heading reads it as a label and a colon (copy rule R-02). */
 const headingLabel = (label: string) => label.replace(/\s+—\s+/, ": ").replace(/\s+—\s+/g, ", ");
 
-export function JourneyView({ data, selection, mobile, onOpenLandmark, onOpenDocuments, onSelectStitch }: JourneyViewProps) {
+export function JourneyView({ data, selection, onOpenLandmark, onOpenDocuments, onSelectStitch }: JourneyViewProps) {
   const { view, journeys, samples, plans, busy, startJourney, setView, patch, instructions, items, estimate, benefits, rules, plan, procedures, stitches, planRef, loading, loadRecords, reestimate, hypotheticals, setHypotheticals } = data;
   /** The drawer's Allowance input and the Benefit statement form change private records: reload them and re-run the estimate. */
   const onRecordsChanged = () => { loadRecords(); reestimate(); };
   const reduce = useReducedMotion();
   const [segment, setSegment] = useState<Segment>("map");
-  const [pointer, setPointer] = useState(false);
   const [announce, setAnnounce] = useState("");
   const [addFrom, setAddFrom] = useState("");
   /** An Answers-log jump waiting for its segment to render (focus moves in an effect after the commit, never through a stale closure). */
@@ -63,7 +60,6 @@ export function JourneyView({ data, selection, mobile, onOpenLandmark, onOpenDoc
   const vm = useMemo(() => buildPassage({ items, estimate, benefits: benefitsFor, journey: view, rules, plan, procedures, stitches, planRef }), [items, estimate, benefitsFor, view, rules, plan, procedures, stitches, planRef]);
   const recalculating = !!loading && loading === UI.processing && !!estimate;
   const planCode = planDisplayCode(planRef, plan);
-  const drawKey = `${planRef}:${vm.islands.map((i) => i.id).join(",")}`;
   const allIslands = useMemo(() => [vm.start, ...vm.islands, vm.destination, ...vm.visited, ...vm.marginal], [vm]);
   const selectedIsland = islandSel ? allIslands.find((i) => i.id === islandSel.islandId) ?? null : null;
 
@@ -75,8 +71,7 @@ export function JourneyView({ data, selection, mobile, onOpenLandmark, onOpenDoc
   }, [estimate?.id]);
   useEffect(() => { if (recalculating) setAnnounce(PASSAGE.recalculating); }, [recalculating]);
 
-  const selectIsland = useCallback((islandId: string, checkpointKey: string | undefined, el: HTMLElement | null, viaKeyboard: boolean) => {
-    setPointer(!viaKeyboard);
+  const selectIsland = useCallback((islandId: string, checkpointKey: string | undefined, el: HTMLElement | null, _viaKeyboard?: boolean) => {
     selection.selectIsland({ islandId, checkpointKey } as MapSelection, el);
   }, [selection]);
 
@@ -95,7 +90,7 @@ export function JourneyView({ data, selection, mobile, onOpenLandmark, onOpenDoc
     if (target === "checkpoint") { const first = vm.islands[0]; if (!first || !focusIn(`[data-cp-of="${first.id}"], .pv-cps .pv-cp`)) focusIn(first ? `[data-island="${first.id}"]` : ".light-btn"); }
   };
   const onAnswer = (target: AnswerTarget) => {
-    const need = answerSegment(target, mobile, segment);
+    const need = answerSegment(target, true, segment);
     if (need === null) { onOpenDocuments(); return; }
     if (need !== segment) { setSegment(need); setPendingFocus(target); return; }
     focusAnswer(target);
@@ -124,12 +119,11 @@ export function JourneyView({ data, selection, mobile, onOpenLandmark, onOpenDoc
     );
   }
 
-  const hasDetail = !!(islandSel || stage);
   const drawer = islandSel && selectedIsland && plan ? (
     <ProcedureDrawer island={selectedIsland} vm={vm} plan={plan} rules={rules} benefits={benefitsFor} estimate={estimate} stitches={stitches} selectedCheckpoint={islandSel.checkpointKey}
-                     onSelectStitch={(s) => onSelectStitch?.(s)} onOpenDocuments={onOpenDocuments} onClose={() => { selection.clear(); }} mobile={mobile} returnFocus={selection.returnFocusRef.current} onRecordsChanged={onRecordsChanged} castLine={pointer} stageProgress={view.progress.stages} planRef={planRef} hypotheticals={hypotheticals} onHypotheticals={setHypotheticals} />
+                     onSelectStitch={(s) => onSelectStitch?.(s)} onOpenDocuments={onOpenDocuments} onClose={() => { selection.clear(); }} returnFocus={selection.returnFocusRef.current} onRecordsChanged={onRecordsChanged} stageProgress={view.progress.stages} planRef={planRef} hypotheticals={hypotheticals} onHypotheticals={setHypotheticals} />
   ) : null;
-  const stagePanel = stage ? <DetailPanel view={view} selection={stage} onSelect={(s) => selection.selectStage(s)} onOpenLandmark={onOpenLandmark} onOpenDocuments={onOpenDocuments} onPatch={patch} onInstructions={instructions} busy={busy} mobile={mobile} estimate={estimate} onClose={() => selection.clear()} returnFocus={selection.returnFocusRef.current} /> : null;
+  const stagePanel = stage ? <DetailPanel view={view} selection={stage} onSelect={(s) => selection.selectStage(s)} onOpenLandmark={onOpenLandmark} onOpenDocuments={onOpenDocuments} onPatch={patch} onInstructions={instructions} busy={busy} estimate={estimate} onClose={() => selection.clear()} returnFocus={selection.returnFocusRef.current} /> : null;
   const dense = denseFrom(vm.islands.length);
   const pickers = (
     <div className="journey-pickers">
@@ -145,8 +139,8 @@ export function JourneyView({ data, selection, mobile, onOpenLandmark, onOpenDoc
   );
 
   return (
-    <div ref={rootRef} className={`passage-layout ${hasDetail && !mobile ? "has-detail" : ""} ${mobile ? "is-mobile" : ""}`} onKeyDown={onKeyDown}>
-      <motion.div layout={!reduce} transition={transitions.drawerRise} className="passage-main">
+    <div ref={rootRef} className="passage-layout is-mobile" onKeyDown={onKeyDown}>
+      <div className="passage-main">
         <div className="journey-head">
           <h2>{headingLabel(view.journey.label)}</h2>
           <div className="progress-line">
@@ -167,35 +161,22 @@ export function JourneyView({ data, selection, mobile, onOpenLandmark, onOpenDoc
               </button>
             ))}
           </div>
-          {/* phones: the journey picker and "Add another journey" sit in a closed disclosure so the passage starts higher (orchestrator
+          {/* the journey picker and "Add another journey" sit in a closed disclosure so the passage starts higher (orchestrator
               note 5); the accessible names "Journey" and "Add a journey" are unchanged */}
-          {mobile ? <details className="journey-switch"><summary>{PASSAGE.journeysSummary(journeys?.length ?? 0)}</summary>{pickers}</details> : pickers}
+          <details className="journey-switch"><summary>{PASSAGE.journeysSummary(journeys?.length ?? 0)}</summary>{pickers}</details>
         </div>
         {!plan && <p className="hint">{PASSAGE.noPlanSelected}</p>}
         {segment === "overview" && <div id="passage-islands" tabIndex={-1} className="segment-target"><OverviewList journey={view.journey} vm={vm} planTitle={plan?.title} onSelect={(s) => { selection.selectStage(s); setSegment("map"); }} onSelectIsland={(id, cp) => { selectIsland(id, cp, null, true); }} onSelectStitch={onSelectStitch} /></div>}
-        {segment === "care" && <div id="passage-islands" tabIndex={-1} className="segment-target"><CareTimeline journey={view.journey} progress={view.progress} selected={stage} onSelect={(s, el) => selection.selectStage(s, el)} currentStageId={currentStageId(view.journey)} mobile linkedIsland={linkedIsland} onShowOnChart={(id) => { setSegment("map"); selectIsland(id, undefined, null, true); }} /></div>}
+        {segment === "care" && <div id="passage-islands" tabIndex={-1} className="segment-target"><CareTimeline journey={view.journey} progress={view.progress} selected={stage} onSelect={(s, el) => selection.selectStage(s, el)} currentStageId={currentStageId(view.journey)} linkedIsland={linkedIsland} onShowOnChart={(id) => { setSegment("map"); selectIsland(id, undefined, null, true); }} /></div>}
         {segment === "map" && (
           <>
-            {dense && <IslandStrip vm={vm} selected={islandSel} onSelect={(id, el) => selectIsland(id, undefined, el, false)} mobile={mobile} />}
-            {mobile
-              ? <PassageVertical vm={vm} selected={islandSel} onSelect={selectIsland} planCode={planCode} onSelectStitch={onSelectStitch} />
-              : <PassageMap vm={vm} selected={islandSel} onSelect={selectIsland} planCode={planCode} drawKey={drawKey} recalculating={recalculating} pointer={pointer} desktop />}
-            {!mobile && <CareTimeline journey={view.journey} progress={view.progress} selected={stage} onSelect={(s, el) => selection.selectStage(s, el)} currentStageId={currentStageId(view.journey)} mobile={false} linkedIsland={linkedIsland} onShowOnChart={(id) => selectIsland(id, undefined, null, true)} />}
+            {dense && <IslandStrip vm={vm} selected={islandSel} onSelect={(id, el) => selectIsland(id, undefined, el, false)} />}
+            <PassageVertical vm={vm} selected={islandSel} onSelect={selectIsland} planCode={planCode} onSelectStitch={onSelectStitch} />
           </>
         )}
-      </motion.div>
+      </div>
 
-      {mobile ? (
-        <>{drawer}{stagePanel}</>
-      ) : (
-        <AnimatePresence initial={false}>
-          {hasDetail && (
-            <motion.div key="detail-col" className="passage-detail" initial={reduce ? false : { opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={reduce ? { opacity: 0, transition: { duration: 0 } } : { opacity: 0, x: 24, transition: transitions.drawerExit }} transition={transitions.drawerRise}>
-              {drawer ?? stagePanel}
-            </motion.div>
-          )}
-        </AnimatePresence>
-      )}
+      {drawer}{stagePanel}
     </div>
   );
 }
