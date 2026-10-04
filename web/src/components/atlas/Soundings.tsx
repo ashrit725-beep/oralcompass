@@ -17,7 +17,7 @@ export function Soundings({ after, x, y, className = "", label, inline = false }
   const aria = PASSAGE.soundingsAria(moneyText(after.deductible), maxText);
   const style = inline ? undefined : ({ "--px": x, "--py": y } as React.CSSProperties);
   return (
-    <p className={`sounding ${inline ? "sounding-inline" : ""} ${className}`} style={style} aria-label={label ? `${label}: ${aria}` : aria}>
+    <p className={`sounding ${inline ? "sounding-inline" : ""} ${className}`} style={style} role="group" aria-label={label ? `${label}: ${aria}` : aria}>
       <span className="sounding-row"><span className="sounding-term">{PASSAGE.soundingsDeductible}</span> <Money cents={after.deductible} evidence="USER" badge={false} /></span>
       <span className="sounding-row"><span className="sounding-term">{PASSAGE.soundingsMax}</span> {after.unlimited || after.annualMax == null ? <span className="sounding-none">{PASSAGE.noMaximum}</span> : <Money cents={after.annualMax} evidence="USER" badge={false} />}</span>
       <EvidenceBadge status="USER" />

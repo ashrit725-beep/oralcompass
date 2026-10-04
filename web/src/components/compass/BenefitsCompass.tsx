@@ -43,7 +43,7 @@ export function BenefitsCompass({ plan, benefits, estimate, stitches, compact = 
 
   if (compact) {
     return (
-      <p className="cmp-strip" aria-label={COMPASS.panelLabel(plan.title, dedWord, maxWord)}>
+      <p className="cmp-strip" role="group" aria-label={COMPASS.panelLabel(plan.title, dedWord, maxWord)}>
         <span className="cmp-strip-item">{COMPASS.stripDeductible} {vm.deductible.remainingCents == null ? <><span className="cmp-word">{COMPASS.notProvided}</span> <EvidenceBadge status="UNKNOWN" /></> : <Money cents={vm.deductible.remainingCents} evidence="USER" />}</span>
         <span className="cmp-strip-sep" aria-hidden="true">·</span>
         <span className="cmp-strip-item">{COMPASS.stripMax} {vm.annualMax.unlimited ? <><span className="cmp-word">{COMPASS.unlimited}</span> <EvidenceBadge status={vm.annualMax.limitStatus} /></> : vm.annualMax.remainingCents == null ? <><span className="cmp-word">{COMPASS.notProvided}</span> <EvidenceBadge status="UNKNOWN" /></> : <Money cents={vm.annualMax.remainingCents} evidence="USER" />}</span>
