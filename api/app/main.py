@@ -10,10 +10,12 @@ from datetime import date
 from pathlib import Path
 from typing import Any, Optional
 
+from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, HTTPException, Response
 from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel, Field
 
+load_dotenv(Path(__file__).resolve().parents[1] / ".env", override=False)   # api/.env is gitignored; values are never logged
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "engine"))
 
@@ -32,10 +34,12 @@ PRESETS = {p.stem.upper(): load_plan(p) for p in sorted((FIXTURES / "plans").glo
 PRESET_META = {code: extractor.by_code[code] for code in PRESETS}
 
 from .templates import FOOTER, COMPARISON_BANNER, PRESET_BANNER  # noqa: E402
-from . import journeys, records  # noqa: E402
+from . import assistant, journeys, notifications, records  # noqa: E402
 
 app.include_router(records.router)
 app.include_router(journeys.router)
+app.include_router(assistant.router)
+app.include_router(notifications.router)
 
 
 # ---------- schemas ----------
