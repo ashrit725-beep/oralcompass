@@ -12,7 +12,9 @@ Captured: console errors and warnings, pageerror, unhandled rejections, failed r
 Each distinct problem is printed once with the action that first triggered it; exit 1 when any is found.
 
 Requires the API (ORALCOMPASS_DEV_AUTH=1, ORALCOMPASS_LLM_PROVIDER=none, fresh ORALCOMPASS_DATA_DIR) behind the web preview;
-ORALCOMPASS_WEB_BASE points at the preview (default http://127.0.0.1:4173). `--quick` runs desktop + Pixel 7 only.
+ORALCOMPASS_WEB_BASE points at the preview (default http://127.0.0.1:4173). `--quick` runs desktop + Pixel 7 only; `--only <text>`
+runs the device whose label contains the text (e.g. `--only iphone`), so the four runs can go in parallel. React warnings only print in
+a development bundle: point ORALCOMPASS_WEB_BASE at `npx vite` (dev server) as well as the production preview.
 Never clicks destructive controls (delete my data, sign out, hold-to-publish) or external links.
 """
 from __future__ import annotations
@@ -29,6 +31,7 @@ from playwright.sync_api import sync_playwright
 BASE = os.environ.get("ORALCOMPASS_WEB_BASE", "http://127.0.0.1:4173")
 ROOT = Path(__file__).resolve().parent.parent
 QUICK = "--quick" in sys.argv
+ONLY = sys.argv[sys.argv.index("--only") + 1].lower() if "--only" in sys.argv else ""     # e.g. --only iphone (run devices in parallel)
 EXPECTED_STATUS = {404, 409, 415, 422}
 SKIP_NAME = re.compile(r"delete|erase|sign out|log out|remove all|publish|hold to|reset everything|export", re.I)
 TABS = ["My journey", "My plan", "Compare", "Documents"]
@@ -412,6 +415,8 @@ def main() -> int:
             runs.append(("iPhone 13 webkit reduced-motion", "webkit", {**pw.devices["iPhone 13"], "reduced_motion": "reduce"}, True))
         runs.append(("Pixel 7 chromium motion", "chromium", {**pw.devices["Pixel 7"], "reduced_motion": "no-preference"}, True))
         for label, engine, kwargs, phone in runs:
+            if ONLY and ONLY not in label.lower():
+                continue
             Sweep(pw, label, engine, kwargs).run(phone)
     print()
     if problems:
