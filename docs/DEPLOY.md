@@ -175,3 +175,10 @@ JSON schema. Every live call site (plan extraction, treatment-plan reader, claus
 - **Web Push** needs VAPID keys and is unverified end to end (`docs/BUILD_FOLLOWUPS.md`).
 - Docker was not available where this was built: the image build and the container smoke have not been run yet; the local production smoke
   (same server, same settings) passes.
+
+### Running the image with no settings
+
+`docker build -t oralcompass . && docker run -p 8000:8000 oralcompass` works with no environment variables: the entrypoint creates a random
+`ORALCOMPASS_SESSION_SECRET` for that run (visitor sessions end when the container restarts) and, with no AI keys, the app runs in demo mode
+(fixed explanations built from the app's own numbers). Open http://localhost:8000. For live AI add `ORALCOMPASS_LLM_PROVIDER=openrouter` and
+`OPENROUTER_API_KEY=…` (or the Bedrock variables) at run time; never bake keys into the image.

@@ -6,6 +6,15 @@
 set -eu
 set -f    # no globbing: the command below carries a literal '*'
 
+# No session secret given (e.g. a judge runs `docker run` with no env): make a random one for this run so the app starts.
+# Visitor sessions then end when the container restarts; set ORALCOMPASS_SESSION_SECRET to keep them (docs/DEPLOY.md).
+SECRET_NOW="${ORALCOMPASS_SESSION_SECRET:-}"
+if [ "${#SECRET_NOW}" -lt 32 ]; then
+  ORALCOMPASS_SESSION_SECRET="$(python -c 'import secrets; print(secrets.token_urlsafe(48))')"
+  export ORALCOMPASS_SESSION_SECRET
+  echo "oralcompass: ORALCOMPASS_SESSION_SECRET was not set; using a random one for this run (sessions end at restart)." >&2
+fi
+
 DB_DIR="$(dirname "${ORALCOMPASS_DB_PATH:-/data/oralcompass.db}")"
 UPLOADS="${ORALCOMPASS_DATA_DIR:-/data/uploads}"
 CMD="uvicorn app.server:app --host 0.0.0.0 --port ${PORT:-8000} --proxy-headers --forwarded-allow-ips * --no-access-log"
