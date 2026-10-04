@@ -306,6 +306,15 @@ table.grid thead th { background: var(--paper-deep); position: sticky; top: 0; }
 /* long option labels must never widen the page: selects shrink inside their column (no clipping guard on .view; demo-2, slop-5) */
 .toggles select, .plan-pick select, .pickers select { max-width: 100%; min-width: 0; }
 @media (max-width: 760px) { .toggles select { width: 100%; } .toggles { flex-direction: column; align-items: stretch; } .toggles button { width: 100%; } }
+
+/* ---- native selects (layout-17, mobile-4): WebKit ignores min-height and padding on an appearance:auto select (it rendered 22 px on
+   iPhone); appearance:none gives every engine the same box, and a token-coloured chevron replaces the native one ---- */
+select:not([multiple]):not([size]) {
+  appearance: none; -webkit-appearance: none; background-color: var(--surface-raised);
+  background-image: linear-gradient(45deg, transparent 50%, var(--ink-soft) 50%), linear-gradient(135deg, var(--ink-soft) 50%, transparent 50%);
+  background-position: calc(100% - 17px) 50%, calc(100% - 12px) 50%; background-size: 5px 5px, 5px 5px; background-repeat: no-repeat;
+  padding-right: 2rem; text-overflow: ellipsis;
+}
 /* documents: long plan names and source URLs wrap inside the column instead of running past it (slop-5) */
 .doc-head .plan-pick { min-width: 0; max-width: 100%; }
 .sources a, .doc-card a, .sources summary { overflow-wrap: anywhere; }
