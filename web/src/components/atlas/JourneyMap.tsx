@@ -81,10 +81,10 @@ export function JourneyMap({ journey, selected, onSelect, currentStageId }: Prop
 }
 
 function Marker({ x, y }: { x: number; y: number }) {
-  // outer group positions the pin (SVG attribute); inner group carries the CSS animation (a CSS transform would override the attribute)
+  // the pin is static (spec §5.5: the old `bob` loop was removed); the outer group positions it
   return (
     <g transform={`translate(${x} ${y})`}>
-      <g className="you-are-here">
+      <g>
         <path d="M0 0 C -13 -16 -13 -30 0 -34 C 13 -30 13 -16 0 0 Z" fill="var(--terracotta)" stroke="var(--ink)" strokeWidth="1.4" />
         <circle cy={-23} r={5} fill="var(--paper)" />
       </g>

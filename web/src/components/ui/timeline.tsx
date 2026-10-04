@@ -1,15 +1,11 @@
 // Aceternity UI "Timeline" (https://ui.aceternity.com/components/timeline), Aceternity License, installed 2026-10-03.
 // Patched for OralCompass (component plan §2 N5): demo heading/intro deleted; `bg-white font-sans` → transparent serif; fill
 // purple→blue → forest→sea (a painted wash); track `via-neutral-200` → `via-ink/15`; dots paper/sand; titles 18 px ink; entries are an
-// <ol>/<li> with `aria-current="step"` on `current`. Reduced motion: the fill height/opacity are motion values (MotionConfig does not
-// cover them) → when `useReducedMotion()` the fill renders at 100 % / opacity 1.
-import {
-  useMotionValueEvent,
-  useReducedMotion,
-  useScroll,
-  useTransform,
-  motion,
-} from "motion/react";
+// <ol>/<li> with `aria-current="step"` on `current`.
+// Patch 2026-10-04 (finding motion-5): the fill no longer scrubs with page scroll (useScroll → height, a layout property, with no
+// journey meaning). It fills ONCE to the current stage — (current + 1) / entries — by transform (scaleY from the top, 700 ms in-out);
+// with no current stage it stays empty. Reduced motion shows the end state at once.
+import { motion, useReducedMotion } from "motion/react";
 import React, { useEffect, useRef, useState } from "react";
 
 interface TimelineEntry {
@@ -30,15 +26,7 @@ export const Timeline = ({ data, current, ariaLabel }: { data: TimelineEntry[]; 
     }
   }, [ref, data.length]);
 
-  const { scrollYProgress } = useScroll({
-    target: containerRef,
-    offset: ["start 10%", "end 50%"],
-  });
-
-  const heightTransform = useTransform(scrollYProgress, [0, 1], [0, height]);
-  const opacityTransform = useTransform(scrollYProgress, [0, 0.1], [0, 1]);
-  // keep the hook (Aceternity exports it from here); it is a no-op subscription so consumers can extend
-  useMotionValueEvent(scrollYProgress, "change", () => {});
+  const fraction = current != null && current >= 0 && data.length ? Math.min(1, (current + 1) / data.length) : 0;
 
   return (
     <div className="w-full bg-transparent font-serif px-0 scroll-fade-y" ref={containerRef}>
@@ -68,7 +56,10 @@ export const Timeline = ({ data, current, ariaLabel }: { data: TimelineEntry[]; 
           className="absolute top-0 left-8 w-[2px] overflow-hidden bg-[linear-gradient(to_bottom,var(--tw-gradient-stops))] from-transparent from-[0%] via-ink/15 to-transparent to-[99%] [mask-image:linear-gradient(to_bottom,transparent_0%,black_10%,black_90%,transparent_100%)] md:left-8"
         >
           <motion.div
-            style={reduce ? { height: "100%", opacity: 1 } : { height: heightTransform, opacity: opacityTransform }}
+            style={{ height: "100%", transformOrigin: "top" }}
+            initial={reduce ? false : { scaleY: 0 }}
+            animate={{ scaleY: fraction }}
+            transition={reduce ? { duration: 0 } : { duration: 0.7, ease: [0.65, 0, 0.35, 1] }}
             className="absolute inset-x-0 top-0 w-[2px] rounded-full bg-gradient-to-t from-forest from-[0%] via-sea via-[10%] to-transparent"
           />
         </div>

@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 // NumberFlow registers a custom element at import time; static markup needs only a placeholder for the digits.
 vi.mock("@number-flow/react", () => ({ default: ({ value }: { value: number }) => `$${value.toFixed(2)}` }));
 
+import { readFileSync } from "node:fs";
 import { renderToStaticMarkup } from "react-dom/server";
 import alexJson from "../__fixtures__/passage/alex.json";
 import { PassageControls } from "@/components/atlas/PassageControls";
@@ -148,5 +149,19 @@ describe("care rail (finding slop-27)", () => {
     const at = html.indexOf('aria-current="step"'), link = html.indexOf("Show on the chart"), nextCard = html.indexOf('class="care-card', at);
     expect(link).toBeGreaterThan(at);
     expect(nextCard === -1 || link < nextCard).toBe(true);
+  });
+});
+
+describe("journey motion rules (findings motion-5, motion-4, slop-26, motion-12)", () => {
+  const src = (rel: string) => readFileSync(new URL(rel, import.meta.url), "utf8");
+  it("the care timeline fill follows the current stage, not page scroll, and animates transform only", () => {
+    const t = src("../components/ui/timeline.tsx");
+    expect(t).not.toMatch(/useScroll\(|useTransform\(|heightTransform/);
+    expect(t).toMatch(/scaleY: fraction/);
+  });
+  it("no scroll parallax, glass blur or bobbing pin on the passage", () => {
+    expect(src("../components/atlas/OceanLayers.tsx")).not.toMatch(/useScroll\(|<GradualBlur|backdrop-?filter/i);
+    expect(src("../styles.css")).not.toMatch(/@keyframes bob|animation:\s*bob/);
+    expect(src("../components/atlas/JourneyMap.tsx")).not.toMatch(/you-are-here/);
   });
 });
