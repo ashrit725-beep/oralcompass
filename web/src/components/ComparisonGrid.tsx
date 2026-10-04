@@ -16,7 +16,7 @@ const Highlighter = lazy(() => import("@/components/magicui/highlighter").then((
 
 /** One column of the grid: the plan model the API resolved for that column plus the ref the user picked. */
 export interface GridPlan { model: PlanFixture; ref: string }
-interface Props { data: ComparisonResponse; plans: Record<string, GridPlan> }
+interface Props { data: ComparisonResponse; plans: Record<string, GridPlan>; /** Plan refs whose column received entered inputs (spec: "Entered for this plan only"). */ enteredFor?: string[] }
 
 /**
  * ComparisonGrid (component plan N12; CLAUDE.md rule 6). shadcn Table, `table-fixed` + `<colgroup>` for equal columns, sticky header
@@ -26,7 +26,7 @@ interface Props { data: ComparisonResponse; plans: Record<string, GridPlan> }
  * in the Drawer instead. The cell keeps its value printed while the card is open and the card repeats it as plain text (integration: the
  * earlier shared-layoutId hop emptied the cell and left a ghost figure outside the card). Rails: the same estimate per plan, totals through <Money>.
  */
-export function ComparisonGrid({ data, plans }: Props) {
+export function ComparisonGrid({ data, plans, enteredFor = [] }: Props) {
   const cols = data.result.columns;
   const titleOf = (c: string) => plans[c]?.model.title ?? c;
   return (
@@ -88,6 +88,7 @@ export function ComparisonGrid({ data, plans }: Props) {
                   </p>
                 )}
                 {[...new Set(L?.flags ?? [])].map((f) => <p key={f} className="flag">{f}</p>)}
+                <p className="note">{enteredFor.includes(plans[c]?.ref ?? c) ? PLAN.cmpEnteredThisPlan : PLAN.cmpNothingEntered}</p>
                 <p className="note">{PLAN.cmpPremium}: {premium?.value != null ? <Money cents={premium.value} evidence={premium.status} /> : <><span>{UI.notStated}</span> <EvidenceBadge status="UNKNOWN" /></>}</p>
               </article>
             );

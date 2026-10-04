@@ -40,3 +40,11 @@ describe("ComparisonGrid cells (a11y-2: label in name)", () => {
     expect(html).toContain("$1,500.00");
   });
 });
+
+describe("ComparisonGrid rails (info-only-1: entered for this plan only)", () => {
+  it("says per rail whether inputs were entered for that plan, and never implies a carry-over", () => {
+    const html = renderToStaticMarkup(<ComparisonGrid data={data} plans={plans} enteredFor={["ML26"]} />);
+    expect(html.match(/entered for this plan only/g)).toHaveLength(1);
+    expect(html.match(/Nothing is entered for this plan/g)).toHaveLength(1);
+  });
+});

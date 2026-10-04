@@ -150,6 +150,8 @@ export const PLAN = {
   cmpProcedures: (list: string) => `Procedures compared: ${list}.`,
   cmpNoneRecorded: "none recorded as planned",
   cmpUsageFor: (codes: string) => `Usage figures are entered for: ${codes}. Other columns show what is not provided.`,
+  cmpEnteredThisPlan: "Usage, network status and allowed amounts in this column: entered for this plan only.",
+  cmpNothingEntered: "Nothing is entered for this plan; figures from other plans are never carried over.",
   cmpNoPlanned: "No planned procedures to compare. A treatment item on My journey or My plan starts the comparison.",
   cmpLedgers: "Same estimate, each plan",
   cmpLedgerOf: (title: string) => `${title}: ledger`,
