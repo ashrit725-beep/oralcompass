@@ -274,7 +274,8 @@ export function answerSegment(target: AnswerTarget, mobile: boolean, current: Jo
   if (target === "stage") return mobile ? "care" : current === "overview" ? "map" : current;
   return "map";
 }
-export interface AnswerRow { key: string; dt: string; dd: string; title?: string; target: AnswerTarget }
+/** `calc`: the row prints engine totals, so it carries the "Calculated from the clauses cited" mark beside it (finding info-only-5). */
+export interface AnswerRow { key: string; dt: string; dd: string; title?: string; target: AnswerTarget; calc?: boolean }
 
 export function answersLog(vm: PassageVM, view: JourneyView | null, plan: PlanFixture | null, estimate: SavedEstimate | null, recalculating = false): AnswerRow[] {
   const s = (n: number) => (n === 1 ? "" : "s");
@@ -282,17 +283,17 @@ export function answersLog(vm: PassageVM, view: JourneyView | null, plan: PlanFi
   const where = cur ? `${cur.title} · ${cur.label}` : PASSAGE.noStages;
   const n = vm.islands.length;
   const route = n === 0 ? PASSAGE.noPlanned : `${n} ${PASSAGE.procedure}${s(n)}${vm.visited.length ? `, ${vm.visited.length} ${PASSAGE.completedOnStatement}` : ""}`;
-  let cost: string;
+  let cost: string, calc = false;
   if (recalculating) cost = PASSAGE.recalculating;
   else if (!estimate) cost = PASSAGE.noEstimate;
   else if (estimate.status !== "estimate" || estimate.user_estimated_payment_cents == null) cost = PASSAGE.waitingInputs(estimate.missing_inputs.length);
-  else cost = `${moneyText(estimate.user_estimated_payment_cents)} · ${PASSAGE.plan} ${moneyText(estimate.insurer_estimated_payment_cents)}${estimate.plan_payment_is_upper_bound ? ` ${PASSAGE.upperBoundParen}` : ""}`;
+  else { cost = `${moneyText(estimate.user_estimated_payment_cents)} · ${PASSAGE.plan} ${moneyText(estimate.insurer_estimated_payment_cents)}${estimate.plan_payment_is_upper_bound ? ` ${PASSAGE.upperBoundParen}` : ""}`; calc = true; }
   const rulesRow = `${vm.stepsCited} ${PASSAGE.step}${s(vm.stepsCited)} ${PASSAGE.cited} · ${vm.rulesNotStated} ${PASSAGE.rule}${s(vm.rulesNotStated)} ${PASSAGE.notStated}`;
   const from = plan ? `${plan.source_document.version_label} · ${plan.source_document.title}${plan.is_fictional ? ` · ${PASSAGE.fictional}` : ""}` : PASSAGE.noPlan;
   return [
     { key: "where", dt: PASSAGE.whereYouAre, dd: where, target: "stage" },
     { key: "route", dt: PASSAGE.onTheRoute, dd: route, target: "island" },
-    { key: "cost", dt: PASSAGE.estimatedYouPay, dd: cost, target: "light" },
+    { key: "cost", dt: PASSAGE.estimatedYouPay, dd: cost, target: "light", calc },
     { key: "rules", dt: PASSAGE.rulesApplied, dd: rulesRow, target: "checkpoint" },
     { key: "from", dt: PASSAGE.from, dd: from, title: from, target: "documents" },
   ];

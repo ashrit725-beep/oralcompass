@@ -6,10 +6,12 @@ vi.mock("@number-flow/react", () => ({ default: ({ value }: { value: number }) =
 import { renderToStaticMarkup } from "react-dom/server";
 import alexJson from "../__fixtures__/passage/alex.json";
 import { DetailPanel } from "@/components/DetailPanel";
+import { AnswersLog } from "@/components/journey/AnswersLog";
+import { Money } from "@/components/Money";
 import { OverviewList } from "@/components/OverviewList";
 import { UI } from "@/lib/copy";
 import { labeledSamples } from "@/lib/journey";
-import { buildPassage, type PassageInputs } from "@/lib/passage";
+import { answersLog, buildPassage, type PassageInputs } from "@/lib/passage";
 import { stitchesFromClauses } from "@/lib/stitches";
 import type { Clause, CoverageRule, JourneyView, PlanFixture, Procedure, SavedEstimate, TreatmentItem } from "@/lib/types";
 
@@ -79,5 +81,20 @@ describe("completion disclaimer printed once (finding slop-29)", () => {
     const props = { view: f.view, estimate: f.estimate, onSelect: noop, onOpenLandmark: noop, onOpenDocuments: noop, onPatch: async () => {}, onInstructions: async () => {}, busy: false, mobile: false, onClose: noop };
     expect(renderToStaticMarkup(<DetailPanel {...props} selection={{ stageId: "before" }} />)).not.toContain(UI.progressNote.slice(0, 40));
     expect(renderToStaticMarkup(<OverviewList journey={f.view.journey} vm={vm} onSelect={noop} />)).not.toContain(UI.progressNote.slice(0, 40));
+  });
+});
+
+describe("evidence beside journey figures (findings info-only-5, demo-8)", () => {
+  it("marks the Answers-log totals as calculated", () => {
+    const rows = answersLog(vm, f.view, f.plan, f.estimate);
+    expect(rows.find((r) => r.key === "cost")).toMatchObject({ dd: "$902.00 · plan $1,098.00", calc: true });
+    expect(answersLog(vm, f.view, f.plan, null).find((r) => r.key === "cost")?.calc).toBeFalsy();
+    const html = renderToStaticMarkup(<AnswersLog vm={vm} view={f.view} plan={f.plan} estimate={f.estimate} onFocus={noop} />);
+    expect(html).toContain("Calculated from the clauses cited");
+  });
+  it("Money says 'calculated' for engine totals and reads the badge label (not the code) when the badge is hidden", () => {
+    expect(renderToStaticMarkup(<Money cents={90200} evidence="DOC" calc />)).toContain("Calculated from the clauses cited");
+    expect(renderToStaticMarkup(<Money cents={4500} evidence="USER" badge={false} />)).toContain("Evidence: You entered");
+    expect(renderToStaticMarkup(<Money cents={4500} evidence="USER" badge={false} />)).not.toContain("Evidence: USER");
   });
 });

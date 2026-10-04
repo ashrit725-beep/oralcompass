@@ -22,7 +22,8 @@ export interface PassageControlsProps { vm: PassageVM; layout: PassageLayout; se
 const stateWord = (isl: IslandVM) => isl.state === "unresolved" ? PASSAGE.waitingLower : isl.state === "not_covered" ? PASSAGE.notCoveredLower : isl.state === "pending" ? PASSAGE.noEstimate.toLowerCase() : "";
 
 export function islandAria(isl: IslandVM): string {
-  const parts = [isl.title, isl.subtitle, islandAmountText(isl), isl.place];
+  const calc = (isl.kind === "procedure" || isl.kind === "destination") && isl.youPay != null;
+  const parts = [isl.title, isl.subtitle, calc ? `${islandAmountText(isl)} (${PASSAGE.calculatedAria})` : islandAmountText(isl), isl.place];
   if (isl.checkpoints.length) parts.push(PASSAGE.checkpointsCount(isl.checkpoints.length));
   if (isl.notices.length) parts.push(PASSAGE.notices(isl.notices.length));
   return parts.filter(Boolean).join(" · ");
@@ -55,7 +56,7 @@ export function PassageControls({ vm, layout, selected, onSelect, planCode, grou
 
   const start = vm.start, light = vm.destination;
   const startName = PASSAGE.startLabel(planCode || "—", start.subtitle?.split(" · ")[1] ?? PASSAGE.networkNotProvided);
-  const lightName = PASSAGE.lightLabel(light.youPay != null ? `${PASSAGE.youPay} ${moneyText(light.youPay)}` : PASSAGE.waitingLower);
+  const lightName = PASSAGE.lightLabel(light.youPay != null ? `${PASSAGE.youPay} ${moneyText(light.youPay)} (${PASSAGE.calculatedAria})` : PASSAGE.waitingLower);
 
   return (
     <div className="passage-controls" id={groupId} role="group" aria-label={PASSAGE.islandsGroup} onKeyDown={onKeyDown} tabIndex={-1}>
@@ -79,8 +80,8 @@ export function PassageControls({ vm, layout, selected, onSelect, planCode, grou
               <span className="ctl-title">{isl.title}</span>
               {isl.subtitle && <span className="ctl-sub">{isl.subtitle}</span>}
               <span className={`ctl-amt ${isl.state}`}>
-                {isl.state === "estimate" ? <>{PASSAGE.youPay} <Money cents={isl.youPay} evidence={isl.checkpoints.find((c) => c.rule === "CO")?.badge ?? "UNKNOWN"} badge={false} /></>
-                  : isl.state === "not_covered" ? <>{PASSAGE.notCoveredLower} · <Money cents={isl.youPay} evidence="USER" badge={false} /></>
+                {isl.state === "estimate" ? <>{PASSAGE.youPay} <Money cents={isl.youPay} evidence={isl.checkpoints.find((c) => c.rule === "CO")?.badge ?? "UNKNOWN"} badge={false} calc /></>
+                  : isl.state === "not_covered" ? <>{PASSAGE.notCoveredLower} · <Money cents={isl.youPay} evidence="USER" badge={false} calc /></>
                   : <>{stateWord(isl) || PASSAGE.waitingLower}</>}
               </span>
             </button>
@@ -108,7 +109,7 @@ export function PassageControls({ vm, layout, selected, onSelect, planCode, grou
               data-route-btn data-island="destination" aria-pressed={isSel("destination")} aria-label={`${lightName}${light.planPays != null ? ` · ${PASSAGE.plan} ${moneyText(light.planPays)}${light.upperBound ? ` ${PASSAGE.upperBoundParen}` : ""}` : ""}`} onClick={pick("destination", undefined)}>
         <span className="ctl-title">{light.title}</span>
         <span className={`ctl-amt ${light.youPay != null ? "estimate" : "unresolved"}`}>
-          {light.youPay != null ? <>{PASSAGE.youPay} <Money cents={light.youPay} evidence="DOC" badge={false} /></> : PASSAGE.waitingLower}
+          {light.youPay != null ? <>{PASSAGE.youPay} <Money cents={light.youPay} evidence="DOC" badge={false} calc /></> : PASSAGE.waitingLower}
         </span>
       </button>
 
@@ -165,6 +166,7 @@ export function PassageLegend({ layout, vm }: { layout: PassageLayout; vm: Passa
       {hasFog && <span className="lg"><span className="lg-mark tone-fog"><Glyph id="fog" size={12} /></span>{PASSAGE.legendFog}</span>}
       {vm.visited.length > 0 && <span className="lg"><span className="lg-mark tone-visited"><Glyph id="visited" size={12} /></span>{PASSAGE.legendVisited}</span>}
       {vm.marginal.length > 0 && <span className="lg"><span className="lg-mark tone-marginal" />{PASSAGE.legendMarginal}</span>}
+      {(vm.islands.some((i) => i.youPay != null) || vm.destination.youPay != null) && <span className="lg lg-note">{PASSAGE.legendAmounts}</span>}
       {layout.dense && <span className="lg lg-note">{PASSAGE.denseNote}</span>}
       {layout.collapsed && <span className="lg lg-note">{PASSAGE.collapsedNote}</span>}
     </div>

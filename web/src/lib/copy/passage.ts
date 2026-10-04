@@ -126,6 +126,9 @@ export const PASSAGE = {
   cancelledNote: (n: number) => `${n} cancelled item${n === 1 ? "" : "s"} not drawn.`,
   uploadedPlan: "your uploaded document",
   currentEstimate: "Current estimate",
+  calculatedAria: "calculated from the clauses cited",
+  legendAmounts: "You pay and plan figures on the chart are calculated from the clauses cited and your figures; each step of an island carries its own badge and stitch.",
+  visitedFigures: "Plan-paid figures as you entered them from your benefit statement.",
   tableScrolls: "The table scrolls sideways for more columns.",
   tableRegion: (name: string) => `${name} (table, scrolls sideways)`,
 } as const satisfies Record<string, string | ((...a: never[]) => string)>;
