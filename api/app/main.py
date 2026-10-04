@@ -111,10 +111,10 @@ class ComparisonIn(BaseModel):
 
 
 class DocumentIn(BaseModel):
-    filename: str
-    sha256: str
+    filename: str = Field(max_length=255)
+    sha256: str = Field(max_length=64)
     pages: int = Field(ge=1, le=100)
-    text_preview: str = ""              # client-extracted text layer for the redaction preview (demo); production uses server-side PyMuPDF
+    text_preview: str = Field("", max_length=200_000)   # client-extracted text layer for the redaction preview (demo); production uses server-side PyMuPDF
 
 
 def resolve_plan(user: User, ref: str):
