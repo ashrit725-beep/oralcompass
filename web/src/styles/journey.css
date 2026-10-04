@@ -332,3 +332,12 @@
   .log dt { font-size: 12px; line-height: 16px; padding-top: 12px; }
 }
 .segment-target { min-width: 0; }
+
+/* pressed feedback on the phone touch surfaces (finding mobile-21): an on-palette press within 120 ms instead of WebKit's grey tap
+   rectangle over the rounded parchment; no scale under reduced motion */
+.pv-card, .pv-cp, .pv-mini, .care-stage-btn, .care-cp, .segmented > button.seg-btn, .journey-switch > summary, .passage-vertical .stitch { -webkit-tap-highlight-color: transparent; }
+.pv-card, .pv-cp, .pv-mini, .care-stage-btn { transition: transform var(--dur-micro) var(--ease-standard), background-color var(--dur-micro) var(--ease-standard); }
+.pv-card:active, .pv-cp:active, .pv-mini:active, .care-stage-btn:active { background: var(--parchment); transform: scale(.98); }
+.care-cp:active { background: color-mix(in srgb, var(--gold) 18%, transparent); }
+.segmented > button.seg-btn:active { color: var(--ink) !important; }
+@media (prefers-reduced-motion: reduce) { .pv-card:active, .pv-cp:active, .pv-mini:active, .care-stage-btn:active { transform: none; } }
