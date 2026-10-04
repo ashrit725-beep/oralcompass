@@ -310,7 +310,9 @@
 .detail-sheet .detail-body button:not(.linklike):not(#_) { min-height: 44px; }
 
 /* engine totals on the journey surfaces say how they were made (finding info-only-5; same treatment as the drawer's .fig-calc) */
-.log-calc { display: block; margin-top: 2px; }
+.log-cost dd { display: flex; flex-wrap: wrap; align-items: center; gap: 0 8px; }
+.log-calc { display: inline-block; }
+@media (max-width: 760px) { .log-cost dd { display: block; } .log-calc { display: block; margin: 2px 0 0; } }
 .pv-side-note { margin: 0 0 .4rem; font-size: 13px; line-height: 18px; color: var(--ink-soft); display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; }
 .pv-card .fig-calc { white-space: normal; }
 
