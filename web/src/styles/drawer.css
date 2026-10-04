@@ -262,3 +262,14 @@ details[open] > .dsec-summary .dsec-toggle { transform: rotate(-135deg); margin-
 td .fig .badge, td .fact .badge, .dsec-dl dd .fig .badge { order: 3; flex-basis: 100%; white-space: nowrap; }
 .drawer td .fig .badge { white-space: nowrap; }
 @media (max-width: 640px) { .fig .amt { font-size: 16px; line-height: 22px; } }
+
+/* Drawer sections reveal once per open in reading order (motionsites technique 1, adapted): 360 ms on --ease-land, a 4 px rise, 40 ms
+   apart and capped at 160 ms so the drawer still feels instant. Opacity/transform only; reduced motion shows the sections at once. */
+@keyframes dsec-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: no-preference) {
+  .drawer-sections > .dsec { animation: dsec-in 360ms var(--ease-land) both; }
+  .drawer-sections > .dsec:nth-child(2) { animation-delay: 40ms; }
+  .drawer-sections > .dsec:nth-child(3) { animation-delay: 80ms; }
+  .drawer-sections > .dsec:nth-child(4) { animation-delay: 120ms; }
+  .drawer-sections > .dsec:nth-child(n+5) { animation-delay: 160ms; }
+}
