@@ -10,7 +10,7 @@ merged app and removes the marker.
 ## Setup (demo mode: no key, no model call)
 
 Use a fresh data directory so the upload publishes as `UP1`, and force demo mode in the shell (shell variables override `api/.env`).
-Copy the fixtures into `web/public/fixtures/` first (README, step 3; this includes the fictional sample statement).
+`npm run dev`, `npm run build` and `npm run preview` copy the fixtures into `web/public/fixtures/` first (`web/scripts/copy-fixtures.mjs`; this includes the fictional sample statement).
 
 **One server, reachable from the phone (recommended for presenting):**
 
@@ -71,7 +71,7 @@ filling the window behind it. <!-- verify: feat/mobile-cinematic --> Mirror the 
 |---|---|
 | The phone cannot reach the laptop | Check both are on the same Wi-Fi and that the server was started with `--host 0.0.0.0`; otherwise present on the laptop (the phone column) or with the browser's device emulation. |
 | The API is down or the page shows a load error | Restart the API command above (fresh `ORALCOMPASS_DATA_DIR`), reload. The web app shows an error banner, not a blank page. |
-| "Try a fictional sample statement" cannot load the file | The fixtures were not copied into `web/public/fixtures/documents/` before the build. Copy them (README, step 3) and rebuild. <!-- verify: feat/client-redaction --> |
+| "Try a fictional sample statement" cannot load the file | The build skipped the prebuild hook (a bare `vite build`). Run `npm run build` (or `npm run copy:fixtures`) and reload. <!-- verify: feat/client-redaction --> |
 | The upload stalls or extraction says `demo_no_model` | The file is not one of the fixture PDFs (demo mode matches by checksum). Use the sample statement button or `fixtures/documents/harborview_certificate.pdf`. |
 | Publishing gives `UP2` instead of `UP1` | The data directory was reused; the numbers are the same. Restart with a fresh `ORALCOMPASS_DATA_DIR` for the next run. |
 | A live-mode call is slow or refused | Say "demo mode" and continue: every AI feature has a deterministic fallback and labels it. Live extraction takes minutes, so present in demo mode. |

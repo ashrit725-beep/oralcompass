@@ -7,6 +7,10 @@ WORKDIR /src/web
 COPY web/package.json web/package-lock.json ./
 RUN npm ci --no-audit --no-fund
 COPY web/ ./
+# npm run build's prebuild hook (web/scripts/copy-fixtures.mjs) copies ../fixtures/plans/*.json and
+# ../fixtures/documents/*.pdf into public/fixtures, so the bundle carries the fictional sample statement.
+COPY fixtures/plans/ /src/fixtures/plans/
+COPY fixtures/documents/ /src/fixtures/documents/
 # A production bundle: no VITE_DEV_AUTH, so the browser sends no X-Dev-User header and is identified by the session cookie.
 RUN npm run build
 

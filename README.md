@@ -80,10 +80,9 @@ cd api && pip install -r requirements.txt
 ORALCOMPASS_DEV_AUTH=1 ORALCOMPASS_LLM_PROVIDER=none ORALCOMPASS_DATA_DIR=$(mktemp -d) \
   python3 -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 
-# 3. Web (terminal 2). web/public/fixtures is gitignored; copy the fixtures in once (this includes the fictional sample statement).
+# 3. Web (terminal 2). npm run dev / build / preview copy ../fixtures (plans + PDFs, including the
+#    fictional sample statement) into the gitignored web/public/fixtures first (web/scripts/copy-fixtures.mjs).
 cd web && npm install
-mkdir -p public/fixtures/plans public/fixtures/documents
-cp ../fixtures/plans/*.json public/fixtures/plans/ && cp ../fixtures/documents/*.pdf public/fixtures/documents/
 npm run dev            # http://localhost:5173, proxies /api to 127.0.0.1:8000
 ```
 
