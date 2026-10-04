@@ -222,3 +222,11 @@ export const PLAN_READ = {
              email: "an email address", address: "a street address" } as Record<string, string>,
   confidence: { printed_code: "Matched by the printed code", wording: "Matched by the wording", ambiguous: "Several identifiers fit", not_matched: "Not matched" } as Record<string, string>,
 } as const;
+
+export const DOC_WORDS: { kind: Record<string, string>; status: Record<string, string> } = {
+  /* Readable words for a stored document's kind and status (the API sends snake_case codes). */
+  kind: { plan_document_public: "public plan document", plan_document_upload: "uploaded plan document", treatment_plan: "treatment plan",
+    pretreatment_estimate_response: "pre-treatment estimate", benefit_statement: "benefit statement", upload: "upload" },
+  status: { cited_facts_verified_in_text: "figures checked against the document text", typed_by_user: "figures typed by you",
+    cached: "read earlier", uploaded: "uploaded, not read yet" },
+};

@@ -2,10 +2,10 @@ import { Suspense, lazy, useEffect, useMemo, useState, type ReactNode } from "re
 import { api } from "@/lib/api";
 import { failureReason, saveJson } from "@/lib/download";
 import { UI } from "@/lib/copy";
-import { PLAN } from "@/lib/copy/plan";
+import { DOC_WORDS, PLAN } from "@/lib/copy/plan";
 import { ownedFileObjectUrl } from "@/lib/owned-file";
 import { fastPathLabel, fullPlanLabel, groupPlans, summaryFor, uploadLabel, type UploadEvidenceExtras, type UploadSummary } from "@/lib/plan-catalog";
-import { circled } from "@/lib/stitches";
+import { circled, plainNote } from "@/lib/stitches";
 import { clauseSection, docMetaLine, groupClauses, type ClauseSection } from "@/lib/clauses";
 import type { PlanEvidence, PlanRef, PlanSummary, PrivateDocument, SourceItem, Stitch, UploadedPlanSummary } from "@/lib/types";
 import { isUpload } from "@/lib/types";
@@ -16,6 +16,8 @@ import { StageLoader } from "@/components/StageLoader";
 import { UploadWizard } from "@/components/upload/UploadWizard";
 import HoldButton from "@/components/ui/HoldButton";
 
+/** A readable word for an API code; unknown codes lose their underscores rather than showing raw. */
+const words = (map: Record<string, string>, code: string) => map[code] ?? code.replace(/_/g, " ");
 // pdf.js (≈107 KB gzip) loads only when a stored PDF is rendered — never in the main chunk (component plan §3.2).
 const PageView = lazy(() => import("./PageView").then((m) => ({ default: m.PageView })));
 
@@ -106,7 +108,7 @@ export function DocumentsView({ planCode, plans, onPlan, evidence, stitches, sel
         {upload?.versions && upload.versions.length > 1 && <p className="muted small">{PLAN.docsVersions(upload.versions.join(", "))}</p>}
         {evidence?.documents.map((d) => (
           <article key={d.version_label} className="doc-card">
-            <h3><span className="scope">{d.version_label}</span> {d.title}</h3>
+            <h3><span className="scope">{d.version_label}</span> {plainNote(d.title)}</h3>
             <p className="muted small">{docMetaLine([d.publisher, d.document_date && `${PLAN.docsDated} ${d.document_date}`, d.pages ? `${d.pages} ${PLAN.docsPages}` : null, d.retrieved_at && `${PLAN.docsRetrieved} ${d.retrieved_at}`, d.role])}</p>
             {d.url && <p><a href={d.url} target="_blank" rel="noreferrer">{UI.openSource}</a></p>}
             {!d.has_stored_pdf && d.role === "primary" && <p className="flag">{PLAN.docsNotStoredPdf}</p>}
@@ -168,7 +170,7 @@ export function DocumentsView({ planCode, plans, onPlan, evidence, stitches, sel
         {uploadSlot ?? <UploadWizard planRef={planCode} onPublished={(s, ref) => { refreshUploads(); onPublished?.(s, ref); }} onUsePlan={onPlan} />}
         <RemindersPanel refreshKey={planCode} />
         {mine === null ? <p className="muted">{UI.processing}</p> : mine.length === 0 ? <p className="muted">{PLAN.docsNoPrivate}</p> : (
-          <ul className="plain-list">{mine.map((d) => <li key={d.id}><strong>{d.label ?? d.filename}</strong> <span className="muted">· {d.type ?? "upload"} · {d.extraction_status ?? UI.notStated}</span>
+          <ul className="plain-list">{mine.map((d) => <li key={d.id}><strong>{plainNote(d.label ?? d.filename)}</strong> <span className="muted">· {words(DOC_WORDS.kind, d.type ?? "upload")} · {d.extraction_status ? words(DOC_WORDS.status, d.extraction_status) : UI.notStated}</span>
             {(d.fields_needing_confirmation?.length ?? 0) > 0 && <ul className="small">{d.fields_needing_confirmation!.map((f) => <li key={f}><EvidenceBadge status="AMBIGUOUS" /> {PLAN.docsNeedsConfirmation} {f}</li>)}</ul>}
             {d.redaction_preview && <p className="small muted">{PLAN.docsRedactionRemoved} {d.redaction_preview.removed.join(", ") || PLAN.docsNothing}</p>}</li>)}</ul>
         )}
