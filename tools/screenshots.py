@@ -73,7 +73,7 @@ def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-pref
     page.get_by_role("button", name="Map view").click(); page.wait_for_timeout(300)
 
     # My plan → lighthouse → cost trail
-    page.get_by_role("button", name="My plan").click(); page.wait_for_timeout(800)
+    page.get_by_role("tab", name="My plan").click(); page.wait_for_timeout(800)
     page.screenshot(path=OUT / f"{device}-05-plan.png", full_page=True)
     page.locator("button[aria-label^='Cost breakdown']").first.click(); page.wait_for_timeout(1200)
     page.screenshot(path=OUT / f"{device}-06-lighthouse.png", full_page=True)
@@ -100,13 +100,13 @@ def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-pref
     page.locator("label.plan-pick select").first.select_option("ML26"); page.wait_for_timeout(800)
 
     # Compare
-    page.get_by_role("button", name="Compare").click(); page.wait_for_timeout(2500)
+    page.get_by_role("tab", name="Compare").click(); page.wait_for_timeout(2500)
     check(f"{device}: comparison grid renders", page.locator("table.grid").count() > 0)
     check(f"{device}: eligibility banner under columns", page.get_by_text("not that you are eligible to enroll", exact=False).count() > 0)
     page.screenshot(path=OUT / f"{device}-09-compare.png", full_page=True)
 
     # Documents
-    page.get_by_role("button", name="Documents").click(); page.wait_for_timeout(1500)
+    page.get_by_role("tab", name="Documents").click(); page.wait_for_timeout(1500)
     check(f"{device}: official source link present", page.locator("a[href^='https://oshr.nc.gov']").count() > 0)
     check(f"{device}: clauses listed with page references", page.locator("ol.clauses li").count() > 20)
     check(f"{device}: conflicts preserved", page.get_by_text("Where sources disagree", exact=False).count() > 0)
@@ -117,7 +117,7 @@ def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-pref
     check(f"{device}: clause card opens", page.get_by_role("dialog").count() > 0)
 
     # keyboard: Tab reaches nav and map controls; Enter activates
-    page.get_by_role("button", name="My journey").click(); page.wait_for_timeout(600)
+    page.get_by_role("tab", name="My journey").click(); page.wait_for_timeout(600)
     page.keyboard.press("Tab")
     focused = page.evaluate("document.activeElement && document.activeElement.textContent")
     for _ in range(40):

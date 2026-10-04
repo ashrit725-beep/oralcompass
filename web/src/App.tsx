@@ -41,9 +41,9 @@ export default function App() {
       <header className="appbar">
         <div className="brand"><h1>{UI.appName}</h1><p className="tagline">{TAGLINE}</p></div>
         <nav className="topnav" aria-label="Views">
-          <TabsList variant="line" className="h-11 w-full justify-between md:w-auto md:justify-start">
+          <TabsList variant="line" className="h-11 w-full justify-between gap-0 md:w-auto md:justify-start md:gap-1">
             {TABS.map((t) => (
-              <TabsTrigger key={t} value={t} aria-current={tab === t ? "page" : undefined} className="relative min-w-[90px] flex-1 rounded-full px-3 after:hidden md:flex-none">
+              <TabsTrigger key={t} value={t} aria-current={tab === t ? "page" : undefined} className="relative min-w-0 flex-1 rounded-full px-1.5 text-[15px] after:hidden md:min-w-[90px] md:flex-none md:px-3 md:text-base">
                 {NAV[t]}
                 {tab === t && <motion.span layoutId="nav-underline" aria-hidden="true" className="absolute inset-x-3 -bottom-[3px] h-0.5 rounded-full bg-gold" transition={{ duration: 0.2, ease: [0.2, 0.7, 0.2, 1] }} />}
               </TabsTrigger>
