@@ -251,3 +251,8 @@ details[open] > .dsec-summary .dsec-toggle { transform: rotate(-135deg); margin-
 .eq-row > * { min-width: 0; max-width: 100%; }
 .cp-strip .cp-chip-term { overflow-wrap: normal; word-break: normal; }   /* "Deductible" keeps its word (the drawer's overflow-wrap: anywhere split it) */
 .harbor-table td .fig .amt { font-size: 14px; line-height: 20px; }   /* cell figures share the row's baseline with the island name */
+
+/* layout-13: the desktop clause card is modal; a flat ink scrim (no blur) marks everything beneath it as unavailable, and a press on it closes the card. */
+.clause-scrim { position: fixed; inset: 0; z-index: 19; background: color-mix(in srgb, var(--ink) 20%, transparent); animation: clause-scrim-in var(--dur-standard, 240ms) ease-out both; }
+@keyframes clause-scrim-in { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .clause-scrim { animation: none; } }
