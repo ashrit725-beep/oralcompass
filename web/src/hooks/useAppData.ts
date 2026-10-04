@@ -46,7 +46,7 @@ export function useAppData() {
       setViewState(first);
       if (first) setPlanRef(first.journey.plan_ref ?? pl.items[0]?.plan_code ?? "");
       else setPlanRef(pl.items.find((p) => !p.is_fictional)?.plan_code ?? pl.items[0]?.plan_code ?? "");
-    } catch (e: any) { setError(`${UI.errorTitle}: ${e.message}. The API runs on :8000 with ORALCOMPASS_DEV_AUTH=1.`); }
+    } catch (e: any) { setError(`${UI.errorTitle}: ${e.message}. The API runs on :8000: with ORALCOMPASS_DEV_AUTH=1 for a dev build (npm run dev, or a build made with VITE_DEV_AUTH=1), or as the single server (app.server) with cookie sessions.`); }
     finally { setLoading(null); }
   }, []);
   useEffect(() => { loadBase(); }, [loadBase]);
