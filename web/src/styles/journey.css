@@ -343,3 +343,6 @@
 .care-cp:active { background: color-mix(in srgb, var(--gold) 18%, transparent); }
 .segmented > button.seg-btn:active { color: var(--ink) !important; }
 @media (prefers-reduced-motion: reduce) { .pv-card:active, .pv-cp:active, .pv-mini:active, .care-stage-btn:active { transform: none; } }
+.island-strip-pages { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+.island-strip-pages .island-chip[aria-pressed="true"] { border-color: var(--select); font-weight: 600; }
+.passage-controls .marginal-more { font-weight: 600; width: 112px; max-width: 112px; min-height: 44px; }

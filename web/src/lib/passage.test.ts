@@ -297,3 +297,18 @@ describe("visited chip names (findings layout-18, demo-9)", () => {
     expect(chipTitle("Periodic oral evaluation")).toBe("Periodic oral evaluation");
   });
 });
+
+describe("overflow controls (finding web-correctness-30)", () => {
+  it("draws a '+k more mentioned' control for marginal islands past the ones on the chart, clear of every other control", () => {
+    const vm = buildPassage(alex);
+    const m = vm.marginal[0];
+    const five: PassageVM = { ...vm, marginal: Array.from({ length: 5 }, (_, i) => ({ ...m, id: `marginal:m${i}`, order: i + 1 })) };
+    const l = layoutPassage(five, "desktop");
+    expect(l.marginal).toHaveLength(3);
+    expect(l.marginalOverflow).toBe(2);
+    expect(l.marginalMore).not.toBeNull();
+    expect(l.collisions).toEqual([]);
+    expect(l.controls.some((c) => c.id === "marginal:more")).toBe(true);
+    expect(layoutPassage(vm, "desktop").marginalMore).toBeNull();          // nothing hidden, no control
+  });
+});

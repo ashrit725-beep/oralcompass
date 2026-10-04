@@ -361,6 +361,8 @@ export interface PassageLayout {
   w: number; h: number; mode: "desktop" | "phone"; dense: boolean; collapsed: boolean; plain: boolean;
   start: Pt; destination: Pt; startButton: Rect; destinationButton: Rect; destinationR: number;
   islands: IslandLayout[]; visited: SmallIslandLayout[]; visitedOverflow: number; visitedMore: Rect | null; marginal: SmallIslandLayout[]; marginalOverflow: number;
+  /** "+k more mentioned": the marginal islands past the ones drawn (null when none are hidden, or no clear spot on the lower margin). */
+  marginalMore: Rect | null;
   route: RouteSegment[]; soundings: SoundingLayout[]; controls: Rect[]; collisions: [string, string][];
 }
 export interface LayoutOptions { selected?: string | null; widthPx?: number }
@@ -482,7 +484,9 @@ export function layoutPassage(vm: PassageVM, mode: "desktop" | "phone", opts: La
   const visitedOverflow = Math.max(0, vm.visited.length - 3);
   const visitedMore = visitedOverflow ? rectAt(vCx, vTop + 3 * vPitch - (visitedH - btnH) / 2, visitedW, btnH, "visited:more") : null;
   const maxMarginal = n >= 7 ? 2 : 3;
-  const marginal: SmallIslandLayout[] = vm.marginal.slice(0, maxMarginal).map((m, j) => { const cx = n >= 7 ? 930 - j * 118 : 640 - j * 150, cy = n >= 7 ? 500 : 512; return { id: m.id, cx, cy, r: 36, button: rectAt(cx, cy + 28 + u(26), btnW, btnH, m.id) }; });
+  // marginal buttons step by their own width (+4 px): a fixed 150/118 pitch let the 152 px buttons overlap once two or three were drawn
+  const mPitch = btnW + u(4);
+  const marginal: SmallIslandLayout[] = vm.marginal.slice(0, maxMarginal).map((m, j) => { const cx = n >= 7 ? 930 - j * mPitch : 640 - j * mPitch, cy = n >= 7 ? 500 : 512; return { id: m.id, cx, cy, r: 36, button: rectAt(cx, cy + 28 + u(26), btnW, btnH, m.id) }; });
   const marginalOverflow = Math.max(0, vm.marginal.length - maxMarginal);
 
   // island plates and buttons (fixed), then arcs placed against everything already on the chart
@@ -519,6 +523,16 @@ export function layoutPassage(vm: PassageVM, mode: "desktop" | "phone", opts: La
       const x = xs.find((xx) => !blockers.some((f) => rectsIntersect(f, { ...m.button, x: xx })));
       if (x != null) m.button.x = x;
     }
+  }
+  // marginal islands past the 2–3 drawn get one "+k more" control on the lower margin (they were computed and silently dropped)
+  let marginalMore: Rect | null = null;
+  if (marginalOverflow > 0) {
+    const w = u(112), y = marginal.length ? marginal[marginal.length - 1].button.y : VB_H - btnH - 8;
+    for (let x = VB_W - 4 - w; x >= 4 && !marginalMore; x -= u(16)) {
+      const rc = { x, y, w, h: btnH, id: "marginal:more" };
+      if (!fixed.some((f) => rectsIntersect(f, rc))) marginalMore = rc;
+    }
+    if (marginalMore) fixed.push(marginalMore);
   }
   let collapsed = false, plain = false;
   const placedRects: Rect[] = [];
@@ -577,5 +591,5 @@ export function layoutPassage(vm: PassageVM, mode: "desktop" | "phone", opts: La
     soundings.push({ islandId: isl.id, x: best.x, y: best.y });
   });
 
-  return { w: VB_W, h: VB_H, mode, dense, collapsed, plain, start, destination, startButton, destinationButton, destinationR, islands, visited, visitedOverflow, visitedMore, marginal, marginalOverflow, route, soundings, controls, collisions: findCollisions(controls) };
+  return { w: VB_W, h: VB_H, mode, dense, collapsed, plain, start, destination, startButton, destinationButton, destinationR, islands, visited, visitedOverflow, visitedMore, marginal, marginalOverflow, marginalMore, route, soundings, controls, collisions: findCollisions(controls) };
 }

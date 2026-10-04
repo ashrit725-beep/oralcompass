@@ -36,7 +36,7 @@ export function PassageControls({ vm, layout, selected, onSelect, planCode, grou
   const isSel = (id: string, cp?: string) => !!selected && selected.islandId === id && (cp ? selected.checkpointKey === cp : !selected.checkpointKey);
   // roving tabindex: one route control is in the tab order; focus (pointer or keys) moves it, a selection pins it
   const [active, setActive] = useState<string>("start");
-  const routeIds = ["start", ...vm.islands.map((i) => i.id), "destination", ...layout.visited.map((v) => v.id), ...(layout.visitedMore ? ["visited:more"] : []), ...layout.marginal.map((m) => m.id)];
+  const routeIds = ["start", ...vm.islands.map((i) => i.id), "destination", ...layout.visited.map((v) => v.id), ...(layout.visitedMore ? ["visited:more"] : []), ...layout.marginal.map((m) => m.id), ...(layout.marginalMore ? ["marginal:more"] : [])];
   const current = selected && routeIds.includes(selected.islandId) ? selected.islandId : routeIds.includes(active) ? active : "start";
   const rove = (id: string) => ({ tabIndex: id === current ? 0 : -1, onFocus: () => setActive(id), "data-route-btn": true });
   const pick = (id: string, cp: string | undefined) => (e: MouseEvent<HTMLButtonElement> | KeyboardEvent<HTMLButtonElement>) => onSelect(id, cp, e.currentTarget, (e as MouseEvent).detail === 0);
@@ -150,6 +150,13 @@ export function PassageControls({ vm, layout, selected, onSelect, planCode, grou
           </button>
         );
       })}
+
+      {layout.marginalMore && layout.marginalOverflow > 0 && (
+        <button type="button" className="unstyled ctl island-btn marginal-btn marginal-more" style={pos(layout.marginalMore.x + layout.marginalMore.w / 2, layout.marginalMore.y + layout.marginalMore.h / 2)} {...rove("marginal:more")}
+                aria-label={PASSAGE.mentionedCount(vm.marginal.length)} onClick={pick(vm.marginal[layout.marginal.length].id, undefined)}>
+          <span className="ctl-title">{PASSAGE.moreMentioned(layout.marginalOverflow)}</span>
+        </button>
+      )}
 
       {/* soundings: ink on parchment, never on the painting */}
       {layout.soundings.map((s) => {

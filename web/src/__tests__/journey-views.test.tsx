@@ -10,6 +10,7 @@ import { PassageControls } from "@/components/atlas/PassageControls";
 import { DetailPanel } from "@/components/DetailPanel";
 import { AnswersLog } from "@/components/journey/AnswersLog";
 import { CareTimeline } from "@/components/journey/CareTimeline";
+import { IslandStrip } from "@/components/journey/IslandStrip";
 import { Money } from "@/components/Money";
 import { OverviewList } from "@/components/OverviewList";
 import { UI } from "@/lib/copy";
@@ -163,5 +164,16 @@ describe("journey motion rules (findings motion-5, motion-4, slop-26, motion-12)
     expect(src("../components/atlas/OceanLayers.tsx")).not.toMatch(/useScroll\(|<GradualBlur|backdrop-?filter/i);
     expect(src("../styles.css")).not.toMatch(/@keyframes bob|animation:\s*bob/);
     expect(src("../components/atlas/JourneyMap.tsx")).not.toMatch(/you-are-here/);
+  });
+});
+
+describe("island strip pages (finding web-correctness-30)", () => {
+  it("offers page buttons past twelve procedures", () => {
+    const many = { ...vm, islands: Array.from({ length: 14 }, (_, i) => ({ ...vm.islands[i % 2], id: `island:z${i}`, order: i + 1 })) };
+    const html = renderToStaticMarkup(<IslandStrip vm={many} selected={null} onSelect={noop} mobile={false} />);
+    expect(html).toContain("Procedures 1 to 12");
+    expect(html).toContain("Procedures 13 to 14");
+    expect((html.match(/class="unstyled island-chip[^"]*"[^>]*aria-pressed="false"/g) ?? []).length).toBeGreaterThanOrEqual(12);
+    expect(renderToStaticMarkup(<IslandStrip vm={vm} selected={null} onSelect={noop} mobile={false} />)).not.toContain("Procedures 1 to");
   });
 });
