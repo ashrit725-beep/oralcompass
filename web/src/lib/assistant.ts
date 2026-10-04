@@ -266,3 +266,10 @@ export function templateLabel(b: Extract<AssistBlockX, { type: "template" }>): s
   if (b.key === "out_of_scope") return ASSIST.outOfScopeLabel;
   return b.label ?? ASSIST.whatIfLabel;
 }
+
+/** Latest-request gate (web-correctness-14): a response is applied only when no newer question was sent and the scope did not change
+ *  since it was sent. `begin()` returns the request's ticket; `invalidate()` (scope change) makes every in-flight ticket stale. */
+export function createRequestGate(): { begin: () => number; isCurrent: (ticket: number) => boolean; invalidate: () => void } {
+  let current = 0;
+  return { begin: () => ++current, isCurrent: (ticket) => ticket === current, invalidate: () => { current++; } };
+}

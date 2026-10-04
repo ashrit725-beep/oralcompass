@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { api, ApiError } from "@/lib/api";
 import { ASSIST } from "@/lib/copy/assistant";
 import {
-  applyScopeChoice, clientGuard, initialSuggestions, ribbonFor, scopeChoices, toolLabel, type AssistBlockX, type AssistData, type AssistResponseX, type ScopeChoice,
+  applyScopeChoice, clientGuard, createRequestGate, initialSuggestions, ribbonFor, scopeChoices, toolLabel, type AssistBlockX, type AssistData, type AssistResponseX, type ScopeChoice,
 } from "@/lib/assistant";
 import { cn } from "@/lib/utils";
 import type { AssistScope } from "@/lib/types";
@@ -52,12 +52,16 @@ export function AskAboutStep({ scope, onOpenStitch, onOpenStep, className, data:
   const [mode, setMode] = useState<ServerMode | null>(null);
   const [asked, setAsked] = useState(false);
   const seq = useRef(0);
+  const gate = useRef(createRequestGate());   // an answer for an earlier scope never lands in this scope's list (web-correctness-14)
   const [cycle, setCycle] = useState(0);   // one ThoughtLine instance per question, so its timer runs from send to settle
   const { data, loading } = useAssistData(scope, dataProp, asked);
 
   useEffect(() => { serverMode().then(setMode); }, []);
   // answers belong to one scope: a new step, clause or plan clears them (spec §8.1)
-  useEffect(() => { setAnswers([]); setSuggested(initialSuggestions(scope)); setError(null); setChoice(scopeChoices(scope)[0]?.value ?? "plan"); }, [scopeKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    gate.current.invalidate(); setPending(null);
+    setAnswers([]); setSuggested(initialSuggestions(scope)); setError(null); setChoice(scopeChoices(scope)[0]?.value ?? "plan");
+  }, [scopeKey]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (pausedUntil === null) return;
     const t = setTimeout(() => setPausedUntil(null), Math.max(0, pausedUntil - Date.now()));
@@ -76,18 +80,21 @@ export function AskAboutStep({ scope, onOpenStitch, onOpenStep, className, data:
     const effective = { ...applyScopeChoice(scope, choice), ...(patch ?? {}) };
     setError(null); setAsked(true); setPending(q); setCycle((c) => c + 1);
     if (typeof navigator !== "undefined" && navigator.onLine === false) { setError(ASSIST.offline); setPending(null); return; }
+    const ticket = gate.current.begin();
     try {
       const resp = (await api.ask({ message: q, scope: effective })) as AssistResponseX;
+      if (!gate.current.isCurrent(ticket)) return;
       const guarded = clientGuard(resp.blocks ?? []);
       setAnswers((a) => [...a, { id: ++seq.current, question: q, scope: effective, resp, blocks: guarded.blocks, localDropped: guarded.dropped }]);
       if (resp.suggested?.length) setSuggested(resp.suggested);
     } catch (e) {
+      if (!gate.current.isCurrent(ticket)) return;
       if (e instanceof ApiError) {
         if (e.status === 429) { setError(ASSIST.rateLimited); setPausedUntil(Date.now() + RATE_LIMIT_PAUSE_MS); }
         else if (e.status === 404) setError(ASSIST.notFound);
         else setError(ASSIST.failed);
       } else setError(ASSIST.offline);
-    } finally { setPending(null); }
+    } finally { if (gate.current.isCurrent(ticket)) setPending(null); }
   }, [scope, choice, pending]);
 
   const latest = answers[answers.length - 1];

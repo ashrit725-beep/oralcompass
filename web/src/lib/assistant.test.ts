@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { AssistScope, Benefits, CoverageRule, PlanFixture, SavedEstimate, Stitch, TreatmentItem } from "./types";
 import {
-  applyScopeChoice, clientGuard, EMPTY_DATA, hasBareMoney, initialSuggestions, lineEvidence, resolveRef, ribbonFor, scopeChoices, splitPlaceholders, stepEvidence,
+  applyScopeChoice, clientGuard, createRequestGate, EMPTY_DATA, hasBareMoney, initialSuggestions, lineEvidence, resolveRef, ribbonFor, scopeChoices, splitPlaceholders, stepEvidence,
   suggestionKey, templateLabel, toolLabel, trailingRefs, type AssistData,
 } from "./assistant";
 
@@ -132,5 +132,19 @@ describe("scope, suggestions, ribbons, tools", () => {
     expect(toolLabel("resolve_procedure")).toBe("procedure names");
     expect(templateLabel({ type: "template", key: "advice_question", text: "" })).toBe("Information, not a choice");
     expect(templateLabel({ type: "template", key: "out_of_scope", text: "" })).toBe("Outside this assistant's scope");
+  });
+});
+
+describe("request gate (web-correctness-14)", () => {
+  it("drops a response sent before a scope change or a newer question", () => {
+    const gate = createRequestGate();
+    const crown = gate.begin();
+    expect(gate.isCurrent(crown)).toBe(true);
+    gate.invalidate();                       // the drawer switched from the crown to the root canal
+    expect(gate.isCurrent(crown)).toBe(false);
+    const rootCanal = gate.begin();
+    const newer = gate.begin();
+    expect(gate.isCurrent(rootCanal)).toBe(false);
+    expect(gate.isCurrent(newer)).toBe(true);
   });
 });
