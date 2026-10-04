@@ -12,7 +12,7 @@ interface Props {
   view: JourneyView; selection: Selection; onSelect: (s: Selection) => void; onOpenLandmark: (id: LandmarkId) => void; onOpenDocuments: () => void;
   onPatch: (cpId: string, body: { status?: string; completed_by?: string; date?: string; date_source?: string; note?: string }) => Promise<void>;
   onInstructions: (stageId: string, text: string, source: string, givenOn?: string) => Promise<void>;
-  busy: boolean; mobile: boolean; onClose: () => void;
+  busy: boolean; onClose: () => void;
   /** The live estimate (useAppData): the same figures the map, the Answers log and the Harbor Light show. The journey view's
    *  `links.latest_estimate` is a snapshot taken when the journey was fetched and goes stale after a re-estimate. */
   estimate: SavedEstimate | null;
@@ -21,13 +21,13 @@ interface Props {
 }
 
 /**
- * Desktop: side panel (a labelled region in the detail column). Phone: the shared modal `Sheet` (vaul over Radix Dialog: aria-modal,
+ * The shared modal `Sheet` (mobile-only direction 2026-10-04: the desktop side panel was removed) (vaul over Radix Dialog: aria-modal,
  * focus moves in and is trapped, the page behind is inert, scrim, scroll lock, drag or Escape to close, 44 × 44 close button, safe-area
  * padding), so keyboard focus never lands on controls hidden under a fixed panel (WCAG 2.2 SC 2.4.11). It opens only when the person
  * selects a stage or checkpoint. Shows the selected stage or checkpoint: status, explanation, dates/amounts/documents, source, next action.
  */
 export function DetailPanel(props: Props) {
-  const { view, selection, mobile, onClose, returnFocus } = props;
+  const { view, selection, onClose, returnFocus } = props;
   const stage = view.journey.stages.find((s) => s.id === selection.stageId);
   if (!stage) return null;
   const cp = selection.cpId ? stage.checkpoints.find((c) => c.id === selection.cpId) : undefined;
@@ -35,23 +35,11 @@ export function DetailPanel(props: Props) {
   // keyed: moving to another checkpoint or stage mounts a fresh form, so a date, attribution or instruction typed for one is never
   // submitted for the next ("Next checkpoint" only changes props)
   const body = cp ? <CheckpointDetail key={`${stage.id}:${cp.id}`} {...props} stage={stage} cp={cp} /> : <StageDetail key={stage.id} {...props} stage={stage} />;
-  if (mobile) {
-    return (
-      <Sheet open onOpenChange={(o) => { if (!o) onClose(); }} title={stage.title} returnFocus={returnFocus ?? undefined} className="detail-sheet" autoFocus>
-        {crumbs}
-        {body}
-      </Sheet>
-    );
-  }
   return (
-    // the surrounding column in JourneyView owns the entrance (drawer-rise); the panel itself does not animate
-    <aside className="detail side" role="region" aria-labelledby="detail-h">
-      <div className="detail-bar">
-        {crumbs}
-        <button type="button" className="close" onClick={onClose} aria-label="Close details">×</button>
-      </div>
+    <Sheet open onOpenChange={(o) => { if (!o) onClose(); }} title={stage.title} returnFocus={returnFocus ?? undefined} className="detail-sheet" autoFocus>
+      {crumbs}
       {body}
-    </aside>
+    </Sheet>
   );
 }
 

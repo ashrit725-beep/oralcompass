@@ -5,15 +5,14 @@ import type { Checkpoint, Journey, Progress, Stage, StageSelection } from "@/lib
 
 /**
  * CareTimeline (spec §2.3, component plan N5): the five care stages keep every semantic they have today.
- * Desktop: a horizontal rail under the map, one card per stage (title, island, `n of m checkpoints completed`, a row of 24 px glyph
- * buttons with 44 px hit areas); the current stage carries the static "you are here" pin (addendum A5: no bob).
- * Phone: the second segment of the Map view · Care timeline · Overview list toggle, built on the Aceternity Timeline (restyled: paper,
+ * The current stage carries the static "you are here" pin (addendum A5: no bob). Mobile-only (owner direction 2026-10-04; the desktop
+ * rail under the map was removed): the second segment of the Map view · Care timeline · Overview list toggle, built on the Aceternity Timeline (restyled: paper,
  * forest→sea fill, <ol>/<li aria-current="step">; reduced motion fills 100 %), each entry holding the stage button and its checkpoint rows.
  * Accessible names start with the stage title (`Before your visit (Lantern Cove): 1 of 3 checkpoints completed`) and the checkpoint
  * label (`Appointment information recorded: Completed, confirmed by your dental team`) so tools/screenshots.py keeps working.
  * Clicking opens the existing DetailPanel with its forms.
  */
-export interface CareTimelineProps { journey: Journey; progress: Progress; selected: StageSelection | null; onSelect: (s: StageSelection, el?: HTMLElement | null) => void; currentStageId: string | null; mobile: boolean; linkedIsland?: (stage: Stage) => string | null; onShowOnChart?: (islandId: string) => void }
+export interface CareTimelineProps { journey: Journey; progress: Progress; selected: StageSelection | null; onSelect: (s: StageSelection, el?: HTMLElement | null) => void; currentStageId: string | null; linkedIsland?: (stage: Stage) => string | null; onShowOnChart?: (islandId: string) => void }
 
 const GLYPH: Record<Checkpoint["status"], string> = { completed: "M5 12.5l4.5 4.5L19 7", current: "", upcoming: "", awaiting_info: "M9.5 9a2.5 2.5 0 1 1 3.8 2.1c-.8.5-1.3 1-1.3 1.9M12 17v.5" };
 
@@ -41,7 +40,7 @@ function StageButton({ stage, current, selected, onSelect }: { stage: Stage; cur
   );
 }
 
-export function CareTimeline({ journey, progress, selected, onSelect, currentStageId, mobile, linkedIsland, onShowOnChart }: CareTimelineProps) {
+export function CareTimeline({ journey, selected, onSelect, currentStageId, linkedIsland, onShowOnChart }: CareTimelineProps) {
   const cpRow = (stage: Stage, dense: boolean) => (
     <ol className={dense ? "care-cps" : "care-cps care-cps-rows"} aria-label={`${stage.title}: checkpoints`}>
       {stage.checkpoints.map((cp) => {
@@ -64,36 +63,20 @@ export function CareTimeline({ journey, progress, selected, onSelect, currentSta
     const id = linkedIsland?.(stage);
     return id && onShowOnChart ? <button type="button" className="linklike care-show-chart" onClick={() => onShowOnChart(id)}>{PASSAGE.showOnChart}</button> : null;
   };
-  if (mobile) {
-    const current = journey.stages.findIndex((s) => s.id === currentStageId);
-    return (
-      <div className="care-timeline-phone">
-        <Timeline ariaLabel={PASSAGE.careTimeline} current={current >= 0 ? current : undefined} data={journey.stages.map((stage) => ({
-          title: stage.title,
-          content: (
-            <div className="care-entry">
-              <StageButton stage={stage} current={stage.id === currentStageId} selected={selected?.stageId === stage.id && !selected.cpId} onSelect={onSelect} />
-              {cpRow(stage, false)}
-              {chartLink(stage)}
-            </div>
-          ),
-        }))} />
-      </div>
-    );
-  }
+  const current = journey.stages.findIndex((s) => s.id === currentStageId);
   return (
-    <section className="care-rail-wrap" aria-labelledby="care-rail-h">
-      <h3 id="care-rail-h" className="care-rail-h">{PASSAGE.careTimeline} <span className="muted num">· {progress.label}</span></h3>
-      <ol className="care-rail" aria-label={PASSAGE.careTimeline}>
-        {journey.stages.map((stage) => (
-          <li key={stage.id} className={`care-card ${stage.id === currentStageId ? "is-current" : ""}`} aria-current={stage.id === currentStageId ? "step" : undefined}>
+    <div className="care-timeline-phone">
+      <Timeline ariaLabel={PASSAGE.careTimeline} current={current >= 0 ? current : undefined} data={journey.stages.map((stage) => ({
+        title: stage.title,
+        content: (
+          <div className="care-entry">
             <StageButton stage={stage} current={stage.id === currentStageId} selected={selected?.stageId === stage.id && !selected.cpId} onSelect={onSelect} />
-            {cpRow(stage, true)}
+            {cpRow(stage, false)}
             {chartLink(stage)}
-          </li>
-        ))}
-      </ol>
-    </section>
+          </div>
+        ),
+      }))} />
+    </div>
   );
 }
 

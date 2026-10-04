@@ -19,7 +19,6 @@ import { UploadWizard } from "@/components/upload/UploadWizard";
 
 export interface PlanViewProps {
   data: AppData;
-  mobile: boolean;
   landmark: LandmarkId | null;
   onLandmark: (id: LandmarkId | null) => void;
   stitch: Stitch | undefined;
@@ -35,7 +34,7 @@ export interface PlanViewProps {
  * model/rules/evidence; the summary comes from GET /me/plans. Benefit statement figures recorded here are kept per plan ref (nothing
  * transfers) and shown back immediately while the records reload. One aria-live region announces recalculation and updates.
  */
-export function PlanView({ data, mobile, landmark, onLandmark, stitch, onStitch, onOpenDocuments }: PlanViewProps) {
+export function PlanView({ data, landmark, onLandmark, stitch, onStitch, onOpenDocuments }: PlanViewProps) {
   const { plans, planRef, selectPlan, plan, rules, benefits, estimate, stitches, procedures, reestimate, loadRecords, loading } = data;
   const [uploads, setUploads] = useState<UploadSummary[]>([]);
   const [uploadsLoading, setUploadsLoading] = useState(true);
@@ -105,7 +104,7 @@ export function PlanView({ data, mobile, landmark, onLandmark, stitch, onStitch,
             </p>
           )}
         </div>
-        <PlanAtlas selected={landmark} onSelect={pickLandmark} summary={landmarkSummary} summaryNode={landmarkNode} compact={mobile} />
+        <PlanAtlas selected={landmark} onSelect={pickLandmark} summary={landmarkSummary} summaryNode={landmarkNode} compact />
         {!landmark && <p className="hint">{PLAN.landmarkHint}</p>}
         {plan && <BenefitsCompass plan={plan} benefits={benefitsFor} estimate={estimate} stitches={stitches} onOpenLandmark={openLandmarkDeep} onSelectStitch={onStitch} selectedStitch={stitch} />}
         {procedures.length > 0 && (
@@ -116,7 +115,7 @@ export function PlanView({ data, mobile, landmark, onLandmark, stitch, onStitch,
         )}
         <p className="sr-only" role="status" aria-live="polite">{live}</p>
       </div>
-      <aside className={`detail ${mobile ? "sheet" : "side"} ${landmark ? "" : "is-empty"}`} aria-label="Landmark details">
+      <aside className={`detail sheet ${landmark ? "" : "is-empty"}`} aria-label="Landmark details">
         {landmark && plan && summary && (
           <>
             <div className="detail-bar"><p className="crumbs">{LANDMARKS.find((l) => l.id === landmark)?.place}</p><button type="button" className="close" aria-label="Close details" onClick={() => onLandmark(null)}>×</button></div>

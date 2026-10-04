@@ -4,10 +4,8 @@ import { PLAN } from "@/lib/copy/plan";
 import { ledgerEvidence } from "@/lib/compass-model";
 import { plainNote } from "@/lib/stitches";
 import type { ComparisonResponse, GridCell, PlanFixture } from "@/lib/types";
-import { useMobile } from "@/hooks/useMobile";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerClose, DrawerContent, DrawerDescription, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
-import { Popover, PopoverContent, PopoverDescription, PopoverHeader, PopoverTitle, PopoverTrigger } from "@/components/ui/popover";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Money } from "@/components/Money";
 import { EvidenceBadge } from "@/components/Primitives";
@@ -23,9 +21,9 @@ interface Props { data: ComparisonResponse; plans: Record<string, GridPlan>; /**
  * ComparisonGrid (component plan N12; CLAUDE.md rule 6). shadcn Table, `table-fixed` + `<colgroup>` for equal columns, in a
  * horizontal-only `scroll-fade-x` container: the table takes its natural height and scrolls with the page (no nested vertical scroll box
  * that slices a row; layout-22 / mobile-10 / slop-10); columns in the USER's order, no sort, no winner; the eligibility quote
- * under every column header; the factual-differences sentence under every row. Every cell is a 44 px PopoverTrigger whose card is the
- * paired clause (document label, page, quote with one terracotta Highlighter underline, evidence badge); at phone width the card opens
- * in the Drawer instead. The cell keeps its value printed while the card is open and the card repeats it as plain text (integration: the
+ * under every column header; the factual-differences sentence under every row. Every cell is a 44 px trigger whose card is the paired
+ * clause (document label, page, quote with one terracotta Highlighter underline, evidence badge), opened in the bottom Drawer (the
+ * phone layout is the only layout; the desktop Popover was removed). The cell keeps its value printed while the card is open and the card repeats it as plain text (integration: the
  * earlier shared-layoutId hop emptied the cell and left a ghost figure outside the card). Rails: the same estimate per plan, totals through <Money>.
  */
 export function ComparisonGrid({ data, plans, enteredFor = [] }: Props) {
@@ -106,12 +104,10 @@ function eligibilityOnly(text?: string | null): string {
   return text.replace(UI.availabilityBanner, "").replace(/Listed here means the document is public[^.]*\./, "").replace(/\s+/g, " ").trim();
 }
 
-/** A grid cell: value + badge as a 44 px trigger; the paired clause opens in a Popover (desktop) or the Drawer (phone). */
+/** A grid cell: value + badge as a 44 px trigger; the paired clause opens in a bottom Drawer (the phone layout is the only layout). */
 function ClauseCell({ cell, topic, planTitle }: { cell: GridCell; topic: string; planTitle: string }) {
-  const mobile = useMobile();
   const [open, setOpen] = useState(false);
   const descId = useId();
-  const titleId = useId();
   const isAmount = cell.text.includes("$");
   const face = (
     <span className="cmp-cell-face">
@@ -141,28 +137,17 @@ function ClauseCell({ cell, topic, planTitle }: { cell: GridCell; topic: string;
       )}
     </div>
   );
-  if (mobile) {
-    return (
-      <Drawer open={open} onOpenChange={setOpen} direction="bottom">
-        <DrawerTrigger asChild>{trigger}</DrawerTrigger>
-        <DrawerContent handleLabel={PLAN.cmpClose}>
-          <div className="px-4 pb-6">
-            <DrawerTitle>{topic}</DrawerTitle>
-            <DrawerDescription>{planTitle}</DrawerDescription>
-            {card}
-            <DrawerClose asChild><Button variant="outline" size="touch" className="mt-3">{PLAN.cmpClose}</Button></DrawerClose>
-          </div>
-        </DrawerContent>
-      </Drawer>
-    );
-  }
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>{trigger}</PopoverTrigger>
-      <PopoverContent align="start" aria-labelledby={titleId}>
-        <PopoverHeader><PopoverTitle id={titleId}>{topic}</PopoverTitle><PopoverDescription>{planTitle}</PopoverDescription></PopoverHeader>
-        {card}
-      </PopoverContent>
-    </Popover>
+    <Drawer open={open} onOpenChange={setOpen} direction="bottom">
+      <DrawerTrigger asChild>{trigger}</DrawerTrigger>
+      <DrawerContent handleLabel={PLAN.cmpClose}>
+        <div className="px-4 pb-6">
+          <DrawerTitle>{topic}</DrawerTitle>
+          <DrawerDescription>{planTitle}</DrawerDescription>
+          {card}
+          <DrawerClose asChild><Button variant="outline" size="touch" className="mt-3">{PLAN.cmpClose}</Button></DrawerClose>
+        </div>
+      </DrawerContent>
+    </Drawer>
   );
 }

@@ -5,27 +5,15 @@
 
 /* ---- shell ---- */
 .drawer { min-width: 0; overflow-wrap: anywhere; }
-.drawer-desktop { position: relative; width: 100%; max-width: 480px; max-height: calc(100vh - 136px); overflow-y: auto; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-4); box-shadow: var(--shadow-2); }
-.drawer-desktop .drawer-head { border-bottom: 1px solid var(--border); padding: 0 var(--s-4) var(--s-2); }
-.drawer-desktop .drawer-sections > .dsec:first-child { margin-top: var(--s-3); }
 .drawer-bar { display: flex; align-items: center; justify-content: space-between; gap: var(--s-2); min-height: 48px; }
-.drawer-desktop .drawer-bar { position: sticky; top: 0; z-index: 2; background: var(--surface); margin: 0 calc(-1 * var(--s-4)); padding: 0 var(--s-4); border-bottom: 1px solid var(--border); }
 .drawer-bar .crumbs { margin: 0; font-size: 13px; line-height: 18px; color: var(--text-muted); min-width: 0; }
-.drawer-close { margin-right: -8px; flex-shrink: 0; }
-.drawer-title { margin: 0; font-family: var(--serif); font-size: 22px; line-height: 28px; font-weight: 600; color: var(--text); white-space: normal; }
-.drawer-title-wrap:focus-visible, .dsec-h:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 2px; }
+.dsec-h:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 2px; }
 .drawer-subtitle { margin: 2px 0 0; font-size: 13px; line-height: 18px; color: var(--text-soft); }
-.drawer-lede { display: flex; flex-direction: column; gap: 2px; margin: var(--s-2) 0 0; font-size: 15px; }
-.drawer-lede-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 6px; margin: 0; }
-.drawer-lede-term-plan { font-size: 13px; color: var(--text-soft); }
 /* remaining strip: an unboxed caption line (no card, no separator glyphs that can orphan at a wrap) */
 .drawer-remaining { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 14px; margin: var(--s-2) 0 0; font-size: 13px; line-height: 20px; color: var(--text-soft); }
 .drawer-remaining-k { font-weight: 500; color: var(--text); }
 .drawer-remaining-item { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 4px; }
 .drawer-remaining .fig .amt { font-size: 14px; line-height: 20px; color: var(--text); }
-.drawer-lede-term { font-family: var(--serif); font-weight: 600; }
-.drawer-lede-amt .amt { font-size: 18px; line-height: 24px; font-weight: 600; color: var(--you-pay); }
-.drawer-lede-unresolved .fig-waiting { color: var(--text-soft); }
 .drawer-sections { padding: 0 var(--s-4) var(--s-5); }
 .drawer-sheet .drawer-sections { padding: 0 0 var(--s-4); }
 .drawer-sheet .drawer-bar { min-height: 0; margin-top: var(--s-1); }
@@ -41,7 +29,7 @@
 .cp-chip.is-selected { border-color: var(--select); box-shadow: 0 0 0 3px var(--select-ring); }
 .cp-chip-total, .cp-chip-X, .cp-chip-W, .cp-chip-F { color: var(--you-pay); }
 .cp-chip .cp-chip-term { color: var(--text); }
-@media (max-width: 760px) { .cp-chip { min-height: 44px; } .cp-chip::before { inset: 0; } .cp-strip { grid-auto-flow: row; grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.cp-chip { min-height: 44px; } .cp-chip::before { inset: 0; } .cp-strip { grid-auto-flow: row; grid-template-columns: repeat(3, minmax(0, 1fr)); }
 
 /* ---- sections ---- */
 .dsec { margin-top: var(--s-5); padding-top: var(--s-4); border-top: 1px solid var(--border); }
@@ -89,13 +77,12 @@ details[open] > .dsec-summary .dsec-toggle { transform: rotate(-135deg); margin-
 .final-sub { margin: 0 0 var(--s-3); font-size: 15px; line-height: 22px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 6px; }
 .final-sub .amt { font-weight: 600; color: var(--plan-pays); }
 /* phones: the benefit year drops to its own caption line without the orphaned "·" separator; the remaining strip reads label, then one figure per line */
-@media (max-width: 767px) {
+/* phone layout, always on (mobile-only app) */
   .final-year { flex-basis: 100%; }
   .final-year-sep { display: none; }
   .drawer-remaining { row-gap: var(--s-1); }
   .drawer-remaining-k, .drawer-remaining-item { flex-basis: 100%; }
-}
-@media (max-width: 760px) { .final-hero-amt .fig-hero .amt, .fig-hero .amt { font-size: 28px; line-height: 32px; } }
+.final-hero-amt .fig-hero .amt, .fig-hero .amt { font-size: 28px; line-height: 32px; }
 
 /* coverage share bar (dataviz: 8 px, water for the plan, sand for you, 2 px surface gap, labels in ink) */
 .share-bar { display: flex; gap: 2px; height: 8px; margin: var(--s-2) 0 var(--s-1); }
@@ -118,8 +105,6 @@ details[open] > .dsec-summary .dsec-toggle { transform: rotate(-135deg); margin-
 .pipeline-track-grid { width: auto; }
 .pipeline { list-style: none; margin: 0; padding: 0; display: flex; gap: 22px; align-items: stretch; }
 .pipeline-track-grid .pipeline { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-2); }
-.pipeline-beams { position: absolute; inset: 0; pointer-events: none; }
-.pipeline-beams svg { overflow: visible; }
 .node { position: relative; min-width: 132px; max-width: 180px; background: var(--paper); border: 1px solid var(--border); border-radius: var(--r-3); padding: var(--s-2) var(--s-3); display: flex; flex-direction: column; gap: 2px; z-index: 1; }
 .pipeline-track-grid .node { min-width: 0; max-width: none; }
 .node-term { margin: 0; display: flex; align-items: center; gap: 4px; font-size: 13px; line-height: 18px; color: var(--text-soft); }
@@ -150,7 +135,6 @@ details[open] > .dsec-summary .dsec-toggle { transform: rotate(-135deg); margin-
 .pipe-arrow { position: absolute; left: -18px; top: calc(50% - 7px); color: var(--text-soft); }
 .pipeline-track-grid .pipe-arrow { left: 6px; top: 6px; }
 .pipeline-track-grid .node-term { padding-left: 14px; }
-.pipeline-hint { margin: 0 0 var(--s-1); }
 .pipeline-unresolved { margin: var(--s-2) 0 0; font-size: 15px; }
 
 /* ---- equations ---- */
@@ -221,8 +205,6 @@ details[open] > .dsec-summary .dsec-toggle { transform: rotate(-135deg); margin-
 /* The term ("coinsurance") keeps its word and takes a full row; the chip, badge and close wrap around it. `!important` because the base
    `.clause header h3 { flex: 1 }` in styles.css outranks this layered sheet (computed flex stayed `1 1 0%`, 43 px wide at 360). */
 .clause-in-sheet .clause-head h3 { min-width: 0; flex: 1 1 100% !important; overflow-wrap: normal !important; word-break: normal; hyphens: manual; }
-.drawer-lede .fig .amt { font-size: 18px; line-height: 24px; font-weight: 600; }
-.drawer-lede .drawer-lede-amt .amt { color: var(--you-pay); }
 .clause-in-sheet { position: absolute; left: 0; right: 0; bottom: 0; width: auto; max-height: 70%; overflow-y: auto; border-radius: 18px 18px 0 0; z-index: 45; box-shadow: var(--shadow-3); }
 .clause-close { flex-shrink: 0; margin: -6px -8px -6px 0; }                 /* 44 × 44 close (was the legacy 32 px `.close`, mobile-20) */
 .clause h3:focus { outline: none; } .clause h3:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 2px; }
@@ -251,11 +233,10 @@ details[open] > .dsec-summary .dsec-toggle { transform: rotate(-135deg); margin-
 
 /* stitch chips on touch screens (mobile-7): the chip keeps its look but its target grows to 32 px tall with a 44 px hit area, and the rows
    that hold several chips space them 8 px apart so neighbouring hit areas do not overlap. Applies app-wide (drawer.css is global). */
-@media (pointer: coarse), (max-width: 760px) {
+/* phone layout, always on (mobile-only app) */
   .stitch { position: relative; min-height: 32px; }
   .stitch::after { content: ""; position: absolute; inset: -6px 0; }
   .fig, .fact, .node-mark, .eq-row, .evidence-item { column-gap: 8px; }
-}
 
 /* full trail and equation rows inside the 440 px drawer (slop-19): long amount runs wrap instead of pushing badges and stitches past the edge */
 .trail-one .ts-amounts-inline > * { min-width: 0; max-width: 100%; }
@@ -273,7 +254,7 @@ details[open] > .dsec-summary .dsec-toggle { transform: rotate(-135deg); margin-
    number or wraps into a three-line pill; figures read first. Phone rows lift the figure to 16 px. */
 td .fig .badge, td .fact .badge, .dsec-dl dd .fig .badge { order: 3; flex-basis: 100%; white-space: nowrap; }
 .drawer td .fig .badge { white-space: nowrap; }
-@media (max-width: 640px) { .fig .amt { font-size: 16px; line-height: 22px; } }
+.fig .amt { font-size: 16px; line-height: 22px; }
 
 /* Drawer sections reveal once per open in reading order (motionsites technique 1, adapted): 360 ms on --ease-land, a 4 px rise, 40 ms
    apart and capped at 160 ms so the drawer still feels instant. Opacity/transform only; reduced motion shows the sections at once. */

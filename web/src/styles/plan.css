@@ -20,32 +20,15 @@
 .ps-current { display: none; margin: 0; overflow-wrap: anywhere; }
 /* the plan select gets its own row; the cascade puts carrier + year on one row and the long plan name on a full row of its own, so the
    longest carrier and plan names fit at 898 px (a landmark open) as well as at full width (orchestrator note 3, layout-8, slop-20) */
-@media (min-width: 761px) {
-  .ps-row { grid-template-columns: minmax(0, 1fr); }
-  .plan-selector .plan-pick select { max-width: 640px; }
-  .ps-cascade { grid-template-columns: minmax(0, 1fr) 8rem; grid-template-areas: "carrier year" "plan plan"; max-width: 760px; }
-  .ps-carrier { grid-area: carrier; } .ps-plan { grid-area: plan; } .ps-year { grid-area: year; }
-}
-@media (max-width: 760px) {
+/* phone layout, always on (mobile-only app) */
   .ps-cascade { display: none; }                 /* phones keep the single grouped select (addendum B2: fewer controls at 360 px) */
   .ps-current { display: block; }
   .ps-mode { flex-direction: column; align-items: stretch; }
   .ps-toggle { width: 100%; } .ps-toggle [data-slot="toggle-group-item"] { flex: 1; }
-}
 
 /* ---- My plan layout: with no landmark open the 420 px detail column is not reserved (demo-18); from 1200 px the page splits in two
    halves (slop-21): plan selector, atlas, hint and "Add a procedure" on the left, the Benefits compass on the right from the top, instead
    of a dead third of the page. A landmark opens the detail column as before (the compass then sits under the atlas). ---- */
-@media (min-width: 761px) { .plan-layout.is-solo { grid-template-columns: minmax(0, 1fr); } }
-@media (min-width: 1200px) {
-  .plan-layout.is-solo .plan-main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto auto auto auto 1fr; column-gap: var(--s-5); align-items: start; }
-  .plan-layout.is-solo .plan-main > * { grid-column: 1; }
-  .plan-layout.is-solo .plan-main > .plan-head { grid-row: 1; }
-  .plan-layout.is-solo .plan-main > .plan-map { grid-row: 2; margin-top: var(--s-4); }
-  .plan-layout.is-solo .plan-main > .hint { grid-row: 3; }
-  .plan-layout.is-solo .plan-main > .plan-add { grid-row: 4; }
-  .plan-layout.is-solo .plan-main > .compass { grid-column: 2; grid-row: 1 / -1; margin-top: 0; }
-}
 
 /* ---- depth dial (RubberSegment wrapper) ---- */
 .depth-dial { margin-left: auto; max-width: 100%; }
@@ -55,12 +38,11 @@
    so the slot font falls back to the inherited size. Setting the size on the track restores it through inheritance on both layers. */
 .depth-dial [role="radiogroup"] { font-size: 14px; }
 .depth-dial [role="radiogroup"] > .grid { min-width: 0; width: auto; border-collapse: separate; }
-@media (max-width: 760px) {
+/* phone layout, always on (mobile-only app) */
   .depth-dial { margin-left: 0; width: 100%; } .depth-dial > div { width: 100%; }
   /* 3 slots in ~326 px: the inline `--rs-pad: 18px` is overridden here (author !important beats an inline normal declaration) and the digit is dropped */
   .depth-dial [role="radiogroup"] { --rs-pad: 8px !important; }
   .depth-dial .depth-n { display: none; }
-}
 
 /* ---- benefits compass ---- */
 .compass { margin-top: var(--s-5); padding: var(--s-4) var(--s-5); background: var(--paper-deep); border: 1px solid var(--rule); border-radius: var(--r-4); }
@@ -108,14 +90,13 @@
 .cmp-strip-item { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-1) var(--s-2); color: var(--ink-soft); }
 .cmp-strip-sep { color: var(--ink-soft); }
 .cmp-gauge.is-compact .cmp-meter { margin-bottom: 0; }
-@media (max-width: 760px) {
+/* phone layout, always on (mobile-only app) */
   .compass { padding: var(--s-4); }
   .cmp-grid { grid-template-columns: minmax(0, 1fr); }
   .cmp-quad { padding: var(--s-4) 0; border-left: 0; border-top: 1px solid var(--rule); }
   .cmp-nw { border-top: 0; }
   .cmp-head { grid-template-columns: minmax(0, 1fr); } .cmp-chest { display: none; }
   .cmp-q { font-size: 1.05rem; }
-}
 @media (prefers-reduced-motion: reduce) { .cmp-fill { transition: none; } }
 
 /* ---- landmark card additions ---- */
@@ -152,8 +133,8 @@
 .plan-add[open] > summary { margin-bottom: var(--s-2); border-bottom: 1px solid var(--rule); border-radius: var(--r-4) var(--r-4) 0 0; }
 .plan-add > :not(summary) { padding: 0 var(--s-4) var(--s-4); }
 @media (prefers-reduced-motion: reduce) { .plan-add > summary::after { transition: none; } }
-@media (max-width: 760px) { .plan-add > :not(summary) { padding: 0 var(--s-1) var(--s-3); } }   /* keep the reader's drop zone at full width on phones */
-@media (max-width: 760px) { .bs-grid { grid-template-columns: minmax(0, 1fr); } }
+.plan-add > :not(summary) { padding: 0 var(--s-1) var(--s-3); }   /* keep the reader's drop zone at full width on phones */
+.bs-grid { grid-template-columns: minmax(0, 1fr); }
 
 /* ---- treatment plan reader: the send gate for files (orchestrator note 11) ---- */
 .tpr-gate { display: grid; gap: var(--s-2); padding: var(--s-3) var(--s-4); background: var(--paper-deep); border: 1px solid var(--rule); border-left: 3px solid var(--terracotta); border-radius: var(--r-2); }
@@ -177,7 +158,7 @@
 .rail-total .amt { font-family: var(--serif); font-size: 2.2rem; font-weight: 700; line-height: 1.1; }
 .rail .rail-total .amt { font-size: 1.6rem; }
 .amt-cell { text-align: right; white-space: nowrap; }
-@media (max-width: 760px) { .rail-total .amt { font-size: 1.8rem; } }
+.rail-total .amt { font-size: 1.8rem; }
 
 /* ---- cost trail: the "calculated" note beside engine totals ---- */
 .calc-note { display: block; font-size: .78rem; font-style: italic; color: var(--ink-soft); font-family: var(--sans); font-weight: 400; }

@@ -12,7 +12,7 @@ const humanize = (k: string | null) => (k ? k.replace(/_/g, " ") : DRAWER.basisU
  * AB basis step and the difference step from the trail, or "Does not apply to tooth N."); the upper-bound flag when the plan's share is one.
  * Collapsed on the phone. Omitted when the rule row has no alternate-benefit field.
  */
-export function AlternateBenefitSection({ line, item, trail, rule, plan, stitches, onSelectStitch, mobile }: SectionProps) {
+export function AlternateBenefitSection({ line, item, trail, rule, plan, stitches, onSelectStitch }: SectionProps) {
   const ab = rule?.alternate_benefit;
   if (!ab) return null;
   const key = item?.procedure_key ?? line?.procedure_key ?? rule?.procedure_key;
@@ -22,7 +22,7 @@ export function AlternateBenefitSection({ line, item, trail, rule, plan, stitche
   const flags = (line?.flags ?? []).filter((f) => /alternate/i.test(f));
   const diff = altStep?.change != null ? -altStep.change : null;
   return (
-    <Section k="alternate" title={DRAWER.sAlternate} collapsible={mobile} defaultOpen={!mobile}>
+    <Section k="alternate" title={DRAWER.sAlternate} collapsible defaultOpen={false}>
       {ab.status === "UNKNOWN" ? (
         <>
           <p className="dsec-lede"><Fact evidence="UNKNOWN">{DRAWER.alternateUnknown}</Fact></p>

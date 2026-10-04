@@ -8,7 +8,7 @@ import { docOf, Fact, Flag, Row, Section, type SectionProps } from "./shared";
  * with the two-branch flag. When the line is closed by a waiting period, the engine's step label is shown verbatim. Collapsed on the phone.
  * Omitted when the rule row has no waiting field.
  */
-export function WaitingSection({ line, rule, plan, benefits, stitches, onSelectStitch, mobile }: SectionProps) {
+export function WaitingSection({ line, rule, plan, benefits, stitches, onSelectStitch }: SectionProps) {
   const doc = docOf(plan);
   const w = rule?.waiting;
   const closed = line?.status === "not_covered" && line.steps[0]?.rule === "W" ? line.steps[0] : null;
@@ -17,7 +17,7 @@ export function WaitingSection({ line, rule, plan, benefits, stitches, onSelectS
   const stitch = stitchForCite(w?.cite, stitches, doc) ?? stitchForCite(plan.waiting_months?.cite, stitches, doc);
   const category = rule?.category ?? doc;
   return (
-    <Section k="waiting" title={DRAWER.sWaiting} collapsible={mobile} defaultOpen={!mobile}>
+    <Section k="waiting" title={DRAWER.sWaiting} collapsible defaultOpen={false}>
       {closed && <Flag text={closed.label} />}
       {w && w.status === "UNKNOWN" && (
         <>
