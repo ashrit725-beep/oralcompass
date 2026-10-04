@@ -1,4 +1,4 @@
-# OralCompass — project instructions for Claude Code
+# OralCompass: project instructions for Claude Code
 
 You are building **OralCompass** — *Your care journey. Your coverage. Clearly mapped.* — the codeLinc 11 (Path 1: Dental) entry: an
 information-only dental journey and benefits explainer drawn as a hand-painted atlas. Two connected views (**My journey**: islands and
@@ -9,6 +9,14 @@ checkpoints; **My plan**: five landmarks — Your plan · Deductible · Coverage
 2. `docs/ORALCOMPASS_DATA_MODEL.md` — the eight data groups, endpoints, calculation rules.
 3. `docs/ORALCOMPASS_DATA_SOURCES.md` — what the real data is, where it came from, what is still unknown (never paper over it).
 4. `docs/CODELINC_DENTAL_PRODUCT_SPEC.md` (product rules, privacy, acceptance checks), then the brief and research docs when you need the why.
+5. `docs/MASTER_BUILD_PROMPT_V2.md` — the owner's brief (§13 information-only, §20 security, §21 accessibility, §45 four tests, §47–48 audits,
+   §50 definition of done).
+6. `docs/ORALCOMPASS_DESIGN_SPEC.md`, then `docs/ORALCOMPASS_DESIGN_SPEC_ADDENDUM.md` (the addendum wins where they disagree), then
+   `docs/ORALCOMPASS_COMPONENT_PLAN.md` (§4 anti-slop rules, §6 acceptance) and `docs/ANTISLOP_GATE.md`.
+7. `docs/WEB_FOUNDATION_NOTES.md` (stack facts: Tailwind v4, shadcn, Motion, ports, fixtures copy), `docs/BUILD_FOLLOWUPS.md` (open items),
+   `docs/SECURITY.md` and `docs/DEPLOY.md` (what is implemented, what is not).
+8. Presentation: `README.md`, `docs/ARCHITECTURE.md` (diagrams, build method), `docs/DEMO_SCRIPT.md` (exact clicks and numbers),
+   `docs/JUDGING_CRITERIA.md` (criteria map).
 
 ## Non-negotiable product rules (enforced by tests, `tools/advice_lint.py`, `tools/ingest_sources.py --check`, `tools/screenshots.py`)
 1. **Information only.** No copy, default, sort order, notification or visual emphasis may recommend, rank or steer ("should", "best",
@@ -38,17 +46,17 @@ checkpoints; **My plan**: five landmarks — Your plan · Deductible · Coverage
 9. **Synthetic people only.** Sam Rivera, Jordan, Alex Chen, Northside Dental Group and Greensboro Family Dental are fictional and labeled.
    Real plan documents are public and contain no personal data. Fictional plans (HB26, SM26, NW26, TW26) carry a ribbon everywhere.
 
-## The UI bar (short version — the guide has the full brief)
+## The UI bar (short version; the guide has the full brief)
 Beautiful, cinematic, painted: watercolor paper, misty hills, warm sun wash, vignette, slow drifting ripples; serif headings; crisp tabular
 numbers in ink. Real HTML controls over decorative SVG; text equivalents for every scene; 44 px targets; focus rings; contrast ≥ 4.5:1;
 phone first (vertical coast + bottom sheet at 360 px, no horizontal scroll); reduced motion leaves every end state intact.
-`python3 tools/screenshots.py shots/` must pass (44 checks, desktop + phone) before a `web/` commit. Start UI work with `/ui-cinematic`.
+`python3 tools/screenshots.py shots/` must pass (desktop + phone checks) before a `web/` commit. Start UI work with `/ui-cinematic`.
 
 ## Repository map
-- `engine/` — `oralcompass_engine` (models, ledger, ranges, comparison, rules, loader) + `tests/` (19 tests). `cd engine && python3 -m pytest -q`
+- `engine/` — `oralcompass_engine` (models, ledger, ranges, comparison, rules, loader) + `tests/`. `cd engine && python3 -m pytest -q`
 - `api/` — FastAPI: `app/main.py` (presets, documents, legacy estimates/comparisons, account), `app/records.py` (plans, rules, procedures, codes,
   benchmarks, sources, evidence, benefits, treatment items, saved estimates), `app/journeys.py`, `app/data.py` (catalog loader), `store.py`, `auth.py`,
-  `redaction.py`, `extraction.py`, `lint_runtime.py`, `templates.py`. `cd api && ORALCOMPASS_DEV_AUTH=1 python3 -m pytest -q tests` (10 tests).
+  `redaction.py`, `extraction.py`, `lint_runtime.py`, `templates.py`. `cd api && ORALCOMPASS_DEV_AUTH=1 python3 -m pytest -q tests` (forced to demo mode; see Test safety).
   Run: `cd api && ORALCOMPASS_DEV_AUTH=1 uvicorn app.main:app --reload --port 8000`
   Production (deployment-ready, not deployed; `docs/DEPLOY.md`): `app/server.py` (API at /api + web/dist at /), `sessions.py` (signed HttpOnly
   per-visitor cookie), `store_sqlite.py` (`ORALCOMPASS_STORE=sqlite`; the API suite runs on both repos), `llm_guard.py` (live-AI limits),
@@ -57,7 +65,7 @@ phone first (vertical coast + bottom sheet at 360 px, no horizontal scroll); red
   `ai_support.py` (guard_allow → llm_guard kinds reader/explainer; spend recorded once in extraction's `_call`). api/.env is not read in production.
 - `web/` — React 18 + TypeScript + Vite PWA: `src/App.tsx`, `src/lib/{copy,journey,trail,stitches,api,types}.ts`, `src/components/atlas/*` (paint),
   `src/components/*` (panels, trail, documents, compare), `src/styles.css`. `cd web && npm install && npm run build`; dev `npm run dev` (proxies /api → :8000);
-  preview `npx vite preview --port 4173`. Copy fixtures: `cp ../fixtures/plans/*.json public/fixtures/plans/ && cp ../fixtures/documents/*.pdf public/fixtures/documents/`
+  preview `npx vite preview --port 4173 --host 127.0.0.1`. Copy fixtures: `cp ../fixtures/plans/*.json public/fixtures/plans/ && cp ../fixtures/documents/*.pdf public/fixtures/documents/`
 - `fixtures/` — `plans/` (9 real presets generated from facts + 4 fictional), `procedures.json` (16 ids), `procedure_codes.json`, `fee_benchmarks.json`,
   `sources.json`, `evidence/`, `users/{sam,jordan,alex}.json`, `journeys/{sample_sam,sample_jordan,sample_alex,empty}.json`, `documents/` (4 fictional PDFs),
   `ingest_report.json`, `audit_report.json`.
@@ -66,6 +74,38 @@ phone first (vertical coast + bottom sheet at 360 px, no horizontal scroll); red
 - `infra/template.yaml` — SAM skeleton (Cognito, JWT authorizer, Lambda, S3 SSE-KMS per-user prefixes, DynamoDB CMK, KMS, EventBridge).
 - `.claude/commands/` — `/ui-cinematic`, `/verify-ui`, `/run-checks`, `/data-refresh`, `/research-source`, `/lint-copy`, `/pitch-from-fixture`,
   milestone prompts `/m0-validate` … `/m6-notifications`. `.claude/agents/` — `ui`, `engine`, `security`, `content`, `data`.
+- Routers (all mounted in `api/app/main.py`): `records.router`, `journeys.router`, `uploads.router` (upload → redaction → extract → review →
+  publish, `/me/plans/*` for published `UP1`, `UP2`, ...), `assistant.router` (POST /me/assistant), `notifications.router` (Web Push,
+  reminders), `treatment_reader.router`, `explain.router`.
+- `web/src/` tree: `views/{JourneyView,PlanView}.tsx`; `components/atlas/*` (PassageMap, RouteLine, StartHarbor, ProcedureIsland,
+  InsuranceCheckpoint, Soundings, FogLayer, HarborLight, PassageVertical, OceanLayers, PlanAtlas, Paper, ArtPlate), `components/journey/*`
+  (AnswersLog, IslandStrip, CareTimeline, ToothEdit, WhatIfNetwork), `components/drawer/*` (ProcedureDrawer + sections),
+  `components/pipeline/*` (CostPipeline), `components/compass/*` (BenefitsCompass, gauges), `components/plan/*` (PlanSelector, upload,
+  TreatmentPlanReader), `components/assistant/*` (AskAboutStep), `components/notifications/*`; `lib/passage.ts` (data → map view-model,
+  layout math), `lib/islands.ts`, `lib/trail.ts`, `lib/copy.ts` + `lib/copy/*.ts` (all user-facing copy; advice-linted); `hooks/useAppData.ts`,
+  `hooks/useJourneySelection.ts`; `__tests__/` and `lib/*.test.ts` (vitest); `__fixtures__/passage/` (captured API payloads, kept outside
+  `src/lib` so document quotes do not trip the linter); `dev/` (drawer harness). `web/scripts/check-{engines,bundle}.mjs` back
+  `npm run check:engines` and `npm run check:bundle`.
+- Vendored component directories (sources and licenses in `web/THIRD_PARTY_NOTICES.md`): `web/src/components/kokonutui/`,
+  `web/src/components/magicui/`, `web/src/components/eldoraui/`, plus shadcn primitives (`web/components.json`). Edit them only to fit
+  the tokens; keep the notices current.
+- `tools/*.py`: `ingest_sources.py` (facts → presets; `--check`), `audit_data.py`, `verify_citations.py`, `advice_lint.py`,
+  `build_fictional_plans.py`, `build_harborview_pdf.py`, `seed_presets.py`, `screenshots.py` (desktop + phone walk, `ORALCOMPASS_WEB_BASE`
+  overrides the base URL), `layout_audit.py` (overlap audit), `prod_smoke.py` (single-server production smoke).
+- `docs/`: product (`CODELINC_DENTAL_*`, `MASTER_BUILD_PROMPT_V2.md`, `MASTER_PROMPT_UPLOADED.md`, `JUDGING_CRITERIA.md`), design
+  (`ORALCOMPASS_DESIGN_SPEC*.md`, `ORALCOMPASS_COMPONENT_PLAN.md`, `ORALCOMPASS_UI_GUIDE.md`, `ORALCOMPASS_IMAGE_PROMPTS.md`,
+  `ANTISLOP_GATE.md`), data (`ORALCOMPASS_DATA_MODEL.md`, `ORALCOMPASS_DATA_SOURCES.md`, `DATA_AUDIT.md`), engineering
+  (`ARCHITECTURE.md`, `WEB_FOUNDATION_NOTES.md`, `SECURITY.md`, `DEPLOY.md`, `BUILD_FOLLOWUPS.md`, `ORALCOMPASS_ROADMAP.md`),
+  presentation (`DEMO_SCRIPT.md`, `screenshots/`).
+
+## Test safety (do not weaken)
+- The API suite is forced to demo mode: `api/tests/conftest.py` sets `ORALCOMPASS_LLM_PROVIDER=none` and clears `OPENROUTER_API_KEY`
+  before the app imports, and `load_dotenv(override=False)` never replaces them, because `api/.env` can be live (OpenRouter + Claude Haiku 4.5).
+  A test that needs a real model call is marked `@pytest.mark.live_llm` and runs only with `ORALCOMPASS_ALLOW_LIVE_LLM=1`; tests that mock
+  a live call bring a fake key and an `httpx.MockTransport`. Never print or commit `api/.env`.
+- Manual runs: demo mode is `ORALCOMPASS_LLM_PROVIDER=none` in the shell (it overrides `api/.env`); start each API run with a fresh
+  `ORALCOMPASS_DATA_DIR=$(mktemp -d)` so uploads publish as `UP1`; check ports with `lsof -nP -iTCP:<port> -sTCP:LISTEN`; point the web
+  proxy at another API with `ORALCOMPASS_API_TARGET` and the tools at another preview with `ORALCOMPASS_WEB_BASE`; stop every server you start.
 
 ## Working agreements
 - Keep `npm run build`, both pytest suites, `tools/ingest_sources.py --check`, the linter and `tools/screenshots.py` green before every commit. Commit small.
