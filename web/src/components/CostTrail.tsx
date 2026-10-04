@@ -27,10 +27,10 @@ export function CostTrail({ estimate, stitches, selected, onSelect, prominentSco
   const [idx, setIdx] = useState(0);
   const one = lineIndex != null;
   if (estimate.status === "unresolved" && lines.length === 0) {
-    return <MissingInputs estimate={estimate} />;
+    return <MissingInputs estimate={estimate} showRange={!one} />;
   }
   const line: LedgerLine | undefined = lines[Math.min(one ? lineIndex : idx, lines.length - 1)];
-  if (!line) return <MissingInputs estimate={estimate} />;
+  if (!line) return <MissingInputs estimate={estimate} showRange={!one} />;
   const trail = buildTrail(line);
   const ctx = stepContextFor(line, rules);
   // a total is the engine's arithmetic over the steps (document rules applied to your figures): it says so instead of "From the plan document"
@@ -125,7 +125,9 @@ export function CostTrail({ estimate, stitches, selected, onSelect, prominentSco
   );
 }
 
-export function MissingInputs({ estimate, compact }: { estimate: SavedEstimate; compact?: boolean }) {
+/** `showRange={false}` inside one procedure's drawer (numbers-6): the movers range spans the WHOLE estimate (every planned line), so printing
+ *  it under a single procedure showed e.g. "between $1,740.00 and $2,230.00" under a $1,150.00 root canal. The Harbor Light keeps it. */
+export function MissingInputs({ estimate, compact, showRange = true }: { estimate: SavedEstimate; compact?: boolean; showRange?: boolean }) {
   return (
     <section className={`missing ${compact ? "compact" : ""}`} aria-labelledby="missing-h">
       <h3 id="missing-h"><EvidenceBadge status="UNKNOWN" /> {UI.missingTitle}</h3>
@@ -134,7 +136,7 @@ export function MissingInputs({ estimate, compact }: { estimate: SavedEstimate; 
         {estimate.missing_inputs.map((m, i) => <li key={i}><strong>{m.input}</strong>: {m.how}</li>)}
         {estimate.missing_inputs.length === 0 && estimate.ledger.flags.map((f, i) => <li key={i}>{f}</li>)}
       </ul>
-      {estimate.movers?.range && <p className="range">{rangeWords(estimate.movers.range, estimate.movers.movers)}</p>}
+      {showRange && estimate.movers?.range && <p className="range">{rangeWords(estimate.movers.range, estimate.movers.movers)}</p>}
     </section>
   );
 }

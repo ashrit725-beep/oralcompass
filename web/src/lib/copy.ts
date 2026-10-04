@@ -51,7 +51,7 @@ export const UI = {
   ledgerTitle: "Estimated patient payment",
   planPays: "Estimated plan payment",
   unresolved: "Unresolved. Not provided for this plan:",
-  rangeBecause: (lo: string, hi: string, cause: string) => `Between ${lo} and ${hi}, because ${cause} was not provided.`,
+  rangeBecause: (lo: string, hi: string, cause: string) => `Between ${lo} and ${hi}, because ${cause} ${/ and /.test(cause) ? "were" : "was"} not provided.`,
   openOnPage: "Open on page",
   showInDocuments: "Open in Documents",
   openSource: "Open the official document",
