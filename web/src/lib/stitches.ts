@@ -85,5 +85,16 @@ export function circled(n: number): string {
                 "㉑", "㉒", "㉓", "㉔", "㉕", "㉖", "㉗", "㉘", "㉙", "㉚", "㉛", "㉜", "㉝", "㉞", "㉟", "㊱", "㊲", "㊳", "㊴", "㊵", "㊶", "㊷", "㊸", "㊹", "㊺", "㊻", "㊼", "㊽", "㊾", "㊿"];
   return base[n - 1] ?? `(${n})`;
 }
+/** Additive (drawer agent): the unique stitches behind one ledger line, in step order (spec §4.4 section 12). */
+export function stitchesForLine(line: { steps: Step[] }, stitches: Stitch[]): Stitch[] {
+  return uniqueStitches(line.steps.map((s) => stitchForStep(s, stitches)));
+}
+/** Additive (drawer agent): de-duplicate stitches by id, keeping first appearance; undefined entries are dropped. */
+export function uniqueStitches(list: (Stitch | undefined | null)[]): Stitch[] {
+  const seen = new Set<string>(); const out: Stitch[] = [];
+  for (const s of list) { if (s && !seen.has(s.id)) { seen.add(s.id); out.push(s); } }
+  return out;
+}
+
 export const money = (c: number | null | undefined) => (c == null ? "—" : `$${(c / 100).toLocaleString("en-US", { minimumFractionDigits: 2 })}`);
 export const signed = (c: number | null | undefined) => (c == null ? "—" : c < 0 ? `−${money(-c)}` : c === 0 ? "$0.00" : `+${money(c)}`);

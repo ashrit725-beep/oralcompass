@@ -66,3 +66,60 @@ export function buildTrail(line: LedgerLine): Trail {
   const reconciles = youPay === line.patient_cents && planPay === line.plan_cents && fee === allowed + (net?.cents ?? 0) && (netOwedByYou ? fee === youPay + planPay - extra : fee === youPay + planPay + (net?.cents ?? 0) - extra);
   return { status: line.status, upperBound: line.plan_is_upper_bound, fee, youPay, planPays: planPay, reconciles, steps };
 }
+
+// ---------- additive (drawer + pipeline agent): equation rows for "How was this calculated?" (addendum B3 graft) ----------
+
+/** One operand or operator of an equation row. Amounts are the trail's reconciled display sums, never new arithmetic. */
+export type EquationPart = { kind: "cents"; cents: number } | { kind: "pct"; pct: number } | { kind: "op"; op: "−" | "+" | "×" | "=" };
+export interface EquationRow { key: string; parts: EquationPart[]; result: number | null; label: string; owner: TrailStep["owner"]; stitch: string | null }
+
+const C = (cents: number): EquationPart => ({ kind: "cents", cents });
+const OP = (op: "−" | "+" | "×" | "="): EquationPart => ({ kind: "op", op });
+const PCT = (pct: number): EquationPart => ({ kind: "pct", pct });
+
+/**
+ * Format the trail as equation rows ("$980.00 × 60% = $588.00 plan share"), each ending with the step's stitch label. Every figure is a
+ * `TrailStep.amountIn / change / amountOut / split` value (already reconciled against the engine's line totals in `buildTrail`).
+ * Labels are passed in by the caller (copy lives in lib/copy/drawer.ts) so this module keeps its single TRAIL import.
+ */
+export function equationRows(trail: Trail, labels: { fee: string; allowed: string; basis: string; afterDeductible: string; planShare: string; yourShare: string; planPays: string; youPay: string; fullFee: string }): EquationRow[] {
+  const by = (key: string) => trail.steps.find((s) => s.key === key);
+  const rows: EquationRow[] = [];
+  if (trail.status === "unresolved") return rows;
+  const fee = by("fee");
+  if (fee && fee.amountOut != null) rows.push({ key: "fee", parts: [C(fee.amountOut)], result: fee.amountOut, label: labels.fee, owner: "info", stitch: null });
+  if (trail.status === "not_covered") {
+    const x = by("x"); const you = by("you");
+    if (x && x.amountIn != null) rows.push({ key: "x", parts: [C(x.amountIn)], result: x.amountIn, label: labels.fullFee, owner: "patient", stitch: x.stitch });
+    if (you && you.amountIn != null && you.amountOut != null) rows.push({ key: "you", parts: [C(you.amountIn), OP("="), C(you.amountOut)], result: you.amountOut, label: labels.youPay, owner: "patient", stitch: null });
+    return rows;
+  }
+  const allowed = by("allowed"), alt = by("alternate"), ded = by("deductible"), share = by("share"), max = by("max"), you = by("you");
+  if (allowed && allowed.amountIn != null && allowed.change != null && allowed.amountOut != null)
+    rows.push({ key: "allowed", parts: [C(allowed.amountIn), OP("−"), C(-allowed.change), OP("="), C(allowed.amountOut)], result: allowed.amountOut, label: labels.allowed, owner: allowed.owner, stitch: allowed.stitch });
+  if (alt && alt.amountIn != null && alt.change != null && alt.amountOut != null)
+    rows.push({ key: "alternate", parts: [C(alt.amountIn), OP("−"), C(-alt.change), OP("="), C(alt.amountOut)], result: alt.amountOut, label: labels.basis, owner: "basis", stitch: alt.stitch });
+  if (ded && ded.amountIn != null && ded.change != null && ded.amountOut != null)
+    rows.push({ key: "deductible", parts: [C(ded.amountIn), OP("−"), C(-ded.change), OP("="), C(ded.amountOut)], result: ded.amountOut, label: labels.afterDeductible, owner: "patient", stitch: ded.stitch });
+  if (share && share.amountIn != null && share.split) {
+    rows.push({ key: "share-plan", parts: [C(share.amountIn), OP("×"), PCT(share.split.planPct), OP("="), C(share.split.plan)], result: share.split.plan, label: labels.planShare, owner: "plan", stitch: share.stitch });
+    rows.push({ key: "share-you", parts: [C(share.amountIn), OP("×"), PCT(100 - share.split.planPct), OP("="), C(share.split.patient)], result: share.split.patient, label: labels.yourShare, owner: "patient", stitch: share.stitch });
+  }
+  if (max && max.amountIn != null && max.change != null && max.amountOut != null)
+    rows.push({ key: "max", parts: [C(max.amountIn), OP("−"), C(-max.change), OP("="), C(max.amountOut)], result: max.amountOut, label: labels.planPays, owner: max.owner, stitch: max.stitch });
+  if (you && you.amountOut != null) {
+    const terms: number[] = [];
+    if (ded?.change != null) terms.push(-ded.change);
+    if (share?.split) terms.push(share.split.patient);
+    if (max?.change) terms.push(-max.change);
+    if (alt?.change) terms.push(-alt.change);                          // the alternate-benefit difference equals the basis reduction (engine AB pair)
+    if (allowed?.owner === "patient" && allowed.change) terms.push(-allowed.change);
+    const listed = you.amountOut - terms.reduce((a, b) => a + b, 0);  // items listed on the estimate (engine rule X, owner patient), if any
+    if (listed > 0) terms.push(listed);
+    const parts: EquationPart[] = [];
+    terms.forEach((t, i) => { if (i) parts.push(OP("+")); parts.push(C(t)); });
+    parts.push(OP("="), C(you.amountOut));
+    rows.push({ key: "you", parts, result: you.amountOut, label: labels.youPay, owner: "patient", stitch: null });
+  }
+  return rows;
+}
