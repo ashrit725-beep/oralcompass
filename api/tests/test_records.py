@@ -175,3 +175,22 @@ def test_amounts_are_non_negative_and_remainders_never_go_below_zero():
     assert "-" not in b["derivation"]["remaining_deductible"].split("=")[-1]
     for bad in ({"dentist_fee_cents": -5000}, {"dentist_fee_cents": 5000, "quantity": 0}, {"dentist_fee_cents": 5000, "allowed_cents": -1}):
         assert client.post("/me/treatment-items", json={"procedure_key": "crown", **bad}, headers=h).status_code == 422
+
+
+def test_record_bodies_are_typed_so_a_bad_value_is_422_not_a_later_500():
+    """api-correctness-18 and security-5: dates, statuses, networks, hypotheticals and PATCH fields are validated on the way in."""
+    h = {"X-Dev-User": "typed-bodies"}
+    item = client.post("/me/treatment-items", json={"procedure_key": "crown", "dentist_fee_cents": 120000}, headers=h).json()
+    for body in ({"coverage_start": "nope"}, {"network_default": "sideways"}, {"claims": [{"date": "garbage", "procedure_key": "exam", "plan_paid_cents": 1, "source": "x"}]}):
+        assert client.put("/me/benefits/ML26", json=body, headers=h).status_code == 422
+    for body in ({"planned_completion": "soon"}, {"status": "maybe"}, {"network": "sideways"}):
+        assert client.post("/me/treatment-items", json={"procedure_key": "crown", "dentist_fee_cents": 1, **body}, headers=h).status_code == 422
+    for body in ({"dentist_fee_cents": "ab", "quantity": 5_000_000}, {"planned_completion": "not-a-date"}, {"dentist_fee_cents": -999999999},
+                 {"quantity": -3}, {"status": {"x": 1}}, {"network": 12345}, {"owner": "someone-else"}):
+        assert client.patch(f"/me/treatment-items/{item['id']}", json=body, headers=h).status_code == 422, body
+    ok = client.patch(f"/me/treatment-items/{item['id']}", json={"allowed_cents": 98000, "allowed_source": "pre-treatment estimate", "allowed_status": "USER"}, headers=h)
+    assert ok.status_code == 200 and ok.json()["allowed_source"] == "pre-treatment estimate"
+    for hyp in ({"remaining_max_cents": "abc"}, {"network": "sideways"}, {"enrolled_months": "abc"}, {"bogus": 1}):
+        assert client.post("/me/estimates", json={"plan_code": "ML26", "hypotheticals": hyp}, headers=h).status_code == 422
+    est = client.post("/me/estimates", json={"plan_code": "ML26", "hypotheticals": {"remaining_max_cents": 50000}}, headers=h)
+    assert est.status_code == 201 and est.json()["inputs"]["hypotheticals"] == {"remaining_max_cents": 50000}
