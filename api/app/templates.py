@@ -85,3 +85,51 @@ REMINDER_INTERVAL = "Your plan document limits {name} to one every {months} mont
 REMINDER_CALENDAR_COUNT = "Your plan document limits {name} to {n} per {period}. Your records list {k} in the current benefit year; the count resets on {reset}."
 REMINDER_DOCUMENT_AWAITING = "A document you added ({label}) is waiting for your decisions on its extracted fields."
 PUSH_TEST_BODY = "A date you chose to follow is approaching. Open the app for details."
+
+# ---------- AI treatment-plan reader (addendum D.5a): line items as written; mapping only to the 16 fixed identifiers ----------
+READER_STAGE_LABELS = {
+    "reading": "Reading the text",
+    "redacting": "Removing personal details",
+    "reading_lines": "Finding each procedure line",
+    "matching": "Matching each line to the 16 procedure identifiers",
+    "ready": "Ready for your review",
+}
+READER_RIBBON_LIVE = "Read by the model from the redacted text. Every line, tooth, fee and code is shown as written; nothing is added until you confirm."
+READER_RIBBON_LIVE_IMAGE = ("Read by the model from the image. A photo cannot be redacted before reading, so personal details in it reach the model; "
+                            "the server removes them from the model's answer. Nothing is added until you confirm.")
+READER_RIBBON_DEMO = "Demo mode: this text matches a stored fictional estimate, so its lines come from the stored record, not from a model."
+READER_DEMO_CANNOT_READ = ("Demo mode cannot read new documents. No model is configured here; only the two stored fictional estimates are recognised. "
+                           "Lines can still be added one at a time below.")
+READER_LIMIT_NOTE = "The reading limit for this session or for today has been reached, so the model was not called."
+READER_MODEL_FAILED = "The model did not answer in time, so the document was not read."
+READER_SCANNED_PDF = "This PDF has no text layer."
+READER_NO_LINES = "No procedure lines were found in this text."
+READER_CONFIRM_SOURCE = "treatment plan read by OralCompass, confirmed by you on {date}"
+READER_MATCH_CODE = "Matched by the code printed on the estimate ({code})."
+READER_MATCH_DESCRIPTOR = "Matched by the wording, against the procedure names and the descriptors printed in the cited public documents."
+READER_MATCH_AMBIGUOUS = "The wording fits more than one procedure identifier; the choices are listed."
+READER_NOT_MATCHED = "Not matched: the wording fits none of the 16 procedure identifiers."
+READER_CODE_NOT_LISTED = "The printed code is not among the codes in the cited public documents; the wording was used instead."
+READER_DESCRIPTION_DIFFERS = "The wording alone would match a different identifier; the printed code was used."
+
+# ---------- AI clause explainer (addendum D.5b): one plain sentence per clause, grounded on its quote ----------
+EXPLAIN_LABEL_LIVE = "Written by the model from this quote"
+EXPLAIN_LABEL_DEMO = "Demo mode"
+EXPLAIN_LABEL_FALLBACK = "Plain-words template"
+# The depth-1 PLAIN sentences, mirrored from web/src/lib/copy.ts PLAIN (a test keeps the two identical). Demo mode returns these.
+EXPLAIN_PLAIN = {
+    "deductible": "The first dollars of covered care each benefit year that you pay before the plan pays its share.",
+    "annual_max": "The most the plan pays for your care in a benefit year. It limits what the plan pays, not what you can owe.",
+    "coinsurance": "The percentage split of the allowed amount after the deductible: the plan pays one share, you pay the rest.",
+    "alternate_benefit": "When a less costly alternative exists, the plan pays on that alternative's allowance; the difference is your share.",
+    "network": "In-network dentists accept the plan's allowed amount; out-of-network dentists may bill you the difference.",
+    "waiting": "A period after joining the plan during which some services are not covered.",
+    "frequency": "How often a service is covered, counted per benefit year or measured from the last time you had it.",
+    "exclusion": "A service the plan does not pay for, or pays for only under stated conditions.",
+    "dos": "For multi-visit procedures, which date the plan uses decides which benefit year the service falls in.",
+    "premium": "What is paid to keep the plan, usually from each paycheck; it is not part of any procedure estimate.",
+    "allowed": "The amount the plan uses as the basis for its payment; in-network dentists accept it as payment in full.",
+    "plan": "Who insures the plan, where it applies, when it is in effect, and which document these rules come from.",
+    "cost": "From the dentist's fee to what you pay, one rule at a time; every step is tied to the clause that produced it.",
+}
+EXPLAIN_PLAIN_DEFAULT = "This sentence states a rule of your plan."
