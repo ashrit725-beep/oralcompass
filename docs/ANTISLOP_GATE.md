@@ -6,6 +6,8 @@ identity; the failures are the chrome around it: em dashes in visible copy, a ph
 the heading, clipped content hidden by an overflow guard, label collisions on the map, a Compare page titled with a disclaimer, and computed
 totals wearing a "From the plan document" badge.
 
+> Screenshot names (2026-10-04, mobile-only direction): this audit cites the retired desktop-era walk names (`desktop-NN-*.png`, `mobile-NN-*.png`). `tools/screenshots.py` now writes `iphone13-NN-*.png`, `pixel7-NN-*.png`, `pixel7-reduced-11-passage.png` and `wide-*.png` with the same NN step numbers (`mobile-NN` maps to `iphone13-NN`/`pixel7-NN`; `desktop-NN` maps to `wide-NN` where the wide run captures that step, otherwise the phone shot). The committed set in `docs/screenshots/` is `iphone13-0{1..4}-*`, `pixel7-0{1..4}-*` and `wide-1440.png`.
+
 ## 1. Inputs and method
 
 - Skills loaded with the Skill tool (all 14 requested exist, none skipped): antislop, antislop-ui, antislop-layoutmobile,
@@ -67,7 +69,7 @@ My plan atlas, which read as a cream-themed admin panel.
 | R-32 keyboard | PASS | 137/137 walk checks include Escape order and focus return; focus ring tokens in every component |
 | R-33 patch scripts | PASS | No script rewrites `web/src` (the scratchpad patch helpers are outside the repo) |
 | R-34 themes | PASS | One light theme, no toggle shipped (spec §5.1) |
-| R-35 verify | PASS for this report | Live probes above; the walk's checks.json is 137/137 |
+| R-35 verify | PASS for this report | Live probes above; the walk's checks were 137/137 (checks.json now stays in the scratch shots dir) |
 | R-37 direction | PASS | Spec + addendum |
 
 ### Block 2: Purpose-Gate

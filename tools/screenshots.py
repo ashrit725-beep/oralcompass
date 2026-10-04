@@ -230,7 +230,7 @@ def run(pw, device: str, reduced_motion: str = "no-preference"):
     # mobile-only app (owner direction "its fully a mobile app"): the title card over the painting carries ONE facts line; the Answers log
     # and the journey pickers live in the "Journey details" disclosure below the map
     facts = page.locator(".cin-fact-line").first.inner_text() if page.locator(".cin-fact-line").count() else ""
-    check(f"{device}: compact journey header (one facts line over the painting)", "checkpoints completed" in facts and "$902.00" in facts and "$1,098.00" in facts
+    check(f"{device}: compact journey header (one facts line over the painting)", "checkpoints completed" in facts and page.evaluate(HAS_AMOUNT_JS, [".cin-fact-line", "$902.00"]) and page.evaluate(HAS_AMOUNT_JS, [".cin-fact-line", "$1,098.00"])
           and page.locator(".cin-calc", has_text="Calculated from the clauses cited").count() == 1, facts[:90])
     stage_top = page.evaluate("(() => { const s = document.querySelector('.cin-stage'); const p = document.querySelector('.passage-vertical-wrap'); return s && p ? [Math.round(s.getBoundingClientRect().top), Math.round(p.getBoundingClientRect().top), innerHeight] : null; })()")
     check(f"{device}: the painted map starts inside the first viewport", bool(stage_top) and stage_top[0] < 200 and stage_top[1] < stage_top[2] - 120, str(stage_top))
@@ -569,7 +569,9 @@ def run(pw, device: str, reduced_motion: str = "no-preference"):
     fogged = page.locator(".island-btn.is-fog, .pv-card.is-fog").count()
     start_pennant = page.locator("button[aria-label^='Start ·'] .ctl-pennant").count() > 0
     check(f"{device}: fog on unresolved", fogged >= 1 and start_pennant, f"fogged={fogged} pennant={start_pennant}")
-    check(f"{device}: unresolved never prints $0.00", "$0.00" not in page.locator(".log-cost").inner_text() and "Waiting for information" in page.locator(".log-cost").inner_text(), page.locator(".log-cost").inner_text()[:60])
+    # the Answers log sits in the closed "Journey details" disclosure on phones, so read textContent (innerText is empty while collapsed)
+    log_cost = page.evaluate("[...document.querySelectorAll('.log-cost')].map(e => e.textContent).join(' ')")
+    check(f"{device}: unresolved never prints $0.00", "$0.00" not in log_cost and "waiting for information" in log_cost.lower(), log_cost[:60])
     shot("17-fog")
     open_island("Root canal", 1000)
     fog_nodes = page.locator(".drawer .pipeline .node")
@@ -711,17 +713,14 @@ def run(pw, device: str, reduced_motion: str = "no-preference"):
     check(f"{device}: skip link to route", (first or "").strip() == "Skip to the route" and inside, f"first={first!r} inside={inside}")
     # (the desktop chart's arrow-key roving between islands was removed with the desktop layout: on the phone passage every stop is a
     # button in reading order, so Tab walks START, each island, its checkpoints and the Harbor Light)
-    # Tab reaches the care stages; Enter activates (the heading named 'Starting point' comes from the DetailPanel sheet)
-    page.locator("h1").click()
-    page.keyboard.press("Tab")
-    focused = page.evaluate("document.activeElement && document.activeElement.textContent")
-    for _ in range(80):
-        page.keyboard.press("Tab")
-        tag = page.evaluate("document.activeElement && (document.activeElement.getAttribute('aria-label') || document.activeElement.textContent)")
-        if tag and str(tag).startswith("Starting point"):
-            page.keyboard.press("Enter"); page.wait_for_timeout(300)
-            break
-    check(f"{device}: keyboard activates an island", page.locator("[role=dialog] h2#detail-h", has_text="Starting point").count() > 0, str(focused)[:40])
+    # Mobile-only direction: the desktop "Tab through the chart to 'Starting point' and the DetailPanel heading" check is gone (WebKit on
+    # iOS does not Tab to buttons, and the stage panel was a desktop surface). The phone check: an external keyboard / switch-control user
+    # focuses an island button and Enter opens the procedure sheet; Escape closes it.
+    isl = page.locator("#passage-islands button[aria-label^='Root canal']").first
+    isl.focus(); page.keyboard.press("Enter"); page.wait_for_timeout(1000)
+    opened = page.locator(".drawer").count() > 0
+    close_drawer()
+    check(f"{device}: keyboard activates an island", opened and page.locator(".drawer").count() == 0, f"opened={opened}")
     close_sheet()
 
     # ---- AI treatment-plan reader (addendum D.5a): the stored fictional estimate reads into reviewed rows, nothing ticked; read-only (no confirm) ----
@@ -935,7 +934,7 @@ def run_reduced_phone(pw):
     open_alex(page)
     page.screenshot(path=OUT / "pixel7-reduced-11-passage.png", full_page=True)
     names = passage_names(page)
-    check("reduced motion: end-state DOM equals the full-motion end state", names == END_STATE.get("desktop"), f"{len(names)} controls")
+    check("reduced motion: end-state DOM equals the full-motion end state", names == END_STATE.get("pixel7"), f"{len(names)} controls")
     anim = page.evaluate("""() => ['.route', '.fog-drift', '.beam', '.ripples', '.cin-drift', '.cin-settle'].map(s => { const el = document.querySelector(s); return el ? [s, getComputedStyle(el).animationName] : [s, 'absent']; })""")
     check("reduced motion: no scenery animation", all(a in ("none", "absent") for _, a in anim), str(anim))
     drawn = page.evaluate("""() => [...document.querySelectorAll('.route-group path.route')].every(p => { const o = getComputedStyle(p).opacity; const pl = p.style.strokeDashoffset; return Number(o) >= 0.7 && (!pl || parseFloat(pl) <= 0.001); })""")
@@ -1008,7 +1007,7 @@ def static_checks():
     files = [ROOT / "web/src/styles.css", *(ROOT / "web/src/styles").glob("*.css"), *(p for p in (ROOT / "web/src").rglob("*.tsx") if not re.search(r"/components/(ui|magicui|kokonutui|animata|eldoraui|vendor|motion-primitives)/", p.as_posix()))]
     for f in files:
         for i, line in enumerate(f.read_text(encoding="utf-8", errors="ignore").splitlines(), 1):
-            if pat.search(line) and not re.search(r"bounce:\s*0|no-bounce|no bounce", line):
+            if pat.search(line) and not re.search(r"bounce:\s*0|no-bounce|no bounce", line) and not re.match(r"\s*(\*|//|/\*)", line):   # comments naming what is avoided
                 hits.append(f"{f.relative_to(ROOT)}:{i}")
     check("anti-slop: no forbidden motion keywords", not hits, "; ".join(hits)[:200])
     # motion-10: no sub-2 s loop under reduced motion in StatusMark; motion-11: the highlighter never redraws on page-height changes
@@ -1029,7 +1028,7 @@ with sync_playwright() as pw:
     if "wide" in ONLY:
         run_wide(pw)
 static_checks()
-(OUT / "checks.json").write_text(json.dumps(checks, indent=1))
+(OUT / "checks.json").write_text(json.dumps(checks, indent=1))   # into the given (scratch) dir only; docs/ keeps no checks.json
 fails = [k for k, v in checks.items() if not v]
 print(f"\n{len(checks) - len(fails)}/{len(checks)} checks passed")
 sys.exit(1 if fails else 0)
