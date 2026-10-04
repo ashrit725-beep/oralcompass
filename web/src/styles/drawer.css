@@ -169,7 +169,6 @@ details[open] > .dsec-summary .dsec-toggle { transform: rotate(-135deg); margin-
 .harbor-table th[scope="row"] { font-weight: 500; }
 .soundings-line { display: flex; flex-wrap: wrap; gap: 4px 16px; }
 .closed-line { display: flex; align-items: baseline; gap: 6px; margin: 0 0 var(--s-2); }
-.benefits-form-placeholder { border: 1px dashed var(--border); border-radius: var(--r-2); padding: var(--s-3); }
 
 /* ---- gold threads (drawer-rise cast line, thread-pull) ---- */
 .cast-line, .thread-pull { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 30; overflow: visible; }

@@ -67,12 +67,15 @@ describe("CinematicStage (shared stage on My plan)", () => {
     expect(html).toContain("/art/plan-passage.webp");
   });
   it("styles the stage full-bleed: no border, radius or shadow; drift and settle off under reduced motion", () => {
-    const css = readFileSync(join(__dirname, "../styles/plan.css"), "utf8");
-    const rule = css.match(/\.cstage \{[^}]*\}/)?.[0] ?? "";
-    expect(rule).toMatch(/margin: calc\(-1 \* var\(--view-pad/);
+    const css = readFileSync(join(__dirname, "../styles/journey.css"), "utf8");
+    const rule = css.match(/\.cin-stage \{[^}]*\}/)?.[0] ?? "";
+    expect(rule).toMatch(/margin: calc\(-1 \* var\(--view-gutter/);
     expect(rule).not.toMatch(/border|radius|box-shadow/);
-    expect(css).toMatch(/@media \(prefers-reduced-motion: reduce\) \{\s*\.cstage-settle\.is-establishing, \.cstage-settle img \{ animation: none; \}/);
-    expect(css).toMatch(/\.cstage\[data-paused\] \.cstage-settle img \{ animation-play-state: paused; \}/);
+    expect(css).toMatch(/@media \(prefers-reduced-motion: reduce\) \{\s*\.cin-settle\.is-establishing, \.cin-drift \{ animation: none !important; \}\s*\.cin-camera \{ transition: none !important; \}/);
+    expect(css).toMatch(/\.cin-stage\[data-hidden\] \.cin-drift \{ animation-play-state: paused; \}/);
+    // the mob/plan stub stage is gone: one stage, one set of rules
+    const plan = readFileSync(join(__dirname, "../styles/plan.css"), "utf8");
+    expect(plan).not.toMatch(/\.cstage/);
   });
   it("has no desktop branch in the plan stylesheet (phone-only app)", () => {
     const css = readFileSync(join(__dirname, "../styles/plan.css"), "utf8");

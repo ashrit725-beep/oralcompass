@@ -72,6 +72,8 @@ DEVICES = [
     {"name": "phone-360", "engine": "chromium", "viewport": {"width": 360, "height": 780}, "phone": True, "touch": True},
     {"name": "iphone-13", "engine": "webkit", "descriptor": "iPhone 13", "phone": True},
     {"name": "pixel-7", "engine": "chromium", "descriptor": "Pixel 7", "phone": True},
+    # the smallest phone in use (375×667, WebKit): opt in with --devices=iphone-se (not in the default walk, which the gate pins)
+    {"name": "iphone-se", "engine": "webkit", "descriptor": "iPhone SE", "phone": True, "optin": True},
     {"name": "wide-1440", "engine": "chromium", "viewport": {"width": 1440, "height": 900}, "phone": True},
 ]
 
@@ -796,6 +798,7 @@ def main():
     with sync_playwright() as pw:
         for d in DEVICES:
             if ONLY and d["name"] not in ONLY: continue
+            if not ONLY and d.get("optin"): continue
             try:
                 report["devices"].append(walk(pw, d))
             except Exception as e:  # noqa: BLE001

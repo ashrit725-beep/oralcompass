@@ -304,7 +304,6 @@
 .ov-table .stitch::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 44px; transform: translateY(-50%); }
 
 /* ---- care-stage / checkpoint detail (DetailPanel as a modal Sheet; findings a11y-3, mobile-1, layout-15) ---- */
-.detail-bar .close { flex: none; width: 44px; height: 44px; display: inline-grid; place-items: center; }
 .detail-sheet .crumbs { margin: 0 0 var(--s-2); }
 .detail-sheet .detail-body { padding: 0 0 max(16px, env(safe-area-inset-bottom)); }
 /* `:not(#_)` lifts this over the legacy pill rule in styles.css (ten :not() classes, min-height 40px) without repeating its list */

@@ -46,6 +46,9 @@ const PLATE_ASPECT = 1106 / 1422;
 const SIDES: Side[] = ["left", "right", "left", "right", "left"];
 const PAD_TOP = 4;
 const PAD_BOTTOM = 76;          // the stage's bottom fade sits here, under the last label
+/** Shortest row: a stop's label (term, place, value, evidence badge) is ~165 px tall at 375 px; a shorter row let it reach into the
+ *  neighbouring row's full-width button (layout audit, iPhone SE). */
+const MIN_ROW = 172;
 
 /** Pixel layout of the five stops for a column `w` px wide (pure; unit-tested). */
 export function planLayout(width: number): PlanLayout {
@@ -57,7 +60,7 @@ export function planLayout(width: number): PlanLayout {
     const harbor = l.id === "harbor";
     const pw = Math.round(w * (l.id === "lighthouse" ? 0.48 : harbor ? 0.44 : 0.42));
     const ph = harbor ? Math.round(w * 0.27) : Math.round(pw * PLATE_ASPECT);
-    const height = ph + (harbor ? 20 : 26);
+    const height = harbor ? ph + 20 : Math.max(ph + 26, MIN_ROW);
     const cx = Math.round(side === "left" ? w * 0.26 : w * 0.74);
     const top = y;
     const cy = Math.round(top + height / 2);
