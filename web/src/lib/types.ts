@@ -122,7 +122,7 @@ export interface CoverageRule {
 }
 export interface Procedure { key: string; name: string; category_hint: string; dentist_fee_cents: number; fee_source: string; tooth_or_area_relevant: boolean; external_codes?: { primary_code: string | null; review_required: boolean; review_reason?: string | null; distinct_codes_seen: string[]; candidates: number } }
 export interface SourceItem { source_id: string; version_label: string | null; title: string; publisher: string; url: string; document_type: string; document_date: string | null; effective_period: any; scope: any; retrieved_at: string; retrieval_method: string; pages_total: number | null; reuse_terms: string | null; access_limits: string[]; counts: { facts: number; by_status: Record<string, number>; procedure_mappings: number; conflicts: number; gaps: number }; supports_plan_codes: string[]; gaps_count?: number }
-export interface PrivateDocument { id: string; seed_id?: string; type: string; label: string; location?: string; extraction_status?: string; fields_needing_confirmation?: string[]; filename?: string; pages?: number; redaction_preview?: { text: string; removed: string[] } }
+export interface PrivateDocument { id: string; seed_id?: string; type: string; label: string; location?: string; extraction_status?: string; fields_needing_confirmation?: string[]; filename?: string; pages?: number; redaction_preview?: { text: string; removed: string[]; summary?: unknown } }
 
 // ---------- day-1 frozen contracts (design spec §13.2; written by the foundation agent, built against by the map and upload/assistant agents) ----------
 export type PlanRef = string;                                   // "ML26" | "upload:<document_id>"

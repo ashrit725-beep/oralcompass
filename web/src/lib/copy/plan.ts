@@ -96,7 +96,9 @@ export const PLAN = {
   procedureRequired: "A procedure is required.",
   // ---- read a treatment plan (addendum D.5a; api/app/treatment_reader.py) ----
   readTitle: "Read a treatment plan",
-  readIntro: "Paste the text of your dentist's estimate, or add a photo or PDF of it. Personal details are removed from pasted text first; a photo reaches the model as it is. Each line is matched to one of the 16 procedure identifiers, and nothing is added until you confirm it.",
+  readIntro: "Paste the text of your dentist's estimate, or add a photo or PDF of it. Personal details are removed on this device from pasted text and from a PDF's text layer before anything is sent; a photo or a scanned page cannot be redacted and reaches the model as it is. Each line is matched to one of the 16 procedure identifiers, and nothing is added until you confirm it.",
+  readRemovedOnDevice: "Found and removed on this device before the text was sent.",
+  readRemovedOnDevicePdf: "The PDF's text was read on this device; these were removed before the text was sent.",
   readModeDemo: "Demo mode: only the two stored fictional estimates are read",
   readModeLive: (model: string) => `Live mode: read by ${model}`,
   readPasteLabel: "Estimate text",
@@ -117,6 +119,7 @@ export const PLAN = {
   readWorking: "Reading the estimate. Personal details are removed from the text before anything reaches a model.",
   readWorkingFile: "Reading the file. A photo or a scanned page cannot be redacted; the image itself reaches the model.",
   readWorkingDemo: "Reading the estimate in demo mode. Nothing is sent to a model.",
+  readWorkingPdf: "Reading the PDF's text on this device and removing personal details before anything is sent.",
   // the send gate for files (orchestrator note 11): nothing leaves the browser in live mode until the user confirms
   readGateTitle: (name: string) => `Before ${name} is sent`,
   readGateImage: "This image is sent to the model as is; names, member IDs and dates on it are not removed. Pasting the text instead lets OralCompass remove them first.",

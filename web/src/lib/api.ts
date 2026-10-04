@@ -101,7 +101,10 @@ export const api = {
   deleteMe: () => req<{ deleted: Record<string, number> }>("/me", { method: "DELETE" }),
   audit: () => req<{ ts: number; sub: string; action: string; type: string; id: string; outcome: string }[]>("/me/audit"),
   // uploads → extraction → review → publish (spec §7.3; api/app/uploads.py)
-  uploadDocument: (file: File, sha256: string, pages: number, textPreview: string) => multipart<UploadResponse>("/me/documents/upload", { file, sha256, pages, text_preview: textPreview }),
+  /** `clientRedaction`: the JSON `client_redaction` field (the identifiers the person confirmed on this device; upload contract). `textPreview`
+   *  is the ALREADY REDACTED text (the server falls back to it only when its own text layer read is empty). */
+  uploadDocument: (file: File, sha256: string, pages: number, textPreview: string, clientRedaction?: string) =>
+    multipart<UploadResponse>("/me/documents/upload", clientRedaction ? { file, sha256, pages, text_preview: textPreview, client_redaction: clientRedaction } : { file, sha256, pages, text_preview: textPreview }),
   redaction: (id: string, extra_terms: string[]) => put<{ redaction_preview: { text: string; removed: string[] } }>(`/me/documents/${id}/redaction`, { extra_terms }),
   extract: (id: string) => post<{ status: string }>(`/me/documents/${id}/extract`, {}),
   extraction: (id: string) => req<ExtractionStatus>(`/me/documents/${id}/extraction`),
