@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, ApiError } from "@/lib/api";
 import { ASSIST } from "@/lib/copy/assistant";
+import type { AskPlanChoice } from "@/lib/ask-plans";
 import { clientGuard, createRequestGate, type AssistBlockX, type AssistData, type AssistResponseX, type AssistStyle } from "@/lib/assistant";
 import type { AssistScope } from "@/lib/types";
 import { serverMode, useAssistData, type ServerMode } from "@/components/assistant/AssistData";
@@ -15,6 +16,8 @@ export interface AskAnswer {
   resp: AssistResponseX;
   blocks: AssistBlockX[];
   localDropped: number;
+  /** The prompt box's plan letter this answer was asked with (one plan per answer). */
+  planChoice?: AskPlanChoice;
   simpler?: { resp: AssistResponseX; blocks: AssistBlockX[]; localDropped: number } | null;
 }
 
@@ -28,6 +31,8 @@ export interface UseAskOptions {
   /** Adopt the server's `suggested` questions after an answer (the step/clause composer does; the AskBox keeps its everyday chips). */
   adoptSuggestions?: boolean;
   initialSuggestions?: string[];
+  /** The prompt box's plan dropdown (AssistIn.plan_choice): the server answers cost questions for that plan. */
+  planChoice?: AskPlanChoice;
 }
 
 export interface AskApi {
@@ -62,7 +67,7 @@ export const clearAskMemory = () => memory.clear();
  * the client amount guard, the rate-limit pause, offline / not-found / live-unavailable errors, the lazy payload fetch for ref resolution,
  * and the "Say it more simply" re-ask (style "simpler") attached to the answer it simplifies.
  */
-export function useAsk({ scope, data: dataProp, memoryKey, adoptSuggestions = true, initialSuggestions = [] }: UseAskOptions): AskApi {
+export function useAsk({ scope, data: dataProp, memoryKey, adoptSuggestions = true, initialSuggestions = [], planChoice }: UseAskOptions): AskApi {
   const scopeKey = JSON.stringify(scope);
   const remembered = memoryKey ? memory.get(memoryKey) : undefined;
   const fresh = remembered && remembered.scopeKey === scopeKey ? remembered : undefined;
@@ -120,8 +125,8 @@ export function useAsk({ scope, data: dataProp, memoryKey, adoptSuggestions = tr
     } else setError(ASSIST.offline);
   }, []);
 
-  const send = useCallback(async (message: string, scopeFor: AssistScope, style: AssistStyle) => {
-    const resp = (await api.ask({ message, scope: scopeFor, style })) as AssistResponseX;
+  const send = useCallback(async (message: string, scopeFor: AssistScope, style: AssistStyle, choice?: AskPlanChoice) => {
+    const resp = (await api.ask({ message, scope: scopeFor, style, ...(choice ? { plan_choice: choice } : {}) })) as AssistResponseX;
     const guarded = clientGuard(resp.blocks ?? []);
     return { resp, blocks: guarded.blocks, localDropped: guarded.dropped };
   }, []);
@@ -135,16 +140,16 @@ export function useAsk({ scope, data: dataProp, memoryKey, adoptSuggestions = tr
     busy.current = true; setPending(q); setCycle((c) => c + 1);
     const ticket = gate.current.begin();
     try {
-      const out = await send(q, effective, "plain");
+      const out = await send(q, effective, "plain", planChoice);
       if (!gate.current.isCurrent(ticket)) return;
-      setAnswers((a) => [...a, { id: ++seq.current, question: q, scope: effective, ...out, simpler: undefined }]);
+      setAnswers((a) => [...a, { id: ++seq.current, question: q, scope: effective, planChoice, ...out, simpler: undefined }]);
       if (adoptSuggestions && out.resp.suggested?.length) setSuggested(out.resp.suggested);
     } catch (e) {
       if (gate.current.isCurrent(ticket)) failure(e);
     } finally {
       if (gate.current.isCurrent(ticket)) { busy.current = false; setPending(null); }
     }
-  }, [scope, paused, send, failure, adoptSuggestions]);
+  }, [scope, paused, send, failure, adoptSuggestions, planChoice]);
 
   const askSimpler = useCallback<AskApi["askSimpler"]>(async (answerId) => {
     const target = answers.find((a) => a.id === answerId);
@@ -154,7 +159,7 @@ export function useAsk({ scope, data: dataProp, memoryKey, adoptSuggestions = tr
     busy.current = true; setSimplerFor(answerId);
     const ticket = gate.current.begin();
     try {
-      const out = await send(target.question, target.scope, "simpler");
+      const out = await send(target.question, target.scope, "simpler", target.planChoice);
       if (!gate.current.isCurrent(ticket)) return;
       setAnswers((list) => list.map((a) => (a.id === answerId ? { ...a, simpler: out } : a)));
     } catch (e) {

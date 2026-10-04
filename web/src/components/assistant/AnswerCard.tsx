@@ -10,6 +10,55 @@ import type { AssistScope } from "@/lib/types";
 import type { AskAnswer } from "@/hooks/useAsk";
 import type { ServerMode } from "./AssistData";
 import { AnswerBlocks, Chip, Inline } from "./AnswerBlocks";
+import { Money } from "@/components/Money";
+import { BadgeGlyph, EvidenceBadge } from "@/components/Primitives";
+import { askPlanFor, askPlanText } from "@/lib/ask-plans";
+import type { AssistRef, Evidence } from "@/lib/types";
+
+type QuickRef = Extract<AssistRef, { kind: "quick_estimate" }>;
+
+/** The procedure_cost answer's figures (server-sent cents + evidence), one of each, in the answer's order. */
+export function quickEstimateRefs(blocks: AskAnswer["blocks"]): Partial<Record<QuickRef["which"], QuickRef>> {
+  const out: Partial<Record<QuickRef["which"], QuickRef>> = {};
+  for (const b of blocks) {
+    const refs = b.type === "sentence" || b.type === "simple" ? b.refs ?? [] : [];
+    for (const r of refs) if (r.kind === "quick_estimate" && !out[r.which]) out[r.which] = r;
+  }
+  return out;
+}
+
+const centsOf = (r: QuickRef | undefined): number | null => (typeof r?.cents === "number" ? r.cents : null);
+const evidenceOf = (r: QuickRef | undefined, fallback: Evidence): Evidence => (centsOf(r) === null ? "UNKNOWN" : r?.evidence ?? fallback);
+
+/** The two hero numbers of a cost answer: "You pay" and "Insurance pays", big and bold; the dentist's price smaller with "Our guess of the price". */
+export function CostHero({ refs, planChoice }: { refs: Partial<Record<QuickRef["which"], QuickRef>>; planChoice?: string }) {
+  const fee = refs.fee;
+  const feeEvidence = evidenceOf(fee, "ASSUMED");
+  return (
+    <div className="as-hero" data-testid="cost-hero">
+      {planChoice && <p className="as-hero-plan">{ASSIST.heroFor(askPlanText(askPlanFor(planChoice)))}</p>}
+      <dl className="as-hero-grid">
+        <div className="as-hero-cell as-hero-you">
+          <dt>{ASSIST.heroYouPay}</dt>
+          <dd className="as-hero-amt"><Money cents={centsOf(refs.patient)} evidence={evidenceOf(refs.patient, "DOC")} badge={centsOf(refs.patient) === null} />{centsOf(refs.patient) !== null && <span className="fig-calc">{ASSIST.heroMath}</span>}</dd>
+        </div>
+        <div className="as-hero-cell as-hero-plan-pays">
+          <dt>{ASSIST.heroPlanPays}</dt>
+          <dd className="as-hero-amt"><Money cents={centsOf(refs.plan)} evidence={evidenceOf(refs.plan, "DOC")} badge={centsOf(refs.plan) === null} />{centsOf(refs.plan) !== null && <span className="fig-calc">{ASSIST.heroMath}</span>}</dd>
+        </div>
+      </dl>
+      {fee && (
+        <p className="as-hero-fee">
+          <span>{ASSIST.heroPrice}</span>{" "}
+          <Money cents={centsOf(fee)} evidence={feeEvidence} badge={false} className="as-hero-fee-amt" />{" "}
+          {feeEvidence === "ASSUMED"
+            ? <span className="badge badge-assumed" role="img" aria-label={ASSIST.heroPriceGuess}><BadgeGlyph status="ASSUMED" /> {ASSIST.heroPriceGuess}</span>
+            : <EvidenceBadge status={feeEvidence} />}
+        </p>
+      )}
+    </div>
+  );
+}
 
 /**
  * AnswerCard (the simple-terms contract, spec §8 answer card): one parchment note per question, never a bubble.
@@ -76,6 +125,8 @@ export function AnswerCard({ answer: a, data, mode, loading, busy, simplifying, 
   const lookups = lookupLabels(a.resp.tools_used, data);
   const land = (delay = 0) => (reduce ? { initial: false as const } : { initial: { opacity: 0, y: 4 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.5, ease: EASE.land, delay } });
   const legacy = simple.length === 0;
+  const quick = quickEstimateRefs(a.blocks);
+  const hasHero = !!(quick.patient || quick.plan);
 
   return (
     <li className="as-answer" data-tone={ribbon?.tone ?? "live"} data-simple={legacy ? "false" : "true"}>
@@ -87,6 +138,7 @@ export function AnswerCard({ answer: a, data, mode, loading, busy, simplifying, 
         <>
           <motion.div className="as-simple" {...land()}>
             <p className="as-simple-label">{ASSIST.simpleLabel}</p>
+            {hasHero && <CostHero refs={quick} planChoice={a.planChoice} />}
             {simple.map((b, i) => <PlainSentence key={i} block={b} data={data} scope={a.scope} onOpenStitch={onOpenStitch} />)}
           </motion.div>
           {a.simpler && (

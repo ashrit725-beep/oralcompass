@@ -135,6 +135,9 @@ describe("scope, suggestions, ribbons, tools", () => {
     for (const intent of ["define_term", "journey_total", "remaining_benefits", "line_by_name", "document_overview"])
       expect(ribbonFor({ mode: "demo", ribbon: demo, intent }, "live")).toEqual({ text: ASSIST.fixedTemplate, tone: "template" });
     expect(ribbonFor({ mode: "demo", ribbon: demo, intent: "journey_total" }, "demo")).toEqual({ text: demo, tone: "demo" });
+    // a cost answer written live names the model; the same answer without a model reads as the fixed answer
+    expect(ribbonFor({ mode: "live", ribbon: null, intent: "procedure_cost", model: "anthropic/claude-haiku-4.5" }, "live")).toEqual({ text: ASSIST.liveLabel("anthropic/claude-haiku-4.5"), tone: "live" });
+    expect(ASSIST.liveLabel("m")).toContain("Written by AI from your plan's numbers");
     expect(ribbonFor({ mode: "live", ribbon: null, intent: "explain_step", model: "anthropic/claude-haiku-4.5" }, "live")).toMatchObject({ tone: "live" });
     expect(ribbonFor({ mode: "demo", ribbon: "The model did not answer in time; a template answer is shown.", intent: "explain_step" }, "live")).toMatchObject({ tone: "fallback" });
     expect(ribbonFor({ mode: "live", ribbon: null, intent: "advice_request", model: "m" }, "live")).toMatchObject({ tone: "template" });

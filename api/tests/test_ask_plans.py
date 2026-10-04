@@ -48,6 +48,11 @@ def test_mapping_has_exactly_three_plans_mirrored_in_web_config():
         txt = ts.read_text()
         for code in ask_plans.ASK_PLANS.values():
             assert f'"{code}"' in txt
+        # item 30: each letter maps to the same code and kid-simple name in both files
+        for c, code in ask_plans.ASK_PLANS.items():
+            row = f'{{ choice: "{c}", label: "{ask_plans.ASK_PLAN_LABELS[c]}", code: "{code}", name: "{ask_plans.ASK_PLAN_NAMES[c]}" }}'
+            assert row in txt, row
+        assert txt.count("{ choice: \"") == 3
 
 
 PHRASES = [("how much is a crown", "crown"), ("cleaning?", "cleaning"), ("root canal cost", "root_canal_molar"), ("x-rays", "bitewing_xrays"),

@@ -5,6 +5,7 @@ Mirrors web/src/lib/ask-plans.ts. The label the person picks ("Plan A") maps to 
 
 ASK_PLANS = {"A": "DD24", "B": "DD24L", "C": "FD26H"}
 ASK_PLAN_LABELS = {"A": "Plan A", "B": "Plan B", "C": "Plan C"}
+ASK_PLAN_NAMES = {"A": "Delta Dental PPO High", "B": "Delta Dental PPO Low", "C": "Delta Dental Federal High"}
 
 
 def plan_code(choice):

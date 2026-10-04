@@ -166,6 +166,13 @@ export function resolveRef(ref: AssistRef, data: AssistData, scope?: AssistScope
     // a line's you-pay / plan-pays is an engine result: it reads "calculated" (a total built on an assumption keeps its ASSUMED badge)
     return calcMoney(cents, cents === null ? "UNKNOWN" : lineEvidence(line), ref.which === "patient" ? ASSIST.refPatientTotal : ASSIST.refPlanTotal);
   }
+  if (ref.kind === "quick_estimate") {
+    // procedure_cost (one plan per answer): the server sends the figure with its evidence, so no payload is needed to render it
+    const cents = typeof ref.cents === "number" ? ref.cents : null;
+    const evidence: Evidence = cents === null ? "UNKNOWN" : ref.evidence ?? (ref.which === "fee" ? "ASSUMED" : "DOC");
+    const label = ref.which === "patient" ? ASSIST.heroYouPay : ref.which === "plan" ? ASSIST.heroPlanPays : ASSIST.heroPrice;
+    return ref.which === "fee" ? { kind: "money", cents, evidence, label } : calcMoney(cents, evidence, label);
+  }
   if (ref.kind === "estimate_total") {
     // the journey's totals (the facts line "you pay $902.00 · plan $1,098.00"): engine sums of the lines, labelled "calculated"
     return resolveRef({ kind: "field", path: ref.which === "patient" ? "estimate.ledger.patient_total_cents" : "estimate.ledger.plan_total_cents" }, data, scope);
@@ -368,30 +375,9 @@ export function clientGuard(blocks: AssistBlockX[]): { blocks: AssistBlockX[]; d
 
 export type AskTab = "journey" | "plan" | "documents";
 
-/** The journey's planned procedures in everyday words, most you-pay first (resolved lines only; a name is listed once). */
-function journeyProcedureNames(data: Pick<AssistData, "estimate" | "items">): string[] {
-  const lines = data.estimate?.ledger.lines ?? [];
-  const ids = data.estimate?.inputs?.treatment_item_ids ?? [];
-  const named = lines.map((l, i) => {
-    const key = l.procedure_key ?? data.items.find((it) => it.id === ids[i] || it.seed_id === ids[i])?.procedure_key;
-    return { name: key ? ASSIST.everydayName[key] : undefined, cents: l.patient_cents };
-  }).filter((x): x is { name: string; cents: number } => !!x.name && typeof x.cents === "number");
-  named.sort((a, b) => b.cents - a.cents);
-  const seen = new Set<string>();
-  return named.filter((x) => (seen.has(x.name) ? false : (seen.add(x.name), true))).map((x) => x.name);
-}
-
-/** The AskBox chips for a tab, in everyday words. On My journey the second chip is built from the journey's real procedures: "Why does
- *  the crown cost more than the root canal?" names the two planned procedures with the largest you-pay figures (only when the higher one
- *  really is higher), one procedure gives "What do I pay for the crown?", none gives a plain definition question. */
-export function boxSuggestions(tab: AskTab, data: Pick<AssistData, "estimate" | "items">): string[] {
-  const base = ASSIST.boxChips[tab] ?? ASSIST.boxChips.plan;
-  if (tab !== "journey") return base;
-  const names = journeyProcedureNames(data);
-  let chip: string = ASSIST.chipFallback;
-  if (names.length >= 2) chip = ASSIST.chipWhyMore(names[0], names[1]);
-  else if (names.length === 1) chip = ASSIST.chipWhatFor(names[0]);
-  return [base[0], chip, ...base.slice(1)];
+/** The AskBox chips: the same kid-simple cost questions on every tab (owner: only a cost breakdown, no comparing). */
+export function boxSuggestions(_tab: AskTab, _data?: Pick<AssistData, "estimate" | "items">): string[] {
+  return ASSIST.boxChips;
 }
 
 /** Plain text of a plain-words block for the screen-reader announcement: figures as "$902.00 (calculated from the clauses cited)" /
@@ -437,4 +423,3 @@ export function askBoxScope(planRef: string, estimate: Pick<SavedEstimate, "id" 
   const est = estimate && (!estimate.plan_code || normRef(estimate.plan_code) === normRef(planRef)) ? { estimate_id: estimate.id } : {};
   return { plan_ref: planRef, ...est, ...(journeyId ? { journey_id: journeyId } : {}) };
 }
-
