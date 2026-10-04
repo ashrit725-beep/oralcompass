@@ -79,7 +79,7 @@ export function UploadWizardBody({ onPublished, onClose, onStepChange }: UploadW
   return (
     <div className="up-wizard">
       {upload && <p className="up-caption up-file-line">{UPLOAD.fileSummary(upload.filename, upload.pages, upload.sha256)}{upload.demo_fixture_match && <> · {UPLOAD.demoFixtureMatch}</>}</p>}
-      <Stepper step={step} onStepChange={setStep} stepLabel={stepLabel} disableStepIndicators stepCircleContainerClassName="up-stepper" contentClassName="up-stepper-content">
+      <Stepper step={step} onStepChange={setStep} stepLabel={stepLabel} disableStepIndicators stepCircleContainerClassName="up-stepper max-w-none" contentClassName="up-stepper-content">
         <Step>
           <PlanUpload onUploaded={onUploaded} mode={mode?.llm_mode ?? null} model={mode?.llm_model} />
         </Step>

@@ -57,7 +57,7 @@
 .up-row[data-confidence="not_found"] { border-left-color: var(--terracotta); }
 .up-row[data-decided] { background: color-mix(in srgb, var(--sage-light) 22%, transparent); }
 .up-cell { vertical-align: top; white-space: normal; padding: var(--s-2) var(--s-3); }
-.up-cell-field { min-width: 9rem; }
+.up-cell-field { min-width: 8rem; }
 .up-field-label { display: block; font-weight: 600; color: var(--ink); }
 .up-req { display: inline-block; font-size: 11px; line-height: 14px; color: var(--ink-soft); border: 1px solid var(--rule); border-radius: var(--r-1); padding: 0 var(--s-1); margin-top: var(--s-1); margin-right: var(--s-1); }
 .up-decided { display: block; font-size: 12px; line-height: 16px; color: var(--forest); margin-top: var(--s-1); }
@@ -67,20 +67,20 @@
 .up-confidence { display: inline-flex; flex-wrap: wrap; gap: var(--s-1) var(--s-2); align-items: center; }
 .up-confidence-word { font-weight: 500; white-space: nowrap; }
 .up-confidence-note { font-size: 12px; line-height: 16px; color: var(--ink-soft); flex-basis: 100%; }
-.up-cell-quote { min-width: 14rem; max-width: 26rem; }
+.up-cell-quote { min-width: 12rem; max-width: 22rem; }
 .up-quote { font-family: var(--serif); font-style: italic; font-size: 14px; line-height: 20px; margin: 0 0 var(--s-1); border-left: 2px solid var(--gold); padding-left: var(--s-2); }
 .up-open-page { margin-top: var(--s-1); }
 .up-page { margin: var(--s-2) 0 0; }
 .up-page-canvas canvas { display: block; max-width: 100%; height: auto; border: 1px solid var(--rule); border-radius: var(--r-2); }
 .up-page figcaption q { font-family: var(--serif); font-style: italic; }
-.up-cell-decision { min-width: 12rem; }
+.up-cell-decision { min-width: 10rem; }
 .up-decide { display: flex; flex-wrap: wrap; gap: var(--s-2); }
 .up-candidates { border: 1px solid var(--rule); border-radius: var(--r-2); padding: var(--s-2) var(--s-3); margin: var(--s-2) 0 0; display: flex; flex-direction: column; gap: var(--s-2); }
 .up-candidate { display: grid; grid-template-columns: 44px 1fr; align-items: start; gap: var(--s-2); font-size: 14px; color: var(--ink); }
 .up-candidate input[type="radio"] { width: 20px; height: 20px; margin: 12px; accent-color: var(--terracotta); }
 .up-candidate-quote { display: block; font-family: var(--serif); font-style: italic; color: var(--ink-soft); }
 .up-edit { display: flex; flex-direction: column; gap: var(--s-1); margin-top: var(--s-2); padding: var(--s-3); border: 1px solid var(--rule); border-radius: var(--r-2); background: var(--paper-deep); }
-.up-edit label { font-size: 13px; color: var(--ink-soft); }
+.up-edit label { font-size: 13px; color: var(--ink-soft); flex-direction: row; align-items: baseline; gap: var(--s-2); }
 .up-wording details, .up-notes { margin-top: var(--s-3); font-size: 14px; }
 .up-wording summary { cursor: pointer; display: flex; align-items: center; font-weight: 500; }
 .up-wording q { font-family: var(--serif); font-style: italic; }

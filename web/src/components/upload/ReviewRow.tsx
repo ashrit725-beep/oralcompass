@@ -83,19 +83,19 @@ export function ReviewRow({ docId, field: f, classNames, busy, error, onDecide }
 
   return (
     <TableRow className="up-row" data-confidence={f.confidence} data-decided={kind ?? undefined} aria-busy={busy || undefined}>
-      <TableCell data-label={UPLOAD.colField} className="up-cell up-cell-field">
+      <TableCell data-label={UPLOAD.colField} className="up-cell whitespace-normal align-top up-cell-field">
         <span className="up-field-label">{f.label}</span>
         {f.required && <span className="up-req">{UPLOAD.required}</span>}
         {kind && <span className="up-decided">{UPLOAD.decided[kind]}</span>}
       </TableCell>
-      <TableCell data-label={UPLOAD.colProposed} className="up-cell up-cell-value">
+      <TableCell data-label={UPLOAD.colProposed} className="up-cell whitespace-normal align-top up-cell-value">
         <Value unit={f.unit} value={shownValue} evidence={f.evidence_status} />
         {kind === "edited" && f.decision?.source && <span className="up-caption">{UPLOAD.sourceLabel}: {f.decision.source}</span>}
       </TableCell>
-      <TableCell data-label={UPLOAD.colConfidence} className="up-cell">
+      <TableCell data-label={UPLOAD.colConfidence} className="up-cell whitespace-normal align-top">
         <ConfidenceIndicator confidence={f.confidence} evidence={f.evidence_status} reviewStatus={f.review_status} />
       </TableCell>
-      <TableCell data-label={UPLOAD.colQuote} className="up-cell up-cell-quote">
+      <TableCell data-label={UPLOAD.colQuote} className="up-cell whitespace-normal align-top up-cell-quote">
         {f.quote ? (
           <>
             <blockquote className="up-quote">{f.quote}</blockquote>
@@ -112,7 +112,7 @@ export function ReviewRow({ docId, field: f, classNames, busy, error, onDecide }
           </>
         ) : <span className="up-none">{UPLOAD.noQuote}</span>}
       </TableCell>
-      <TableCell data-label={UPLOAD.colDecision} className="up-cell up-cell-decision">
+      <TableCell data-label={UPLOAD.colDecision} className="up-cell whitespace-normal align-top up-cell-decision">
         <div className="up-decide" role="group" aria-label={`${UPLOAD.colDecision}: ${f.label}`}>
           <Button type="button" variant={kind === "confirmed" ? "default" : "outline"} size="touch" aria-pressed={kind === "confirmed"} disabled={busy || !canConfirm} onClick={() => onDecide(decisionConfirm(f))}>{UPLOAD.looksRight}</Button>
           <Button type="button" variant={kind === "edited" ? "default" : "outline"} size="touch" aria-pressed={kind === "edited"} aria-expanded={editing} disabled={busy} onClick={() => { setEditing((v) => !v); setFormError(null); }}>{UPLOAD.edit}</Button>
