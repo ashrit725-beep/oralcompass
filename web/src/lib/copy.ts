@@ -104,6 +104,14 @@ export const UI = {
   reviewCode: "code mapping shown with alternatives",
   codesNote: "Codes appear only as printed in the cited documents; a code on your own estimate takes precedence.",
   renderingDocument: "Rendering the plan document pages…",
+  skipToContent: "Skip to content",
+  viewsLabel: "Views",
+  addJourney: "Add",
+  showChosen: "Show",
+  surfaceDefault: "This part of OralCompass",
+  surfaceFailed: (what: string) => `${what} could not be shown.`,
+  surfaceChunk: "Part of the app could not be downloaded; the connection may be offline.",
+  reloadPage: "Reload the page",
 };
 
 /** Cost-trail step titles, in the fixed order of the trail. */

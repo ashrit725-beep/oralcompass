@@ -8,6 +8,7 @@ import { circled } from "@/lib/stitches";
 import type { PlanEvidence, PlanRef, PlanSummary, PrivateDocument, SourceItem, Stitch, UploadedPlanSummary } from "@/lib/types";
 import { isUpload } from "@/lib/types";
 import { RemindersPanel } from "@/components/notifications/RemindersPanel";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { EvidenceBadge } from "@/components/Primitives";
 import { StageLoader } from "@/components/StageLoader";
 import { UploadWizard } from "@/components/upload/UploadWizard";

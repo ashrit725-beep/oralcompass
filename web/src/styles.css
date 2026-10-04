@@ -309,6 +309,8 @@ table.grid thead th { background: var(--paper-deep); position: sticky; top: 0; }
    "$45.00" run past the card edge, where the old .view clip cut it to "$45.0"; slop-5). "not covered" still wraps (journey.css). */
 .pv-mini:not(.pv-marginal) .pv-amt { max-width: none; }
 .ov-scroll { overflow-x: auto; max-width: 100%; }
+/* a failed view or lazy surface keeps a labelled recovery message inside the shell (web-correctness-3) */
+.surface-error { margin: var(--s-4) 0; }
 }
 
 @theme inline {
