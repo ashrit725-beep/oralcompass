@@ -102,7 +102,9 @@ export function BenefitsCompass({ plan, benefits, estimate, stitches, compact = 
       {vm.conflict && <p className="cmp-conflict"><EvidenceBadge status="CONFLICT" /> {vm.conflict.note}</p>}
       <p className="cmp-note">{COMPASS.derivedNote}</p>
 
-      <table className="sr-only">
+      {/* the visually hidden copy sits in an sr-only wrapper: WebKit sizes a table by its cells and ignores the 1 px sr-only box on the
+          table itself, which widened the My plan panel on iPhone (layout audit) */}
+      <div className="sr-only"><table>
         <caption>{COMPASS.tableCaption}</caption>
         <thead><tr><th scope="col">{COMPASS.colFigure}</th><th scope="col">{COMPASS.colAmount}</th><th scope="col">{COMPASS.colEvidence}</th></tr></thead>
         <tbody>
@@ -115,7 +117,7 @@ export function BenefitsCompass({ plan, benefits, estimate, stitches, compact = 
           <tr><th scope="row">{COMPASS.annualMax} {COMPASS.afterPlanned}</th><td>{vm.annualMax.afterCents == null ? (vm.annualMax.afterWaiting ? COMPASS.waiting : COMPASS.notProvided) : money(vm.annualMax.afterCents)}</td><td>{vm.annualMax.afterCents == null ? "UNKNOWN" : vm.annualMax.limitStatus}</td></tr>
           {vm.coverage.map((c) => <tr key={c.name}><th scope="row">{c.name}</th><td>{c.pctIn == null ? COMPASS.shareNotStated : COMPASS.planPays(String(c.pctIn))}</td><td>{c.statusIn}</td></tr>)}
         </tbody>
-      </table>
+      </table></div>
     </section>
   );
 }

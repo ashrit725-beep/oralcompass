@@ -73,7 +73,7 @@ export function PlanView({ data, mobile, landmark, onLandmark, stitch, onStitch,
   const landmarkNode = useMemo(() => {
     if (!plan) return {} as Partial<Record<LandmarkId, ReactNode>>;
     const fig = (v: { value: number | null; unlimited?: boolean; status: Benefits["conflict"] extends infer _ ? any : never } | undefined) =>
-      !v ? UI.notStated : v.unlimited ? PLAN.unlimited : v.value == null ? UI.notStated : <Money cents={v.value} evidence={v.status} badge={false} />;
+      !v ? UI.notStated : v.unlimited ? PLAN.unlimitedShort : v.value == null ? UI.notStated : <Money cents={v.value} evidence={v.status} badge={false} />;
     return {
       bridge: fig(plan.deductible_individual),
       lookout: fig(plan.annual_max),

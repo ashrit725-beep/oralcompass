@@ -35,6 +35,7 @@ export const PLAN = {
   noProcedures: "No planned procedures are recorded. The cost breakdown is drawn once a treatment item is added.",
   waitingForInfo: "Waiting for information",
   unlimited: "Unlimited (no dollar maximum)",
+  unlimitedShort: "No dollar maximum",
   notProvided: "Not provided",
   // ---- benefit statement form (spec §4.5) ----
   bsTitle: "Benefit statement figures",

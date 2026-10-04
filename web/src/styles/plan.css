@@ -128,7 +128,7 @@
 .bs-h { margin: 0; font-size: 1rem; }
 .bs-note { margin: 0; font-size: .85rem; color: var(--ink-soft); }
 .bs-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-3); }
-.bs-grid label, .bs-grid .bs-field { min-width: 0; } .bs-field { display: grid; gap: .25rem; align-content: start; }
+.bs-grid label, .bs-grid .bs-field { min-width: 0; } .bs-grid select { height: 44px; }   /* WebKit ignores min-height on a native select */ .bs-field { display: grid; gap: .25rem; align-content: start; }
 .bs-error-summary:empty { display: none; } .bs-grid input, .bs-grid select { min-height: 44px; width: 100%; }
 .bs-span { grid-column: 1 / -1; margin: 0; }
 .bs-error { color: var(--danger); font-size: .8rem; }
@@ -152,6 +152,7 @@
 .plan-add[open] > summary { margin-bottom: var(--s-2); border-bottom: 1px solid var(--rule); border-radius: var(--r-4) var(--r-4) 0 0; }
 .plan-add > :not(summary) { padding: 0 var(--s-4) var(--s-4); }
 @media (prefers-reduced-motion: reduce) { .plan-add > summary::after { transition: none; } }
+@media (max-width: 760px) { .plan-add > :not(summary) { padding: 0 var(--s-1) var(--s-3); } }   /* keep the reader's drop zone at full width on phones */
 @media (max-width: 760px) { .bs-grid { grid-template-columns: minmax(0, 1fr); } }
 
 /* ---- treatment plan reader: the send gate for files (orchestrator note 11) ---- */
