@@ -75,8 +75,10 @@ export function bytesToHex(bytes: ArrayBuffer | Uint8Array): string {
 /** SHA-256 of the file bytes via WebCrypto; the server recomputes it and rejects a mismatch (422 sha256_mismatch). */
 export async function sha256Hex(data: ArrayBuffer | Uint8Array): Promise<string> {
   const buf = data instanceof Uint8Array ? data.slice().buffer : data;
-  const digest = await crypto.subtle.digest("SHA-256", buf as ArrayBuffer);
-  return bytesToHex(digest);
+  // crypto.subtle exists only in secure contexts (https or localhost); a phone on the same Wi-Fi opening http://<laptop-ip> has none
+  if (typeof crypto !== "undefined" && crypto.subtle) return bytesToHex(await crypto.subtle.digest("SHA-256", buf as ArrayBuffer));
+  const { sha256Bytes } = await import("./sha256");
+  return bytesToHex(sha256Bytes(new Uint8Array(buf as ArrayBuffer)));
 }
 
 export interface PdfInspection { pages: number; text: string; pageTexts: string[] }
