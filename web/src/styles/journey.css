@@ -105,7 +105,8 @@
 .passage-controls .island-btn:hover, .passage-controls .frame-btn:hover, .passage-controls .visited-btn:hover { background: var(--parchment); }
 .passage-controls .island-btn:active, .passage-controls .frame-btn:active { transform: translate(-50%, -50%) scale(.98); }
 .passage-controls .island-btn.is-selected, .passage-controls .frame-btn.is-selected, .passage-controls .visited-btn.is-selected { border-color: var(--select); box-shadow: 0 0 0 3px var(--select-ring), var(--shadow-1); }
-.passage-controls .island-btn.is-dim { opacity: .72; }
+/* a non-selected island keeps full-contrast text (opacity .72 put its 11-12 px lines near 3.3:1); only its lift goes, the painted plate dims */
+.passage-controls .island-btn.is-dim { box-shadow: none; }
 .passage-controls .island-btn.is-fog { border-style: dashed; }
 .passage-controls .island-btn.is-closed .ctl-amt { color: var(--closed); }
 .passage-controls .island-btn.is-pending { background: var(--paper-deep); }

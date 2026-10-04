@@ -149,6 +149,7 @@ def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-pref
     h3s = drawer_h3s()
     check(f"{device}: drawer opens with sections", page.locator(".drawer").count() > 0 and all(any(h.startswith(n) for h in h3s) for n in DRAWER_H3), "; ".join(h3s)[:200])
     if not mobile:
+        check(f"{device}: other island labels keep full contrast while one is selected", page.evaluate("[...document.querySelectorAll('.island-btn:not(.is-selected)')].every(b => getComputedStyle(b).opacity === '1')"))
         crumbs = page.locator(".drawer .crumbs, .drawer [class*='crumb']").first.inner_text() if page.locator(".drawer .crumbs, .drawer [class*='crumb']").count() else ""
         check(f"{device}: drawer is a labelled region with crumbs", page.locator("[role=region][aria-label='Procedure details']").count() > 0 and "Island 1 of 2" in crumbs and "Narrow Strait" in crumbs, crumbs[:80])
     hero1 = hero_text()
