@@ -263,6 +263,10 @@ table.grid thead th { background: var(--paper-deep); position: sticky; top: 0; }
 /* ---- documents ---- */
 .documents { display: grid; gap: 1.25rem; grid-template-columns: minmax(0, 1.5fr) minmax(280px, 1fr); }
 .doc-plan { grid-row: span 3; } .doc-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .5rem 1rem; align-items: end; }
+/* mobile-11: the plan select takes the column's width, never its longest option's (main clips horizontal overflow) */
+.doc-head .plan-pick { flex: 1 1 18rem; min-width: 0; max-width: 100%; } .doc-head .plan-pick select { width: 100%; min-height: 44px; text-overflow: ellipsis; }
+/* slop-23: clauses grouped by plan section */
+.clause-group { border-top: 1px solid var(--rule); } .clause-group-head { min-height: 44px; display: flex; align-items: center; gap: .4rem; cursor: pointer; font-family: var(--serif); font-weight: 600; }
 .doc-card { background: var(--paper-deep); border: 1px solid var(--rule); border-radius: 12px; padding: .75rem .9rem; margin: .5rem 0; }
 .doc-card h3 { font-size: 1rem; }
 .filter input { max-width: 320px; }

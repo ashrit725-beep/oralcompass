@@ -1,10 +1,11 @@
-import { Suspense, lazy, useEffect, useState, type ReactNode } from "react";
+import { Suspense, lazy, useEffect, useMemo, useState, type ReactNode } from "react";
 import { api } from "@/lib/api";
 import { UI } from "@/lib/copy";
 import { PLAN } from "@/lib/copy/plan";
 import { ownedFileObjectUrl } from "@/lib/owned-file";
 import { fastPathLabel, groupPlans, summaryFor, uploadLabel, type UploadEvidenceExtras, type UploadSummary } from "@/lib/plan-catalog";
 import { circled } from "@/lib/stitches";
+import { clauseSection, docMetaLine, groupClauses, type ClauseSection } from "@/lib/clauses";
 import type { PlanEvidence, PlanRef, PlanSummary, PrivateDocument, SourceItem, Stitch, UploadedPlanSummary } from "@/lib/types";
 import { isUpload } from "@/lib/types";
 import { RemindersPanel } from "@/components/notifications/RemindersPanel";
@@ -67,6 +68,15 @@ export function DocumentsView({ planCode, plans, onPlan, evidence, stitches, sel
     const r = await api.deleteMe(); setMsg(PLAN.docsDeleted(Object.entries(r.deleted).map(([k, v]) => `${v} ${k}`).join(", ") || PLAN.docsNothingStored)); setMine([]); onRetry();
   }
   const clauses = (evidence?.clauses ?? []).filter((c) => !filter || c.quote.toLowerCase().includes(filter.toLowerCase()) || c.field.toLowerCase().includes(filter.toLowerCase()));
+  // slop-23: one row per distinct sentence (every field it supports, in plain words), grouped by plan section; only the first section
+  // (or the one holding the selected stitch, or every section while filtering) starts open
+  const groups = useMemo(() => groupClauses(clauses), [clauses]);
+  const rowCount = groups.reduce((n, g) => n + g.rows.length, 0);
+  const [openSecs, setOpenSecs] = useState<Partial<Record<ClauseSection, boolean>>>({});
+  useEffect(() => {
+    const hit = selected && (evidence?.clauses ?? []).find((c) => c.doc === selected.doc && c.page === selected.page && c.quote === selected.quote);
+    if (hit) setOpenSecs((o) => ({ ...o, [clauseSection(hit.field)]: true }));
+  }, [selected?.id]); // eslint-disable-line react-hooks/exhaustive-deps
   const pageUrl = primary?.has_stored_pdf && primary.stored_path ? (ownedPath ? ownedUrl : `/${primary.stored_path.replace(/^fixtures\//, "fixtures/")}`) : null;
 
   return (
@@ -88,7 +98,7 @@ export function DocumentsView({ planCode, plans, onPlan, evidence, stitches, sel
         {evidence?.documents.map((d) => (
           <article key={d.version_label} className="doc-card">
             <h3><span className="scope">{d.version_label}</span> {d.title}</h3>
-            <p className="muted small">{d.publisher ?? ""}{d.document_date ? ` · ${PLAN.docsDated} ${d.document_date}` : ""}{d.pages ? ` · ${d.pages} ${PLAN.docsPages}` : ""} · {PLAN.docsRetrieved} {d.retrieved_at ?? UI.notStated} · {d.role}</p>
+            <p className="muted small">{docMetaLine([d.publisher, d.document_date && `${PLAN.docsDated} ${d.document_date}`, d.pages ? `${d.pages} ${PLAN.docsPages}` : null, d.retrieved_at && `${PLAN.docsRetrieved} ${d.retrieved_at}`, d.role])}</p>
             {d.url && <p><a href={d.url} target="_blank" rel="noreferrer">{UI.openSource}</a></p>}
             {!d.has_stored_pdf && d.role === "primary" && <p className="flag">{PLAN.docsNotStoredPdf}</p>}
             {d.has_stored_pdf && d.stored_path?.startsWith("/me/") && <p className="muted small">{PLAN.docsUploadedPdf}</p>}
@@ -102,21 +112,31 @@ export function DocumentsView({ planCode, plans, onPlan, evidence, stitches, sel
           </Suspense>
         )}
         {ownedPath && !ownedUrl && <StageLoader label={UI.renderingDocument} size="sm" />}
-        <h3>{UI.evidenceTitle} ({clauses.length})</h3>
+        <h3>{UI.evidenceTitle} ({rowCount})</h3>
         <label className="filter">{PLAN.docsFilter} <input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder={PLAN.docsFilterPlaceholder} /></label>
-        <ol className="clauses">
-          {clauses.map((c) => {
-            const st = stitches.find((s) => s.doc === c.doc && s.page === c.page && s.quote === c.quote);
-            return (
-              <li key={`${c.doc}-${c.n}`} className={selected && st && selected.id === st.id ? "is-selected" : ""}>
-                <button type="button" className="clause-btn" onClick={() => st && onSelect(st)} aria-pressed={!!(selected && st && selected.id === st.id)}>
-                  <span className="scope">{c.doc}</span> <span className="num">{st ? circled(st.n) : ""}</span> <q>{c.quote}</q>
-                  <span className="where">{c.page_note ?? `p.${c.page}`}{c.section ? ` · ${c.section}` : ""} · {c.field.replace(/\[\d+\]/g, "").replace(/[._]/g, " ")}{c.review_status === "needs_review" ? ` · ${PLAN.docsPageReview}` : ""}</span>
-                </button>
-              </li>
-            );
-          })}
-        </ol>
+        <div className="clause-groups">
+          {groups.map((g, gi) => (
+            <details key={g.section} className="clause-group" open={!!filter || (openSecs[g.section] ?? gi === 0)}
+                     onToggle={(e) => { const open = e.currentTarget.open; if (!filter) setOpenSecs((o) => (o[g.section] === open ? o : { ...o, [g.section]: open })); }}>
+              <summary className="clause-group-head">{g.title} <span className="muted">({g.rows.length})</span></summary>
+              <ol className="clauses">
+                {g.rows.map((r) => {
+                  const c = r.first;
+                  const st = stitches.find((s) => s.doc === c.doc && s.page === c.page && s.quote === c.quote);
+                  const isSel = !!(selected && st && selected.id === st.id);
+                  return (
+                    <li key={r.key} className={isSel ? "is-selected" : ""}>
+                      <button type="button" className="clause-btn" onClick={() => st && onSelect(st)} aria-pressed={isSel}>
+                        <span className="scope">{c.doc}</span> <span className="num">{st ? circled(st.n) : ""}</span> <q>{c.quote}</q>
+                        <span className="where">{docMetaLine([c.page_note ?? (c.page != null ? `p.${c.page}` : null), c.section, r.labels.join(", "), r.all.some((x) => x.review_status === "needs_review") && PLAN.docsPageReview])}</span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ol>
+            </details>
+          ))}
+        </div>
         {(evidence?.conflicts?.length ?? 0) > 0 && (
           <section className="conflicts"><h3><EvidenceBadge status="CONFLICT" /> {UI.conflictTitle}</h3>
             {evidence!.conflicts!.map((c, i) => <article key={i} className="conflict"><h4>{c.field}</h4><p><q>{c.a.quote}</q> ({c.a.doc}, {c.a.date})</p><p><q>{c.b.quote}</q> ({c.b.doc}, {c.b.date})</p><p className="muted small">{c.note}</p></article>)}

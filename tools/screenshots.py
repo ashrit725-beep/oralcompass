@@ -418,6 +418,13 @@ def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-pref
     page.get_by_role("tab", name="Documents").click(); page.wait_for_timeout(1500)
     check(f"{device}: official source link present", page.locator("a[href^='https://oshr.nc.gov']").count() > 0)
     check(f"{device}: clauses listed with page references", page.locator("ol.clauses li").count() > 20)
+    # slop-23: one row per distinct sentence, plain-word captions, meta lines without stray dots; mobile-11: the plan select fits the column
+    dump = page.evaluate("""(() => { const rows = [...document.querySelectorAll('ol.clauses li')]; const keys = rows.map(li => (li.querySelector('.scope')?.textContent || '') + '|' + (li.querySelector('.where')?.textContent || '').split(' · ')[0] + '|' + (li.querySelector('q')?.textContent || ''));
+        const raw = rows.filter(li => /\bcite\b|_/.test(li.querySelector('.where')?.textContent || '')).length;
+        const meta = [...document.querySelectorAll('.doc-card p.muted.small')].filter(p => /^\s*·|Not stated/.test(p.textContent)).length;
+        const pick = document.querySelector('.doc-head label.plan-pick'); const over = pick ? Math.round(pick.getBoundingClientRect().right - document.documentElement.clientWidth) : 0;
+        return { dupes: keys.length - new Set(keys).size, raw, meta, over, sections: document.querySelectorAll('details.clause-group').length }; })()""")
+    check(f"{device}: documents clause list readable", dump["dupes"] == 0 and dump["raw"] == 0 and dump["meta"] == 0 and dump["sections"] >= 2 and dump["over"] <= 0, str(dump))
     check(f"{device}: conflicts preserved", page.get_by_text("Where sources disagree", exact=False).count() > 0)
     check(f"{device}: source inventory listed", page.locator("ul.sources li").count() >= 12)
     groups = page.locator("label.plan-pick select optgroup").evaluate_all("gs => gs.map(g => g.label)")
