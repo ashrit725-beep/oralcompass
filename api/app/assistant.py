@@ -36,7 +36,9 @@ from . import assistant_templates as T
 from .auth import User, current_user
 from . import uploads
 from .data import CODES_BY_KEY, PROC_BY_KEY, PROCEDURES, clauses_from_meta
+from .extraction import llm_mode as _extraction_llm_mode, llm_model as _extraction_llm_model
 from .lint_runtime import guard
+from .redaction import redact
 from .records import derived_benefits
 from .store import NOT_FOUND, repo
 from .templates import (ADVICE_AMOUNTS, ADVICE_LINE_STATUS, ADVICE_RULE_ROW, ADVICE_RULE_ROW_UNSTATED, ADVICE_RULE_WORDS, ADVICE_STEPS_CITED_MANY,
@@ -54,7 +56,12 @@ CLINICAL_KEYWORDS = ("hurt", "pain", "painful", "safe", "infection", "antibiotic
 RATE_LIMIT_N, RATE_LIMIT_WINDOW_S = 30, 600
 LIVE_TIMEOUT_S = 20.0
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
-MONEY_IN_TEXT = re.compile(r"\$\s?\d|\d\s?%|\d\s*(?:dollars|percent)\b|\b(?:dollars|percent)\s*\d", re.IGNORECASE)
+# An amount written into a sentence instead of a {{ref:n}} placeholder (info-only-2): currency signs and codes, percent, comma thousands,
+# decimals, any 3+ digit number, and spelled-out numbers next to dollars/percent/cents. ISO dates are removed before the check.
+_SPELLED = r"(?:zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|fifteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand)"
+MONEY_IN_TEXT = re.compile(r"\$\s?\d|\d\s?%|\d\s*(?:dollars|percent|cents)\b|\b(?:dollars|percent|cents)\s*\d|\b(?:USD|US\$|EUR|GBP)\s?\d"
+                           r"|\d{1,3}(?:,\d{3})+|\b\d+\.\d{1,2}\b|\b\d{3,}\b|\b" + _SPELLED + r"[\s-]+(?:dollars|percent|cents)\b", re.IGNORECASE)
+ISO_DATE = re.compile(r"\b\d{4}-\d{2}-\d{2}\b")
 PLACEHOLDER = re.compile(r"\{\{ref:(\d+)\}\}")
 
 _RATE: dict[str, deque] = {}
@@ -708,7 +715,7 @@ def compose_demo(ctx: Ctx, intent: str, facts: dict, message: str) -> list[dict]
 def check_grounding(text: str, refs: list[dict], allowed: set[str]) -> bool:
     if not any(ref_id(r) in allowed for r in refs):
         return False
-    stripped = PLACEHOLDER.sub(" ", text)
+    stripped = ISO_DATE.sub(" ", PLACEHOLDER.sub(" ", text))
     return not MONEY_IN_TEXT.search(stripped)
 
 
@@ -784,12 +791,13 @@ def suggestions_for(ctx: Ctx, intent: str) -> list[str]:
 
 # ---------- live mode (OpenRouter) ----------
 def llm_mode() -> str:
-    provider = os.getenv("ORALCOMPASS_LLM_PROVIDER", "openrouter").lower()
-    return "live" if (provider == "openrouter" and os.getenv("OPENROUTER_API_KEY")) else "demo"
+    """The one demo/live switch for the whole API (extraction.llm_mode: live only with ORALCOMPASS_LLM_PROVIDER=openrouter AND a key), so
+    /health, the reader, the explainer and the assistant always agree (api-correctness-25)."""
+    return _extraction_llm_mode()
 
 
 def llm_model() -> str:
-    return os.getenv("ORALCOMPASS_LLM_MODEL", "anthropic/claude-haiku-4.5")
+    return _extraction_llm_model()
 
 
 def live_client() -> httpx.Client:        # tests monkeypatch this to inject httpx.MockTransport
@@ -814,12 +822,29 @@ LIVE_SCHEMA = {
 }
 
 
+def _redacted_facts(ctx: Ctx, facts: dict) -> dict:
+    """What the user typed or named never reaches the model unredacted (security-4): an upload's title is its filename, so the model gets a
+    neutral label; free-text provenance strings are redacted."""
+    out = json.loads(json.dumps(facts, default=str))
+    if ctx.plan_ref.startswith("upload:"):
+        out["plan_title"] = f"your uploaded plan ({(ctx.plan_meta.get('source_document') or {}).get('version_label', 'UP')})"
+    ti = out.get("treatment_item")
+    if isinstance(ti, dict):
+        for k in ("source", "allowed_source", "procedure_name"):
+            if isinstance(ti.get(k), str):
+                ti[k] = redact(ti[k])[0]
+    b = out.get("benefits")
+    if isinstance(b, dict) and isinstance(b.get("derivation"), dict):
+        b["derivation"] = {k: redact(v)[0] if isinstance(v, str) else v for k, v in b["derivation"].items()}
+    return out
+
+
 def ask_live(ctx: Ctx, facts: dict, message: str, intent_hint: str) -> tuple[str, list[dict]]:
     """One OpenRouter chat completion with a strict JSON schema. Raises on any failure; the caller falls back to the demo composition."""
     body = {
         "model": llm_model(), "max_tokens": 600, "temperature": 0,
         "messages": [{"role": "system", "content": LIVE_SYSTEM},
-                     {"role": "user", "content": json.dumps({"data": facts, "intent_hint": intent_hint, "question": message}, default=str)}],
+                     {"role": "user", "content": json.dumps({"data": _redacted_facts(ctx, facts), "intent_hint": intent_hint, "question": redact(message)[0]}, default=str)}],
         "response_format": {"type": "json_schema", "json_schema": {"name": "assist_answer", "strict": True, "schema": LIVE_SCHEMA}},
     }
     headers = {"Authorization": f"Bearer {os.environ['OPENROUTER_API_KEY']}", "HTTP-Referer": "https://oralcompass.local", "X-OpenRouter-Title": "OralCompass",

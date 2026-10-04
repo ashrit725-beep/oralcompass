@@ -249,6 +249,7 @@ def test_rate_limit_is_30_per_10_minutes_per_user(alex):
 
 def _mock_live(monkeypatch, handler):
     monkeypatch.setenv("OPENROUTER_API_KEY", "test-key-not-real")
+    monkeypatch.setenv("ORALCOMPASS_LLM_PROVIDER", "openrouter")
     monkeypatch.setenv("ORALCOMPASS_LLM_MODEL", "anthropic/claude-haiku-4.5")
     monkeypatch.setattr(assistant, "live_client", lambda: httpx.Client(transport=httpx.MockTransport(handler)))
 
@@ -345,3 +346,29 @@ def test_assistant_on_an_uploaded_plan_uses_benefits_versions_and_never_the_igno
     assert client.post(f"/me/documents/{doc_id}/publish", headers=h).json()["version_label"] == "UP2"
     ctx2 = assistant.load_scope(User(sub), assistant.AssistScope(plan_ref=ref, estimate_id=est1["id"], line_index=0))
     assert {c["doc"] for c in ctx2.clauses} == {"UP1"} and assistant.get_clause(ctx2, stitch) is not None
+
+
+def test_one_live_switch_redacted_question_and_bare_amounts_dropped(alex, monkeypatch):
+    """api-correctness-25 (provider unset = demo everywhere), security-4 (question and upload title redacted before the model) and
+    info-only-2 (amounts written as 1,500 / USD 392 / fifty percent / 392.00 are not grounded)."""
+    from app import extraction
+    monkeypatch.delenv("ORALCOMPASS_LLM_PROVIDER", raising=False)
+    monkeypatch.setenv("OPENROUTER_API_KEY", "k")
+    assert assistant.llm_mode() == extraction.llm_mode() == "demo"
+    r = [assistant.step_ref(0, 0, "x")]
+    allowed = {assistant.ref_id(r[0])}
+    for bad in ("The annual maximum is 1,500 for the year {{ref:0}}.", "The plan pays fifty percent of {{ref:0}}.", "You pay USD 392 on this line {{ref:0}}.",
+                "You owe 392.00 here {{ref:0}}.", "You owe 392 here {{ref:0}}.", "The plan pays $1,500 {{ref:0}}."):
+        assert assistant.check_grounding(bad, r, allowed) is False, bad
+    assert assistant.check_grounding("Tooth 19, statement dated 2026-09-20: your share is {{ref:0}}.", r, allowed) is True
+    seen = {}
+
+    def handler(request):
+        seen["body"] = json.loads(request.content)
+        return httpx.Response(200, json={"choices": [{"message": {"content": json.dumps({"intent": "explain_step", "sentences": []})}}]})
+
+    _mock_live(monkeypatch, handler)
+    ask("My member ID: ABC123456, call 919-555-0100. What share does the plan pay?", estimate_id=alex["est"]["id"], line_index=0, step_key="CO")
+    sent = json.loads(seen["body"]["messages"][1]["content"])
+    assert "ABC123456" not in sent["question"] and "919-555-0100" not in sent["question"] and "What share" in sent["question"]
+    assert "Harbor Light" not in assistant.T.WHAT_IF and "does not compute hypotheticals" in assistant.T.WHAT_IF          # info-only-7
