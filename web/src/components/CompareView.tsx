@@ -1,22 +1,31 @@
 import { useEffect, useState } from "react";
-import { api } from "../lib/api";
-import { UI } from "../lib/copy";
-import type { Benefits, ComparisonResponse, PlanFixture, PlanSummary, TreatmentItem } from "../lib/types";
-import { ComparisonGrid } from "./ComparisonGrid";
+import { api } from "@/lib/api";
+import { UI } from "@/lib/copy";
+import { PLAN } from "@/lib/copy/plan";
+import { fastPathLabel, groupPlans, uploadLabel, type UploadSummary } from "@/lib/plan-catalog";
+import type { Benefits, ComparisonResponse, PlanRef, PlanSummary, TreatmentItem } from "@/lib/types";
+import { ComparisonGrid, type GridPlan } from "./ComparisonGrid";
 import { EvidenceBadge } from "./Primitives";
 
 interface Props { plans: PlanSummary[]; items: TreatmentItem[]; benefits: Benefits[]; initial: string[] }
 
 function monthsBetween(a: Date, b: Date) { return (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth()) - (b.getDate() < a.getDate() ? 1 : 0); }
 
-/** Compare: up to three plans in the order you pick. Per-plan inputs come only from that plan's own records; nothing is copied between plans. */
+/**
+ * Compare (spec §2.2; CLAUDE.md rule 6): up to three plan refs (presets or your published uploads) in the order you pick. Per-plan inputs
+ * come only from that plan's own benefits record; a plan with no record gets nothing (its column stays unresolved); nothing is copied
+ * between plans. The pickers are grouped native selects (carrier optgroups, fictional plans under their own group, uploads last).
+ */
 export function CompareView({ plans, items, benefits, initial }: Props) {
-  const [picked, setPicked] = useState<string[]>(initial.slice(0, 3));
+  const [picked, setPicked] = useState<PlanRef[]>(initial.slice(0, 3));
+  const [uploads, setUploads] = useState<UploadSummary[]>([]);
   const [data, setData] = useState<ComparisonResponse | null>(null);
-  const [models, setModels] = useState<Record<string, PlanFixture>>({});
+  const [models, setModels] = useState<Record<string, GridPlan>>({});
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const planned = items.filter((i) => i.status === "planned" || i.status === "scheduled");
+  const carriers = groupPlans(plans);
+  useEffect(() => { api.myPlans().then((r) => setUploads(r.items as UploadSummary[])).catch(() => setUploads([])); }, []);
 
   async function run() {
     if (picked.length < 2 || planned.length === 0) return;
@@ -37,31 +46,41 @@ export function CompareView({ plans, items, benefits, initial }: Props) {
           allowed_overrides: overrides,
         };
       }
-      const [cmp, ...ms] = await Promise.all([api.comparison({ plan_refs: picked, lines, states }), ...picked.map((c) => api.plan(c))]);
-      setData(cmp); setModels(Object.fromEntries(ms.map((m) => [m.model.plan_code, m.model])));
+      const [cmp, ...ms] = await Promise.all([api.comparison({ plan_refs: picked, lines, states }), ...picked.map((c) => api.planByRef(c))]);
+      // the engine keys columns and ledgers by the model's plan_code (an upload's is its UPn label): map each column back to the ref picked
+      const byColumn: Record<string, GridPlan> = {};
+      ms.forEach((m, i) => { byColumn[m.model.plan_code] = { model: m.model, ref: picked[i] }; byColumn[picked[i]] = { model: m.model, ref: picked[i] }; });
+      setData(cmp); setModels(byColumn);
     } catch (e: any) { setErr(e.message); } finally { setBusy(false); }
   }
   useEffect(() => { run(); /* eslint-disable-line */ }, [picked.join(","), planned.length]);
 
+  const taken = (i: number, code: string) => picked.includes(code) && picked[i] !== code;
   return (
     <section className="compare-view" aria-labelledby="cv-h">
       <h2 id="cv-h">{UI.availabilityBanner}</h2>
       <p className="muted">{UI.comparisonNote}</p>
       <div className="pickers">
         {[0, 1, 2].map((i) => (
-          <label key={i}>Plan {i + 1}
+          <label key={i}>{PLAN.cmpPicker(i + 1)}
             <select value={picked[i] ?? ""} onChange={(e) => { const v = e.target.value; setPicked((p) => { const n = [...p]; if (v) n[i] = v; else n.splice(i, 1); return n.filter(Boolean); }); }}>
-              <option value="">—</option>
-              {plans.map((p) => <option key={p.plan_code} value={p.plan_code} disabled={picked.includes(p.plan_code) && picked[i] !== p.plan_code}>{p.title}{p.is_fictional ? " (fictional)" : ""}</option>)}
+              <option value="">{PLAN.cmpNone}</option>
+              {carriers.filter((c) => !c.fictional).map((c) => (
+                <optgroup key={c.key} label={c.label}>{c.plans.flatMap((p) => p.years.map((y) => <option key={y.code} value={y.code} disabled={taken(i, y.code)}>{fastPathLabel(y.summary)}</option>))}</optgroup>
+              ))}
+              {carriers.some((c) => c.fictional) && (
+                <optgroup label={PLAN.fictionalGroup}>{carriers.filter((c) => c.fictional).flatMap((c) => c.plans.flatMap((p) => p.years.map((y) => <option key={y.code} value={y.code} disabled={taken(i, y.code)}>{fastPathLabel(y.summary)}</option>)))}</optgroup>
+              )}
+              {uploads.length > 0 && <optgroup label={PLAN.uploadsGroup}>{uploads.map((u) => <option key={u.plan_code} value={u.plan_code} disabled={taken(i, u.plan_code)}>{uploadLabel(u)}</option>)}</optgroup>}
             </select>
           </label>
         ))}
       </div>
-      <p className="muted small">Procedures compared: {planned.length ? planned.map((i) => `${i.procedure_name ?? i.procedure_key}${i.tooth ? ` (tooth ${i.tooth})` : ""}`).join("; ") : "none recorded as planned"}. Usage figures exist for: {benefits.map((b) => b.plan_code).join(", ") || "no plan"} — other columns show what is not provided.</p>
+      <p className="muted small">{PLAN.cmpProcedures(planned.length ? planned.map((i) => `${i.procedure_name ?? i.procedure_key}${i.tooth ? ` (tooth ${i.tooth})` : ""}`).join("; ") : PLAN.cmpNoneRecorded)} {PLAN.cmpUsageFor(benefits.map((b) => b.plan_code).join(", ") || PLAN.cmpNone)}</p>
       {busy && <p className="muted" role="status">{UI.processing}</p>}
       {err && <p className="error" role="alert">{err}</p>}
       {data && <ComparisonGrid data={data} plans={models} />}
-      {!data && !busy && planned.length === 0 && <p><EvidenceBadge status="UNKNOWN" /> No planned procedures to compare. Add a treatment plan on My journey first.</p>}
+      {!data && !busy && planned.length === 0 && <p><EvidenceBadge status="UNKNOWN" /> {PLAN.cmpNoPlanned}</p>}
     </section>
   );
 }

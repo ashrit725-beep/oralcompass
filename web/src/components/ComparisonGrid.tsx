@@ -1,69 +1,156 @@
-import { UI } from "../lib/copy";
-import type { ComparisonResponse, PlanFixture } from "../lib/types";
-import { EvidenceBadge } from "./Primitives";
+import { Fragment, Suspense, lazy, useState } from "react";
+import { LayoutGroup, motion } from "motion/react";
+import { UI } from "@/lib/copy";
+import { PLAN } from "@/lib/copy/plan";
+import { ledgerEvidence } from "@/lib/compass-model";
+import type { ComparisonResponse, GridCell, PlanFixture } from "@/lib/types";
+import { useMobile } from "@/hooks/useMobile";
+import { Button } from "@/components/ui/button";
+import { Drawer, DrawerClose, DrawerContent, DrawerDescription, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
+import { Popover, PopoverContent, PopoverDescription, PopoverHeader, PopoverTitle, PopoverTrigger } from "@/components/ui/popover";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Money } from "@/components/Money";
+import { EvidenceBadge } from "@/components/Primitives";
 
-interface Props { data: ComparisonResponse; plans: Record<string, PlanFixture> }
+// rough-notation stays out of the main chunk (component plan §3.2): one evidential underline per clause card.
+const Highlighter = lazy(() => import("@/components/magicui/highlighter").then((m) => ({ default: m.Highlighter })));
 
-/** Fixed topic rows, one column per plan in the USER's order, factual differences, eligibility under every header. No sort, no winner. */
+/** One column of the grid: the plan model the API resolved for that column plus the ref the user picked. */
+export interface GridPlan { model: PlanFixture; ref: string }
+interface Props { data: ComparisonResponse; plans: Record<string, GridPlan> }
+
+/**
+ * ComparisonGrid (component plan N12; CLAUDE.md rule 6). shadcn Table, `table-fixed` + `<colgroup>` for equal columns, sticky header
+ * in a `max-h-[70dvh] overflow-auto scroll-fade-x` container; columns in the USER's order, no sort, no winner; the eligibility quote
+ * under every column header; the factual-differences sentence under every row. Every cell is a 44 px PopoverTrigger whose card is the
+ * paired clause (document label, page, quote with one terracotta Highlighter underline, evidence badge); at phone width the card opens
+ * in the Drawer instead. The cell's text and the card's figure share a Motion `layoutId` inside one `LayoutGroup` so the value hops to
+ * its card (MotionConfig disables the hop under reduced motion). Rails: the same estimate per plan, totals through <Money>.
+ */
 export function ComparisonGrid({ data, plans }: Props) {
   const cols = data.result.columns;
+  const titleOf = (c: string) => plans[c]?.model.title ?? c;
   return (
-    <section className="compare" aria-labelledby="cmp-h">
-      <h2 id="cmp-h">Side by side</h2>
-      <p className="banner">{UI.availabilityBanner}</p>
-      <p className="note">{UI.comparisonNote}</p>
-      <div className="grid-scroll">
-        <table className="grid">
-          <thead>
-            <tr>
-              <th scope="col">Topic</th>
+    <LayoutGroup id="compare">
+      <section className="compare" aria-labelledby="cmp-h">
+        <h2 id="cmp-h">{PLAN.cmpTitle}</h2>
+        <Table containerClassName="grid-scroll max-h-[70dvh] overflow-auto scroll-fade-x rounded-xl border border-rule" className="grid table-fixed min-w-[640px] text-[.9rem]">
+          <colgroup><col style={{ width: "20%" }} />{cols.map((c) => <col key={c} />)}</colgroup>
+          <TableHeader>
+            <TableRow>
+              <TableHead scope="col" className="sticky top-0 z-10 bg-paper-deep align-top whitespace-normal">{PLAN.cmpTopic}</TableHead>
               {cols.map((c) => {
-                const p = plans[c];
+                const p = plans[c]?.model;
                 return (
-                  <th scope="col" key={c}>
+                  <TableHead scope="col" key={c} className="sticky top-0 z-10 bg-paper-deep align-top whitespace-normal">
                     <div className="plan-h">
-                      <strong>{p?.title ?? c}</strong>
+                      <strong>{titleOf(c)}</strong>
                       {p?.is_fictional && <span className="ribbon">{UI.fictional}</span>}
-                      {p?.catalog && <small>{p.catalog.where_offered.text} · Eligibility: {p.catalog.eligibility.text}</small>}
+                      {p?.source_document.document_type === "uploaded_plan_document" && <span className="ribbon">{PLAN.uploadedRibbon(p.source_document.version_label)}</span>}
+                      <small>{p?.catalog?.where_offered?.text ? `${p.catalog.where_offered.text} · ` : ""}{PLAN.cmpEligibility}: {p?.catalog?.eligibility?.text ?? UI.availabilityBanner}</small>
                     </div>
-                  </th>
+                  </TableHead>
                 );
               })}
-            </tr>
-          </thead>
-          <tbody>
-            {data.result.grid.map((row) => (
-              <>
-                <tr key={row.topic}>
-                  <th scope="row">{row.topic}</th>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {data.result.grid.map((row, ri) => (
+              <Fragment key={row.topic}>
+                <TableRow>
+                  <TableHead scope="row" className="align-top whitespace-normal font-medium">{row.topic}</TableHead>
                   {row.cells.map((cell, i) => (
-                    <td key={i}><div>{cell.text}</div><EvidenceBadge status={cell.badge} />{cell.cite && <small className="cite"> {cell.cite}</small>}</td>
+                    <TableCell key={i} className="align-top whitespace-normal p-1">
+                      <ClauseCell cell={cell} topic={row.topic} planTitle={titleOf(cols[i])} layoutId={`cmp-${ri}-${i}`} />
+                    </TableCell>
                   ))}
-                </tr>
-                <tr key={row.topic + "-d"} className="differences"><td colSpan={cols.length + 1}>{row.differences}</td></tr>
-              </>
+                </TableRow>
+                <TableRow className="differences"><TableCell colSpan={cols.length + 1} className="whitespace-normal italic">{row.differences}</TableCell></TableRow>
+              </Fragment>
             ))}
-          </tbody>
-        </table>
-      </div>
-      <h3>Same estimate, each plan</h3>
-      <div className="rails">
-        {cols.map((c) => {
-          const L = data.result.ledgers[c];
-          return (
-            <article key={c} className="rail" aria-label={`${c} ledger`}>
-              <h4>{plans[c]?.title ?? c}</h4>
-              {L.status === "unresolved" ? (
-                <p className="unresolved"><EvidenceBadge status="UNKNOWN" /> {UI.unresolved} {L.not_provided.join(", ")}</p>
-              ) : (
-                <p className="hero"><span className="total">${(L.patient_total_cents! / 100).toFixed(2)}</span><span className="sub">{UI.planPays}: ${(L.plan_total_cents! / 100).toFixed(2)}{L.plan_total_is_upper_bound ? " (upper bound)" : ""}</span></p>
-              )}
-              {L.flags.map((f, i) => <p key={i} className="flag">{f}</p>)}
-              <p className="note">Premium (employee only, monthly): {plans[c]?.premium_monthly?.employee_only?.value != null ? `$${(plans[c].premium_monthly.employee_only.value! / 100).toFixed(2)}` : "not stated in this document"}</p>
-            </article>
-          );
-        })}
-      </div>
-    </section>
+          </TableBody>
+        </Table>
+
+        <h3>{PLAN.cmpLedgers}</h3>
+        <div className="rails">
+          {cols.map((c) => {
+            const L = data.result.ledgers[c];
+            const p = plans[c]?.model;
+            const premium = p?.premium_monthly?.employee_only ?? p?.premium_monthly?.self_only;
+            return (
+              <article key={c} className="rail" aria-label={PLAN.cmpLedgerOf(titleOf(c))}>
+                <h4>{titleOf(c)}</h4>
+                {!L || L.status === "unresolved" ? (
+                  <p className="unresolved"><EvidenceBadge status="UNKNOWN" /> {PLAN.cmpUnresolvedFor} {L?.not_provided.join(", ")}</p>
+                ) : (
+                  <p className="hero">
+                    <span className="rail-total"><Money cents={L.patient_total_cents} evidence={ledgerEvidence(L)} className="total" /></span>
+                    <span className="sub">{UI.planPays}: <Money cents={L.plan_total_cents} evidence={ledgerEvidence(L)} />{L.plan_total_is_upper_bound ? ` ${PLAN.cmpUpperBound}` : ""}</span>
+                  </p>
+                )}
+                {L?.flags.map((f, i) => <p key={i} className="flag">{f}</p>)}
+                <p className="note">{PLAN.cmpPremium}: {premium?.value != null ? <Money cents={premium.value} evidence={premium.status} /> : <><span>{UI.notStated}</span> <EvidenceBadge status="UNKNOWN" /></>}</p>
+              </article>
+            );
+          })}
+        </div>
+      </section>
+    </LayoutGroup>
+  );
+}
+
+/** A grid cell: value + badge as a 44 px trigger; the paired clause opens in a Popover (desktop) or the Drawer (phone). */
+function ClauseCell({ cell, topic, planTitle, layoutId }: { cell: GridCell; topic: string; planTitle: string; layoutId: string }) {
+  const mobile = useMobile();
+  const [open, setOpen] = useState(false);
+  const isAmount = cell.text.includes("$");
+  const face = (
+    <span className="cmp-cell-face">
+      <motion.span layoutId={open ? undefined : layoutId} className={isAmount ? "amt" : "cmp-cell-text"}>{cell.text}</motion.span>
+      <EvidenceBadge status={cell.badge} />
+      {cell.cite && <small className="cite">{cell.cite}</small>}
+    </span>
+  );
+  const trigger = (
+    <Button variant="ghost" size="touch" className="cmp-cell h-auto w-full justify-start px-2 py-1.5 text-left font-normal whitespace-normal" aria-label={PLAN.cmpOpenClause(topic, planTitle)} aria-expanded={open}>
+      {face}
+    </Button>
+  );
+  const card = (
+    <div className="cmp-card">
+      <p className="cmp-card-figure"><motion.span layoutId={open ? layoutId : undefined} className={isAmount ? "amt" : undefined}>{cell.text}</motion.span> <EvidenceBadge status={cell.badge} /></p>
+      {cell.quote ? (
+        <figure className="wording">
+          <blockquote><Suspense fallback={<>“{cell.quote}”</>}>“<Highlighter action="underline">{cell.quote}</Highlighter>”</Suspense></blockquote>
+          {cell.cite && <figcaption>{cell.cite}</figcaption>}
+        </figure>
+      ) : (
+        <p className="note">{PLAN.cmpNoClause}{cell.cite ? ` (${cell.cite})` : ""}</p>
+      )}
+    </div>
+  );
+  if (mobile) {
+    return (
+      <Drawer open={open} onOpenChange={setOpen} direction="bottom">
+        <DrawerTrigger asChild>{trigger}</DrawerTrigger>
+        <DrawerContent handleLabel={PLAN.cmpClose}>
+          <div className="px-4 pb-6">
+            <DrawerTitle>{topic}</DrawerTitle>
+            <DrawerDescription>{planTitle}</DrawerDescription>
+            {card}
+            <DrawerClose asChild><Button variant="outline" size="touch" className="mt-3">{PLAN.cmpClose}</Button></DrawerClose>
+          </div>
+        </DrawerContent>
+      </Drawer>
+    );
+  }
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>{trigger}</PopoverTrigger>
+      <PopoverContent align="start">
+        <PopoverHeader><PopoverTitle>{topic}</PopoverTitle><PopoverDescription>{planTitle}</PopoverDescription></PopoverHeader>
+        {card}
+      </PopoverContent>
+    </Popover>
   );
 }
