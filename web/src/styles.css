@@ -109,7 +109,8 @@ label { display: flex; flex-direction: column; gap: .25rem; font-size: .9rem; co
 .processing { margin: .5rem 1rem; color: var(--ink-soft); display: flex; align-items: center; gap: .5rem; }
 .view { flex: 1; padding: 1rem; }
 .hint { color: var(--ink-soft); font-style: italic; }
-.flag { background: rgba(197, 154, 60, .12); border-left: 3px solid var(--gold); padding: .4rem .7rem; border-radius: 0 8px 8px 0; font-size: .9rem; margin: .5rem 0; }
+.flag { position: relative; background: color-mix(in srgb, var(--parchment) 45%, transparent); border: 1px solid var(--rule); padding: .4rem .7rem .4rem 2rem; border-radius: var(--r-2); font-size: .9rem; margin: .5rem 0; }
+.flag::before { content: ""; position: absolute; left: .7rem; top: .78em; width: .7rem; height: .7rem; border: 1.5px dashed var(--ink-soft); border-radius: 50%; }
 .note { font-size: .875rem; color: var(--ink-soft); margin: .35rem 0; }
 .could-change { font-size: .85rem; color: var(--ink-soft); border-top: 1px dashed var(--rule); padding-top: .5rem; margin-top: .75rem; }
 

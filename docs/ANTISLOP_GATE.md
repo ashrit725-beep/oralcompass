@@ -84,7 +84,7 @@ My plan atlas, which read as a cream-themed admin panel.
 | R-14 cards | **FAIL** (slop-27, slop-12) | Identical care cards; duplicated callout cards in Compare |
 | R-19 motion | **FAIL** (slop-26) | Scroll parallax on the fog layer (`OceanLayers.tsx:19-20`), which spec §5.5 forbids |
 | R-22 illustration | **FAIL** (slop-21, slop-28) | My plan flat vector atlas; phone header crop of empty water |
-| Colored left stripe (antislop-ui, anti-ai-slop P0) | **FAIL** (slop-13) | `.flag`, `.rm-item`, `.up-note`, `.up-quote`, `.as-mode`, `.wording`, `.tpr-ribbon` (`desktop-09-compare.png`, `desktop-10-documents.png`, `desktop-06-lighthouse.png`) |
+| Colored left stripe (antislop-ui, anti-ai-slop P0) | **PASS** (fix/web-shell, 2026-10-04: `.flag` is a parchment line led by the dashed fog glyph; `.rm-item` a hairline ledger row; `.up-note` lost the rule; `.tpr-ribbon` and `.as-template` use a full hairline border. Kept by design: the clause quotes `.wording` / `.up-quote` (a quotation mark, spec line 71), the `--sand` caption rule `.as-mode`, and the confidence rows that encode state); was FAIL (slop-13) | `.flag`, `.rm-item`, `.up-note`, `.up-quote`, `.as-mode`, `.wording`, `.tpr-ribbon` (`desktop-09-compare.png`, `desktop-10-documents.png`, `desktop-06-lighthouse.png`) |
 
 ### Block 3: Liveliness
 

@@ -37,8 +37,8 @@
 
 /* ---- result ---- */
 .tpr-result { display: grid; gap: var(--s-2); border-top: 1px solid var(--rule); padding-top: var(--s-3); }
-.tpr-ribbon { margin: 0; padding: var(--s-2) var(--s-3); font-size: .85rem; line-height: 1.45; background: var(--paper-deep); border-left: 3px solid var(--gold); border-radius: var(--r-1); }
-.tpr-ribbon.is-live { border-left-color: var(--water-ink); }
+.tpr-ribbon { margin: 0; padding: var(--s-2) var(--s-3); font-size: .85rem; line-height: 1.45; background: var(--paper-deep); border: 1px solid var(--rule); border-radius: var(--r-2); }
+.tpr-ribbon.is-live { border-color: var(--water-ink); }
 .tpr-stages { display: flex; flex-wrap: wrap; gap: var(--s-1) var(--s-3); list-style: none; margin: 0; padding: 0; font-size: .8rem; color: var(--ink-soft); }
 .tpr-stages li.is-done span { color: var(--forest-text); font-weight: 700; }
 .tpr-stages li.is-not { opacity: .6; }
