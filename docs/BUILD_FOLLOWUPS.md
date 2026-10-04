@@ -18,7 +18,7 @@ Status legend: OPEN · DONE · DEFERRED (with reason). Every item names the file
 6. DEFERRED (scope) — reminders cover `interval_months` and `calendar_count` clocks only (matches the engine's enforced clocks).
 
 ## Web (observed by the orchestrator in the builders' in-progress screenshots, 2026-10-03 21:55; verify after integration)
-7. OPEN — Passage map label collisions (`components/atlas/PassageControls.tsx`, `Soundings.tsx`, `lib/passage.ts` layout): the soundings lozenge after the
+7. DONE (delight pass 2026-10-04: soundings placed by a collision pass against every control and each other, vitest added; island buttons 152 px so titles fit on two lines; visited chips 112 × 52 px with two-line names; 'Adult cleaning (prophylaxis)' still clamps, full name in the accessible name and title) — Passage map label collisions (`components/atlas/PassageControls.tsx`, `Soundings.tsx`, `lib/passage.ts` layout): the soundings lozenge after the
    root canal sits on top of the crown island button; the crown title truncates ("Crown, porcelain/cera…"); visited-island chips truncate ("Periodic oral..",
    "Adult cleani...", "Bitewing x-..."). Check: no control rectangle overlaps another (assert in layoutPassage), full titles visible or available via the
    accessible name + a 2-line clamp, soundings placed on the route between islands, not on a label.
@@ -41,7 +41,7 @@ AssistResponse ribbon, template `out_of_scope`, UploadResponse mode/note, `Benef
 (PlanView and the drawer call it after a PUT/POST); `ClauseCard` gets `askScope` from App; `StartSections` imports the Benefit statement form
 statically; `vite.config.ts` splits react/radix/vaul into `ui-vendor` (main 121 KB gzip, no Rollup advisory); `styles.css` `.grid` → `table.grid`;
 `ComparisonGrid` keeps the cell value printed while its clause card is open.
-11. OPEN — Compare `tr.differences` rows (the API's per-topic difference sentence, e.g. "MetLife NCFlex Dental: $37.94; Delta Dental PPO: $41.57")
+11. DONE (delight pass 2026-10-04: the sentence renders as the accessible summary only, sr-only; no visible unbadged figures) — Compare `tr.differences` rows (the API's per-topic difference sentence, e.g. "MetLife NCFlex Dental: $37.94; Delta Dental PPO: $41.57")
    print figures without a badge; the cells above them are badged. Either badge each figure in the sentence or render the row as the accessible
    summary only. `tools/screenshots.py` excludes `tr.differences` from the compare evidence check until then.
 12. OPEN — Vendored shadcn radix-nova components lack `forwardRef` under React 18 (ui/drawer.tsx DrawerOverlay, ui/textarea.tsx, ui/button.tsx under
