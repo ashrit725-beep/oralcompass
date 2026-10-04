@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
 import { UPLOAD } from "@/lib/copy/upload";
 import { errorBody, PREVIEW_SHOWN_CHARS } from "@/lib/upload";
+import { PaneHeading } from "./PaneHeading";
 
 /**
  * RedactionPreview (spec §7.3 step 2): what was removed before any model call, the first 1,200 characters of the redacted text in a
@@ -46,7 +47,7 @@ export function RedactionPreview({ docId, preview, onPreview, onContinue, busy }
 
   return (
     <div className="up-redaction">
-      <h3 className="up-h3">{UPLOAD.redactionTitle}</h3>
+      <PaneHeading>{UPLOAD.redactionTitle}</PaneHeading>
       <p className="up-removed">{UPLOAD.removed(preview.removed.join(", "))}</p>
       {terms.length > 0 && <p className="up-removed">{UPLOAD.extraTerms(terms.join(", "))}</p>}
       <p className="up-caption">{UPLOAD.previewIntro}</p>

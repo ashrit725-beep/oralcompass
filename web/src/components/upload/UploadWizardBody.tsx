@@ -6,6 +6,7 @@ import { UPLOAD } from "@/lib/copy/upload";
 import type { PlanRef, UploadedPlanSummary } from "@/lib/types";
 import { isTerminal, pollExtraction, type ExtractionStatusFull, type UploadResponseX } from "@/lib/upload";
 import { ExtractionProgress } from "./ExtractionProgress";
+import { PaneHeading } from "./PaneHeading";
 import { PlanUpload } from "./PlanUpload";
 import { RedactionPreview } from "./RedactionPreview";
 import { ReviewTable, type PublishResult } from "./ReviewTable";
@@ -91,8 +92,8 @@ export function UploadWizardBody({ onPublished, onClose, onStepChange }: UploadW
         </Step>
         <Step>
           {published ? (
-            <div className="up-published" role="status" aria-live="polite">
-              <h3 className="up-h3">{UPLOAD.published(published.version_label)}</h3>
+            <div className="up-published">
+              <PaneHeading>{UPLOAD.published(published.version_label)}</PaneHeading>
               <p>{UPLOAD.publishedBody(published.version_label)}</p>
               {published.summary.is_fictional && <p className="ribbon up-ribbon">{UPLOAD.fictional}</p>}
               <div className="up-actions"><Button type="button" size="touch" onClick={onClose}>{UPLOAD.close}</Button></div>

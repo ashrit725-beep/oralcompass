@@ -553,7 +553,12 @@ def upload_walk(page, device: str, shot):
     page.get_by_role("button", name="Continue with these redactions").click()
     page.wait_for_selector("text=Review the fields", timeout=240000); page.wait_for_timeout(500)
     stage_rows = page.locator(".up-stage-row").count()
+    focus_h = lambda: page.evaluate("(() => { const a = document.activeElement; return a && a.tagName === 'H3' ? a.textContent.trim() : (a ? a.tagName : ''); })()")
+    at_extraction = focus_h()
     page.get_by_role("button", name="Review the fields").click(); page.wait_for_timeout(800)
+    at_review = focus_h()
+    # a11y-7: each new wizard step moves focus to its heading
+    check(f"{device}: upload step changes move focus to the new heading", at_extraction == "Extraction" and at_review == "Review the extracted fields", f"{at_extraction!r} / {at_review!r}")
     confirmed = page.locator(".up-row[data-confidence=confirmed]").count()
     decided = page.locator(".up-row[data-decided]").count()
     hb_disabled = page.evaluate("(() => { const b = document.querySelector('[role=dialog] .hb-root'); return !!b && (b.disabled || b.getAttribute('aria-disabled') === 'true'); })()")

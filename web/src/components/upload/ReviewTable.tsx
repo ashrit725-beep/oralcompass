@@ -6,6 +6,7 @@ import { api } from "@/lib/api";
 import { UPLOAD } from "@/lib/copy/upload";
 import type { ExtractedField, PlanRef, ReviewDecision, UploadedPlanSummary } from "@/lib/types";
 import { createSerialGate, groupByLandmark, labelFor, publishErrorCopy, reviewErrorCopy, undecidedRequired, verifiedUndecided, type ExtractionStatusFull } from "@/lib/upload";
+import { PaneHeading } from "./PaneHeading";
 import { ReviewRow } from "./ReviewRow";
 
 export interface PublishResult { plan_ref: PlanRef; version_label: string; published_at: string; sha256: string; summary: UploadedPlanSummary }
@@ -79,7 +80,7 @@ export function ReviewTable({ docId, status, onFields, onPublished }: ReviewTabl
 
   return (
     <div className="up-review">
-      <h3 className="up-h3">{UPLOAD.reviewTitle}</h3>
+      <PaneHeading>{UPLOAD.reviewTitle}</PaneHeading>
       {status.ribbon && <p className={status.mode === "demo" ? "ribbon up-ribbon" : "up-mode-line"}>{status.ribbon}</p>}
       <p className="up-caption">{UPLOAD.reviewIntro}</p>
       {status.notes_for_review?.paraphrase && <p className="up-note">{status.notes_for_review.paraphrase}</p>}

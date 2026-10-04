@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { UPLOAD } from "@/lib/copy/upload";
 import { transitions, useReducedMotion } from "@/lib/motion";
 import { isTerminal, stageCopy, stageProgress, type ExtractionStatusFull } from "@/lib/upload";
+import { PaneHeading } from "./PaneHeading";
 
 /**
  * ExtractionProgress (spec §7.3 step 3, component plan N6/N7): the server's real `stages[]` as StatusMark rows (done / running / pending;
@@ -36,7 +37,7 @@ export function ExtractionProgress({ status, starting, pollError, onReview }: Ex
   if (!status) {
     return (
       <div className="up-extraction">
-        <h3 className="up-h3">{UPLOAD.extractionTitle}</h3>
+        <PaneHeading>{UPLOAD.extractionTitle}</PaneHeading>
         <StageLoader label={starting ? UPLOAD.startingExtraction : UPLOAD.extractionNotStarted} size="sm" />
       </div>
     );
@@ -51,7 +52,7 @@ export function ExtractionProgress({ status, starting, pollError, onReview }: Ex
 
   return (
     <div className="up-extraction">
-      <h3 className="up-h3">{UPLOAD.extractionTitle}</h3>
+      <PaneHeading>{UPLOAD.extractionTitle}</PaneHeading>
       {status.ribbon && <p className={status.mode === "demo" ? "ribbon up-ribbon" : "up-mode-line"}>{status.ribbon}</p>}
       {status.mode === "live" && status.model && <p className="up-caption">{UPLOAD.modelLine(status.model)}</p>}
       <StageLoader
