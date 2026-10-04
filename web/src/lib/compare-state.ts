@@ -2,7 +2,7 @@ import type { Benefits, PlanRef, TreatmentItem } from "./types";
 
 /**
  * Per-plan member state for POST /comparisons (CLAUDE.md rule 6: nothing transfers between plans). It mirrors the server's
- * `records.member_state` so a Compare column and the saved estimate for the same plan read the same inputs:
+ * `records.member_state` so a Compare column and the stored journey estimate for the same plan read the same inputs:
  * - usage (remaining deductible / maximum), enrollment, claim history and the record's default network come only from THAT plan's own
  *   benefits record;
  * - allowed amounts and network status written on treatment items have no plan of their own: they were entered against the plan the
