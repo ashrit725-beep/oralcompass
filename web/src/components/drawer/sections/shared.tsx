@@ -80,7 +80,7 @@ export function Figure({ cents, evidence, stitch, stitches, onSelectStitch, sign
     <span className={cn("fig", hero && "fig-hero", missing && "fig-missing", className)} data-amount={missing ? undefined : text}>
       {roll && !missing ? <Money cents={cents} evidence={evidence} signed={isSigned} /> : (
         <>
-          <span className="amt font-sans tabular-nums text-ink" aria-label={missing ? DRAWER.noAmount : undefined}>{text}</span>
+          <span className="amt font-sans tabular-nums text-ink">{missing ? <><span aria-hidden="true">{text}</span><span className="sr-only">{DRAWER.noAmount}</span></> : text}</span>
           {asCalc ? <span className="fig-calc">{DRAWER.calculated}</span> : <EvidenceBadge status={missing ? "UNKNOWN" : evidence} />}
         </>
       )}
