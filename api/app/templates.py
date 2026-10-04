@@ -88,7 +88,7 @@ PUSH_TEST_BODY = "A date you chose to follow is approaching. Open the app for de
 
 # ---------- AI treatment-plan reader (addendum D.5a): line items as written; mapping only to the 16 fixed identifiers ----------
 READER_STAGE_LABELS = {
-    "reading": "Reading the text",
+    "reading": "Reading the document",
     "redacting": "Removing personal details",
     "reading_lines": "Finding each procedure line",
     "matching": "Matching each line to the 16 procedure identifiers",

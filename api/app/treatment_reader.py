@@ -360,9 +360,10 @@ def _read_pdf(data: bytes) -> tuple[str, Optional[str], list[tuple[str, bytes]],
         doc.close()
 
 
-def _stages(done_through: str) -> list[dict]:
+def _stages(done_through: str, skipped: tuple[str, ...] = ()) -> list[dict]:
+    """The stages that ran. A skipped stage (an image cannot be redacted) is listed as not done and marked skipped."""
     idx = STAGES.index(done_through)
-    return [{"key": k, "label": READER_STAGE_LABELS[k], "done": i <= idx} for i, k in enumerate(STAGES)]
+    return [{"key": k, "label": READER_STAGE_LABELS[k], "done": i <= idx and k not in skipped, **({"skipped": True} if k in skipped else {})} for i, k in enumerate(STAGES)]
 
 
 def _finish(items: list[dict]) -> list[dict]:
@@ -386,9 +387,10 @@ async def read_treatment_plan(request: Request, user: User = Depends(current_use
         for s in re.split(r"(?<=[.!?])\s+|\n", redacted):
             if s.strip() and looks_like_injection(s):
                 ignored_server.append(s.strip()[:240])
+    skipped = ("redacting",) if images else ()
     resp: dict[str, Any] = {"mode": "demo", "source": "image" if source == "image" else ("pdf" if source.startswith("pdf") else "text"), "items": [],
                             "ignored_text": ignored_server, "redaction": {"removed": removed, "image_not_redacted": bool(images)}, "ribbon": None, "note": note,
-                            "stages": _stages("redacting"), "fixture": None, "dropped_unverified": 0}
+                            "stages": _stages("redacting", skipped), "fixture": None, "dropped_unverified": 0}
     mode = ai_support.llm_mode()
     reason = None
     if mode == "live":
@@ -399,7 +401,7 @@ async def read_treatment_plan(request: Request, user: User = Depends(current_use
                 items, ignored, dropped = items_from_model(raw, redacted)
                 resp.update({"mode": "live", "model": ai_support.llm_model(), "ribbon": READER_RIBBON_LIVE_IMAGE if images else READER_RIBBON_LIVE,
                              "items": _finish(items), "ignored_text": ignored_server + [i for i in ignored if i not in ignored_server], "dropped_unverified": dropped,
-                             "stages": _stages("ready"), "note": note if items else (note or READER_NO_LINES)})
+                             "stages": _stages("ready", skipped), "note": note if items else (note or READER_NO_LINES)})
                 log.info("treatment plan read mode=live source=%s items=%d dropped=%d", resp["source"], len(items), dropped)
                 return resp
             except ModelUnavailable as e:
@@ -415,7 +417,7 @@ async def read_treatment_plan(request: Request, user: User = Depends(current_use
     else:
         resp["note"] = " ".join(x for x in (note, READER_LIMIT_NOTE if reason and reason != "model_failed" else (READER_MODEL_FAILED if reason == "model_failed" else None),
                                             READER_DEMO_CANNOT_READ) if x)
-        resp["stages"] = _stages("redacting")
+        resp["stages"] = _stages("reading" if images else "redacting", skipped)
     if reason:
         resp["limited"] = reason
     log.info("treatment plan read mode=demo source=%s fixture=%s items=%d", resp["source"], resp["fixture"] or "none", len(resp["items"]))

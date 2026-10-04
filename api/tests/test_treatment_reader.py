@@ -103,6 +103,8 @@ def test_demo_is_honest_about_new_documents_text_image_and_pdf():
     assert j["items"] == [] and READER_DEMO_CANNOT_READ in j["note"]
     j = client.post("/me/treatment-plans/read", files={"file": ("photo.png", png_bytes(), "image/png")}, headers=H("tr-a")).json()
     assert j["source"] == "image" and j["items"] == [] and READER_DEMO_CANNOT_READ in j["note"] and j["redaction"]["image_not_redacted"]
+    redacting = next(st for st in j["stages"] if st["key"] == "redacting")
+    assert redacting["done"] is False and redacting["skipped"] is True                # an image is never shown as redacted
     # a PDF with a text layer that matches the stored estimate is read deterministically
     j = client.post("/me/treatment-plans/read", files={"file": ("plan.pdf", pdf_with(samples()["sam"]), "application/pdf")}, headers=H("tr-a")).json()
     assert j["source"] == "pdf" and j["fixture"] == "sam" and len(j["items"]) == 2
@@ -241,3 +243,19 @@ def test_mapping_rules():
     assert r["procedure_key"] == "cast_crown" and r["confidence"] == "printed_code" and r["notes"] == [treatment_reader.READER_DESCRIPTION_DIFFERS]
     assert treatment_reader.parse_fee("$1,150.00") == 115000 and treatment_reader.parse_fee("1150") is None and treatment_reader.parse_fee("1,150.00", True) == 115000
     assert treatment_reader.parse_fee("USD 300") == 30000 and treatment_reader.parse_fee("about 300 dollars") is None
+
+
+def test_live_once_for_real_when_the_stored_key_and_network_allow(monkeypatch):
+    from dotenv import dotenv_values
+    vals = dotenv_values(Path(__file__).resolve().parents[1] / ".env")
+    if not vals.get("OPENROUTER_API_KEY"):
+        pytest.skip("no OPENROUTER_API_KEY in api/.env")
+    monkeypatch.setenv("OPENROUTER_API_KEY", vals["OPENROUTER_API_KEY"])
+    monkeypatch.setenv("ORALCOMPASS_LLM_PROVIDER", vals.get("ORALCOMPASS_LLM_PROVIDER", "openrouter"))
+    monkeypatch.setenv("ORALCOMPASS_LLM_MODEL", vals.get("ORALCOMPASS_LLM_MODEL", "anthropic/claude-haiku-4.5"))
+    j = client.post("/me/treatment-plans/read", json={"text": samples()["alex"]}, headers=H("tr-real")).json()
+    if j["mode"] != "live":
+        pytest.skip("live model unavailable (network or provider); fallback path exercised instead")
+    got = sorted((i["procedure_key"], i["tooth"], i["fee_cents"], i["code_as_written"]) for i in j["items"])
+    assert got == [("crown", "19", 125000, "D2740"), ("root_canal_molar", "19", 115000, "D3330")]
+    assert "Alex Chen" not in json.dumps(j)
