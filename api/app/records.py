@@ -22,7 +22,7 @@ from .data import (CODES_BY_KEY, FEE_BENCHMARKS, PLANS, PLAN_META, PROC_BY_KEY, 
 from .templates import BENCHMARK_NOTE, PRESET_BANNER
 from .store import NOT_FOUND, repo
 from .templates import FOOTER, PRESET_BANNER
-from .uploads import norm_ref, resolve_plan_ref
+from .uploads import norm_ref, resolve_plan_ref, rules_for
 
 router = APIRouter()
 
@@ -244,8 +244,7 @@ def get_plan(code: str, user: User = Depends(current_user)):
 def get_rules(code: str, procedure_keys: str = "", user: User = Depends(current_user)):
     if code.upper() not in PLANS:
         raise HTTPException(status_code=404, detail=NOT_FOUND)
-    keys = [k for k in procedure_keys.split(",") if k] or None
-    return {"plan_code": code.upper(), "rules": coverage_rules(PLANS[code.upper()], keys)}
+    return {"plan_code": code.upper(), "rules": rules_for(PLANS[code.upper()], procedure_keys)}
 
 
 def _code_summary(key: str) -> dict:

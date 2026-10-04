@@ -732,8 +732,10 @@ def test_a_stale_in_progress_extraction_can_be_restarted_and_publishes_get_uniqu
     threads = [threading.Thread(target=lambda: labels.append(client.post(f"/me/documents/{up['id']}/publish", headers=h).json()["version_label"])) for _ in range(2)]
     [t.start() for t in threads]
     [t.join() for t in threads]
-    assert sorted(labels) == ["UP1", "UP2"]
-    assert sorted(repo.get_owned(sub, "document", up["id"])["published_versions"]) == ["UP1", "UP2"]
+    # the lock serialises them; the second sees an identical review and returns the same version (no duplicate UP2, no two UP1 records)
+    assert labels == ["UP1", "UP1"]
+    assert repo.get_owned(sub, "document", up["id"])["published_versions"] == ["UP1"]
+    assert len(repo.list_owned(sub, "plan_version")) == 1
 
 
 def test_upload_quotas_per_owner_and_for_the_whole_volume(monkeypatch):

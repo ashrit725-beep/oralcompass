@@ -583,6 +583,26 @@ class PlanRefResolution:
     evidence_endpoint: str
 
 
+MAX_PROCEDURE_KEYS = 64
+
+
+def parse_procedure_keys(raw: str) -> Optional[list[str]]:
+    """`?procedure_keys=a,b` → known procedure keys, de-duplicated in order; None when none were asked for. Unknown keys are dropped (no
+    invented UNKNOWN row for a procedure that does not exist) and more than MAX_PROCEDURE_KEYS is 422."""
+    from .data import PROC_BY_KEY
+    asked = [k.strip() for k in raw.split(",") if k.strip()]
+    if not asked:
+        return None
+    if len(asked) > MAX_PROCEDURE_KEYS:
+        raise HTTPException(status_code=422, detail={"error": "too_many_procedure_keys", "max": MAX_PROCEDURE_KEYS})
+    return list(dict.fromkeys(k for k in asked if k in PROC_BY_KEY))
+
+
+def rules_for(plan: PlanModel, raw_keys: str) -> list:
+    keys = parse_procedure_keys(raw_keys)
+    return coverage_rules(plan, keys) if keys is None or keys else []
+
+
 def norm_ref(ref: str) -> str:
     return ref if ref.startswith("upload:") else ref.upper()
 
@@ -641,8 +661,7 @@ def my_plan_versions(doc_id: str, user: User = Depends(current_user)):
 @router.get("/me/plans/{doc_id}/rules")
 def my_plan_rules(doc_id: str, procedure_keys: str = "", version: Optional[str] = None, user: User = Depends(current_user)):
     res = resolve_plan_ref(user, f"upload:{doc_id}", version)
-    keys = [k for k in procedure_keys.split(",") if k] or None
-    return {"plan_code": res.ref, "version_label": res.version_label, "rules": coverage_rules(res.plan, keys)}
+    return {"plan_code": res.ref, "version_label": res.version_label, "rules": rules_for(res.plan, procedure_keys)}
 
 
 @router.get("/me/plans/{doc_id}/evidence")

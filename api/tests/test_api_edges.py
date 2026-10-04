@@ -62,3 +62,12 @@ def test_push_endpoint_must_be_a_public_host():
                 "https://printer.local/x"):
         assert client.post("/me/push/subscriptions", json={"endpoint": url, "keys": keys}, headers=A).status_code == 422, url
     assert client.post("/me/push/subscriptions", json={"endpoint": "https://fcm.googleapis.com/fcm/send/abc", "keys": keys}, headers=A).status_code == 201
+
+
+def test_rules_ignore_unknown_procedure_keys_and_cap_the_list():
+    r = client.get("/plans/HB26/rules?procedure_keys=crown,crown,not_a_procedure", headers=A).json()["rules"]
+    assert [x["procedure_key"] for x in r] == ["crown"]
+    assert client.get("/plans/HB26/rules?procedure_keys=nope", headers=A).json()["rules"] == []
+    assert len(client.get("/plans/HB26/rules", headers=A).json()["rules"]) > 1
+    r = client.get("/plans/HB26/rules?procedure_keys=" + ",".join(["x"] * 65), headers=A)
+    assert r.status_code == 422 and r.json()["detail"]["error"] == "too_many_procedure_keys"
