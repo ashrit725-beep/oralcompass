@@ -82,6 +82,9 @@
 .askfield:focus-visible { outline: 3px solid var(--terracotta); outline-offset: 1px; }
 .askfield-glyph { width: 20px; height: 20px; flex: none; color: var(--ink-soft); }
 .ask-scrim { position: fixed; left: max(0px, calc((100% - 480px) / 2)); right: max(0px, calc((100% - 480px) / 2)); top: 0; bottom: var(--dock-h, 0px); z-index: 39; background: rgba(35, 48, 61, .2); touch-action: none; animation: ask-scrim-in var(--dur-standard) var(--ease-standard); }
+/* the sheet is non-modal, but the dialog layer still sets body { pointer-events: none } while it is open: the dock (a tab change closes
+   the sheet) and the scrim (a tap closes it) must stay tappable, as the sheet's contract says (dock reachable, scrim closes) */
+body:has(.ask-sheet[data-state="open"]) :is(.dock, .ask-scrim) { pointer-events: auto; }
 @keyframes ask-scrim-in { from { opacity: 0; } to { opacity: 1; } }
 .ask-sheet { position: fixed; left: max(0px, calc((100% - 480px) / 2)); right: max(0px, calc((100% - 480px) / 2)); bottom: var(--dock-h, 0px); z-index: 40; display: flex; flex-direction: column; max-height: calc(85vh - var(--dock-h, 0px)); background: var(--paper-deep); color: var(--ink); border-top: 1px solid var(--rule); border-radius: var(--r-sheet); box-shadow: var(--shadow-3); outline: none; }
 @supports (height: 1dvh) { .ask-sheet { max-height: calc(85dvh - var(--dock-h, 0px)); } }
