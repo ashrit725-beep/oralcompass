@@ -14,6 +14,8 @@ from typing import Annotated, Any, Literal, Optional
 from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from fastapi.encoders import jsonable_encoder
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from starlette.middleware.gzip import GZipMiddleware
 
@@ -48,6 +50,14 @@ PRESET_META = {code: extractor.by_code[code] for code in PRESETS}
 
 from .templates import FOOTER, COMPARISON_BANNER, PRESET_BANNER  # noqa: E402
 from . import assistant, journeys, notifications, records, uploads  # noqa: E402
+
+@app.exception_handler(RequestValidationError)
+async def _validation_error(request: Request, exc: RequestValidationError) -> JSONResponse:
+    """422 bodies name the field and the rule only. FastAPI's default echoes the submitted value ("input") and rule context ("ctx") back,
+    which would reflect pasted document or treatment-plan text into responses and logs (SECURITY.md: no document text in responses)."""
+    detail = [{"type": e.get("type"), "loc": list(e.get("loc", ())), "msg": e.get("msg")} for e in exc.errors()]
+    return JSONResponse(status_code=422, content={"detail": detail})
+
 
 app.include_router(records.router)
 app.include_router(journeys.router)
