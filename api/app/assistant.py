@@ -23,20 +23,19 @@ import time
 from collections import deque
 from dataclasses import dataclass, field
 from datetime import date
-from pathlib import Path
 from typing import Any, Optional
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
-from oralcompass_engine import load_plan
 from oralcompass_engine.models import PlanModel
 from oralcompass_engine.rules import coverage_rules
 
 from . import assistant_templates as T
 from .auth import User, current_user
-from .data import CODES_BY_KEY, PLAN_META, PLANS, PROC_BY_KEY, PROCEDURES, clauses as plan_clauses
+from . import uploads
+from .data import CODES_BY_KEY, PROC_BY_KEY, PROCEDURES, clauses_from_meta
 from .lint_runtime import guard
 from .records import derived_benefits
 from .store import NOT_FOUND, repo
@@ -163,52 +162,12 @@ class Ctx:
         return ((self.estimate or {}).get("ledger") or {}).get("lines", []) if self.estimate else []
 
 
-def _load_plan_from_model(model: dict) -> PlanModel:
-    import tempfile
-    with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as f:
-        json.dump(model, f)
-        name = f.name
-    try:
-        return load_plan(Path(name))
-    finally:
-        try:
-            os.unlink(name)
-        except OSError:
-            pass
-
-
-def _clauses_from_meta(meta: dict) -> list[dict]:
-    """Same walk as data.clauses, for an uploaded plan model held in the owner's own document record."""
-    out: list[dict] = []
-    default_doc = (meta.get("source_document") or {}).get("version_label", "UP")
-
-    def walk(obj, path):
-        if isinstance(obj, dict):
-            if "quote" in obj and "page" in obj and obj.get("quote"):
-                out.append({"field": path, "doc": obj.get("doc", default_doc), "page": obj["page"], "quote": obj["quote"], "review_status": obj.get("review_status")})
-            for k, v in obj.items():
-                walk(v, f"{path}.{k}" if path else k)
-        elif isinstance(obj, list):
-            for i, v in enumerate(obj):
-                walk(v, f"{path}[{i}]")
-    walk(meta, "")
-    for i, c in enumerate(out, 1):
-        c["n"] = i
-    return out
-
-
-def resolve_plan_ref(user: User, ref: str) -> tuple[PlanModel, dict, list[dict], str]:
-    """Preset code, or an owned, extracted upload (`upload:<document_id>`). Anything else is the constant 404."""
-    code = ref.upper()
-    if code in PLANS:
-        return PLANS[code], PLAN_META[code], plan_clauses(code), code
-    if ref.startswith("upload:"):
-        doc = repo.get_owned(user.sub, "document", ref.split(":", 1)[1])
-        model = doc.get("plan_model")
-        if not model:
-            raise HTTPException(status_code=404, detail=NOT_FOUND)
-        return _load_plan_from_model(model), model, _clauses_from_meta(model), ref
-    raise HTTPException(status_code=404, detail=NOT_FOUND)
+def resolve_plan_ref(user: User, ref: str, version: Optional[str] = None) -> tuple[PlanModel, dict, list[dict], str]:
+    """Preset code, or an owned, published upload (`upload:<document_id>`, at `version` when given). Anything else is the constant 404.
+    One resolver for the whole API (uploads.resolve_plan_ref); clauses come from data.clauses_from_meta, which leaves out the document's
+    ignored wording (`upload`) and the `security_test` block, so neither can be cited or reach the model as plan wording."""
+    res = uploads.resolve_plan_ref(user, ref, version=version)
+    return res.plan, res.meta, clauses_from_meta(res.meta), res.ref
 
 
 # ---------- the six read-only tools (section 8.3) ----------
@@ -281,12 +240,11 @@ def get_clause(ctx: Ctx, stitch_label: str, rule: Optional[str] = None, category
 
 
 def get_benefits(ctx: Ctx, plan_ref: str) -> Optional[dict]:
-    code = plan_ref.upper()
-    ctx.tools_used.append(f"get_benefits({code})")
-    if code not in PLANS:
-        return None
+    """The owner's benefits for this plan reference (a preset code or an upload ref, never case-folded), derived against the resolved plan."""
+    code = uploads.norm_ref(plan_ref)
+    ctx.tools_used.append("get_benefits(upload)" if code.startswith("upload:") else f"get_benefits({code})")
     b = next((x for x in repo.list_owned(ctx.user.sub, "benefits") if x["plan_code"] == code), None)
-    return derived_benefits(PLANS[code], b, code) if b else None
+    return derived_benefits(ctx.plan, b, code) if b else None
 
 
 _WORD = re.compile(r"[a-z][a-z_\-]+")
@@ -329,11 +287,16 @@ def _line_procedure_keys(ctx: Ctx) -> list[Optional[str]]:
 
 def load_scope(user: User, scope: AssistScope) -> Ctx:
     plan, meta, cls, plan_ref = resolve_plan_ref(user, scope.plan_ref)
-    ctx = Ctx(user=user, scope=scope, plan_ref=plan_ref, plan=plan, plan_meta=meta, clauses=cls, stitch=scope.stitch)
+    est = None
     if scope.estimate_id:
         est = repo.get_owned(user.sub, "saved_estimate", scope.estimate_id)
-        if (est.get("plan_code") or "").upper() != plan_ref.upper():
+        if uploads.norm_ref(est.get("plan_code") or "") != plan_ref:
             raise HTTPException(status_code=404, detail=NOT_FOUND)         # scope lock: the estimate must belong to the selected plan
+        if plan_ref.startswith("upload:") and est.get("plan_version_label"):
+            # an estimate saved under UP1 is explained against UP1's clauses, even after UP2 is published
+            plan, meta, cls, plan_ref = resolve_plan_ref(user, plan_ref, version=est["plan_version_label"])
+    ctx = Ctx(user=user, scope=scope, plan_ref=plan_ref, plan=plan, plan_meta=meta, clauses=cls, stitch=scope.stitch)
+    if est is not None:
         ctx.estimate = est
     if scope.treatment_item_id:
         ctx.item = repo.get_owned(user.sub, "treatment_item", scope.treatment_item_id)

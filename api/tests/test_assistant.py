@@ -319,3 +319,29 @@ def test_live_mode_once_for_real_when_the_stored_key_and_network_allow(alex, mon
     for b in j["blocks"]:
         if b["type"] == "sentence":
             assert_grounded(b, est, alex)
+
+
+def test_assistant_on_an_uploaded_plan_uses_benefits_versions_and_never_the_ignored_wording():
+    """api-correctness-1/-2: benefits for an upload ref reach the assistant; an estimate saved under UP1 keeps UP1 clauses after UP2 is
+    published; the document's ignored (injected) wording is never a citable clause or a fact."""
+    from urllib.parse import quote
+    import test_uploads as tu
+    from app.auth import User
+    sub = "assist-upload"
+    h = {"X-Dev-User": sub}
+    doc_id, _ = tu.hb26_published(sub)
+    ref = f"upload:{doc_id}"
+    assert client.put(f"/me/benefits/{quote(ref, safe='')}", json=tu.SAM_BENEFITS, headers=h).status_code == 200
+    ctx = assistant.load_scope(User(sub), assistant.AssistScope(plan_ref=ref))
+    facts = assistant.gather(ctx, "How much of my deductible is left?")
+    assert ctx.benefits is not None and ctx.benefits["plan_code"] == ref and ctx.benefits["remaining_deductible_cents"] is not None
+    assert not any(c["field"].startswith(("upload", "security_test")) for c in ctx.clauses)
+    assert "automated readers" not in json.dumps(facts).lower() and "automated readers" not in json.dumps(ctx.clauses).lower()
+    client.post("/journeys", json={"from": "sample-sam"}, headers=h)
+    est1 = client.post("/me/estimates", json={"plan_code": ref}, headers=h).json()
+    assert est1["plan_version_label"] == "UP1"
+    stitch = next(s["stitch"] for L in est1["ledger"]["lines"] for s in L["steps"] if s.get("stitch"))
+    client.put(f"/me/documents/{doc_id}/review", json={"decisions": [{"field_path": "deductible_individual", "decision": "edited", "value": 7500, "source": "x"}]}, headers=h)
+    assert client.post(f"/me/documents/{doc_id}/publish", headers=h).json()["version_label"] == "UP2"
+    ctx2 = assistant.load_scope(User(sub), assistant.AssistScope(plan_ref=ref, estimate_id=est1["id"], line_index=0))
+    assert {c["doc"] for c in ctx2.clauses} == {"UP1"} and assistant.get_clause(ctx2, stitch) is not None
