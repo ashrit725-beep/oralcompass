@@ -58,7 +58,7 @@
 .tpr-fee-input input { min-height: 44px; width: 7.5rem; font-variant-numeric: tabular-nums; }
 .tpr-fee-input small { font-size: 11px; line-height: 14px; max-width: 12rem; }
 .tpr-include { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; cursor: pointer; }
-.tpr-include input { width: 20px; height: 20px; accent-color: var(--forest); }
+.tpr-include input { width: 20px; height: 20px; }
 .tpr-table td small.muted { display: block; font-size: 11px; line-height: 14px; }
 .tpr-confirm { padding-top: var(--s-2); }
 .tpr-ignored > summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; font-size: .9rem; }
