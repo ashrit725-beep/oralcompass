@@ -23,7 +23,9 @@ export function stitchesFromClauses(clauses: Clause[]): Stitch[] {
     const existing = map.get(key);
     if (existing) { if (!existing.ruleCodes.includes(rule)) existing.ruleCodes.push(rule); continue; }
     const n = (counters.get(c.doc) ?? 0) + 1; counters.set(c.doc, n);
-    map.set(key, { id: `${c.doc}#${n}`, doc: c.doc, n, page: c.page, quote: c.quote, topic, ruleCodes: [rule], pageNote: c.page_note ?? undefined });
+    // section + plan option give a table-row quote its context ("80% … 60% … 50% after deductible" is the High / Classic / Low row of Type II)
+    const option = c.fact_id && c.fact_id.split(":").length === 3 ? c.fact_id.split(":")[2] : undefined;
+    map.set(key, { id: `${c.doc}#${n}`, doc: c.doc, n, page: c.page, quote: c.quote, topic, ruleCodes: [rule], pageNote: c.page_note ?? undefined, section: c.section ?? undefined, option });
   }
   return [...map.values()];
 }

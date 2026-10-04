@@ -23,6 +23,10 @@ export interface MoneyProps {
 }
 
 const FORMAT: Format = { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 };
+// spec §5.5 `sounding-roll`: 400 ms on --ease-standard (cubic-bezier(.2,.7,.2,1)), not NumberFlow's 900 ms spring default (motion-8).
+// NumberFlow still honours prefers-reduced-motion itself (respectMotionPreference defaults to true): the value snaps.
+const ROLL = { duration: 400, easing: "cubic-bezier(.2,.7,.2,1)" } as const;
+const ROLL_FADE = { duration: 240, easing: "ease-out" } as const;
 
 export function Money({ cents, evidence, className, badge = true, signed = false, id }: MoneyProps) {
   const has = typeof cents === "number" && Number.isFinite(cents);
@@ -30,7 +34,7 @@ export function Money({ cents, evidence, className, badge = true, signed = false
     <span id={id} className={cn("inline-flex items-baseline gap-1.5 align-baseline", className)}>
       <span className="amt font-sans tabular-nums text-ink" style={{ "--number-flow-mask-height": "0.15em" } as React.CSSProperties}>
         {has ? (
-          <NumberFlow value={(signed ? Math.abs(cents) : cents) / 100} locales="en-US" format={FORMAT} prefix={signed ? (cents < 0 ? "−" : cents > 0 ? "+" : "") : undefined} />
+          <NumberFlow value={(signed ? Math.abs(cents) : cents) / 100} locales="en-US" format={FORMAT} transformTiming={ROLL} spinTiming={ROLL} opacityTiming={ROLL_FADE} prefix={signed ? (cents < 0 ? "−" : cents > 0 ? "+" : "") : undefined} />
         ) : (
           <span aria-label="no amount">—</span>
         )}

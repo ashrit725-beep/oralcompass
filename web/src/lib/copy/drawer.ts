@@ -147,7 +147,7 @@ export const DRAWER = {
 
   // 9 Exclusions
   excludedSentence: "This document lists this service under its exclusions.",
-  notExcludedSentence: "The pages read list no exclusion naming this service.",
+  notExcludedSentence: "The pages read list no exclusion naming this service. Absence is not confirmed.",
   relatedWording: "Related wording in the document (shown, not applied)",
 
   // 10 Final cost
@@ -182,6 +182,8 @@ export const DRAWER = {
   reconcilesOnlyNote: "The reconciliation line is printed only when the display sum equals the engine's line totals.",
 
   // 12 Clause evidence
+  clauseSection: (section: string) => `Where it sits: ${section}`,
+  clauseOption: (option: string) => `The figure for this plan is read from the ${option} column.`,
   evidenceIntro: "Every clause behind this line, each with its document and page.",
   openInDocuments: "Open in Documents",
   noStoredPdf: "The document is not stored here; the official source is linked in Documents.",

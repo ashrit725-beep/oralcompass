@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { motion, useReducedMotion } from "motion/react";
 import { X } from "lucide-react";
 import { UI } from "../lib/copy";
+import { DRAWER } from "../lib/copy/drawer";
 import { takeStitchAnchor } from "../lib/drawer";
 import { transitions } from "../lib/motion";
 import { money } from "../lib/stitches";
@@ -105,6 +106,9 @@ export function ClauseCard({ stitch, lines, onClose, onOpenOnPage, askSlot, askS
           <figure className="wording">
             <blockquote>“{stitch.quote}”</blockquote>
             <figcaption>{stitch.doc}, page {stitch.page}</figcaption>
+            {/* a table row quoted alone does not say which column applies (demo-13): name the row and the plan option's column */}
+            {stitch.section ? <p className="wording-context">{DRAWER.clauseSection(stitch.section)}</p> : null}
+            {stitch.option && /%/.test(stitch.quote) ? <p className="wording-context">{DRAWER.clauseOption(stitch.option)}</p> : null}
           </figure>
         )}
         <footer>

@@ -57,7 +57,7 @@ export interface GridRow { topic: string; cells: GridCell[]; differences: string
 export interface ComparisonResponse { id: string; plan_refs: string[]; result: { columns: string[]; grid: GridRow[]; ledgers: Record<string, Ledger>; note: string }; footer: string; banner: string }
 
 /** A stitch is one cited sentence in one document: scoped id = `${doc}#${n}` where n is assigned in page order. */
-export interface Stitch { id: string; doc: string; n: number; page: number; quote: string; topic: string; ruleCodes: string[]; pageNote?: string }
+export interface Stitch { id: string; doc: string; n: number; page: number; quote: string; topic: string; ruleCodes: string[]; pageNote?: string; /** additive: the document section the quote sits in (e.g. a table row) */ section?: string; /** additive: the plan option column the fact was read from (e.g. "Classic") */ option?: string }
 
 // ---------- records (owner-scoped, from the API) ----------
 export type CheckpointStatus = "completed" | "current" | "upcoming" | "awaiting_info";

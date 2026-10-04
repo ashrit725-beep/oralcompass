@@ -232,3 +232,17 @@ details[open] > .dsec-summary .dsec-toggle { transform: rotate(-135deg); margin-
 /* allowance form: the inline error under the amount field (a11y-10) and the persistent status line (empty until something is recorded) */
 .drawer .field-error { margin: 2px 0 0; font-size: 13px; line-height: 18px; color: var(--danger); }
 .drawer .note[role="status"]:empty { margin: 0; }
+.wording-context { margin: 4px 0 0; font-size: 13px; line-height: 18px; color: var(--text-soft); }
+
+/* stitch chips on touch screens (mobile-7): the chip keeps its look but its target grows to 32 px tall with a 44 px hit area, and the rows
+   that hold several chips space them 8 px apart so neighbouring hit areas do not overlap. Applies app-wide (drawer.css is global). */
+@media (pointer: coarse) {
+  .stitch { position: relative; min-height: 32px; }
+  .stitch::after { content: ""; position: absolute; inset: -6px 0; }
+  .fig, .fact, .node-mark, .eq-row, .evidence-item { column-gap: 8px; }
+}
+
+/* full trail and equation rows inside the 440 px drawer (slop-19): long amount runs wrap instead of pushing badges and stitches past the edge */
+.trail-one .ts-amounts-inline > * { min-width: 0; max-width: 100%; }
+.trail-one .ts-amounts-inline .amt { white-space: normal; }
+.eq-row > * { min-width: 0; max-width: 100%; }

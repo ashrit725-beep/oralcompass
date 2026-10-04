@@ -195,3 +195,13 @@ describe("web-correctness-23: uploaded plans send their upload ref, not the vers
     expect(drawerPlanRef(undefined, null, { plan_code: "HB26" })).toBe("HB26");
   });
 });
+
+describe("demo-13: a table-row quote carries its section and plan option", () => {
+  it("keeps the clause's section and the option column from the fact id", () => {
+    const [s] = stitchesFromClauses([{ n: 30, field: "classes[1].plan_share_bp_in.cite", doc: "ML26", page: 25, quote: "80% after deductible 60% after deductible 50% after deductible",
+      section: "Summary of Dental Benefits — Type II — Basic Services (row 1)", fact_id: "ncflex-2026-plan-details:coinsurance_type2_basic:Classic" }]);
+    expect(s.section).toContain("Type II");
+    expect(s.option).toBe("Classic");
+    expect(DRAWER.clauseOption("Classic")).toContain("Classic column");
+  });
+});
