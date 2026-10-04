@@ -29,9 +29,11 @@ from .lint_runtime import guard  # noqa: E402
 from .redaction import redact  # noqa: E402
 from .store import NOT_FOUND, repo  # noqa: E402
 from .sessions import SessionMiddleware, mark_cleared  # noqa: E402
+from .security import SecurityMiddleware  # noqa: E402
 
 app = FastAPI(title="OralCompass API", version="0.1.0")
 app.add_middleware(SessionMiddleware)      # production: per-visitor signed-cookie sessions (inactive under ORALCOMPASS_DEV_AUTH=1 or Cognito)
+app.add_middleware(SecurityMiddleware)     # outermost: CSP and security headers, body size limits, ids-only request logs (security.py)
 extractor = FixtureExtractor()
 PRESETS = {p.stem.upper(): load_plan(p) for p in sorted((FIXTURES / "plans").glob("*.json"))}
 PRESET_META = {code: extractor.by_code[code] for code in PRESETS}
