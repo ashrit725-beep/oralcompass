@@ -32,6 +32,30 @@ Status legend: OPEN · DONE · DEFERRED (with reason). Every item names the file
 10. OPEN — The advice-question template reads mechanically ("status estimate; steps cited to the plan document: coinsurance, network basis"); rewrite as
    plain sentences from the same engine fields (antislop-copywriting), still information-only. Check: lint clean and reads as prose.
 
+## Integration (2026-10-03, merge of the four web build branches into `build/journey-v2`)
+Merged with `--no-ff` in order: journey-map (`worktree-wf_e9768877-b02-2`), drawer-pipeline (`-3`), plan-compass-compare (`-4`), upload-assistant (`-5`).
+One conflict (`components/notifications/RemindersPanel.tsx`: the plan agent's null stub vs the real panel; the real panel won, DocumentsView passes
+`refreshKey`). Integration edits: `lib/copy.ts` re-exports `DRAWER`/`COMPASS` from their own files; `styles.css` imports `styles/drawer.css`; additive
+`types.ts`/`api.ts` fields the agents had typed locally (Benefits record extras, UploadedPlanSummary versions/banner, PlanEvidence upload fields,
+AssistResponse ribbon, template `out_of_scope`, UploadResponse mode/note, `BenefitsIn` extras, `api.documentFile`); `useAppData` exposes `loadRecords`
+(PlanView and the drawer call it after a PUT/POST); `ClauseCard` gets `askScope` from App; `StartSections` imports the Benefit statement form
+statically; `vite.config.ts` splits react/radix/vaul into `ui-vendor` (main 121 KB gzip, no Rollup advisory); `styles.css` `.grid` → `table.grid`;
+`ComparisonGrid` keeps the cell value printed while its clause card is open.
+11. OPEN — Compare `tr.differences` rows (the API's per-topic difference sentence, e.g. "MetLife NCFlex Dental: $37.94; Delta Dental PPO: $41.57")
+   print figures without a badge; the cells above them are badged. Either badge each figure in the sentence or render the row as the accessible
+   summary only. `tools/screenshots.py` excludes `tr.differences` from the compare evidence check until then.
+12. OPEN — Vendored shadcn radix-nova components lack `forwardRef` under React 18 (ui/drawer.tsx DrawerOverlay, ui/textarea.tsx, ui/button.tsx under
+   `asChild`, ui/dialog.tsx DialogOverlay): dev-console "Function components cannot be given refs" warnings; plan §6 item 4 wants zero.
+13. OPEN — `Primitives/Sheet.tsx` / `ui/drawer.tsx`: no `aria-modal` on the vaul content; the ProcedureDrawer sets it through a ref callback.
+14. OPEN — Money.tsx passes no `transformTiming` to NumberFlow, so soundings/island amounts roll at NumberFlow's default (~750 ms), not the spec's 480 ms.
+15. OPEN — No `#island/#cp` hash state (Back does not pop checkpoint → island → map); selection is in-memory only.
+16. OPEN — Cancelled treatment items are not listed in the Overview list (PassageVM has no slot); the walk's added procedure is reverted by cancelling it.
+17. OPEN — `PageView.tsx` draws stitch outlines with three hex literals on the canvas (foundation file); the plan §6 colour grep names it.
+18. OPEN — Inline assistant in the drawer: the section heading says "Ask about this step" while the composer placeholder reads "Ask about this plan…"
+   (the drawer scope carries `treatment_item_id`/`line_index` but no `step_key`); pass the selected checkpoint's step key or align the copy.
+19. OPEN — Web Push subscribe/unsubscribe and "Send a test push" unverified end to end (headless Chromium denies Notification permission).
+20. OPEN — Live-mode extraction of the 14-page fixture took ~5 min on one run; the screenshot walk runs the API in demo mode (`ORALCOMPASS_LLM_PROVIDER=demo`).
+
 ## Docs / presentation (filled by the polish pass)
 - README quick start must cover: `api/.env` from `api/.env.example`, demo mode vs live mode, `npm install` (Tailwind/shadcn stack), `web/THIRD_PARTY_NOTICES.md`,
   Tailwind v4 browser floor, the screenshot walk, the demo script (`docs/ORALCOMPASS_DESIGN_SPEC.md` §11) and the judging-criteria map (`docs/JUDGING_CRITERIA.md`).
