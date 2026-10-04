@@ -10,6 +10,7 @@ import { ApiError, api } from "./api";
 import { authHeaders } from "./auth";
 import { UPLOAD } from "./copy/upload";
 import { pageTextFromItems } from "./pdf-text";
+import { PROCEDURE_NAMES } from "./clauses";
 import type { ExtractedField, ExtractionStatus, ReviewDecision, UploadResponse } from "./types";
 
 export const MAX_BYTES = 32 * 1024 * 1024;
@@ -252,7 +253,29 @@ export function verifiedUndecided(fields: ExtractedField[]): ExtractedField[] {
 
 export function labelFor(fields: ExtractedField[], path: string): string {
   if (path === "class_of") return UPLOAD.requiredGroup;
-  return fields.find((f) => f.field_path === path)?.label ?? path;
+  return fields.find((f) => f.field_path === path)?.label ?? fieldPathLabel(path);
+}
+
+const words = (key: string) => key.replace(/_/g, " ");
+const procName = (key: string) => PROCEDURE_NAMES[key] ?? words(key);
+
+/** Plain-language label for an extraction field path when the review rows are not at hand (the Documents card's
+ *  "needs your confirmation" list). Mirrors the row labels the server builds; an unknown path never leaks through raw. */
+export function fieldPathLabel(path: string): string {
+  const known = UPLOAD.fieldPath[path];
+  if (known) return known;
+  let m = /^classes\[(\d+)\]\.plan_share_bp_(in|out)$/.exec(path);
+  if (m) return m[2] === "in" ? UPLOAD.fieldShareIn(Number(m[1]) + 1) : UPLOAD.fieldShareOut(Number(m[1]) + 1);
+  m = /^frequency\[(\d+)\]$/.exec(path);
+  if (m) return UPLOAD.fieldFrequency(Number(m[1]) + 1);
+  m = /^(class_of|allowed_amounts|excluded|premium_monthly)\.([a-z0-9_]+)$/i.exec(path);
+  if (m) {
+    if (m[1] === "class_of") return UPLOAD.fieldClassOf(procName(m[2]));
+    if (m[1] === "allowed_amounts") return UPLOAD.fieldAllowed(procName(m[2]));
+    if (m[1] === "excluded") return UPLOAD.fieldExcluded(procName(m[2]));
+    return UPLOAD.fieldPremium(words(m[2]));
+  }
+  return UPLOAD.fieldOther;
 }
 
 export type ParsedValue = { ok: true; value: unknown } | { ok: false };

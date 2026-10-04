@@ -388,7 +388,12 @@ summary { min-height: 32px; padding-block: 4px; }
 /* phone layout, always on (mobile-only app) */
   .tagline { display: none; }
   .appbar { padding: .6rem 1rem; gap: .4rem .75rem; }
-  .app { padding-bottom: var(--dock-h, calc(68px + env(safe-area-inset-bottom))); }
+  /* the bottom chrome (dock + "Ask in plain words" field + safe area) as one measured token: every view's last line scrolls clear of it,
+     and focused / scrolled-to elements stop above it (useMeasuredVar publishes --dock-h and --askfield-h; fallbacks before the first measure) */
+  html { --bottom-chrome: calc(var(--dock-h, calc(68px + env(safe-area-inset-bottom))) + var(--askfield-h, 0px)); scroll-padding-bottom: calc(var(--bottom-chrome) + var(--s-2)); }
+  html:has(.askfield-bar) { --bottom-chrome: calc(var(--dock-h, calc(68px + env(safe-area-inset-bottom))) + var(--askfield-h, 60px)); }
+  .app { padding-bottom: calc(var(--bottom-chrome) + var(--s-4)); }
+  :where(a, button, input, select, textarea, summary, [tabindex], [role="tab"], h2, h3) { scroll-margin-bottom: calc(var(--bottom-chrome) + var(--s-2)); }
   .dock { position: fixed; left: 0; right: 0; bottom: 0; margin-inline: auto; max-width: var(--col); z-index: 14; background: var(--paper-deep); border-top: 1px solid var(--rule); box-shadow: var(--shadow-1); padding: 6px 8px calc(6px + env(safe-area-inset-bottom)); }
   .dock-item { display: flex; min-width: 0; }
   .dock [role="tab"] { color: var(--ink-soft); }
@@ -399,12 +404,10 @@ summary { min-height: 32px; padding-block: 4px; }
      page keeps clear of both. The ask sheet itself stops at the dock's top edge (the dock stays reachable). */
   body:has([data-vaul-drawer][data-state="open"]:not(.ask-sheet)) .askfield-bar, body:has(.detail.sheet:not(.is-empty)) .askfield-bar { visibility: hidden; }
   body:has(.askfield-bar) .dock { box-shadow: none; border-top-color: transparent; }
-  body:has(.askfield-bar) .app { padding-bottom: calc(var(--dock-h, 68px) + var(--askfield-h, 60px)); }
   /* the dock is fixed edge to edge, so it keeps clear of the notch / rounded corners in landscape itself (body's safe-area padding does not reach it) */
   .dock { padding-left: max(8px, env(safe-area-inset-left)); padding-right: max(8px, env(safe-area-inset-right)); }
 /* landscape phones (~340-430 px tall): icon beside the label in a 44 px row, so the dock takes ~56 px of the height instead of ~65 */
 @media (max-height: 500px) and (orientation: landscape) {
-  .app { padding-bottom: var(--dock-h, calc(56px + env(safe-area-inset-bottom))); }
   .dock { padding-top: 5px; padding-bottom: calc(5px + env(safe-area-inset-bottom)); }
   .dock [role="tab"] { flex-direction: row !important; min-height: 44px !important; gap: 6px !important; }
 }
