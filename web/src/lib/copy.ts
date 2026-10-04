@@ -119,7 +119,7 @@ export const UI = {
 /** Cost-trail step titles, in the fixed order of the trail. */
 export const TRAIL = {
   fee: "Dentist's price", allowed: "Price your plan agreed to", deductible: "Part you pay first", share: "Insurance pays", max: "Yearly limit cut", you: "You pay",
-  excluded: "Insurance doesn't pay for this", waiting: "Wait before insurance helps", frequency: "How often insurance pays", alternate: "Insurance pays for the cheaper fix", network: "On your plan's list?",
+  excluded: "Insurance doesn't pay for this", waiting: "Time before insurance helps", frequency: "How often insurance pays", alternate: "Insurance pays for the cheaper fix", network: "On your plan's list?",
   listed: "On your insurance letter",
 };
 

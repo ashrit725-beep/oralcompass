@@ -32,7 +32,7 @@ export const DRAWER = {
   sShare: "Who pays what",
   sAnnualMax: "Most insurance pays a year",
   sFrequency: "How often insurance pays",
-  sWaiting: "Wait before insurance helps",
+  sWaiting: "Time before insurance helps",
   sAlternate: "Insurance pays for the cheaper fix",
   sExclusions: "Things insurance won't pay for",
   sFinalCost: "You pay and insurance pays",

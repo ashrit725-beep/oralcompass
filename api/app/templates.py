@@ -125,18 +125,18 @@ EXPLAIN_LABEL_DEMO = "Demo mode"
 EXPLAIN_LABEL_FALLBACK = "Plain-words template"
 # The depth-1 PLAIN sentences, mirrored from web/src/lib/copy.ts PLAIN (a test keeps the two identical). Demo mode returns these.
 EXPLAIN_PLAIN = {
-    "deductible": "The first dollars of covered care each benefit year that you pay before the plan pays its share.",
-    "annual_max": "The most the plan pays for your care in a benefit year. It limits what the plan pays, not what you can owe.",
-    "coinsurance": "The percentage split of the allowed amount after the deductible: the plan pays one share, you pay the rest.",
-    "alternate_benefit": "When a less costly alternative exists, the plan pays on that alternative's allowance; the difference is your share.",
-    "network": "In-network dentists accept the plan's allowed amount; out-of-network dentists may bill you the difference.",
-    "waiting": "A period after joining the plan during which some services are not covered.",
-    "frequency": "How often a service is covered, counted per benefit year or measured from the last time you had it.",
-    "exclusion": "A service the plan does not pay for, or pays for only under stated conditions.",
-    "dos": "For multi-visit procedures, which date the plan uses decides which benefit year the service falls in.",
-    "premium": "What is paid to keep the plan, usually from each paycheck; it is not part of any procedure estimate.",
-    "allowed": "The amount the plan uses as the basis for its payment; in-network dentists accept it as payment in full.",
-    "plan": "Who insures the plan, where it applies, when it is in effect, and which document these rules come from.",
-    "cost": "From the dentist's fee to what you pay, one rule at a time; every step is tied to the clause that produced it.",
+    "deductible": "The part you pay first each year. Then insurance starts to help.",
+    "annual_max": "The most insurance pays in a year. After that, you pay it all.",
+    "coinsurance": "Insurance pays part of the bill. You pay the rest.",
+    "alternate_benefit": "Insurance pays for the cheaper fix instead. You pay the difference.",
+    "network": "Dentists on your plan's list take the plan's price. Others can charge you more.",
+    "waiting": "How long before insurance helps with this.",
+    "frequency": "How often insurance pays for it.",
+    "exclusion": "Something insurance does not pay for.",
+    "dos": "For care over many visits, one date picks which year it counts in.",
+    "premium": "What it costs to have the plan. It is not in these numbers.",
+    "allowed": "The price your plan agreed to with the dentist.",
+    "plan": "Who runs your plan, when it works, and which papers we read.",
+    "cost": "From the dentist's price to what you pay, one step at a time.",
 }
 EXPLAIN_PLAIN_DEFAULT = "This sentence states a rule of your plan."
