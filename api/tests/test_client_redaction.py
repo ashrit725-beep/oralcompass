@@ -237,18 +237,25 @@ def test_every_pattern_is_linear_on_200kb_adversarial_input():
     ]
     confirmed = [{"category": "name", "value": "a " * 59 + "b"}, {"category": "name", "value": "Sam Rivera X"},
                  {"category": "member_id", "value": "1-" * 50 + "9"}, {"category": "name", "value": "aa"}]
+    # Process CPU time, best of 3: wall-clock time under a parallel suite (or the nested sqlite run) measures contention, not the pattern.
+    def cpu_best(fn) -> float:
+        best = float("inf")
+        for _ in range(3):
+            t = time.process_time()
+            fn()
+            best = min(best, time.process_time() - t)
+            if best < 0.05:
+                break
+        return best
+
     for text in hostile:
         assert len(text) >= n - 20
-        t = time.perf_counter()
-        redact_pages([text], confirmed, ["a a a a a a b", "Sam"])
-        elapsed = time.perf_counter() - t
+        elapsed = cpu_best(lambda: redact_pages([text], confirmed, ["a a a a a a b", "Sam"]))
         assert elapsed < 2.0, (text[:20], elapsed)
     for category, pat in SERVER_PATTERNS:                                      # each compiled pattern on its own, too
         for text in hostile:
-            t = time.perf_counter()
-            for _ in pat.finditer(text):
-                pass
-            assert time.perf_counter() - t < 0.5, (category, text[:20])
+            elapsed = cpu_best(lambda: [None for _ in pat.finditer(text)])
+            assert elapsed < 0.5, (category, text[:20], elapsed)
 
 
 # ---------------------------------------------------------------- client_redaction intake
