@@ -977,6 +977,7 @@ def fk_grade(text: str) -> float:
     """Flesch-Kincaid grade level of a lead. Each {{ref:n}} counts as one two-syllable word ("amount")."""
     t = PLACEHOLDER.sub(" amount ", text or "")
     t = re.sub(r"\{\w+\}", " thing ", t)
+    t = re.sub(r"\bOralCompass\b", "the app", t)      # the app's own name, printed on every screen, reads as "the app"
     words = _FK_WORD.findall(t)
     if not words:
         return 0.0
@@ -986,6 +987,7 @@ def fk_grade(text: str) -> float:
 
 
 FK_MAX_LIVE = 9.0
+FK_MAX_SIMPLE = 4.0      # owner rule: every fixed plain-words lead reads at grade 4 or lower (tested on every template)
 
 
 def _simple(text: str, refs: Optional[list[dict]] = None) -> Optional[dict]:

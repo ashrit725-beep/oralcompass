@@ -131,7 +131,7 @@ def test_push_test_sends_the_fixed_generic_payload_through_mocked_webpush(monkey
     assert len(calls) == 1
     payload = json.loads(calls[0]["data"])
     assert payload == {"title": "OralCompass", "body": PUSH_TEST_BODY} == notifications.PUSH_TEST_PAYLOAD
-    assert PUSH_TEST_BODY == "A date you chose to follow is approaching. Open the app for details."
+    assert PUSH_TEST_BODY == "A date you are following is coming up. The app has the details."
     assert not re.search(r"\d", calls[0]["data"]) and lint_text(PUSH_TEST_BODY) == []       # never content, never an amount or a date in the push body
     assert calls[0]["subscription_info"]["endpoint"] == SUB["endpoint"] and calls[0]["vapid_private_key"] == "test-private-key-value"
     assert calls[0]["vapid_claims"] == {"sub": "mailto:test@example.test"}

@@ -12,6 +12,9 @@ Rules:
   2. Imperative openers on sentences of ≥ 5 words (UI control labels ≤ 4 words are exempt from rule 2, not from rule 1).
   3. Second-person steering modals: "you can save", "you could save", "you'll save", "you should", "you need to", "you must".
   4. Ranking/winner vocabulary.
+  (owner rule) No advice of any kind: "ask your", "talk to", "call the", "contact your", "check with", "make sure", "remember to",
+     "don't forget", "you may want", "it's a good idea", "worth it", "consider", "recommend", "should", "best", "wait until",
+     "schedule it/your/now..." are banned anywhere; tests in api/tests/test_advice_lint.py.
   5. (source files only, tests excluded) No em dash used as punctuation (" — ") in a one-line string literal (antislop R-02; a lone "—"
      placeholder for a missing value is allowed). Not applied to `--text`/`--json` or to runtime model output (`lint_text` is unchanged).
 """
@@ -28,12 +31,18 @@ BANNED = [
     r"\bbook (now|today|an appointment)\b", r"\bschedule (now|today|before)\b", r"\bact now\b", r"\bhurry\b", r"\bdeal\b", r"\bwin(ner|ning)?\b",
     r"\bbetter plan\b", r"\bright plan for you\b", r"\byou qualify\b", r"\byou can enroll\b", r"\bavailable to you\b", r"\bcheapest\b",
     r"\bdon'?t waste\b", r"\bexpir(e|es|ing) soon\b", r"\bmaximize\b", r"\btake advantage\b", r"\bwe suggest\b", r"\bideal\b",
+    # owner rule (no advice for anything at all): never tell anyone what to ask, call, check, wait for or schedule
+    r"\bask your\b", r"\btalk to\b", r"\bcall (your|the|us|them|a|an)\b", r"\bcontact (your|the|us|them|a|an)\b", r"\bcheck with\b",
+    r"\bremember to\b", r"\byou may want\b", r"\byou might want\b", r"\bit'?s a good idea\b", r"\ba good idea\b", r"\bworth it\b",
+    r"\bconsider(ing)?\b", r"\bwait until\b", r"\bplease ask\b",
+    r"\bschedule (it|the|your|a|an|this|that|them|now|today|before|soon)\b",
 ]
 IMPERATIVE_OPENERS = [
     "schedule", "book", "use", "consider", "choose", "pick", "select the", "spend", "save", "hurry", "act", "call your", "ask your",
     "switch", "wait until", "delay", "postpone", "avoid", "try the", "go with", "enroll", "upgrade", "downgrade", "get the", "take the",
     # master prompt §1: no suggestions to book, schedule, call, consult, contact, visit, submit or obtain anything
     "contact", "consult", "submit", "obtain", "visit your", "request", "see your", "talk to", "follow up", "rest", "rinse", "take ibuprofen",
+    "call", "check with", "remember", "please", "make sure", "don't forget", "wait",
 ]
 STEERING_MODALS = [r"\byou (can|could|will|'ll|would) save\b", r"\byou (should|need to|must|ought to|had better)\b", r"\bwe (recommend|advise|suggest)\b"]
 UI_EXEMPT_MAX_WORDS = 4
@@ -77,6 +86,8 @@ def strip_comments(src: str, suffix: str) -> str:
 
 
 def lint_file(path: Path) -> list[dict]:
+    if ".test." in path.name or path.name.startswith("test_"):
+        return []      # test files hold sample plan text and denied examples on purpose; they are not copy a person reads
     src = strip_comments(path.read_text(encoding="utf-8", errors="ignore"), path.suffix)
     out = []
     for m in STRING_RE.finditer(src):
@@ -84,7 +95,7 @@ def lint_file(path: Path) -> list[dict]:
         if len(s.split()) == 0 or "://" in s or s.startswith("#") or re.fullmatch(r"[\w\-./:${}()\[\] ,%]+", s) and len(s.split()) <= 2:
             continue
         is_label = len(s.split()) <= UI_EXEMPT_MAX_WORDS
-        if re.search("\\s\u2014\\s", s) and "\n" not in s and ".test." not in path.name:
+        if re.search("\\s\u2014\\s", s) and "\n" not in s:
             out.append({"rule": "em-dash", "match": "\u2014", "text": s, "file": str(path)})
         for v in lint_text(s, is_ui_label=is_label):
             v["file"] = str(path)

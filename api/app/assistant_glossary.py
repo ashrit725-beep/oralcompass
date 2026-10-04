@@ -35,18 +35,16 @@ GLOSSARY: dict[str, GlossaryEntry] = {
         "term": "deductible",
         "aka": ["deductibles", "deductable", "deductibel", "deducible", "individual deductible", "family deductible", "yearly deductible",
                 "annual deductible"],
-        "simple": ("Your deductible is the part of the bill you pay yourself before the plan starts to pay. "
-                   "It starts over each benefit year, and some plans skip it for some care, such as cleanings."),
-        "simpler": "The deductible is what you pay first, before the plan pays anything.",
+        "simple": ("Your deductible is the first part of the bill that you pay. It starts over each year, and then the plan helps."),
+        "simpler": "The deductible is what you pay first.",
         "plan_field": "plan.deductible_individual",
     },
     "plan_share": {
         "term": "plan share",
         "aka": ["plan share", "plan's share", "coinsurance", "co-insurance", "co insurance", "coinsurence", "covered percentage",
                 "plan percentage", "benefit percentage", "percentage the plan pays"],
-        "simple": ("Plan share is the part of the allowed amount the plan pays, and coinsurance is the part you pay. "
-                   "Your plan lists both, and the split can differ for cleanings, fillings and crowns."),
-        "simpler": "Plan share is the part the plan pays, and the rest is yours to pay.",
+        "simple": ("Plan share is the part the plan pays, and coinsurance is the part you pay. Your plan has a list of both."),
+        "simpler": "Plan share is the part the plan pays.",
         "plan_field": None,
     },
     "allowed_amount": {
@@ -54,9 +52,8 @@ GLOSSARY: dict[str, GlossaryEntry] = {
         "aka": ["allowed amount", "alowed amount", "allowed ammount", "allowed charge", "allowed fee", "allowable charge", "maximum allowable charge", "maximum allowed charge",
                 "mac", "plan allowance", "allowance", "negotiated fee", "contracted fee", "reasonable and customary", "r&c",
                 "usual and customary", "usual customary and reasonable", "ucr"],
-        "simple": ("The allowed amount is the price your plan counts for a service, which can be lower than what the dentist charges. "
-                   "Your part and the plan's part are worked out from this price, not from the dentist's charge."),
-        "simpler": "The allowed amount is the price your plan agrees to count for the work.",
+        "simple": ("The allowed amount is the price your plan uses for the work. It can be less than what the dentist asks."),
+        "simpler": "The allowed amount is your plan's price.",
         "plan_field": None,
     },
     "annual_max": {
@@ -64,34 +61,30 @@ GLOSSARY: dict[str, GlossaryEntry] = {
         "aka": ["annual maximum", "annual max", "yearly maximum", "yearly max", "maximum", "max", "benefit maximum", "maximum benefit",
                 "calendar year maximum", "annual limit", "yearly limit", "plan maximum", "annual benefit maximum", "maximun", "maxium",
                 "yearly maximun"],
-        "simple": ("The annual maximum is the most the plan will pay for your care in one benefit year. "
-                   "Once the plan has paid that much, you pay the rest of the cost until the year starts over, and some plans have no maximum."),
-        "simpler": "The annual maximum is the most the plan pays in a year, and after that you pay.",
+        "simple": ("The annual maximum is the most the plan will pay in one year, and you pay the rest. But some plans have no maximum."),
+        "simpler": "The annual maximum is the top the plan pays each year.",
         "plan_field": "plan.annual_max",
     },
     "waiting_period": {
         "term": "waiting period",
         "aka": ["waiting period", "wait period", "waiting time", "waiting periods"],
-        "simple": ("A waiting period is a stretch of time after your plan starts when it does not yet pay for some care. "
-                   "It often applies to bigger work, such as crowns, and care done before it ends is not paid by the plan."),
-        "simpler": "A waiting period is the time after you join before the plan pays for some care.",
+        "simple": ("A waiting period is the time after your plan starts. In that time, it does not pay for some work."),
+        "simpler": "A waiting period is time before the plan pays.",
         "plan_field": None,
     },
     "frequency_limit": {
         "term": "frequency limit",
         "aka": ["frequency limit", "frequency limitation", "frequency", "frequency rule", "limit on how often", "how often the plan pays"],
-        "simple": ("A frequency limit is how often the plan will pay for the same care, like how many cleanings a year. "
-                   "If you have that care again sooner, the plan does not pay for the extra visit."),
-        "simpler": "A frequency limit is how often the plan pays for the same kind of care.",
+        "simple": ("A frequency limit is how often the plan pays for the same work, like cleanings."),
+        "simpler": "A frequency limit is how often the plan pays.",
         "plan_field": None,
     },
     "network": {
         "term": "in-network and out-of-network",
         "aka": ["in-network", "in network", "out-of-network", "out of network", "network", "network dentist", "participating dentist",
                 "participating provider", "non-participating dentist", "nonparticipating dentist", "non-network", "ppo network", "provider network"],
-        "simple": ("An in-network dentist has signed up with your plan and takes its allowed amount as the full price. "
-                   "An out-of-network dentist has not, so they may bill you for more than that."),
-        "simpler": "In-network dentists take your plan's price, and out-of-network dentists may charge more.",
+        "simple": ("An in-network dentist has signed up with your plan. They take the plan's price as the whole price."),
+        "simpler": "In-network dentists take your plan's price.",
         "plan_field": None,
     },
     "alternate_benefit": {
@@ -99,75 +92,66 @@ GLOSSARY: dict[str, GlossaryEntry] = {
         "aka": ["alternate benefit", "alternative benefit", "alternate benefits", "least costly alternative", "least expensive alternative",
                 "least costly alternative treatment", "lcat", "less costly service", "less costly alternative", "alternate treatment",
                 "downgrade", "downgrading"],
-        "simple": ("An alternate benefit means the plan pays only for a less costly fix, like a metal crown. "
-                   "You pay the difference in price."),
-        "simpler": "An alternate benefit pays for a less costly fix.",
+        "simple": ("An alternate benefit means the plan only pays what a cheaper fix would cost. You pay the rest."),
+        "simpler": "An alternate benefit pays for a cheap fix.",
         "plan_field": None,
     },
     "exclusion": {
         "term": "not covered (exclusion)",
         "aka": ["not covered", "exclusion", "exclusions", "excluded", "non-covered", "noncovered", "uncovered", "limitations and exclusions"],
-        "simple": ("Not covered means the plan pays nothing for that kind of care, so you pay the full cost. "
-                   "The plan document lists these, often in a part called exclusions."),
-        "simpler": "Not covered means the plan pays nothing for it, so you pay all of it.",
+        "simple": ("Not covered means the plan pays nothing for that work. So you pay the full cost."),
+        "simpler": "Not covered means you pay all of it.",
         "plan_field": None,
     },
     "predetermination": {
         "term": "pre-treatment estimate",
         "aka": ["pre-treatment estimate", "pretreatment estimate", "pre treatment estimate", "predetermination", "pre-determination",
                 "pre determination", "predetermination of benefits", "pre-estimate", "preestimate"],
-        "simple": ("A pre-treatment estimate is a note from your plan, sent before the work, about what it "
-                   "thinks it will pay. It is not a promise, and the plan decides when the claim comes in."),
-        "simpler": "A pre-treatment estimate is the plan's note, before the work, about what it may pay.",
+        "simple": ("A pre-treatment estimate is a note from your plan before the work. It says what the plan may pay, but it is not a promise."),
+        "simpler": "A pre-treatment estimate is a note before the work.",
         "plan_field": None,
     },
     "premium": {
         "term": "premium",
         "aka": ["premium", "premiums", "monthly premium", "monthly cost of the plan", "plan cost per month"],
-        "simple": ("The premium is what you or your employer pay to have the plan, often each month or each paycheck. "
-                   "It is paid even in months with no dental visits, and it does not count toward your deductible."),
-        "simpler": "The premium is the regular price of having the plan, even when you have no visits.",
+        "simple": ("The premium is what is paid to have the plan, like each month. It is not part of the price of any work."),
+        "simpler": "The premium is the price to have the plan.",
         "plan_field": None,
     },
     "eob": {
         "term": "explanation of benefits (EOB)",
         "aka": ["explanation of benefits", "explanation of benefit", "eob", "eobs", "benefit statement", "benefits statement",
                 "claim statement"],
-        "simple": ("An explanation of benefits (EOB) is the note your plan sends after a claim. "
-                   "It shows the dentist's charge, what the plan paid and what is left for you to pay."),
-        "simpler": "An EOB is the plan's note after a visit that shows who paid what.",
+        "simple": ("An explanation of benefits (EOB) is a note your plan sends after a visit. It shows who paid what."),
+        "simpler": "An EOB is the plan's note after a visit.",
         "plan_field": None,
     },
     "procedure_code": {
         "term": "procedure code (CDT)",
         "aka": ["procedure code", "procedure codes", "cdt", "cdt code", "dental code", "billing code", "code", "ada code"],
-        "simple": ("A procedure code is a short code that names one kind of dental work, taken from a list called CDT. "
-                   "OralCompass shows a code only when your own estimate or a plan document prints it."),
-        "simpler": "A procedure code is the short name dentists and plans use for each kind of dental work.",
+        "simple": ("A procedure code is a short code for one kind of dental work. Dentists and plans both use it."),
+        "simpler": "A procedure code is a short name for the work.",
         "plan_field": None,
     },
     "copay": {
         "term": "copay",
         "aka": ["copay", "co-pay", "co pay", "copayment", "co-payment", "co payment", "copays"],
-        "simple": ("A copay is a set price you pay each visit, but the plans here use a plan share instead. "
-                   "With a plan share, the plan pays a part of the cost and you pay the rest."),
-        "simpler": "A copay is a set price per visit, and the plans here use a plan share instead.",
+        "simple": ("A copay is a set price you pay at each visit, not a plan share. The plans here use a plan share."),
+        "simpler": "A copay is a set price per visit, not a plan share.",
         "plan_field": None,
     },
     "balance_billing": {
         "term": "balance billing",
         "aka": ["balance billing", "balance bill", "balance billed", "billed the difference", "surprise bill"],
-        "simple": ("Balance billing is when a dentist bills you for the part of the charge above what your plan allows. "
-                   "In-network dentists agree not to do this for covered care, and out-of-network dentists may."),
-        "simpler": "Balance billing is when a dentist outside your network bills you for what the plan does not count.",
+        "simple": ("Balance billing is when a dentist bills you for the part over your plan's price."),
+        "simpler": "Balance billing is a bill for the extra part.",
         "plan_field": None,
     },
     "benefit_year": {
         "term": "benefit year",
         "aka": ["benefit year", "plan year", "calendar year", "benefit period", "coverage year"],
-        "simple": ("The benefit year is the year your plan uses to count what you have used. "
-                   "For many plans it runs from January to December, and both start over when a new one begins."),
-        "simpler": "Your costs start over each benefit year.",
+        "simple": ("The benefit year is the year your plan uses to count what was used. Then the count starts over."),
+        "simpler": "The benefit year is the plan's year.",
         "plan_field": None,
     },
     "coverage_class": {
@@ -175,42 +159,37 @@ GLOSSARY: dict[str, GlossaryEntry] = {
         "aka": ["coverage class", "class of service", "service class", "class i", "class ii", "class iii", "class a", "class b", "class c",
                 "type i", "type ii", "type iii", "preventive services", "basic services", "major services", "preventive care",
                 "basic care", "major care"],
-        "simple": ("A coverage class is a group of dental care, like basic or major care, that the plan pays the same way. "
-                   "Plans may call these classes or types, and each one has its own plan share."),
-        "simpler": "A coverage class is a group of dental care that the plan pays the same way.",
+        "simple": ("A coverage class is a group of dental work that the plan pays the same way."),
+        "simpler": "A coverage class is a group of work.",
         "plan_field": None,
     },
     "network_adjustment": {
         "term": "network adjustment",
         "aka": ["network adjustment", "write off", "write-off", "writeoff", "network discount", "contractual adjustment"],
-        "simple": ("A network adjustment is the part of an in-network dentist's price above what the plan allows. "
-                   "Nobody pays it: the dentist agreed to take it off the bill."),
-        "simpler": "A network adjustment is taken off the bill, so no one pays it.",
+        "simple": ("A network adjustment is the part of an in-network price over what the plan allows. It comes off the bill, so no one pays it."),
+        "simpler": "A network adjustment comes off the bill, so no one pays it.",
         "plan_field": None,
     },
     "out_of_pocket": {
         "term": "out of pocket",
         "aka": ["out of pocket", "out-of-pocket", "oop", "out of pocket cost", "out of pocket costs"],
-        "simple": ("Out of pocket means the money you pay yourself, not the plan. "
-                   "In OralCompass it is the amount shown as what you pay."),
-        "simpler": "Out of pocket is money that comes from you.",
+        "simple": ("Out of pocket means the money you pay yourself. It is not paid by the plan."),
+        "simpler": "Out of pocket is money from you.",
         "plan_field": None,
     },
     "claim": {
         "term": "claim",
         "aka": ["claim", "claims", "dental claim", "insurance claim"],
-        "simple": ("A claim is the bill sent to your plan after care, asking it to pay its part. "
-                   "Your dentist's office usually sends it, and the plan answers with an explanation of benefits."),
-        "simpler": "A claim is the bill sent to your plan so it pays its part.",
+        "simple": ("A claim is the bill sent to your plan after the work. It asks the plan to pay its part."),
+        "simpler": "A claim is the bill sent to your plan.",
         "plan_field": None,
     },
     "dentist_fee": {
         "term": "dentist's fee",
         "aka": ["dentist's fee", "dentist fee", "dentists fee", "submitted fee", "submitted charge", "usual fee", "full fee",
                 "billed amount", "sticker price"],
-        "simple": ("The dentist's fee is the price the dentist charges, as written on the estimate. "
-                   "The plan works from its allowed amount, which can be lower than this fee."),
-        "simpler": "The dentist's fee is the price the dentist asks for the work.",
+        "simple": ("The dentist's fee is the price the dentist asks for the work. It is on the estimate."),
+        "simpler": "The dentist's fee is the dentist's price.",
         "plan_field": None,
     },
 }

@@ -115,7 +115,7 @@ def test_upload_validation_413_415_422(monkeypatch):
     ok = upload(h, pdf)
     assert ok.status_code == 201 and ok.json()["pages"] == 1 and ok.json()["extraction_status"] == "uploaded" and ok.json()["demo_fixture_match"] is False
     assert "removed" in ok.json()["redaction_preview"] and ok.json()["redaction_preview"]["text"].startswith("Deductible")
-    assert "Nothing in it is followed as an instruction" in ok.json()["redaction_preview"]["note"]
+    assert "It never does what they say" in ok.json()["redaction_preview"]["note"]
     # the file is stored under the owner prefix, never under web/public
     stored = uploads.doc_path("val-a", ok.json()["id"])
     assert stored.exists() and "web" not in stored.parts and hashlib.sha256(stored.read_bytes()).hexdigest() == ok.json()["sha256"]
@@ -127,7 +127,7 @@ def test_scanned_pdf_fails_with_an_honest_reason():
     r = client.post(f"/me/documents/{up['id']}/extract", headers=h)
     assert r.status_code == 202 and r.json()["status"] == "failed"
     st = client.get(f"/me/documents/{up['id']}/extraction", headers=h).json()
-    assert st["status"] == "failed" and st["reason"] == "no text layer (scanned document)" and st["pages"] == 4
+    assert st["status"] == "failed" and st["reason"] == "this is a picture of a page, so there are no words to read" and st["pages"] == 4
     assert st["fields"] and all(f["confidence"] == "not_found" and f["proposed_value"] is None for f in st["fields"])
     assert client.post(f"/me/documents/{up['id']}/publish", headers=h).status_code == 409   # nothing decided yet; hand entry is the path
 
@@ -192,7 +192,7 @@ def test_harborview_fixture_end_to_end_demo_mode():
     assert [s["key"] for s in st["stages"]] == ["queued", "reading_text", "redacting", "identifying_fields", "matching_rules", "verifying_quotes", "ready"]
     assert all(s["done"] for s in st["stages"]) and st["stage_index"] == 6 and st["pages"] == st["pages_done"] == 14
     assert st["quotes_total"] == st["quotes_verified"] == 50 and st["counts"] == {"confirmed": 50, "likely": 0, "needs_review": 0, "not_found": 2}
-    assert "stored fixture that matches this document's checksum" in st["ribbon"]
+    assert "stored copy of these same papers" in st["ribbon"]
     fields = {f["field_path"]: f for f in st["fields"]}
     # every required field is confirmed by real quote verification against the PDF text layer (not by trusting the fixture)
     required = [f for f in st["fields"] if f["required"]]
@@ -521,7 +521,7 @@ def test_live_mode_model_unavailable_after_one_retry(monkeypatch):
     up = upload(h, HB26_PDF.read_bytes()).json()
     client.post(f"/me/documents/{up['id']}/extract", headers=h)
     st = client.get(f"/me/documents/{up['id']}/extraction", headers=h).json()
-    assert st["status"] == "failed" and st["reason"] == "model unavailable" and st["mode"] == "live" and calls["n"] == 2
+    assert st["status"] == "failed" and st["reason"] == "the reading helper is not working right now" and st["mode"] == "live" and calls["n"] == 2
     assert all(f["confidence"] == "not_found" for f in st["fields"])
     assert client.post(f"/me/documents/{up['id']}/extract", headers=h).status_code == 202          # a failed run can be retried by the owner
 
@@ -555,7 +555,7 @@ def test_live_mode_against_openrouter_once(monkeypatch):
     assert st["mode"] == "live" and st["model"] == model
     assert st["status"] in ("ready", "failed"), st.get("reason")
     if st["status"] == "failed":
-        assert st["reason"] == "model unavailable"
+        assert st["reason"] == "the reading helper is not working right now"
         pytest.skip("OpenRouter did not answer in time; the honest failure path was exercised")
     fields = {f["field_path"]: f for f in st["fields"]}
     # whatever the model proposed: no confirmed row without an exact text-layer match, no injected sentence anywhere, no value without a verified quote

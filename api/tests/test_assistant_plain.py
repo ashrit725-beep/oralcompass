@@ -35,7 +35,7 @@ def ask(msg, style=None, **scope):
     return r.json()
 
 
-def lead(j, max_sentences=2):
+def lead(j, max_sentences=3):      # owner rule: short sentences for an 8-year-old, so a lead may use up to three
     b = j["blocks"][0]
     assert b["kind"] == "simple" and b["text"].strip()
     bare = assistant.ISO_DATE.sub(" ", assistant.PLACEHOLDER.sub(" ", b["text"]))
@@ -60,10 +60,11 @@ def test_define_term_without_a_plan_value():
     assert j["intent"] == "define_term" and lead(j)["refs"] == []
 
 
-def test_journey_total_uses_the_estimate_totals_in_one_sentence(est):
+def test_journey_total_names_what_you_pay_then_what_insurance_pays(est):
     j = ask("What will I pay in total?", estimate_id=est["id"])
     assert j["intent"] == "journey_total"
-    b = lead(j, 1)
+    b = lead(j, 2)
+    assert b["text"].startswith("For all the work, you pay {{ref:0}}.") and "Insurance pays {{ref:1}}." in b["text"]
     assert b["refs"] == [{"kind": "estimate_total", "which": "patient"}, {"kind": "estimate_total", "which": "plan"}]
     assert len([x for x in j["blocks"][1:] if x["refs"] and x["refs"][0]["kind"] == "line_total"]) == len(est["ledger"]["lines"])
     s = lead(ask("What will I pay in total?", style="simpler", estimate_id=est["id"]), 1)
@@ -140,7 +141,7 @@ def test_two_named_procedures_are_both_answered(est):
 def test_line_by_name_gives_one_main_reason(est):
     j = ask("Root canal - why that much?", estimate_id=est["id"])
     assert j["intent"] == "line_by_name"
-    assert "main reason" in lead(j)["text"].lower()
+    assert "why:" in lead(j)["text"].lower()
 
 
 @pytest.mark.parametrize("line,reason", [
@@ -165,13 +166,29 @@ def _strings(o):
             yield from _strings(x)
 
 
-def test_every_lead_template_reads_at_grade_8_or_lower():
+def test_every_lead_template_reads_at_grade_4_or_lower():
+    """Owner rule: every fixed plain-words lead is written for an 8-year-old (Flesch-Kincaid grade 4 or lower)."""
     from app import assistant_templates as T
-    from app.assistant_glossary import GLOSSARY
     texts = [t for name in ("SIMPLE", "LINE_REASON", "STEP_LEAD", "WHERE_LEAD", "CLAUSE_LEAD") for t in _strings(getattr(T, name))]
-    texts += [assistant._first_sentence(e["simple"]) for e in GLOSSARY.values()] + [e["simpler"] for e in GLOSSARY.values()]
+    high = [(round(assistant.fk_grade(t), 1), t) for t in texts if assistant.fk_grade(t) > assistant.FK_MAX_SIMPLE]
+    assert not high, high
+
+
+def test_every_glossary_lead_reads_at_grade_8_or_lower():
+    from app.assistant_glossary import GLOSSARY
+    texts = [assistant._first_sentence(e["simple"]) for e in GLOSSARY.values()] + [e["simpler"] for e in GLOSSARY.values()]
     high = [(round(assistant.fk_grade(t), 1), t) for t in texts if assistant.fk_grade(t) > 8.0]
     assert not high, high
+
+
+def test_refusals_state_facts_and_give_no_instruction():
+    from app import assistant_templates as T
+    from app import templates
+    assert T.SIMPLE["advice_request"][0] == "OralCompass only shows costs. It does not pick for you."
+    assert templates.ADVICE_INTRO == "OralCompass only shows costs. It does not pick for you. Here is what the costs are."
+    assert T.SIMPLE["out_of_scope"][1] == "OralCompass only shows costs, not health answers."
+    for t in list(T.SIMPLE["out_of_scope"]) + [T.OUT_OF_SCOPE]:
+        assert "dentist" not in t and "ask" not in t.lower() and "dental team" not in t
 
 
 def test_every_intent_has_a_distinct_shorter_simpler_lead():
