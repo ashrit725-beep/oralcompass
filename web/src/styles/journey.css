@@ -23,7 +23,7 @@
 .log dt { font-weight: 600; color: var(--ink-soft); font-size: 13px; line-height: 22px; letter-spacing: .01em; }
 .log dd { margin: 0; min-width: 0; }
 /* rows wrap to two lines instead of cutting a sentence with "…" (the full text is also the button's title) */
-.log-link { font-family: var(--serif); font-size: 15px; line-height: 22px; text-align: left; max-width: 100%; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow-wrap: anywhere; color: var(--ink); }
+.log-link { font-family: var(--serif); font-size: 15px; line-height: 22px; text-align: left; max-width: 100%; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow-wrap: anywhere; color: var(--ink); min-height: 32px; }
 @media (max-width: 760px) {
   .log { grid-template-columns: minmax(0, 1fr); }
   .log-row { grid-template-columns: minmax(0, 1fr); gap: 2px; padding: 6px 0; }
@@ -37,7 +37,7 @@
 .journey-head h2 { text-wrap: balance; margin-bottom: var(--s-1); }
 .progress-line { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--s-2); }
 .progress-note { display: inline; color: var(--ink-soft); font-size: 14px; }
-.progress-note > summary { display: inline; cursor: pointer; color: var(--ink-soft); text-decoration: underline; text-decoration-color: var(--gold); text-underline-offset: 3px; list-style: none; min-height: 32px; }
+.progress-note > summary { display: inline-flex; align-items: center; cursor: pointer; color: var(--ink-soft); text-decoration: underline; text-decoration-color: var(--gold); text-underline-offset: 3px; list-style: none; min-height: 32px; }
 .progress-note > summary::-webkit-details-marker { display: none; }
 .progress-note[open] > p { margin: var(--s-1) 0 0; max-width: 72ch; }
 .journey-controls { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-3); }
@@ -269,3 +269,16 @@
   .care-rail { overflow-x: visible; gap: var(--s-2); }
   .care-card { flex: 1 1 0; min-width: 0; padding: var(--s-3); }
 }
+/* layout audit (delight pass): the marginal chip is a two-line 44 px control, not a 60 px island card (it was cut by the plate's bottom
+   edge); the care rail's text button gets a 32 px target */
+.passage-controls .island-btn.marginal-btn { min-height: 44px; }
+.care-show-chart { min-height: 32px; display: inline-flex; align-items: center; }
+.segmented > button.seg-btn { cursor: pointer; font-family: inherit; }
+@media (max-width: 760px) {
+  .log-link, .care-show-chart { min-height: 44px; }
+  .progress-note > summary { min-height: 44px; }
+  .skip-link { min-height: 44px; }
+}
+/* phone passage: the 20 px stitch chips keep their look but get a 44 px tall hit area */
+.passage-vertical .stitch { position: relative; }
+.passage-vertical .stitch::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 44px; transform: translateY(-50%); }

@@ -135,7 +135,7 @@ export function JourneyView({ data, selection, mobile, onOpenLandmark, onOpenDoc
           {/* one segmented control: the parchment thumb glides to the pressed segment on pointer (200 ms), snaps for keyboard and reduced motion */}
           <div className="segment-row segmented" role="group" aria-label="Journey views">
             {([["map", UI.mapView], ["care", PASSAGE.careTimeline], ["overview", UI.overview]] as const).map(([k, label]) => (
-              <button key={k} type="button" className="seg-btn" aria-pressed={segment === k} onClick={(e) => { segPointer.current = e.detail > 0; setSegment(k); }}>
+              <button key={k} type="button" className="unstyled seg-btn" aria-pressed={segment === k} onClick={(e) => { segPointer.current = e.detail > 0; setSegment(k); }}>
                 {segment === k && <motion.span layoutId="segment-thumb" className="seg-thumb" aria-hidden="true" transition={reduce || !segPointer.current ? { duration: 0 } : { duration: 0.2, ease: [0.2, 0.7, 0.2, 1] }} />}
                 {label}
               </button>
