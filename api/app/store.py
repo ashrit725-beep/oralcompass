@@ -39,6 +39,14 @@ class InMemoryRepo:
         self._log(sub, "read", rtype, rid, "ok")
         return item
 
+    def delete_owned(self, sub: str, rtype: str, rid: str) -> None:
+        """Delete one owned record; a record that is not the caller's gets the same constant 404 as a nonexistent id."""
+        if (sub, rtype, rid) not in self._items:
+            self._log(sub, "delete", rtype, rid, "denied")
+            raise HTTPException(status_code=404, detail=NOT_FOUND)
+        del self._items[(sub, rtype, rid)]
+        self._log(sub, "delete", rtype, rid, "ok")
+
     def list_owned(self, sub: str, rtype: str) -> list[dict]:
         return [v for (s, t, _), v in self._items.items() if s == sub and t == rtype]
 

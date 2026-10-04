@@ -35,11 +35,13 @@ PRESETS = {p.stem.upper(): load_plan(p) for p in sorted((FIXTURES / "plans").glo
 PRESET_META = {code: extractor.by_code[code] for code in PRESETS}
 
 from .templates import FOOTER, COMPARISON_BANNER, PRESET_BANNER  # noqa: E402
-from . import journeys, records, uploads  # noqa: E402
+from . import assistant, journeys, notifications, records, uploads  # noqa: E402
 
 app.include_router(records.router)
 app.include_router(journeys.router)
 app.include_router(uploads.router)
+app.include_router(assistant.router)
+app.include_router(notifications.router)
 
 
 # ---------- schemas ----------

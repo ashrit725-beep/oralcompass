@@ -43,3 +43,20 @@ IGNORED_WORDING_NOTE = "Text in the document that was not used as a rule: senten
 UNMATCHED_WORDING_NOTE = "Wording in the document that matched none of the 16 procedure identifiers. It stays as the document printed it and enters no rule."
 UPLOAD_PLAN_BANNER = "Uploaded plan: rules come from the quotes you decided on in your own document. Nothing is copied from a preset plan."
 UPLOAD_VERSION_NOTE = "Published versions are immutable. Publishing again creates the next version; stored estimates keep the version they were calculated with."
+
+# ---------- grounded assistant (spec section 8) ----------
+ASSIST_RIBBON_DEMO = "Demo mode: template answers assembled from the engine's fields, not a live model."
+ASSIST_RIBBON_LIVE_FALLBACK = "The model did not answer in time; a template answer is shown."
+ASSIST_GUARD_REMOVED = "{n} sentence(s) were removed by the information-only check."
+ASSIST_NOTHING_SURVIVED = "No sentence about this step passed the information-only check; the clause and step are listed instead."
+ASSIST_RATE_LIMITED = "Too many questions in a short time; the composer opens again in a moment."
+
+# ---------- informational reminders (master prompt section 19): fact statements only, every figure from the engine or the user's records ----------
+REMINDER_BENEFIT_YEAR_END = "Your plan document states the benefit year ends {end}. As of your statement dated {date}, {remaining} of the {maximum} annual maximum had not been used."
+REMINDER_BENEFIT_YEAR_END_NO_USAGE = "Your plan document states the benefit year ends {end}. The amount of the annual maximum used this year is not provided in your records."
+REMINDER_BENEFIT_YEAR_END_NO_MAX = "Your plan document states the benefit year ends {end}. The pages read do not state an annual maximum."
+REMINDER_BENEFIT_YEAR_UNKNOWN = "The pages read do not state when this plan's benefit year begins, so no benefit-year end date is listed."
+REMINDER_INTERVAL = "Your plan document limits {name} to one every {months} months. Your records list a service on {last}; the first date that satisfies the interval is {next}."
+REMINDER_CALENDAR_COUNT = "Your plan document limits {name} to {n} per {period}. Your records list {k} in the current benefit year; the count resets on {reset}."
+REMINDER_DOCUMENT_AWAITING = "A document you added ({label}) is waiting for your decisions on its extracted fields."
+PUSH_TEST_BODY = "A date you chose to follow is approaching. Open the app for details."
