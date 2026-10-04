@@ -113,7 +113,7 @@ const STATES = [
 const STATE = `(?:${STATES.join("|")})`;
 
 /** A capitalised name word: "Avery", "O'Neil", "Mary-Kate", "AVERY", or an initial "J.". */
-const NW = "\\p{Lu}(?:[\\p{L}'’\\-]{0,24}|\\.)";
+const NW = "\\p{Lu}(?:\\.|[\\p{L}'’\\-]{0,24}\\.?)";
 const NAME_WORDS = `(${NW}(?:,?${SP}{1,3}${NW}){0,5})`;
 const NAME_WORDS_NO_COMMA = `(${NW}(?:${SP}{1,3}${NW}){0,5})`;
 const HONORIFIC = `(?:(?:Mr|Ms|Mrs|Mx|Dr|Miss|MR|MS|MRS|MX|DR|MISS)\\.?${SP}{1,3})?`;
@@ -241,9 +241,11 @@ function nameCheck(minWords: number) {
       prevEnd = m.index + raw.length;
       kept += 1;
       let e = m.index + raw.length;
-      if (raw.endsWith(".") && raw.length > 2 && !SUFFIX_WORDS.has(key)) e -= 1;
+      // "Rowan." ends a sentence: the period is not part of the name and nothing after it is (initials and "Jr." keep theirs).
+      const sentenceEnd = raw.endsWith(".") && !initial && !SUFFIX_WORDS.has(key);
+      if (sentenceEnd) e -= 1;
       end = start + e;
-      if (kept === 5) break;
+      if (kept === 5 || sentenceEnd) break;
     }
     if (kept < minWords) return null;
     // A trailing honorific-like single letter without a period is not part of a name ("Avery Rowan A" in a table).
@@ -371,24 +373,58 @@ const RULES: Rule[] = [
 // Normalisation, ids, matching
 // ---------------------------------------------------------------------------------------------------------------------------------
 
-const TOKEN_RE = /[\p{L}\p{N}]+/gu;
 const COMPACT_CATEGORIES = new Set<IdentifierCategory>(["member_id", "group_number", "claim_number", "account_number", "ssn", "phone"]);
 const MAX_KEY_TOKENS = 24;
 const MAX_COMPACT_LEN = 24;
+const ALNUM_RE = /[\p{L}\p{N}]/u;
+const UPPER_RE = /\p{Lu}/u;
 
-function tokensOf(s: string): string[] {
-  const out: string[] = [];
-  for (const m of s.matchAll(TOKEN_RE)) out.push(normToken(m[0]));
-  return out;
+/** Letters and digits (any script); a token is a maximal run of them. ASCII is decided without a regex. */
+function isAlnum(page: string, i: number): boolean {
+  const c = page.charCodeAt(i);
+  if (c < 128) return (c >= 48 && c <= 57) || (c >= 65 && c <= 90) || (c >= 97 && c <= 122);
+  return ALNUM_RE.test(page[i]);
 }
 
-function normToken(t: string): string {
-  const low = t.toLowerCase();
-  return /^[0-9]+$/u.test(low) ? low.replace(/^0+(?=[0-9])/u, "") : low;
+function isUpperAt(page: string, i: number): boolean {
+  const c = page.charCodeAt(i);
+  if (c < 128) return c >= 65 && c <= 90;
+  return UPPER_RE.test(page[i]);
+}
+
+/** A page's tokens as parallel arrays of primitives (no per-token objects): start, end, normalised form, lowercased raw form, capitalised. */
+interface Tokens { start: number[]; end: number[]; norm: string[]; lower: string[]; upper: boolean[]; length: number }
+
+function tokenize(page: string): Tokens {
+  const t: Tokens = { start: [], end: [], norm: [], lower: [], upper: [], length: 0 };
+  const n = page.length;
+  let i = 0;
+  while (i < n) {
+    if (!isAlnum(page, i)) { i += 1; continue; }
+    const s0 = i;
+    let digits = true;
+    while (i < n && isAlnum(page, i)) {
+      const c = page.charCodeAt(i);
+      if (c < 48 || c > 57) digits = false;
+      i += 1;
+    }
+    const lower = page.slice(s0, i).toLowerCase();
+    t.start.push(s0);
+    t.end.push(i);
+    t.lower.push(lower);
+    t.norm.push(digits ? lower.replace(/^0+(?=[0-9])/u, "") : lower);
+    t.upper.push(isUpperAt(page, s0));
+  }
+  t.length = t.start.length;
+  return t;
+}
+
+function tokensOf(s: string): string[] {
+  return tokenize(s).norm;
 }
 
 function compactOf(category: IdentifierCategory, value: string): string {
-  const c = value.replace(/[^\p{L}\p{N}]/gu, "").toLowerCase();
+  const c = tokenize(value).lower.join("");
   if (category === "phone" && c.length === 11 && c.startsWith("1")) return c.slice(1);
   return c;
 }
@@ -427,21 +463,26 @@ interface TrieNode { next: Map<string, TrieNode>; entry: number }
 
 const newNode = (): TrieNode => ({ next: new Map(), entry: -1 });
 
-interface Token { t: string; start: number; end: number; upper: boolean }
-
-function tokenize(page: string): Token[] {
-  const out: Token[] = [];
-  for (const m of page.matchAll(TOKEN_RE)) {
-    const start = m.index ?? 0;
-    out.push({ t: normToken(m[0]), start, end: start + m[0].length, upper: /^\p{Lu}/u.test(m[0]) });
+/** Gap allowed between the tokens of one word-like identifier: 1–4 non-alphanumerics (spaces, a line break, ", ", ". ", "@"), never a placeholder bracket. */
+function wordGapOk(page: string, from: number, to: number): boolean {
+  if (to - from < 1 || to - from > 4) return false;
+  for (let k = from; k < to; k++) {
+    const c = page.charCodeAt(k);
+    if (c === 91 || c === 93) return false;
   }
-  return out;
+  return true;
 }
 
-/** Gap allowed between the tokens of one word-like identifier: 1–4 non-alphanumerics (spaces, a line break, ", ", ". ", "@"). */
-const wordGapOk = (page: string, from: number, to: number) => to - from >= 1 && to - from <= 4 && !/[[\]]/u.test(page.slice(from, to));
-/** Gap allowed inside a number-like identifier: up to 3 of space, line break, "-", ".", "(", ")", "/", "#" (never "," or "$"). */
-const numGapOk = (page: string, from: number, to: number) => to - from >= 1 && to - from <= 3 && /^[\s\-.()/#]+$/u.test(page.slice(from, to));
+/** Gap allowed inside a number-like identifier: up to 3 of space, tab, line break, "-", ".", "(", ")", "/", "#" (never "," or "$"). */
+function numGapOk(page: string, from: number, to: number): boolean {
+  if (to - from < 1 || to - from > 3) return false;
+  for (let k = from; k < to; k++) {
+    const c = page.charCodeAt(k);
+    // space, tab, LF, CR, no-break space, "#", "(", ")", "-", ".", "/"
+    if (!(c === 32 || c === 9 || c === 10 || c === 13 || c === 160 || c === 35 || c === 40 || c === 41 || c === 45 || c === 46 || c === 47)) return false;
+  }
+  return true;
+}
 
 class Matcher {
   private trie = newNode();
@@ -452,8 +493,9 @@ class Matcher {
     this.entries = entries;
     entries.forEach((e, i) => {
       if (COMPACT_CATEGORIES.has(e.category)) {
-        if (!this.compact.has(e.key) && e.key.length > 0) this.compact.set(e.key, i);
-        this.maxCompact = Math.max(this.maxCompact, e.key.length);
+        if (e.key.length === 0) return;
+        if (!this.compact.has(e.key)) this.compact.set(e.key, i);
+        this.maxCompact = Math.min(MAX_COMPACT_LEN, Math.max(this.maxCompact, e.key.length));
       } else {
         const toks = e.key.split(" ").filter(Boolean).slice(0, MAX_KEY_TOKENS);
         if (toks.length === 0) return;
@@ -470,34 +512,47 @@ class Matcher {
 
   /** Every match on one page, overlaps resolved (earliest start, then longest). Linear: each token walks a bounded distance. */
   spans(page: string): Span[] {
-    const toks = tokenize(page);
+    const tk = tokenize(page);
+    const { start, end, norm, lower, upper } = tk;
+    const n = tk.length;
+    const hasWords = this.trie.next.size > 0;
+    const hasNumbers = this.compact.size > 0;
     const found: Span[] = [];
-    for (let i = 0; i < toks.length; i++) {
+    for (let i = 0; i < n; i++) {
       // word-like identifiers (names, addresses, dates of birth, emails, added terms)
-      let node: TrieNode | undefined = this.trie;
-      let best: Span | null = null;
-      for (let j = i; j < toks.length && j - i < MAX_KEY_TOKENS; j++) {
-        if (j > i && !wordGapOk(page, toks[j - 1].end, toks[j].start)) break;
-        node = node.next.get(toks[j].t);
-        if (!node) break;
-        if (node.entry >= 0) {
-          const e = this.entries[node.entry];
-          if (!e.caseSensitiveName || toks.slice(i, j + 1).every((k) => k.upper)) best = { start: toks[i].start, end: toks[j].end, entry: node.entry };
+      if (hasWords) {
+        let node: TrieNode | undefined = this.trie;
+        let bestEnd = -1;
+        let bestEntry = -1;
+        let allUpper = true;
+        for (let j = i; j < n && j - i < MAX_KEY_TOKENS; j++) {
+          if (j > i && !wordGapOk(page, end[j - 1], start[j])) break;
+          node = node.next.get(norm[j]);
+          if (!node) break;
+          allUpper = allUpper && upper[j];
+          if (node.entry >= 0 && (allUpper || !this.entries[node.entry].caseSensitiveName)) {
+            bestEnd = end[j];
+            bestEntry = node.entry;
+          }
         }
+        if (bestEntry >= 0) found.push({ start: start[i], end: bestEnd, entry: bestEntry });
       }
-      if (best) found.push(best);
       // number-like identifiers, punctuation-insensitive; never a dollar amount or a percentage
-      if (this.compact.size > 0 && page[toks[i].start - 1] !== "$") {
+      if (hasNumbers && page.charCodeAt(start[i] - 1) !== 36) {
         let acc = "";
-        let bestC: Span | null = null;
-        for (let j = i; j < toks.length; j++) {
-          if (j > i && !numGapOk(page, toks[j - 1].end, toks[j].start)) break;
-          acc += page.slice(toks[j].start, toks[j].end).toLowerCase();
-          if (acc.length > this.maxCompact || acc.length > MAX_COMPACT_LEN) break;
+        let bestEnd = -1;
+        let bestEntry = -1;
+        for (let j = i; j < n; j++) {
+          if (j > i && !numGapOk(page, end[j - 1], start[j])) break;
+          acc += lower[j];
+          if (acc.length > this.maxCompact) break;
           const hit = this.compact.get(acc);
-          if (hit !== undefined && page[toks[j].end] !== "%") bestC = { start: toks[i].start, end: toks[j].end, entry: hit };
+          if (hit !== undefined && page.charCodeAt(end[j]) !== 37) {
+            bestEnd = end[j];
+            bestEntry = hit;
+          }
         }
-        if (bestC) found.push(this.widenPhone(page, bestC));
+        if (bestEntry >= 0) found.push(this.widenPhone(page, { start: start[i], end: bestEnd, entry: bestEntry }));
       }
     }
     found.sort((a, b) => a.start - b.start || b.end - a.end);
@@ -516,7 +571,7 @@ class Matcher {
     if (page[start - 1] === "(") start -= 1;
     const pre = page.slice(Math.max(0, start - 3), start);
     const m = /(?:\+?1[ .-]?)$/u.exec(pre);
-    if (m && !/[\p{L}\p{N}]/u.test(page[start - m[0].length - 1] ?? "")) start -= m[0].length;
+    if (m && !(start - m[0].length - 1 >= 0 && isAlnum(page, start - m[0].length - 1))) start -= m[0].length;
     return { ...s, start };
   }
 }
@@ -651,7 +706,7 @@ const FULL = {
   ssn: /^[0-9]{3}-[0-9]{2}-[0-9]{4}$/u,
   phone: new RegExp(`^${PHONE_LABELED}$`, "u"),
   dob: new RegExp(`^${DATE}$`, "u"),
-  idLike: /^(?=[A-Za-z0-9-]*[0-9])[A-Za-z0-9][A-Za-z0-9-]{3,19}$/u,
+  idLike: /^(?=[A-Za-z0-9 -]*[0-9])[A-Za-z0-9](?:[A-Za-z0-9]|[ -](?=[A-Za-z0-9])){4,23}$/u,
 };
 const STREET_FULL = new RegExp(`^[0-9]{1,6}[A-Za-z]?(?:\\s{1,3}\\S{1,25}){1,6}\\s{1,3}${SUFFIX}\\.?(?:,?\\s.{1,20})?$`, "iu");
 const CITY_FULL = new RegExp(`^\\p{L}[\\p{L}.'’ -]{1,60},?\\s{1,3}${STATE}\\s{1,3}[0-9]{5}(?:-[0-9]{4})?$`, "u");
@@ -676,16 +731,21 @@ export function classifyTerm(term: string): IdentifierCategory {
 export function applyRedaction(pages: string[], found: FoundIdentifier[], keep: ReadonlySet<string>, extraTerms: readonly string[]): RedactionResult {
   const texts = pages.map((p) => (typeof p === "string" ? p : ""));
   const known = new Map<string, Entry>();
+  /** Every known identifier by its letters and digits only, so a typed "hb26 4471 902" finds the detected "HB26-4471-902". */
+  const byCompact = new Map<string, Entry>();
   const order: Entry[] = [];
   const forced = new Set<string>();
+  const remember = (e: Entry) => {
+    known.set(`${COMPACT_CATEGORIES.has(e.category) ? "c" : "w"}:${e.key}`, e);
+    const c = compactOf(e.category, e.value);
+    if (c && !byCompact.has(c)) byCompact.set(c, e);
+  };
   for (const f of found) {
     const key = normalise(f.category, f.value);
-    if (!key) continue;
+    if (!key || known.has(`${COMPACT_CATEGORIES.has(f.category) ? "c" : "w"}:${key}`)) continue;
     const e: Entry = { id: f.id, category: f.category, value: f.value, key, caseSensitiveName: f.category === "name" };
-    if (!known.has(`${COMPACT_CATEGORIES.has(f.category) ? "c" : "w"}:${key}`)) {
-      known.set(`${COMPACT_CATEGORIES.has(f.category) ? "c" : "w"}:${key}`, e);
-      order.push(e);
-    }
+    remember(e);
+    order.push(e);
   }
   const added: Entry[] = [];
   for (const raw of extraTerms) {
@@ -696,13 +756,13 @@ export function applyRedaction(pages: string[], found: FoundIdentifier[], keep: 
     const key = normalise(category, term);
     if (!key) continue;
     const slot = `${COMPACT_CATEGORIES.has(category) ? "c" : "w"}:${key}`;
-    const existing = known.get(slot);
+    const existing = known.get(slot) ?? byCompact.get(compactOf(category, term));
     if (existing) {
       forced.add(existing.id);
       continue;
     }
     const e: Entry = { id: idFor(category, key), category, value: term, key, caseSensitiveName: false };
-    known.set(slot, e);
+    remember(e);
     added.push(e);
   }
   const all = [...order, ...added];
