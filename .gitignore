@@ -6,3 +6,4 @@ __pycache__/
 web/public/fixtures/
 .env
 .aws-sam/
+.claude/worktrees/
