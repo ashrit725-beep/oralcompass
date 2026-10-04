@@ -1,7 +1,7 @@
 import { UI } from "@/lib/copy";
 import { DRAWER } from "@/lib/copy/drawer";
 import { conditionWords, stitchForCheckpoint } from "@/lib/drawer";
-import { docOf, Fact, Figure, Flag, Row, Section, type SectionProps } from "./shared";
+import { Fact, Figure, Flag, Row, Section, type SectionProps } from "./shared";
 
 interface Condition { procedure_key: string; condition: string; basis_key: string | null; text?: string }
 const humanize = (k: string | null) => (k ? k.replace(/_/g, " ") : DRAWER.basisUnnamed);
@@ -15,7 +15,6 @@ const humanize = (k: string | null) => (k ? k.replace(/_/g, " ") : DRAWER.basisU
 export function AlternateBenefitSection({ line, item, trail, rule, plan, stitches, onSelectStitch, mobile }: SectionProps) {
   const ab = rule?.alternate_benefit;
   if (!ab) return null;
-  const doc = docOf(plan);
   const key = item?.procedure_key ?? line?.procedure_key ?? rule?.procedure_key;
   const conditions = ((ab.conditions ?? plan.alternate_benefit?.conditions ?? []) as Condition[]).filter((c) => !key || c.procedure_key === key);
   const altStep = trail?.steps.find((s) => s.key === "alternate");
