@@ -1,0 +1,4 @@
+/* Safe areas (mobile-13): the page uses viewport-fit=cover, so bottom sheets keep clear of the home indicator and rounded corners.
+   In the components layer, so a sheet that sets its own bottom padding (a utility class) keeps it. */
+[data-slot="drawer-content"][data-vaul-drawer-direction="bottom"] { padding-bottom: env(safe-area-inset-bottom, 0px); }
+body { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px); }

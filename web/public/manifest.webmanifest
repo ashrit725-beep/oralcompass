@@ -1,10 +1,12 @@
 {
+  "id": "/",
   "name": "OralCompass",
   "short_name": "OralCompass",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#f6f0e3",
-  "theme_color": "#23303d",
+  "theme_color": "#f6f0e3",
   "description": "Your care journey. Your coverage. Clearly mapped. Information only.",
   "icons": [
     { "src": "/art/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
