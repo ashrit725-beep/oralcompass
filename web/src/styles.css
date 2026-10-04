@@ -347,6 +347,10 @@ summary { min-height: 32px; padding-block: 4px; }
   td > .linklike, th > .linklike, .ov-stages h3 > .linklike, .facts .v > .linklike, .evidence-source, .doc-card p > a:only-child, .facts .v > a, summary { min-height: 44px; }
   .depth-dial [role="radio"] { position: relative; }
   .depth-dial [role="radio"]::after { content: ""; position: absolute; inset: calc(var(--rs-inset, 3px) * -1) 0; }
+/* iOS Safari zooms the page into any focused field under 16 px (mobile-3) */
+@media (max-width: 760px), (pointer: coarse) {
+  select, input, textarea, textarea.tpr-textarea { font-size: max(16px, 1rem); }
+}
 }
 }
 
