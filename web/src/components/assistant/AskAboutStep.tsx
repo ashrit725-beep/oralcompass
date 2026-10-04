@@ -66,6 +66,8 @@ export function AskAboutStep({ scope, onOpenStitch, onOpenStep, className, data:
 
   const choices = useMemo(() => scopeChoices(scope), [scopeKey]); // eslint-disable-line react-hooks/exhaustive-deps
   const isClause = !!scope.stitch;
+  // a procedure line (the drawer) is "this step" copy, like a named step or checkpoint; only the whole-plan scope reads "this plan"
+  const stepScoped = !!(scope.step_key || scope.checkpoint_key || scope.treatment_item_id || scope.line_index != null);
   const paused = pausedUntil !== null && pausedUntil > Date.now();
 
   const ask = useCallback(async (message: string, patch?: Partial<AssistScope>) => {
@@ -94,14 +96,14 @@ export function AskAboutStep({ scope, onOpenStitch, onOpenStep, className, data:
 
   return (
     <div className={cn("as-root", className)} data-scope={isClause ? "clause" : "step"}>
-      {heading && <h3 className="as-h3">{isClause ? ASSIST.clauseHeading : scope.step_key || scope.checkpoint_key ? ASSIST.heading : ASSIST.planHeading}</h3>}
+      {heading && <h3 className="as-h3">{isClause ? ASSIST.clauseHeading : stepScoped ? ASSIST.heading : ASSIST.planHeading}</h3>}
       <p id={descId} className="as-described">{ASSIST.describedBy}</p>
       {preLabel && <p className="as-mode">{preLabel}</p>}
       <AI_Prompt
         scopes={choices}
         scope={choice}
         onScopeChange={(v) => setChoice(v as ScopeChoice)}
-        placeholder={isClause ? ASSIST.clausePlaceholder : scope.step_key || scope.checkpoint_key ? ASSIST.placeholder : ASSIST.planPlaceholder}
+        placeholder={isClause ? ASSIST.clausePlaceholder : stepScoped ? ASSIST.placeholder : ASSIST.planPlaceholder}
         sendLabel={ASSIST.send}
         scopeLabel={ASSIST.scopeLabel}
         describedBy={descId}

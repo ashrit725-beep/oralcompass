@@ -86,6 +86,8 @@ export interface Benefits {
   plan_code: string; coverage_start?: string | null; deductible_met_cents: number | null; benefits_used_cents: number | null; remaining_deductible_cents: number | null; remaining_max_cents: number | null;
   annual_max_unlimited?: boolean; derivation: Record<string, string>; source?: { type?: string; label?: string; date?: string; entered_by?: string }; last_updated?: string | null; claims: any[]; conflict?: { status: Evidence; note: string };
   remaining_deductible_out_cents?: number | null; remaining_max_out_cents?: number | null;
+  // stored record fields the server echoes back (records.py BenefitsIn)
+  network_default?: string | { value?: string | null } | null; deductible_met_out_cents?: number | null; benefits_used_out_cents?: number | null; coverage_end?: string | null;
 }
 export interface TreatmentItem {
   id: string; seed_id?: string; procedure_key: string; procedure_name?: string | null; tooth?: string | null; quantity: number; dentist_fee_cents: number; allowed_cents: number | null; allowed_status?: string; allowed_source?: string | null;
@@ -100,7 +102,11 @@ export interface SavedEstimate {
 }
 export interface PlanDocument { version_label: string; title: string; publisher?: string; url?: string | null; document_type?: string; document_date?: string | null; pages?: number | null; retrieved_at?: string; stored_path?: string | null; has_stored_pdf: boolean; sha256?: string; access_limits?: string[]; reuse_terms?: string | null; role: "primary" | "secondary"; source_id?: string }
 export interface Clause { n: number; field: string; doc: string; page: number; page_note?: string | null; section?: string | null; quote: string; fact_id?: string | null; review_status?: string | null }
-export interface PlanEvidence { plan_code: string; documents: PlanDocument[]; clauses: Clause[]; conflicts: PlanFixture["conflicts"] }
+export interface PlanEvidence {
+  plan_code: string; documents: PlanDocument[]; clauses: Clause[]; conflicts: PlanFixture["conflicts"];
+  // upload-only fields (uploads.py evidence for a published document)
+  version_label?: string; ignored_wording?: { page: number; quote: string }[]; unmatched_wording?: { wording: string; context?: string }[]; notes?: { ignored_wording?: string; unmatched_wording?: string };
+}
 export interface PlanSummary {
   plan_code: string; title: string; insurer: string; plan_name: string; option: string; plan_year: number; region: string; network: string | { text: string } | null; effective_dates: any; is_fictional: boolean; demo_label?: string | null;
   premium_monthly: Record<string, VJson<number>>; deductible_individual: VJson<number>; deductible_family: VJson<number>; annual_max: VJson<number>; currency_note?: string | null; has_stored_pdf: boolean;
@@ -121,7 +127,7 @@ export interface PrivateDocument { id: string; seed_id?: string; type: string; l
 export type PlanRef = string;                                   // "ML26" | "upload:<document_id>"
 export const isUpload = (r: PlanRef) => r.startsWith("upload:");
 export const uploadId = (r: PlanRef) => (isUpload(r) ? r.slice("upload:".length) : r);
-export interface UploadedPlanSummary extends PlanSummary { document_id: string; version_label: string; published_at: string }
+export interface UploadedPlanSummary extends PlanSummary { document_id: string; version_label: string; published_at: string; versions?: string[]; banner?: string }
 export type ProcedureCategory = "preventive" | "basic" | "varies" | "major" | "major_excluded";
 export type IslandKind = "start" | "procedure" | "visited" | "marginal" | "destination";
 export type IslandState = "estimate" | "unresolved" | "not_covered" | "pending" | "visited" | "mentioned" | "frame";
@@ -140,9 +146,9 @@ export interface StageSelection { stageId: string; cpId?: string }
 export interface JourneySelection { stage?: StageSelection; island?: MapSelection }
 export interface AssistScope { plan_ref: PlanRef; estimate_id?: string; treatment_item_id?: string; line_index?: number; step_key?: string; checkpoint_key?: string; stitch?: string; journey_id?: string }
 export type AssistRef = { kind: "step"; line_index: number; step_index: number; label: string } | { kind: "line_total"; line_index: number; which: "patient" | "plan" } | { kind: "field"; path: string } | { kind: "clause"; stitch: string; rule?: string };
-export type AssistBlock = { type: "sentence"; text: string; refs: AssistRef[] } | { type: "clarify"; options: { label: string; scope_patch: Partial<AssistScope> }[] } | { type: "template"; key: "advice_question"; text: string };
-export interface AssistResponse { mode: "demo" | "live"; model?: string; intent: string; blocks: AssistBlock[]; suggested: string[]; guard: { dropped: number; grounding_failures: number }; tools_used: string[] }
-export interface UploadResponse { id: string; sha256: string; pages: number; filename: string; extraction_status: string; redaction_preview: { text: string; removed: string[] }; demo_fixture_match: boolean }
+export type AssistBlock = { type: "sentence"; text: string; refs: AssistRef[] } | { type: "clarify"; text?: string; options: { label: string; scope_patch: Partial<AssistScope> }[] } | { type: "template"; key: "advice_question" | "out_of_scope"; label?: string; text: string };
+export interface AssistResponse { mode: "demo" | "live"; model?: string; ribbon?: string | null; intent: string; blocks: AssistBlock[]; suggested: string[]; guard: { dropped: number; grounding_failures: number }; tools_used: string[] }
+export interface UploadResponse { id: string; sha256: string; pages: number; filename: string; extraction_status: string; redaction_preview: { text: string; removed: string[]; note?: string }; demo_fixture_match: boolean; mode?: "demo" | "live" }
 /** One row of `PUT /me/documents/{id}/review` (spec §7.3). */
 export interface ReviewDecision { field_path: string; decision: "confirmed" | "edited" | "not_in_document" | "candidate"; value?: unknown; source?: string; candidate_index?: number }
 export type { ExtractedField, ExtractionStatus } from "./upload-types";    // the §7.5 definitions live in web/src/lib/upload-types.ts

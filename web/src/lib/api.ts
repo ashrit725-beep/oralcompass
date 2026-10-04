@@ -32,6 +32,14 @@ async function multipart<T>(path: string, fields: Record<string, string | number
 export interface BenefitsIn {
   coverage_start?: string | null; deductible_met_cents?: number | null; benefits_used_cents?: number | null; remaining_deductible_cents?: number | null; remaining_max_cents?: number | null;
   annual_max_unlimited?: boolean; source?: { type?: string; label?: string; date?: string; entered_by?: string }; claims?: unknown[];
+  network_default?: string | null; deductible_met_out_cents?: number | null; benefits_used_out_cents?: number | null; coverage_end?: string | null; last_updated?: string | null;
+}
+
+/** Binary GET with the auth header (an uploaded document's stored PDF). */
+async function blob(path: string): Promise<Blob> {
+  const r = await fetch(`/api${path}`, { headers: { "X-Dev-User": DEV_USER } });
+  if (!r.ok) throw new ApiError(r.status, path, await r.json().catch(() => undefined));
+  return r.blob();
 }
 
 export const api = {
@@ -78,6 +86,7 @@ export const api = {
   redaction: (id: string, extra_terms: string[]) => put<{ redaction_preview: { text: string; removed: string[] } }>(`/me/documents/${id}/redaction`, { extra_terms }),
   extract: (id: string) => post<{ status: string }>(`/me/documents/${id}/extract`, {}),
   extraction: (id: string) => req<ExtractionStatus>(`/me/documents/${id}/extraction`),
+  documentFile: (id: string) => blob(`/me/documents/${id}/file`),
   review: (id: string, decisions: ReviewDecision[]) => put<{ fields: ExtractionStatus["fields"] }>(`/me/documents/${id}/review`, { decisions }),
   publish: (id: string) => post<{ plan_ref: PlanRef; version_label: string; published_at: string; sha256: string; summary: UploadedPlanSummary }>(`/me/documents/${id}/publish`, {}),
   // grounded assistant (spec §8.2; api/app/assistant.py)

@@ -95,6 +95,6 @@ export function useAppData() {
     try { const v = await api.putInstructions(view.id, stageId, { text, source, given_on: givenOn }); setViewState(v); } catch (e: any) { setError(`${UI.errorTitle}: ${e.message}`); } finally { setBusy(false); }
   }, [view]);
 
-  return { planRef, selectPlan, reestimate, estimate, plan, rules, evidence, stitches, benefits, items, journeys, view, setView, samples, procedures, loading, error, busy, startJourney, patch, instructions, loadBase, plans };
+  return { planRef, selectPlan, reestimate, estimate, plan, rules, evidence, stitches, benefits, items, journeys, view, setView, samples, procedures, loading, error, busy, startJourney, patch, instructions, loadBase, loadRecords, plans };
 }
 export type AppData = ReturnType<typeof useAppData>;

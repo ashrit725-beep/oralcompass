@@ -1,5 +1,4 @@
 import { Fragment, Suspense, lazy, useState } from "react";
-import { LayoutGroup, motion } from "motion/react";
 import { UI } from "@/lib/copy";
 import { PLAN } from "@/lib/copy/plan";
 import { ledgerEvidence } from "@/lib/compass-model";
@@ -24,14 +23,13 @@ interface Props { data: ComparisonResponse; plans: Record<string, GridPlan> }
  * in a `max-h-[70dvh] overflow-auto scroll-fade-x` container; columns in the USER's order, no sort, no winner; the eligibility quote
  * under every column header; the factual-differences sentence under every row. Every cell is a 44 px PopoverTrigger whose card is the
  * paired clause (document label, page, quote with one terracotta Highlighter underline, evidence badge); at phone width the card opens
- * in the Drawer instead. The cell's text and the card's figure share a Motion `layoutId` inside one `LayoutGroup` so the value hops to
- * its card (MotionConfig disables the hop under reduced motion). Rails: the same estimate per plan, totals through <Money>.
+ * in the Drawer instead. The cell keeps its value printed while the card is open and the card repeats it as plain text (integration: the
+ * earlier shared-layoutId hop emptied the cell and left a ghost figure outside the card). Rails: the same estimate per plan, totals through <Money>.
  */
 export function ComparisonGrid({ data, plans }: Props) {
   const cols = data.result.columns;
   const titleOf = (c: string) => plans[c]?.model.title ?? c;
   return (
-    <LayoutGroup id="compare">
       <section className="compare" aria-labelledby="cmp-h">
         <h2 id="cmp-h">{PLAN.cmpTitle}</h2>
         <Table containerClassName="grid-scroll max-h-[70dvh] overflow-auto scroll-fade-x rounded-xl border border-rule" className="grid table-fixed min-w-[640px] text-[.9rem]">
@@ -61,7 +59,7 @@ export function ComparisonGrid({ data, plans }: Props) {
                   <TableHead scope="row" className="align-top whitespace-normal font-medium">{row.topic}</TableHead>
                   {row.cells.map((cell, i) => (
                     <TableCell key={i} className="align-top whitespace-normal p-1">
-                      <ClauseCell cell={cell} topic={row.topic} planTitle={titleOf(cols[i])} layoutId={`cmp-${ri}-${i}`} />
+                      <ClauseCell cell={cell} topic={row.topic} planTitle={titleOf(cols[i])} />
                     </TableCell>
                   ))}
                 </TableRow>
@@ -95,18 +93,17 @@ export function ComparisonGrid({ data, plans }: Props) {
           })}
         </div>
       </section>
-    </LayoutGroup>
   );
 }
 
 /** A grid cell: value + badge as a 44 px trigger; the paired clause opens in a Popover (desktop) or the Drawer (phone). */
-function ClauseCell({ cell, topic, planTitle, layoutId }: { cell: GridCell; topic: string; planTitle: string; layoutId: string }) {
+function ClauseCell({ cell, topic, planTitle }: { cell: GridCell; topic: string; planTitle: string }) {
   const mobile = useMobile();
   const [open, setOpen] = useState(false);
   const isAmount = cell.text.includes("$");
   const face = (
     <span className="cmp-cell-face">
-      <motion.span layoutId={open ? undefined : layoutId} className={isAmount ? "amt" : "cmp-cell-text"}>{cell.text}</motion.span>
+      <span className={isAmount ? "amt" : "cmp-cell-text"}>{cell.text}</span>
       <EvidenceBadge status={cell.badge} />
       {cell.cite && <small className="cite">{cell.cite}</small>}
     </span>
@@ -118,7 +115,7 @@ function ClauseCell({ cell, topic, planTitle, layoutId }: { cell: GridCell; topi
   );
   const card = (
     <div className="cmp-card">
-      <p className="cmp-card-figure"><motion.span layoutId={open ? layoutId : undefined} className={isAmount ? "amt" : undefined}>{cell.text}</motion.span> <EvidenceBadge status={cell.badge} /></p>
+      <p className="cmp-card-figure"><span className={isAmount ? "amt" : undefined}>{cell.text}</span> <EvidenceBadge status={cell.badge} /></p>
       {cell.quote ? (
         <figure className="wording">
           <blockquote><Suspense fallback={<>“{cell.quote}”</>}>“<Highlighter action="underline">{cell.quote}</Highlighter>”</Suspense></blockquote>

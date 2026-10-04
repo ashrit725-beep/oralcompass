@@ -111,7 +111,9 @@ export const TRAIL = {
 };
 
 /** Day-1 copy namespaces (spec §13.2): each lives in its own file under lib/copy/ with a header naming its owner agent. */
-export { PASSAGE, DRAWER, COMPASS } from "./copy/passage";
+export { PASSAGE } from "./copy/passage";
+export { DRAWER } from "./copy/drawer";
+export { COMPASS } from "./copy/compass";
 export { PLAN } from "./copy/plan";
 export { UPLOAD } from "./copy/upload";
 export { ASSIST } from "./copy/assistant";

@@ -4,6 +4,7 @@
 /* Per-view stylesheets (spec §13.1), layered as components so Tailwind utilities on the same element still win. */
 @import "./styles/journey.css" layer(components);
 @import "./styles/plan.css" layer(components);
+@import "./styles/drawer.css" layer(components);
 @import "./styles/upload.css" layer(components);
 @import "./styles/assistant.css" layer(components);
 
@@ -249,9 +250,11 @@ label { display: flex; flex-direction: column; gap: .25rem; font-size: .9rem; co
 
 /* ---- compare ---- */
 .pickers { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: .75rem; margin: .75rem 0; }
-.compare .banner { font-weight: 600; } .grid-scroll { overflow: auto; } .grid { width: 100%; border-collapse: collapse; font-size: .9rem; min-width: 640px; }
-.grid th, .grid td { text-align: left; vertical-align: top; padding: .5rem; border-bottom: 1px solid var(--rule); }
-.grid thead th { background: var(--paper-deep); position: sticky; top: 0; }
+/* The comparison table only (`table.grid`): the bare `.grid` selector also matched Tailwind's `grid` display utility on every shadcn Dialog,
+   RubberSegment thumb layer and Popover (640 px minimum on phones); scoped at integration, 2026-10-03. */
+.compare .banner { font-weight: 600; } .grid-scroll { overflow: auto; } table.grid { width: 100%; border-collapse: collapse; font-size: .9rem; min-width: 640px; }
+table.grid th, table.grid td { text-align: left; vertical-align: top; padding: .5rem; border-bottom: 1px solid var(--rule); }
+table.grid thead th { background: var(--paper-deep); position: sticky; top: 0; }
 .plan-h small { display: block; font-weight: 400; color: var(--ink-soft); }
 .differences td { background: rgba(197, 154, 60, .08); font-style: italic; }
 .rails { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: .75rem; }
@@ -352,5 +355,6 @@ label { display: flex; flex-direction: column; gap: .25rem; font-size: .9rem; co
 @media (prefers-reduced-motion: reduce) {
   .animate-in, .animate-out { animation: none !important; }
   [data-vaul-drawer], [data-vaul-overlay] { transition-duration: 0s !important; }
+  [data-vaul-drawer], [data-vaul-overlay] { animation: none !important; }   /* vaul's own slideFromBottom keyframes (the sheet appears in place) */
   .motion-drift { animation: none !important; }          /* class on every scenery loop */
 }

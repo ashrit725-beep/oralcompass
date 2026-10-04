@@ -36,7 +36,7 @@ export interface PlanViewProps {
  * transfers) and shown back immediately while the records reload. One aria-live region announces recalculation and updates.
  */
 export function PlanView({ data, mobile, landmark, onLandmark, stitch, onStitch, onOpenDocuments }: PlanViewProps) {
-  const { plans, planRef, selectPlan, plan, rules, benefits, estimate, stitches, procedures, reestimate, loading } = data;
+  const { plans, planRef, selectPlan, plan, rules, benefits, estimate, stitches, procedures, reestimate, loadRecords, loading } = data;
   const [uploads, setUploads] = useState<UploadSummary[]>([]);
   const [uploadsLoading, setUploadsLoading] = useState(true);
   const [mode, setMode] = useState<"preset" | "upload">(modeOf(planRef));
@@ -83,7 +83,7 @@ export function PlanView({ data, mobile, landmark, onLandmark, stitch, onStitch,
 
   function pickLandmark(id: LandmarkId) { setDepth(1); onLandmark(id); }
   function openLandmarkDeep(id: LandmarkId) { setDepth(3); onLandmark(id); }
-  function onBenefitsSaved(b: Benefits) { setSavedBenefits((m) => ({ ...m, [planRef]: b })); setLive(PLAN.benefitsUpdated); reestimate(); }
+  function onBenefitsSaved(b: Benefits) { setSavedBenefits((m) => ({ ...m, [planRef]: b })); setLive(PLAN.benefitsUpdated); loadRecords(); reestimate(); }
 
   const uploadSlot = (
     <UploadWizard planRef={planRef} onPublished={(s) => { refreshUploads(); selectPlan(s.plan_code); reestimate(); }} />
@@ -109,7 +109,7 @@ export function PlanView({ data, mobile, landmark, onLandmark, stitch, onStitch,
         {procedures.length > 0 && (
           <details className="plan-add">
             <summary>{PLAN.addTitle}</summary>
-            <TreatmentPlanImporter procedures={procedures} onAdded={() => { setLive(PLAN.recalculating); reestimate(); }} />
+            <TreatmentPlanImporter procedures={procedures} onAdded={() => { setLive(PLAN.recalculating); loadRecords(); reestimate(); }} />
           </details>
         )}
         <p className="sr-only" role="status" aria-live="polite">{live}</p>
@@ -124,7 +124,7 @@ export function PlanView({ data, mobile, landmark, onLandmark, stitch, onStitch,
               {landmark === "lighthouse" && (estimate ? <CostTrail estimate={estimate} stitches={stitches} selected={stitch} onSelect={onStitch} prominentScope /> : (
                 <>
                   <p className="muted"><EvidenceBadge status="UNKNOWN" /> {PLAN.noProcedures}</p>
-                  {procedures.length > 0 && <TreatmentPlanImporter procedures={procedures} onAdded={() => { setLive(PLAN.recalculating); reestimate(); }} compact />}
+                  {procedures.length > 0 && <TreatmentPlanImporter procedures={procedures} onAdded={() => { setLive(PLAN.recalculating); loadRecords(); reestimate(); }} compact />}
                 </>
               ))}
               {landmark !== "lighthouse" && estimate?.status === "unresolved" && <MissingInputs estimate={estimate} compact />}

@@ -68,7 +68,7 @@ export default function App() {
         </main>
       </TabsContent>
 
-      {stitch && <ClauseCard stitch={stitch} lines={estimate?.ledger.lines ?? []} onClose={() => setStitch(undefined)} onOpenOnPage={(s) => { setStitch(s); setTab("documents"); }} />}
+      {stitch && <ClauseCard stitch={stitch} lines={estimate?.ledger.lines ?? []} askScope={{ plan_ref: planRef, stitch: `${stitch.doc}#p${stitch.page}`, estimate_id: estimate?.id }} onClose={() => setStitch(undefined)} onOpenOnPage={(s) => { setStitch(s); setTab("documents"); }} />}
       <footer className="footer">{FOOTER}</footer>
     </Tabs>
   );

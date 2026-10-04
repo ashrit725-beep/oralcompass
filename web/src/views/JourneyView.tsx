@@ -39,7 +39,9 @@ type Segment = "map" | "care" | "overview";
  * Keyboard: Escape closes the top-most surface (the ClauseCard first, then the drawer) and returns focus to its opener.
  */
 export function JourneyView({ data, selection, mobile, onOpenLandmark, onOpenDocuments, onSelectStitch }: JourneyViewProps) {
-  const { view, journeys, samples, plans, busy, startJourney, setView, patch, instructions, items, estimate, benefits, rules, plan, procedures, stitches, planRef, loading } = data;
+  const { view, journeys, samples, plans, busy, startJourney, setView, patch, instructions, items, estimate, benefits, rules, plan, procedures, stitches, planRef, loading, loadRecords, reestimate } = data;
+  /** The drawer's Allowance input and the Benefit statement form change private records: reload them and re-run the estimate. */
+  const onRecordsChanged = () => { loadRecords(); reestimate(); };
   const reduce = useReducedMotion();
   const [segment, setSegment] = useState<Segment>("map");
   const [pointer, setPointer] = useState(false);
@@ -113,7 +115,7 @@ export function JourneyView({ data, selection, mobile, onOpenLandmark, onOpenDoc
   const hasDetail = !!(islandSel || stage);
   const drawer = islandSel && selectedIsland && plan ? (
     <ProcedureDrawer island={selectedIsland} vm={vm} plan={plan} rules={rules} benefits={benefitsFor} estimate={estimate} stitches={stitches} selectedCheckpoint={islandSel.checkpointKey}
-                     onSelectStitch={(s) => onSelectStitch?.(s)} onOpenDocuments={onOpenDocuments} onClose={() => { selection.clear(); setThread(null); }} mobile={mobile} returnFocus={selection.returnFocusRef.current} />
+                     onSelectStitch={(s) => onSelectStitch?.(s)} onOpenDocuments={onOpenDocuments} onClose={() => { selection.clear(); setThread(null); }} mobile={mobile} returnFocus={selection.returnFocusRef.current} onRecordsChanged={onRecordsChanged} />
   ) : null;
   const stagePanel = stage ? <DetailPanel view={view} selection={stage} onSelect={(s) => selection.selectStage(s)} onOpenLandmark={onOpenLandmark} onOpenDocuments={onOpenDocuments} onPatch={patch} onInstructions={instructions} busy={busy} mobile={mobile} onClose={() => selection.clear()} /> : null;
   const dense = denseFrom(vm.islands.length);

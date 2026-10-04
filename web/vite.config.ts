@@ -18,6 +18,9 @@ export default defineConfig({
         manualChunks(id) {
           if (id.includes("node_modules/pdfjs-dist")) return "pdfjs";
           if (/node_modules\/(motion|framer-motion|motion-dom|motion-utils)\//.test(id)) return "motion";
+          // react + the Radix/vaul primitives are stable across releases of our own code: a separate cached chunk keeps the app chunk under
+          // Rollup's 500 kB advisory (the budget check still measures the index-* chunk).
+          if (/node_modules\/(react|react-dom|scheduler|radix-ui|@radix-ui|vaul)\//.test(id)) return "ui-vendor";
           return undefined;
         },
       },

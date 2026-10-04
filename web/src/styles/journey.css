@@ -239,4 +239,4 @@
 .ov-cp-details summary { cursor: pointer; min-height: 44px; padding: 10px 0; font-weight: 600; }
 .ov-sound { font-size: .85rem; color: var(--ink-soft); white-space: nowrap; }
 
-.pv-mini.pv-marginal .pv-amt { max-width: 55%; white-space: nowrap; }
+.pv-mini.pv-marginal .pv-amt { max-width: 55%; white-space: normal; text-align: right; }   /* "not covered" wraps instead of clipping at 360 px */

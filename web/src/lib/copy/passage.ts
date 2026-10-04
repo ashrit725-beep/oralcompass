@@ -124,5 +124,3 @@ export const PASSAGE = {
   ownerInfo: "information",
   cancelledNote: (n: number) => `${n} cancelled item${n === 1 ? "" : "s"} not drawn.`,
 } as const satisfies Record<string, string | ((...a: never[]) => string)>;
-export const DRAWER = {} as const satisfies Record<string, string | ((...a: never[]) => string)>;
-export const COMPASS = {} as const satisfies Record<string, string | ((...a: never[]) => string)>;

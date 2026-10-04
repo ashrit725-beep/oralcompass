@@ -1,10 +1,8 @@
-/// <reference types="vite/client" />
-import { lazy, Suspense, type ComponentType } from "react";
 import { BenefitsCompass } from "@/components/compass/BenefitsCompass";
 import { MissingInputs } from "@/components/CostTrail";
-import { StageLoader } from "@/components/StageLoader";
 import { UI } from "@/lib/copy";
 import { DRAWER } from "@/lib/copy/drawer";
+import { BenefitStatementForm } from "@/components/records/BenefitStatementForm";
 import { networkWord } from "@/lib/drawer";
 import type { Evidence } from "@/lib/types";
 import { Fact, Figure, Row, Section, type SectionProps } from "./shared";
@@ -13,15 +11,9 @@ import { Fact, Figure, Row, Section, type SectionProps } from "./shared";
  * The START harbor's sections (spec §3.4): the plan facts (title, document version, fictional ribbon, network word with its status), the
  * records facts (benefit statement source and date, remaining deductible and annual maximum with the server's derivation sentences, conflict
  * note), the compact Benefits compass, the Benefit statement form, and the missing-inputs list when the estimate has no lines.
- * The Benefit statement form is the plan agent's `components/records/BenefitStatementForm.tsx`: it is loaded lazily through `import.meta.glob`
- * so this file compiles whether or not that module exists in the tree; until it lands a labelled placeholder is rendered.
+ * The Benefit statement form is the plan agent's `components/records/BenefitStatementForm.tsx` (imported statically since integration: the
+ * module also sits in the main chunk through LandmarkContent, so a lazy import would not split it).
  */
-const formModules = import.meta.glob("../../records/BenefitStatementForm.tsx") as Record<string, () => Promise<Record<string, unknown>>>;
-const formKey = Object.keys(formModules)[0];
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const LazyBenefitStatementForm: ComponentType<any> | null = formKey
-  ? lazy(() => formModules[formKey]().then((m) => ({ default: (m.BenefitStatementForm ?? m.default) as ComponentType<any> })))
-  : null;
 
 export function StartSections({ plan, benefits, estimate, stitches, onSelectStitch, onRecordsChanged }: SectionProps & { onOpenLandmark?: (id: never) => void }) {
   const planRef = estimate?.plan_code ?? plan.plan_code;
@@ -56,13 +48,7 @@ export function StartSections({ plan, benefits, estimate, stitches, onSelectStit
       {noLines && estimate && <MissingInputs estimate={estimate} />}
       <Section k="deductible" title={DRAWER.sBenefitsForm} collapsible defaultOpen={noLines}>
         <p className="dsec-note">{DRAWER.benefitsFormNote}</p>
-        {LazyBenefitStatementForm ? (
-          <Suspense fallback={<StageLoader label={UI.processing} size="sm" />}>
-            <LazyBenefitStatementForm planRef={planRef} plan={plan} benefits={benefits} onSaved={() => { onRecordsChanged?.(); window.dispatchEvent(new CustomEvent("oralcompass:records-changed")); }} />
-          </Suspense>
-        ) : (
-          <p className="benefits-form-placeholder muted" role="note">{DRAWER.benefitsFormPlaceholder}</p>
-        )}
+        <BenefitStatementForm planRef={planRef} plan={plan} benefits={benefits} onSaved={() => { onRecordsChanged?.(); window.dispatchEvent(new CustomEvent("oralcompass:records-changed")); }} />
       </Section>
     </>
   );
