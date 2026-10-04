@@ -37,7 +37,7 @@ CSP_DIRECTIVES: dict[str, str] = {
     "style-src": "'self' 'unsafe-inline'",
     "script-src": "'self'",
     "worker-src": "'self' blob:",
-    "connect-src": "'self'",
+    "connect-src": "'self' blob:",       # pdf.js reads the owner's stored PDF from an object URL (see module docstring)
     "object-src": "'none'",
     "frame-ancestors": "'none'",
     "base-uri": "'self'",
