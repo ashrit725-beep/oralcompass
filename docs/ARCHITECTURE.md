@@ -27,7 +27,7 @@ flowchart LR
   Sources["sources/extracted/*.json (quotes + pages)"]
   LLM["OpenRouter: Claude Haiku 4.5 (live mode only)"]
 
-  Lib -- "/api (JSON)" --> Main & Records & Journeys & Uploads & AI
+  Lib -- "/api (JSON)" --> API
   Records --> Engine
   Uploads --> Engine
   Records & Main & Journeys & Uploads & AI --> Store
