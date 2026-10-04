@@ -124,3 +124,24 @@ immediately after the spec.
 - From Stitched Passage (P2): the screenshots.py assertion count('.amt') ≤ count('.badge, .stitch') inside the drawer, and a 'Care stages for this procedure' row listing stages whose linked_treatment_items include the item (bridged through seed_id).
 - From Stitched Passage (P2): the extraction-review decision model (Confirmed rows pre-checked, Needs-review rows disabled until a candidate is chosen, Not-found rows only accept 'Enter from another document' with a required source) and the 'Text in the document that was not used as a rule' block for injected instructions.
 - From Stitched Passage (P2): badge icons as inline SVG glyphs instead of emoji, keeping the words.
+
+## C. Art plates as delivered (repainted 2026-10-03; binding notes for the map agents)
+
+All plates are WebP under `web/public/art/` (`ArtPlate` requests `.webp` → `.png` → SVG fallback). Observed facts the layout must respect:
+
+1. `journey-backdrop.webp` (2400×1350, opaque): a wide open sea fills the centre; painted coastlines, coves and small islets occupy the margins
+   (top-left, top-right, bottom-left, bottom-right); **a compass rose is painted at the bottom-left corner**. Therefore: suppress the SVG `Compass`
+   ornament whenever the backdrop plate has loaded (keep it only in the SVG fallback); keep START, islands, soundings and the Harbor Light inside the
+   open-water region (roughly the central 70 % width × 65 % height of the plate); never place HTML text directly on the painting (parchment lozenges
+   and cards only). The water is a saturated impasto teal, darker than `--water`; cards and numbers stay on parchment/ink so contrast is unaffected.
+2. `island-generic.webp` (flat green island, sand rim, no water halo, transparent background) composites directly onto the sea.
+3. `island-major.webp` (mountain with a golden zigzag path, **painted water and surf around its base**) and `island-lighthouse.webp` (lighthouse at
+   golden hour, harbour and surf painted in) carry their own water: composite them at a slightly larger scale than the generic plate (≈ 3.4r wide) and
+   let the painted surf meet the sea; do not clip them to an ellipse. The golden path on the major plate reads as "the route" — align the route's
+   entry point to the plate's lower-left shore where the path begins.
+4. `benefits-chest.webp`: a walnut navigator's chest with an inlaid compass dial; use at ≤ 96 px in the START drawer and the Benefits compass; never as
+   a decorative background.
+5. `paper-texture.webp`: ivory parchment brushwork tile; use at opacity ≤ .18 multiply on parchment surfaces; it is not seamless-guaranteed, so apply
+   `background-size` ≥ 600 px and a soft-light blend rather than a visible repeat.
+6. `fog-layer-1/2.webp` and `emblem.png` are unchanged from the first set.
+7. Page weight: backdrop 565 KB + three islands ≈ 1.6 MB + fog 480 KB; lazy-load fog, chest and paper; the backdrop is the LCP image (`fetchpriority="high"`).
