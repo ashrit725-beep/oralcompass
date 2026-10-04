@@ -302,6 +302,13 @@ def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-pref
     figs_ok = has_amount(page, ".cmp-figures", "$1,260.00") and has_amount(page, ".cmp-figures", "$240.00") and figs.locator(".badge", has_text="You entered").count() >= 2
     check(f"{device}: answers from the compass", q.startswith("How much of the") and has_amount(page, ".compass .cmp-q", "$1,500.00") and "maximum remains after the planned work?" in q and has_amount(page, ".cmp-a", "$162.00") and stitch_beside and figs_ok and page.locator(".cmp-classes li").count() == 4,
           f"q={q[:70]!r} stitch={stitch_beside} figs={figs_ok} classes={page.locator('.cmp-classes li').count()}")
+    # a11y-22: the view's h2 comes before the compass question (h3); no heading level is skipped on My plan
+    levels = page.evaluate("[...document.querySelectorAll('.plan-main h2, .plan-main h3, .plan-main h4, .plan-main h5')].map(h => [Number(h.tagName[1]), h.textContent.trim().slice(0, 30)])")
+    seen_levels, skip = [1], None
+    for lv, name in levels:
+        if lv > max(seen_levels) + 1 and skip is None: skip = f"h{lv} {name!r}"
+        seen_levels.append(lv)
+    check(f"{device}: My plan heading outline", bool(levels) and levels[0][0] == 2 and levels[0][1] == "My plan" and skip is None, f"first={levels[:2]} skip={skip}")
     shot("19-compass")
     page.get_by_role("button", name=re.compile("^Frequency limits")).first.click(); page.wait_for_timeout(600)
     lm = page.locator("#lm-h").first.inner_text() if page.locator("#lm-h").count() else ""

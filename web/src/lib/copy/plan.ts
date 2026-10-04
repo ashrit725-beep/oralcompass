@@ -4,6 +4,7 @@
  * Voice: what the documents say, what your records say, what the arithmetic yields. Nothing here tells the reader what to do.
  */
 export const PLAN = {
+  viewTitle: "My plan",
   // ---- plan selector (spec §7.2; addendum B1/B2: a single `label.plan-pick select` of plan codes stays as the fast path) ----
   sourceLabel: "Plan source",
   modePreset: "Preset plan",

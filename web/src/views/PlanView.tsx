@@ -92,6 +92,8 @@ export function PlanView({ data, mobile, landmark, onLandmark, stitch, onStitch,
   return (
     <div className={`plan-layout ${landmark ? "" : "is-solo"}`}>
       <div className="plan-main">
+        {/* the view's own h2 (spec §9.1: one h1, an h2 per view, no skipped levels); the compass question is the h3 under it */}
+        <h2 className="sr-only">{PLAN.viewTitle}</h2>
         <div className="plan-head">
           <PlanSelector plans={plans} uploads={uploads} uploadsLoading={uploadsLoading} value={planRef} onChange={(ref) => { selectPlan(ref); onStitch(undefined); }} mode={mode} onMode={setMode} uploadSlot={uploadSlot} />
           {!planRef && <p className="plan-empty">{PLAN.noPlan}</p>}

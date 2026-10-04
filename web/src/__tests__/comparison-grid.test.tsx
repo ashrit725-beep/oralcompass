@@ -67,3 +67,11 @@ describe("ComparisonGrid repetition (info-only-6, slop-11, slop-12)", () => {
     expect(html.match(/waiting period: not found/g)).toHaveLength(1);
   });
 });
+
+describe("ComparisonGrid headings (a11y-22)", () => {
+  it("nests the grid title as an h3 under the view's h2", () => {
+    const html = renderToStaticMarkup(<ComparisonGrid data={data} plans={plans} />);
+    expect(html).toMatch(/<h3 id="cmp-h">Side by side<\/h3>/);
+    expect(html).not.toMatch(/<h2/);
+  });
+});

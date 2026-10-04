@@ -32,7 +32,7 @@ export function ComparisonGrid({ data, plans, enteredFor = [] }: Props) {
   const titleOf = (c: string) => plans[c]?.model.title ?? c;
   return (
       <section className="compare" aria-labelledby="cmp-h">
-        <h2 id="cmp-h">{PLAN.cmpTitle}</h2>
+        <h3 id="cmp-h">{PLAN.cmpTitle}</h3>
         <Table containerClassName="grid-scroll overflow-x-auto overflow-y-visible overscroll-x-contain scroll-fade-x rounded-xl border border-rule" className="grid table-fixed min-w-[640px] text-[.9rem]">
           <colgroup><col style={{ width: "20%" }} />{cols.map((c) => <col key={c} />)}</colgroup>
           <TableHeader>
