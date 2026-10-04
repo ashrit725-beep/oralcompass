@@ -57,7 +57,10 @@ export function CareTimeline({ journey, progress, selected, onSelect, currentSta
       })}
     </ol>
   );
+  // one "Show on the chart" link, on the current stage only (four cards repeating the same link to the same island read as filler);
+  // every other stage still opens from its title button
   const chartLink = (stage: Stage) => {
+    if (stage.id !== currentStageId) return null;
     const id = linkedIsland?.(stage);
     return id && onShowOnChart ? <button type="button" className="linklike care-show-chart" onClick={() => onShowOnChart(id)}>{PASSAGE.showOnChart}</button> : null;
   };

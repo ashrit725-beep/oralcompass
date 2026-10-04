@@ -8,6 +8,7 @@ import alexJson from "../__fixtures__/passage/alex.json";
 import { PassageControls } from "@/components/atlas/PassageControls";
 import { DetailPanel } from "@/components/DetailPanel";
 import { AnswersLog } from "@/components/journey/AnswersLog";
+import { CareTimeline } from "@/components/journey/CareTimeline";
 import { Money } from "@/components/Money";
 import { OverviewList } from "@/components/OverviewList";
 import { UI } from "@/lib/copy";
@@ -137,5 +138,15 @@ describe("chart controls keyboard model (finding a11y-17)", () => {
     // a selection pins the tab stop on the selected island
     const sel = renderToStaticMarkup(<PassageControls vm={vm} layout={layout} selected={{ islandId: vm.islands[1].id }} onSelect={noop} planCode="ML26" />);
     expect((sel.match(/<button[^>]*tabindex="0"[^>]*>/g) ?? [])[0]).toContain(`data-island="${vm.islands[1].id}"`);
+  });
+});
+
+describe("care rail (finding slop-27)", () => {
+  it("shows a single 'Show on the chart' link, on the current stage", () => {
+    const html = renderToStaticMarkup(<CareTimeline journey={f.view.journey} progress={f.view.progress} selected={null} onSelect={noop} currentStageId="before" mobile={false} linkedIsland={() => vm.islands[0].id} onShowOnChart={noop} />);
+    expect(html.match(/Show on the chart/g) ?? []).toHaveLength(1);
+    const at = html.indexOf('aria-current="step"'), link = html.indexOf("Show on the chart"), nextCard = html.indexOf('class="care-card', at);
+    expect(link).toBeGreaterThan(at);
+    expect(nextCard === -1 || link < nextCard).toBe(true);
   });
 });
