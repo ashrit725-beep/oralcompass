@@ -40,7 +40,7 @@ describe("words", () => {
   it("maps frequency clocks and alternate-benefit conditions to the spec's words", () => {
     expect(clockWords("calendar_count", 2)).toBe("calendar year");
     expect(clockWords("per_tooth_months", 84)).toContain("84 months per tooth");
-    expect(clockWords("lifetime", 1)).toBe("lifetime");
+    expect(clockWords("lifetime", 1)).toBe("whole life");
     expect(conditionWords("molar")).toBe("a crown is placed on a molar");
     expect(conditionWords("any")).toBe("this service is performed");
     expect(conditionWords("weird_case")).toContain("weird case");
@@ -85,7 +85,7 @@ describe("checkpointsForLine", () => {
     expect(cps[3].stitch?.quote).toBe(clauses[1].quote);
     expect(cps[5].amountOut).toBe(39200);
     expect(checkpointAmountWords(cps[3])).toBe("plan 60% · you 40%");
-    expect(checkpointAmountWords(cps[4])).toBe("within the remaining maximum");
+    expect(checkpointAmountWords(cps[4])).toBe("fits under the yearly limit");
     expect(checkpointAriaName(cps[1])).toContain("change −$170.00");
     expect(checkpointAriaName(cps[1])).toContain("clause ML26");
     expect(cps[2].flags).toEqual([]);
@@ -114,7 +114,7 @@ describe("checkpointsForLine", () => {
     expect(cps).toHaveLength(1);
     expect(cps[0].rule).toBe("missing"); expect(cps[0].badge).toBe("UNKNOWN"); expect(cps[0].amountOut).toBeNull();
     expect(cps[0].explanation).toContain("allowed amount");
-    expect(checkpointAmountWords(cps[0])).toBe("Waiting for information");
+    expect(checkpointAmountWords(cps[0])).toBe("We need more info");
   });
 });
 
@@ -190,9 +190,9 @@ describe("demo-15: the movers range sentence never prints an empty cause", () =>
 
 describe("demo-16 / slop-18: Harbor Light words", () => {
   it("agrees the verb for one stage, lists stage progress and does not repeat the place in the crumbs", () => {
-    expect(DRAWER.afterRouteStages(1)).toMatch(/^1 care stage follows the route/);
-    expect(DRAWER.afterRouteStages(2)).toMatch(/^2 care stages follow the route/);
-    expect(DRAWER.stageProgress("Follow-up", 0, 2)).toBe("Follow-up · 0 of 2 checkpoints completed");
+    expect(DRAWER.afterRouteStages(1)).toMatch(/^1 more care step comes after this/);
+    expect(DRAWER.afterRouteStages(2)).toMatch(/^2 more care steps come after this/);
+    expect(DRAWER.stageProgress("Follow-up", 0, 2)).toBe("Follow-up · 0 of 2 stops done");
     expect(DRAWER.crumbsLight("Harbor Light")).not.toContain("Harbor Light");
   });
 });

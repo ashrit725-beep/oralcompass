@@ -99,10 +99,10 @@ describe("evidence beside journey figures (findings info-only-5, demo-8)", () =>
     expect(rows.find((r) => r.key === "cost")).toMatchObject({ dd: "$902.00 · plan $1,098.00", calc: true });
     expect(answersLog(vm, f.view, f.plan, null).find((r) => r.key === "cost")?.calc).toBeFalsy();
     const html = renderToStaticMarkup(<AnswersLog vm={vm} view={f.view} plan={f.plan} estimate={f.estimate} onFocus={noop} />);
-    expect(html).toContain("Calculated from the clauses cited");
+    expect(html).toContain("We did the math with the plan rules");
   });
   it("Money says 'calculated' for engine totals and reads the badge label (not the code) when the badge is hidden", () => {
-    expect(renderToStaticMarkup(<Money cents={90200} evidence="DOC" calc />)).toContain("Calculated from the clauses cited");
+    expect(renderToStaticMarkup(<Money cents={90200} evidence="DOC" calc />)).toContain("We did the math with the plan rules");
     expect(renderToStaticMarkup(<Money cents={4500} evidence="USER" badge={false} />)).toContain("Evidence: You typed this");
     expect(renderToStaticMarkup(<Money cents={4500} evidence="USER" badge={false} />)).not.toContain("Evidence: USER");
   });
@@ -118,8 +118,8 @@ describe("overview figures (finding web-correctness-26)", () => {
     const rows = route.split('<tr class="ov-island').slice(1);
     for (const r of rows) {
       const cells = r.split("<td>");
-      expect(cells[5]).toContain("Calculated from the clauses cited"); // You pay
-      expect(cells[6]).toContain("Calculated from the clauses cited"); // Plan pays
+      expect(cells[5]).toContain("We did the math with the plan rules"); // You pay
+      expect(cells[6]).toContain("We did the math with the plan rules"); // Plan pays
       expect(cells[5]).not.toContain("You entered");
     }
   });

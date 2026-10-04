@@ -18,7 +18,7 @@ export interface MoneyProps {
   className?: string;
   /** Hide the badge visually (e.g. inside a gauge whose legend carries it). The aria-label stays on the wrapper. */
   badge?: boolean;
-  /** An engine total (document rules applied to your figures): says "Calculated from the clauses cited" instead of a single evidence
+  /** An engine total (document rules applied to your figures): says "We did the math with the plan rules" instead of a single evidence
    *  badge (no seventh evidence status; the steps behind it carry their own badges and stitches). Hidden visually with `badge={false}`. */
   calc?: boolean;
   /** Render a signed delta (−$12.00 / +$3.00). */

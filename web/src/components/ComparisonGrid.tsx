@@ -112,7 +112,7 @@ export function ComparisonGrid({ data, plans, enteredFor = [], labels = {} }: Pr
                   <p className="unresolved"><EvidenceBadge status="UNKNOWN" /> {PLAN.cmpUnresolvedFor} {L?.not_provided.join(", ")}</p>
                 ) : (
                   <p className="hero">
-                    {/* engine totals (document rules applied to the procedures compared): "Calculated from the clauses cited", never a lone
+                    {/* engine totals (document rules applied to the procedures compared): "We did the math with the plan rules", never a lone
                         "From the plan document" badge; a total resting on hypotheticals keeps its "Hypothetical you entered" badge */}
                     <span className="rail-total"><Money cents={L.patient_total_cents} evidence={ledgerEvidence(L)} calc={ledgerEvidence(L) !== "ASSUMED"} className="total" /></span>
                     <span className="sub">{UI.planPays}: <Money cents={L.plan_total_cents} evidence={ledgerEvidence(L)} calc={ledgerEvidence(L) !== "ASSUMED"} badge={ledgerEvidence(L) === "ASSUMED"} />{L.plan_total_is_upper_bound ? ` ${PLAN.cmpUpperBound}` : ""}</span>

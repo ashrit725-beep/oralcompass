@@ -103,5 +103,5 @@ body:has(.ask-sheet[data-state="open"]) :is(.dock, .ask-scrim) { pointer-events:
 /* the placeholder ("Ask anything about your plan, in your own words") takes two lines at phone width: show both */
 .askbox-sheet-foot textarea { min-height: 72px !important; }   /* over the composer's min-h-12 utility */
 @media (prefers-reduced-motion: reduce) { .ask-scrim { animation: none; } }
-/* "Calculated from the clauses cited" wraps inside answers (it is nowrap in the drawer's figure rows) */
+/* "We did the math with the plan rules" wraps inside answers (it is nowrap in the drawer's figure rows) */
 .as-answer .fig-calc { white-space: normal; }

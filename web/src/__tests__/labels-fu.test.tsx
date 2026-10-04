@@ -22,7 +22,7 @@ describe("compare plan cards: engine totals are calculated, not 'From the plan d
   }) as unknown as ComparisonResponse;
   const est = (html: string) => [...html.matchAll(/<div class="cmp-est">([\s\S]*?)<\/div>/g)].map((m) => m[1]).join("\n");
 
-  it("labels both totals 'Calculated from the clauses cited' and never with the DOC badge", () => {
+  it("labels both totals 'We did the math with the plan rules' and never with the DOC badge", () => {
     const html = est(renderToStaticMarkup(<ComparisonGrid data={data([])} plans={plans} />));
     expect(html).toContain("$902.00");
     expect(html).toContain("$1098.00");   // the mock prints toFixed digits

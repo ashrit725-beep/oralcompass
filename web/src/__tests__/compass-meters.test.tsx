@@ -48,7 +48,7 @@ describe("after-planned figure (numbers-7)", () => {
     const g = renderToStaticMarkup(<Gauge label="Annual maximum" meter={meter({ afterCents: 16200, afterFraction: 0.9 })} usedWord="paid by the plan" />);
     expect(g).toContain("$162.00");
     const after = g.slice(g.indexOf("$162.00"));
-    expect(after).toMatch(/calculated/i);
+    expect(after).toMatch(/did the math/i);
     expect(after.slice(0, 400)).not.toContain("From your plan papers");
   });
 });
