@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "motion/react";
-import { FOOTER, NAV, TAGLINE, UI, type LandmarkId } from "@/lib/copy";
+import { FOOTER, NAV, PASSAGE, TAGLINE, UI, type LandmarkId } from "@/lib/copy";
 import type { Stitch } from "@/lib/types";
 import { useAppData } from "@/hooks/useAppData";
 import { useJourneySelection } from "@/hooks/useJourneySelection";
@@ -38,6 +38,7 @@ export default function App() {
 
   return (
     <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)} className="app gap-0">
+      {tab === "journey" && <a href="#passage-islands" className="skip-link">{PASSAGE.skipToRoute}</a>}
       <header className="appbar">
         <div className="brand"><h1>{UI.appName}</h1><p className="tagline">{TAGLINE}</p></div>
         <nav className="topnav" aria-label="Views">
@@ -58,7 +59,7 @@ export default function App() {
       <TabsContent value={tab} forceMount asChild>
         <main className={`view view-${tab} ${mobile ? "is-mobile" : ""}`}>
           <ViewSwitch index={TABS.indexOf(tab)}>
-            <JourneyView data={data} selection={selection} mobile={mobile} onOpenLandmark={openLandmark} onOpenDocuments={openDocuments} />
+            <JourneyView data={data} selection={selection} mobile={mobile} onOpenLandmark={openLandmark} onOpenDocuments={openDocuments} onSelectStitch={setStitch} />
             <PlanView data={data} mobile={mobile} landmark={landmark} onLandmark={setLandmark} stitch={stitch} onStitch={setStitch} onOpenDocuments={openDocuments} />
             <CompareView plans={plans} items={items} benefits={benefits} initial={[planRef, ...plans.map((p) => p.plan_code).filter((c) => c !== planRef)].slice(0, 3)} />
             <DocumentsView planCode={planRef} plans={plans} onPlan={selectPlan} evidence={evidence} stitches={stitches} selected={stitch} onSelect={setStitch}
