@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any, Optional
 
 from dotenv import load_dotenv
-from fastapi import Depends, FastAPI, HTTPException, Response
+from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel, Field
 
@@ -28,8 +28,10 @@ from .extraction import FixtureExtractor  # noqa: E402
 from .lint_runtime import guard  # noqa: E402
 from .redaction import redact  # noqa: E402
 from .store import NOT_FOUND, repo  # noqa: E402
+from .sessions import SessionMiddleware, mark_cleared  # noqa: E402
 
 app = FastAPI(title="OralCompass API", version="0.1.0")
+app.add_middleware(SessionMiddleware)      # production: per-visitor signed-cookie sessions (inactive under ORALCOMPASS_DEV_AUTH=1 or Cognito)
 extractor = FixtureExtractor()
 PRESETS = {p.stem.upper(): load_plan(p) for p in sorted((FIXTURES / "plans").glob("*.json"))}
 PRESET_META = {code: extractor.by_code[code] for code in PRESETS}
@@ -223,9 +225,28 @@ def export_me(user: User = Depends(current_user)):
     return {rtype: repo.list_owned(user.sub, rtype) for rtype in ("document", "estimate", "comparison", "benefits", "treatment_item", "saved_estimate", "journey")}
 
 
+def _delete_owner_files(sub: str) -> int:
+    """Remove the caller's stored uploads (ORALCOMPASS_DATA_DIR/<sub>/). Only a plain directory name directly under the data dir is touched."""
+    import re
+    import shutil
+    if not re.fullmatch(r"[A-Za-z0-9_-]{1,128}", sub):
+        return 0
+    base = uploads.data_dir().resolve()
+    target = (base / sub).resolve()
+    if target.parent != base or not target.is_dir():
+        return 0
+    n = sum(1 for p in target.rglob("*") if p.is_file())
+    shutil.rmtree(target, ignore_errors=True)
+    return n
+
+
 @app.delete("/me")
-def delete_me(user: User = Depends(current_user)):
+def delete_me(request: Request, user: User = Depends(current_user)):
     counts = repo.delete_all(user.sub)
+    files = _delete_owner_files(user.sub)
+    if files:
+        counts = {**counts, "stored_file": files}
+    mark_cleared(request)               # the session cookie is expired on this response; the next request starts a new, empty session
     # production: delete S3 prefix users/<sub>/, DynamoDB items, scheduled notifications, wrapped data keys (crypto-shred), Cognito user
     return {"deleted": counts}
 

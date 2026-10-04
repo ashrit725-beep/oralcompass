@@ -80,9 +80,23 @@ def has_amount(page, sel: str, amt: str) -> bool:
     return bool(page.evaluate(HAS_AMOUNT_JS, [sel, amt]))
 
 
+def dev_context(browser, **kwargs):
+    """A browser context for the dev walk. The production bundle (`npm run build`) sends no X-Dev-User header (lib/auth.ts: only dev builds
+    or VITE_DEV_AUTH=1 do; production identifies visitors by the session cookie), so the walk adds the dev header to /api requests itself,
+    matching the dev user this script seeds and reverts through the API."""
+    ctx = browser.new_context(**kwargs)
+
+    def add_dev_user(route):
+        headers = {**route.request.headers}
+        headers.setdefault("x-dev-user", "demo-user")
+        route.continue_(headers=headers)
+    ctx.route(re.compile(r"^https?://[^/]+/api/"), add_dev_user)
+    return ctx
+
+
 def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-preference"):
     browser = pw.chromium.launch()
-    ctx = browser.new_context(viewport={"width": width, "height": height}, device_scale_factor=1, reduced_motion=reduced_motion)
+    ctx = dev_context(browser, viewport={"width": width, "height": height}, device_scale_factor=1, reduced_motion=reduced_motion)
     page = ctx.new_page()
     errors = []
     page.on("pageerror", lambda e: errors.append(str(e)))
@@ -544,7 +558,7 @@ def upload_walk(page, device: str, shot):
 def run_reduced_desktop(pw):
     """Desktop with prefers-reduced-motion: every end state present and equal to the full-motion run; scenery loops off."""
     browser = pw.chromium.launch()
-    ctx = browser.new_context(viewport={"width": 1366, "height": 900}, device_scale_factor=1, reduced_motion="reduce")
+    ctx = dev_context(browser, viewport={"width": 1366, "height": 900}, device_scale_factor=1, reduced_motion="reduce")
     page = ctx.new_page()
     open_alex(page)
     page.screenshot(path=OUT / "desktop-reduced-11-passage.png", full_page=True)

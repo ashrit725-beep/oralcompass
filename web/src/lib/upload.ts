@@ -7,6 +7,7 @@
  * Frozen types are extended here (additive) rather than edited: `ExtractionStatusFull` adds the API's extra fields.
  */
 import { ApiError, api } from "./api";
+import { authHeaders } from "./auth";
 import { UPLOAD } from "./copy/upload";
 import type { ExtractedField, ExtractionStatus, ReviewDecision, UploadResponse } from "./types";
 
@@ -38,8 +39,8 @@ export type ExtractionStatusFull = ExtractionStatus & {
 /** POST /me/documents/upload also returns `mode` and the preview's `note` (additive to the frozen `UploadResponse`). */
 export type UploadResponseX = UploadResponse & { mode?: "demo" | "live"; redaction_preview: UploadResponse["redaction_preview"] & { note?: string } };
 
-/** Dev auth header the frozen api.ts sends; mirrored here for the one direct fetch (the stored PDF bytes for the page preview). */
-export const DEV_USER_HEADER = { "X-Dev-User": "demo-user" } as const;
+/** The dev auth header in dev builds (empty in production, where the session cookie identifies the visitor); see lib/auth.ts. */
+export const DEV_USER_HEADER: Record<string, string> = authHeaders();
 
 export type FileProblem = "not_pdf" | "too_large" | "too_many_pages" | "unreadable";
 export type FileCheck = { ok: true } | { ok: false; problem: FileProblem };
