@@ -69,7 +69,7 @@ Open the app and choose **Open a labeled sample journey: Alex Chen** (real publi
 - **One server, as a presenter would run it:** `cd web && npm run build && cd ../api && ORALCOMPASS_DEV_AUTH=0 ORALCOMPASS_LLM_PROVIDER=none
   python3 -m uvicorn app.server:app --host 127.0.0.1 --port 8000`, then open http://127.0.0.1:8000 (signed cookie sessions, API under `/api`).
 - **Other ports:** `ORALCOMPASS_API_TARGET=http://127.0.0.1:<port>` points the Vite dev/preview proxy at another API;
-  `ORALCOMPASS_WEB_BASE=http://127.0.0.1:<port>` points the screenshot, layout and error-sweep tools at another preview.
+  `ORALCOMPASS_WEB_BASE=http://127.0.0.1:<port>` points the screenshot and layout tools at another preview.
 - **Screenshot walk:** `cd web && npm run build && npx vite preview --port 4173 --host 127.0.0.1`, then from the repo root
   `python3 tools/screenshots.py shots/` (desktop and phone, reduced motion; the walk sends the dev header itself). `shots/` is scratch output.
 
