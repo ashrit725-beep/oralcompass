@@ -22,14 +22,14 @@ Status legend: OPEN · DONE · DEFERRED (with reason). Every item names the file
    root canal sits on top of the crown island button; the crown title truncates ("Crown, porcelain/cera…"); visited-island chips truncate ("Periodic oral..",
    "Adult cleani...", "Bitewing x-..."). Check: no control rectangle overlaps another (assert in layoutPassage), full titles visible or available via the
    accessible name + a 2-line clamp, soundings placed on the route between islands, not on a label.
-8. OPEN — Demo-mode assistant answers the selected step instead of the question (`api/app/assistant.py` intent/step resolution, `assistant_templates.py`):
+8. DONE (2026-10-03, `assistant.question_topic`; test `test_demo_intent_follows_the_question_topic_before_the_selected_step`) — Demo-mode assistant answers the selected step instead of the question (`api/app/assistant.py` intent/step resolution, `assistant_templates.py`):
    with step key "deductible" selected, "What happens to the annual maximum on this line?" returned the deductible template. Demo intent should read the
    question (maximum/annual max → M, deductible → D, share/percent/coinsurance → CO, allowed/network → N, downgrade/alternate → AB) and fall back to the
    selected step only when the question names none. Check: that exact question returns the annual-maximum sentence with the M step and maximum refs.
 9. OPEN — Upload review table clipped inside the stepper (`components/upload/UploadWizard.tsx` / vendored `ui/Stepper.tsx` container width, `styles/upload.css`):
    the Confidence/Quote/Decision columns are cut off at 1366 px; the review step needs the full dialog width (or a horizontal scroll container with a
    scroll-fade) and a stacked card layout at 360 px. Check: all five columns visible at 1366, no clipped text at 360.
-10. OPEN — The advice-question template reads mechanically ("status estimate; steps cited to the plan document: coinsurance, network basis"); rewrite as
+10. DONE (2026-10-03, `templates.ADVICE_*` sentences; test `test_advice_template_reads_as_plain_sentences_from_engine_fields`) — The advice-question template reads mechanically ("status estimate; steps cited to the plan document: coinsurance, network basis"); rewrite as
    plain sentences from the same engine fields (antislop-copywriting), still information-only. Check: lint clean and reads as prose.
 
 ## Integration (2026-10-03, merge of the four web build branches into `build/journey-v2`)

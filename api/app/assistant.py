@@ -40,7 +40,8 @@ from .data import CODES_BY_KEY, PLAN_META, PLANS, PROC_BY_KEY, PROCEDURES, claus
 from .lint_runtime import guard
 from .records import derived_benefits
 from .store import NOT_FOUND, repo
-from .templates import ASSIST_RIBBON_DEMO, ASSIST_RIBBON_LIVE_FALLBACK, advice_question_response
+from .templates import (ADVICE_AMOUNTS, ADVICE_LINE_STATUS, ADVICE_RULE_ROW, ADVICE_RULE_ROW_UNSTATED, ADVICE_RULE_WORDS, ADVICE_STEPS_CITED_MANY,
+                        ADVICE_STEPS_CITED_ONE, ADVICE_STEPS_UNCITED, ASSIST_RIBBON_DEMO, ASSIST_RIBBON_LIVE_FALLBACK, advice_question_response, join_words)
 
 log = logging.getLogger("oralcompass.assistant")
 router = APIRouter()
@@ -510,6 +511,24 @@ def infer_step_rule(message: str) -> Optional[str]:
     return None
 
 
+# The question's own topic (BUILD_FOLLOWUPS 8): a question that names a checkpoint is answered about that checkpoint, whichever step is
+# selected; the selected step only fills in when the question names none. Bare "share" is not a topic ("my share" is the line total).
+_QUESTION_TOPICS = (
+    (re.compile(r"\b(annual\s+)?max(imum)?\b"), "M"),
+    (re.compile(r"\bdeductible\b"), "D"),
+    (re.compile(r"\bcoinsurance\b|\bpercent(age)?\b|\bplan'?s share\b|\bshare (does|that|of this line does) the plan\b|\bplan pays?\b"), "CO"),
+    (re.compile(r"\ballowed\b|\bnetwork\b|\bnegotiated\b"), "N"),
+    (re.compile(r"\balternate\b|\balternative\b|\bdowngrade\b|\bleast expensive\b"), "AB"),
+)
+
+
+def question_topic(message: str) -> Optional[str]:
+    """The checkpoint rule the question names (the earliest mention wins), or None when it names none."""
+    low = (message or "").lower()
+    hits = [(m.start(), rule) for pat, rule in _QUESTION_TOPICS if (m := pat.search(low))]
+    return min(hits)[1] if hits else None
+
+
 _WORD_SLOT = re.compile(r"(?<!\{)\{(\w+)\}(?!\})")
 
 
@@ -753,12 +772,33 @@ def advice_block(ctx: Ctx) -> dict:
     facts_by_scenario: dict[str, str] = {}
     lines = [(ctx.line_index, ctx.line)] if ctx.line is not None else list(enumerate(ctx.lines))
     for _, L in lines:
-        rules_cited = sorted({s.get("rule") for s in L.get("steps", []) if s.get("stitch")} - {None})
-        words = {"D": "deductible", "CO": "coinsurance", "M": "annual maximum", "AB": "alternate benefit", "N": "network basis", "X": "exclusion", "W": "waiting period", "F": "frequency limit"}
-        cited = ", ".join(words.get(r, r) for r in rules_cited) or "none"
-        facts_by_scenario[L.get("label", "line")] = f"status {L.get('status')}; steps cited to the plan document: {cited}; amounts are shown on the estimate line with their evidence badges."
+        name = L.get("label") or "this line"
+        status = L.get("status") if L.get("status") in ADVICE_LINE_STATUS else "other"
+        sentences = [ADVICE_LINE_STATUS[status].format(name=name)]
+        rules_cited: list[str] = []                 # in the line's own step order (fee to you pay), each rule once
+        pages: list[str] = []
+        for s in L.get("steps", []):
+            r, st = s.get("rule"), s.get("stitch")
+            if st and r in ADVICE_RULE_WORDS and r not in rules_cited:
+                rules_cited.append(r)
+            if st and re.fullmatch(r"[A-Za-z0-9]+#p\d+", st):
+                where = st.replace("#p", ", page ")
+                if where not in pages:
+                    pages.append(where)
+        if rules_cited:
+            words = [ADVICE_RULE_WORDS[r] for r in rules_cited]
+            tpl = ADVICE_STEPS_CITED_ONE if len(words) == 1 else ADVICE_STEPS_CITED_MANY
+            sentences.append(tpl.format(rule=words[0], rules=join_words(words), where="; ".join(pages)))
+        elif status != "unresolved":
+            sentences.append(ADVICE_STEPS_UNCITED)
+        facts_by_scenario[name] = " ".join(sentences)
     if not facts_by_scenario and ctx.rule_row:
-        facts_by_scenario[PROC_BY_KEY.get(ctx.procedure_key, {}).get("name", ctx.procedure_key)] = f"coverage class {ctx.rule_row.get('category') or 'not stated'}; the rule row lists the cited clauses."
+        name = PROC_BY_KEY.get(ctx.procedure_key, {}).get("name", ctx.procedure_key)
+        cat = ctx.rule_row.get("category")
+        facts_by_scenario[name] = ADVICE_RULE_ROW.format(name=name, category=cat) if cat else ADVICE_RULE_ROW_UNSTATED.format(name=name)
+    if facts_by_scenario and lines:
+        last = list(facts_by_scenario)[-1]
+        facts_by_scenario[last] += " " + ADVICE_AMOUNTS
     # one scope, one scenario: there is no second column to list differences against; unknown rules are already on the estimate's flags
     not_provided = list(((ctx.estimate or {}).get("ledger") or {}).get("not_provided", []))
     text = advice_question_response(facts_by_scenario, [], not_provided)
@@ -843,7 +883,10 @@ def ask(body: AssistIn, user: User = Depends(current_user)):
     _rate_limit(user.sub)
     ctx = load_scope(user, body.scope)
     message = body.message.strip()
-    facts = gather(ctx, message)                      # deterministic, owner-scoped, always first
+    topic = question_topic(message)
+    if topic and not body.scope.stitch:              # the question's topic before the selected step (a selected clause keeps its own rule)
+        ctx.step_rule = topic
+    facts = gather(ctx, message)                    # deterministic, owner-scoped, always first
     intent = classify(message, ctx)
     resp: dict[str, Any] = {"mode": "demo", "intent": intent, "blocks": [], "suggested": [], "guard": {"dropped": 0, "grounding_failures": 0}, "tools_used": list(ctx.tools_used), "ribbon": None}
 

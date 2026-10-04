@@ -3,15 +3,40 @@ FOOTER = "Information from your documents and your inputs. Not advice. Not the p
 PRESET_BANNER = "Listed here means the document is public — not that you are eligible to enroll."
 COMPARISON_BANNER = "Columns are in the order you selected. Inputs are entered for each plan separately; nothing is copied between plans."
 
+ADVICE_INTRO = "OralCompass provides information, not a choice. Here is what the supplied documents and inputs show."
+ADVICE_LINE_STATUS = {
+    "estimate": "For {name}, the estimate is complete.",
+    "unresolved": "For {name}, the estimate is waiting for information, so no amount is shown yet.",
+    "not_covered": "For {name}, the plan document lists the service as not covered.",
+    "other": "For {name}, the estimate lists its own status.",
+}
+ADVICE_STEPS_CITED_ONE = "Its {rule} step is tied to a sentence in the plan document ({where})."
+ADVICE_STEPS_CITED_MANY = "Its {rules} steps are each tied to a sentence in the plan document ({where})."
+ADVICE_STEPS_UNCITED = "None of its steps is tied to a sentence in the plan document."
+ADVICE_RULE_ROW = "For {name}, the plan document places the service in {category}, and the rule row lists the clauses behind it."
+ADVICE_RULE_ROW_UNSTATED = "For {name}, the pages read do not place the service in a coverage class."
+ADVICE_AMOUNTS = "Each amount is on the estimate line beside its evidence label."
+ADVICE_NOT_PROVIDED = "Still not provided: {items}."
+ADVICE_DIFFERENCES = "Where the documents differ: {items}"
+ADVICE_RULE_WORDS = {"D": "deductible", "CO": "coinsurance", "M": "annual maximum", "AB": "alternate benefit", "N": "network", "X": "exclusion",
+                     "W": "waiting period", "F": "frequency limit"}
+
+
+def join_words(items: list[str]) -> str:
+    """'a', 'a and b', 'a, b and c'."""
+    items = [i for i in items if i]
+    return items[0] if len(items) == 1 else (", ".join(items[:-1]) + " and " + items[-1] if items else "")
+
+
 def advice_question_response(facts_by_scenario: dict[str, str], differences: list[str], not_provided: list[str]) -> str:
-    """Fixed neutral template for questions that ask the app to decide — a comparison of facts; the user decides."""
-    parts = ["OralCompass provides information, not a choice. Here is what the supplied documents and inputs show."]
-    for name, facts in facts_by_scenario.items():
-        parts.append(f"{name}: {facts}")
+    """Fixed neutral template for questions that ask the app to decide: plain sentences of fact, built from engine fields. The user decides.
+    `facts_by_scenario` maps a line name to its already-written sentences (see assistant.advice_block)."""
+    parts = [ADVICE_INTRO]
+    parts.extend(facts_by_scenario.values())
     if differences:
-        parts.append("Differences: " + " ".join(differences))
+        parts.append(ADVICE_DIFFERENCES.format(items=" ".join(differences)))
     if not_provided:
-        parts.append("Not provided: " + ", ".join(not_provided) + ".")
+        parts.append(ADVICE_NOT_PROVIDED.format(items=join_words(not_provided)))
     return " ".join(parts)
 BENCHMARK_NOTE = ("Published reference rates are shown with their payer, geography, date and purpose. They are not your dentist's fee, not your plan's allowed amount "
                   "and not a commercial price. An estimate uses them only if you enter one yourself as a hypothetical, and then labels it as such.")
