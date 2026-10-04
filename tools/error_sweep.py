@@ -56,13 +56,22 @@ class Sweep:
         self.ctx = browser.new_context(**ctx_kwargs)
         self.ctx.route(re.compile(r"^https?://[^/]+/api/"), self._dev_user)
         self.page = self.ctx.new_page()
-        self.action = "load"
+        self._action = "load"
+        self.count = 0
         p = self.page
         p.on("console", self._console)
         p.on("pageerror", lambda e: note("pageerror", str(e), f"{label} / {self.action}"))
         p.on("response", self._response)
         p.on("requestfailed", self._reqfailed)
         p.add_init_script("""window.addEventListener('unhandledrejection', e => console.error('unhandledrejection: ' + (e.reason && (e.reason.stack || e.reason.message) || e.reason)));""")
+
+    @property
+    def action(self) -> str:
+        return self._action
+
+    @action.setter
+    def action(self, value: str):
+        self._action = value; self.count += 1
 
     @staticmethod
     def _dev_user(route):
@@ -388,6 +397,7 @@ class Sweep:
         except Exception as e:  # noqa: BLE001
             note("sweep", f"sweep aborted: {str(e).splitlines()[0]}", f"{self.label} / {self.action}")
         finally:
+            print(f"   {self.count} actions driven", flush=True)
             self.browser.close()
 
 
