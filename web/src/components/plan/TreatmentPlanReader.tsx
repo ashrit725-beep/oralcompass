@@ -39,6 +39,11 @@ export function TreatmentPlanReader({ onConfirmed }: TreatmentPlanReaderProps) {
   const [rows, setRows] = useState<Row[]>([]);
   const [confirming, setConfirming] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  // security-3: a photo or scanned PDF waits here until the person confirms the server's notice (409 image_confirmation_required)
+  const [held, setHeld] = useState<{ file: File; notice: string } | null>(null);
+  const confirmRef = useRef<HTMLDivElement>(null);   // the shadcn Button takes no ref (React 18 function component)
+  const pasteRef = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => { if (held) confirmRef.current?.querySelector<HTMLButtonElement>(".tpr-image-send")?.focus(); }, [held]);
   // The section usually sits in a closed <details>: nothing is fetched and no file input exists until it has been visible once.
   const rootRef = useRef<HTMLElement>(null);
   const seen = useInView(rootRef, { once: true });
@@ -64,9 +69,13 @@ export function TreatmentPlanReader({ onConfirmed }: TreatmentPlanReaderProps) {
     setBusy("text"); setError(null); setMessage(null); setResult(null);
     try { show(await api.readTreatmentPlanText(text)); } catch (e) { fail(e); } finally { setBusy(null); }
   }
-  async function readFile(f: File) {
-    setFile(f); setBusy("file"); setError(null); setMessage(null); setResult(null);
-    try { show(await api.readTreatmentPlanFile(f)); } catch (e) { fail(e); } finally { setBusy(null); setFile(null); }
+  async function readFile(f: File, confirmImage = false) {
+    setFile(f); setBusy("file"); setError(null); setMessage(null); setResult(null); setHeld(null);
+    try { show(await api.readTreatmentPlanFile(f, confirmImage)); } catch (e) {
+      const detail = e instanceof ApiError ? (e.body as { detail?: { error?: string; notice?: string } } | undefined)?.detail : undefined;
+      if (e instanceof ApiError && e.status === 409 && detail?.error === "image_confirmation_required") setHeld({ file: f, notice: detail.notice || PLAN.readImageNotice });
+      else fail(e);
+    } finally { setBusy(null); setFile(null); }
   }
 
   const items = result?.items ?? [];
@@ -105,7 +114,7 @@ export function TreatmentPlanReader({ onConfirmed }: TreatmentPlanReaderProps) {
       <div className="tpr-inputs">
         <div className="tpr-paste">
           <label htmlFor={`${id}-text`} className="tpr-label">{PLAN.readPasteLabel}</label>
-          <textarea id={`${id}-text`} className="tpr-textarea" rows={7} value={text} onChange={(e) => setText(e.target.value)} placeholder={PLAN.readPastePlaceholder} spellCheck={false} maxLength={20000} />
+          <textarea ref={pasteRef} id={`${id}-text`} className="tpr-textarea" rows={7} value={text} onChange={(e) => setText(e.target.value)} placeholder={PLAN.readPastePlaceholder} spellCheck={false} maxLength={20000} />
           {samples.length > 0 && (
             <div className="tpr-samples" role="group" aria-label={PLAN.readSamplesLabel}>
               <span className="tpr-samples-label">{PLAN.readSamplesLabel}</span>
@@ -121,6 +130,15 @@ export function TreatmentPlanReader({ onConfirmed }: TreatmentPlanReaderProps) {
           {seen && <FileUpload onFileSelected={readFile} status={busy === "file" ? "uploading" : "idle"} currentFile={file} acceptedFileTypes={ACCEPTED} maxFileSize={MAX_BYTES} showTitle
                       labels={{ title: PLAN.readFileTitle, hint: PLAN.readFileHint, choose: PLAN.readFileChoose, cancel: PLAN.readFileCancel, limits: PLAN.readFileLimits, tooLarge: () => PLAN.readFileTooLarge, wrongType: PLAN.readFileWrongType }} />}
           <p className="muted small tpr-image-note">{PLAN.readImageNote}</p>
+          {held && (
+            <div ref={confirmRef} className="tpr-image-confirm" role="group" aria-labelledby={`${id}-notice`}>
+              <p id={`${id}-notice`} className="bs-note">{held.notice}</p>
+              <div className="bs-actions">
+                <Button type="button" variant="outline" size="touch" onClick={() => { setHeld(null); pasteRef.current?.focus(); }}>{PLAN.readImagePaste}</Button>
+                <Button type="button" size="touch" className="tpr-image-send" onClick={() => { void readFile(held.file, true); }} disabled={!!busy}>{PLAN.readImageSend}</Button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

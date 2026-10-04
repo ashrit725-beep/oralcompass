@@ -175,13 +175,73 @@ def test_live_mocked_image_sends_an_image_part_and_says_it_was_not_redacted(monk
                       "ignored_text": []})
 
     live(monkeypatch, handler)
-    j = client.post("/me/treatment-plans/read", files={"file": ("estimate.png", png_bytes(), "image/png")}, headers=H("tr-live")).json()
+    j = client.post("/me/treatment-plans/read", files={"file": ("estimate.png", png_bytes(), "image/png")}, data={"confirm_image_sent_unredacted": "true"},
+                    headers=H("tr-live")).json()
     parts = seen["body"]["messages"][1]["content"]
     assert isinstance(parts, list) and parts[1]["type"] == "image_url" and parts[1]["image_url"]["url"].startswith("data:image/png;base64,")
     assert j["mode"] == "live" and j["ribbon"] == READER_RIBBON_LIVE_IMAGE and j["source"] == "image"
     item = j["items"][0]
     assert item["quote_verified"] is None and item["procedure_key"] == "crown" and item["fee_cents"] == 120000
     assert "919-555-0100" not in item["quote"]                                 # the model's answer is redacted before it is returned
+
+
+def test_live_image_needs_an_explicit_confirmation_before_any_model_call(monkeypatch):
+    """security-3 / owner note 11: no image or scanned page reaches a model without confirm_image_sent_unredacted=true."""
+    from app.templates import READER_IMAGE_NOTICE
+    calls = []
+    live(monkeypatch, lambda req: calls.append(1) or reply({"items": [], "ignored_text": []}))
+    r = client.post("/me/treatment-plans/read", files={"file": ("estimate.png", png_bytes(), "image/png")}, headers=H("tr-consent"))
+    assert r.status_code == 409 and calls == []
+    assert r.json()["detail"] == {"error": "image_confirmation_required", "source": "image", "notice": READER_IMAGE_NOTICE}
+    r = client.post("/me/treatment-plans/read", files={"file": ("estimate.png", png_bytes(), "image/png")}, data={"confirm_image_sent_unredacted": "false"},
+                    headers=H("tr-consent"))
+    assert r.status_code == 409 and calls == []
+    blank = pymupdf.open(); blank.new_page(); scanned = blank.tobytes(); blank.close()          # no text layer → page images
+    r = client.post("/me/treatment-plans/read", files={"file": ("scan.pdf", scanned, "application/pdf")}, headers=H("tr-consent"))
+    assert r.status_code == 409 and r.json()["detail"]["source"] == "pdf" and calls == []
+    r = client.post("/me/treatment-plans/read", files={"file": ("scan.pdf", scanned, "application/pdf")}, data={"confirm_image_sent_unredacted": "true"},
+                    headers=H("tr-consent"))
+    assert r.status_code == 200 and calls == [1]
+    # text is redacted before the model call, so it needs no confirmation
+    assert client.post("/me/treatment-plans/read", json={"text": "Tooth 3 one surface composite $180.00"}, headers=H("tr-consent")).status_code == 200
+
+
+def test_demo_mode_reads_an_image_without_confirmation_and_sends_nothing():
+    j = client.post("/me/treatment-plans/read", files={"file": ("photo.png", png_bytes(), "image/png")}, headers=H("tr-demo-img")).json()
+    assert j["mode"] == "demo" and j["source"] == "image" and j["items"] == []
+
+
+def test_image_metadata_is_stripped_before_anything_is_sent(monkeypatch):
+    from PIL import Image
+    exif = Image.Exif(); exif[0x010F] = "SecretCamMaker"; exif[0x8825] = {2: (35.0, 46.0, 0.0)}
+    seen = []
+
+    def handler(request):
+        seen.append(json.loads(request.content)["messages"][1]["content"][1]["image_url"]["url"])
+        return reply({"items": [], "ignored_text": []})
+
+    live(monkeypatch, handler)
+    for fmt, mime in (("JPEG", "image/jpeg"), ("PNG", "image/png"), ("WEBP", "image/webp")):
+        buf = io.BytesIO(); Image.new("RGB", (40, 20), "white").save(buf, fmt, exif=exif.tobytes()); raw = buf.getvalue()
+        assert b"SecretCamMaker" in raw
+        r = client.post("/me/treatment-plans/read", files={"file": (f"p.{fmt.lower()}", raw, mime)}, data={"confirm_image_sent_unredacted": "true"}, headers=H("tr-exif"))
+        assert r.status_code == 200
+        import base64 as b64
+        header, _, payload = seen[-1].partition(",")
+        sent = b64.b64decode(payload)
+        assert b"SecretCamMaker" not in sent and b"Exif" not in sent
+        assert header == ("data:image/webp;base64" if fmt == "WEBP" else "data:image/png;base64")
+        if fmt == "WEBP":
+            assert Image.open(io.BytesIO(sent)).size == (40, 20)
+    mime, out = treatment_reader.strip_image_metadata("image/jpeg", _jpeg_with_exif(exif))          # CMYK JPEG → RGB PNG
+    assert mime == "image/png" and out.startswith(b"\x89PNG")
+    with pytest.raises(Exception):
+        treatment_reader.strip_image_metadata("image/png", b"\x89PNG broken")
+
+
+def _jpeg_with_exif(exif) -> bytes:
+    from PIL import Image
+    buf = io.BytesIO(); Image.new("CMYK", (8, 8)).save(buf, "JPEG", exif=exif.tobytes()); return buf.getvalue()
 
 
 def test_guard_refusal_falls_back_to_demo_without_calling_the_model(monkeypatch):

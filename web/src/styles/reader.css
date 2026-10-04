@@ -89,3 +89,4 @@
 .pw-note { margin: 0; font-size: 12px; line-height: 16px; color: var(--muted); }
 .plain-words.is-compact .pw-sentence { font-family: var(--serif); font-size: 14px; line-height: 21px; }
 .evidence-item .evidence-plain { grid-column: 2; margin-top: 4px; padding: 6px 10px; background: var(--paper-deep); border-radius: var(--r-2); }
+.tpr-image-confirm { margin-top: var(--s-2); border-left: 3px solid var(--terracotta); padding-left: var(--s-3); }

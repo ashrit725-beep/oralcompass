@@ -2,7 +2,10 @@
 
 Pipeline for one read, in order (the response lists the stages that ran):
 1. reading: pasted text (JSON {text}) or a file (multipart {file}: PNG, JPEG or WebP image, or a PDF; at most 10 MB). A PDF is read
-   through its PyMuPDF text layer; a PDF without one is rendered to page images (live mode only).
+   through its PyMuPDF text layer; a PDF without one is rendered to page images (live mode only). A raster image is re-encoded as PNG
+   on arrival (`strip_image_metadata`), so EXIF (GPS position, device, time) never reaches a model; WebP keeps its pixels and loses its
+   EXIF/XMP chunks. In live mode an image or a scanned PDF is sent only when the request carries `confirm_image_sent_unredacted=true`
+   (multipart field); without it the reader answers 409 `image_confirmation_required` with READER_IMAGE_NOTICE and calls no model.
 2. redacting: `redaction.redact` before any model call. Only redacted text reaches a model. An image cannot be redacted, which the
    response states (ribbon); every string the model returns is redacted again before it is returned.
 3. reading_lines:
@@ -39,7 +42,7 @@ from .extraction import (NOT_STATED_RULE, VOCAB, ModelUnavailable, _ANCHORS, _GE
 from .redaction import redact
 from .templates import (READER_CODE_NOT_LISTED, READER_CONFIRM_SOURCE, READER_DEMO_CANNOT_READ, READER_DESCRIPTION_DIFFERS, READER_LIMIT_NOTE,
                         READER_MATCH_AMBIGUOUS, READER_MATCH_CODE, READER_MATCH_DESCRIPTOR, READER_MODEL_FAILED, READER_NO_LINES, READER_NOT_MATCHED,
-                        READER_RIBBON_DEMO, READER_RIBBON_LIVE, READER_RIBBON_LIVE_IMAGE, READER_SCANNED_PDF, READER_STAGE_LABELS)
+                        READER_IMAGE_NOTICE, READER_RIBBON_DEMO, READER_RIBBON_LIVE, READER_RIBBON_LIVE_IMAGE, READER_SCANNED_PDF, READER_STAGE_LABELS)
 
 router = APIRouter()
 log = logging.getLogger("oralcompass.treatment_reader")
@@ -306,19 +309,58 @@ def read_live(redacted_text: Optional[str], images: list[tuple[str, bytes]]) -> 
 
 
 # ---------------------------------------------------------------- input
-async def _read_input(request: Request) -> tuple[str, Optional[str], list[tuple[str, bytes]], Optional[str]]:
-    """→ (source, text, images, note). source: text | pdf | image."""
+def _strip_webp(data: bytes) -> bytes:
+    """Drop the EXIF and XMP chunks of a RIFF/WebP file (and their VP8X flags); pixels are untouched."""
+    if len(data) < 12 or data[:4] != b"RIFF" or data[8:12] != b"WEBP":
+        raise ValueError("not webp")
+    out, i = [], 12
+    while i + 8 <= len(data):
+        tag, size = data[i:i + 4], int.from_bytes(data[i + 4:i + 8], "little")
+        chunk = data[i:i + 8 + size + (size & 1)]
+        if len(chunk) < 8 + size:
+            raise ValueError("truncated webp")
+        if tag == b"VP8X" and size >= 1:
+            chunk = chunk[:8] + bytes([chunk[8] & ~0x0C]) + chunk[9:]        # clear the EXIF (0x08) and XMP (0x04) flags
+        if tag not in (b"EXIF", b"XMP "):
+            out.append(chunk)
+        i += 8 + size + (size & 1)
+    body = b"WEBP" + b"".join(out)
+    return b"RIFF" + len(body).to_bytes(4, "little") + body
+
+
+def strip_image_metadata(mime: str, data: bytes) -> tuple[str, bytes]:
+    """Re-encode a PNG/JPEG as a metadata-free PNG (PyMuPDF decodes and writes pixels only); WebP loses its EXIF/XMP chunks.
+    An image that cannot be decoded is refused (415) rather than forwarded as is."""
+    import pymupdf
+    try:
+        if mime == "image/webp":
+            return mime, _strip_webp(data)
+        pm = pymupdf.Pixmap(data)
+        if pm.colorspace is not None and pm.colorspace.n not in (1, 3):
+            pm = pymupdf.Pixmap(pymupdf.csRGB, pm)
+        return "image/png", pm.tobytes("png")
+    except Exception:
+        raise HTTPException(status_code=415, detail={"error": "unreadable_image"})
+
+
+def _confirmed(value: Any) -> bool:
+    return isinstance(value, str) and value.strip().lower() in ("true", "1", "yes")
+
+
+async def _read_input(request: Request) -> tuple[str, Optional[str], list[tuple[str, bytes]], Optional[str], bool]:
+    """→ (source, text, images, note, image_confirmed). source: text | pdf | pdf_scanned | image."""
     declared = request.headers.get("content-length")
     if declared and declared.isdigit() and int(declared) > MAX_BYTES + 64 * 1024:
         raise HTTPException(status_code=413, detail={"error": "file_too_large", "max_bytes": MAX_BYTES})
     ctype = (request.headers.get("content-type") or "").lower()
     if ctype.startswith("multipart/form-data"):
         form = await request.form()
+        confirmed = _confirmed(form.get("confirm_image_sent_unredacted"))
         f = form.get("file")
         if f is None or not hasattr(f, "read"):
             text = form.get("text")
             if isinstance(text, str):
-                return "text", text, [], None
+                return "text", text, [], None, False
             raise HTTPException(status_code=422, detail={"error": "file_or_text_required"})
         data = await f.read(MAX_BYTES + 1)
         if len(data) > MAX_BYTES:
@@ -327,9 +369,9 @@ async def _read_input(request: Request) -> tuple[str, Optional[str], list[tuple[
         if mime == "application/pdf" or data.startswith(b"%PDF-"):
             if not data.startswith(b"%PDF-"):
                 raise HTTPException(status_code=415, detail={"error": "unsupported_type"})
-            return _read_pdf(data)
+            return (*_read_pdf(data), confirmed)
         if mime in IMAGE_TYPES and data.startswith(IMAGE_TYPES[mime]) and (mime != "image/webp" or data[8:12] == b"WEBP"):
-            return "image", None, [(mime, data)], None
+            return "image", None, [strip_image_metadata(mime, data)], None, confirmed
         raise HTTPException(status_code=415, detail={"error": "unsupported_type", "accepted": ["image/png", "image/jpeg", "image/webp", "application/pdf"]})
     try:
         body = await request.json()
@@ -338,7 +380,7 @@ async def _read_input(request: Request) -> tuple[str, Optional[str], list[tuple[
     text = body.get("text") if isinstance(body, dict) else None
     if not isinstance(text, str) or not text.strip():
         raise HTTPException(status_code=422, detail={"error": "file_or_text_required"})
-    return "text", text, [], None
+    return "text", text, [], None, False
 
 
 def _read_pdf(data: bytes) -> tuple[str, Optional[str], list[tuple[str, bytes]], Optional[str]]:
@@ -377,7 +419,12 @@ def _finish(items: list[dict]) -> list[dict]:
 @router.post("/me/treatment-plans/read")
 async def read_treatment_plan(request: Request, user: User = Depends(current_user)):
     ai_support.local_rate_limit(user.sub, KIND, RATE_N, RATE_WINDOW_S)
-    source, text, images, note = await _read_input(request)
+    source, text, images, note, image_confirmed = await _read_input(request)
+    mode = ai_support.llm_mode()
+    if images and mode == "live" and not image_confirmed:
+        # security-3 / owner note 11: an image cannot be redacted, so it reaches a model only after the person confirms the notice
+        raise HTTPException(status_code=409, detail={"error": "image_confirmation_required", "source": "image" if source == "image" else "pdf",
+                                                     "notice": READER_IMAGE_NOTICE})
     if text is not None and len(text) > MAX_TEXT_CHARS:
         raise HTTPException(status_code=422, detail={"error": "text_too_long", "max_chars": MAX_TEXT_CHARS})
     redacted, removed = redact(text) if text is not None else (None, [])
@@ -390,7 +437,6 @@ async def read_treatment_plan(request: Request, user: User = Depends(current_use
     resp: dict[str, Any] = {"mode": "demo", "source": "image" if source == "image" else ("pdf" if source.startswith("pdf") else "text"), "items": [],
                             "ignored_text": ignored_server, "redaction": {"removed": removed, "image_not_redacted": bool(images)}, "ribbon": None, "note": note,
                             "stages": _stages("redacting", skipped), "fixture": None, "dropped_unverified": 0}
-    mode = ai_support.llm_mode()
     reason = None
     if mode == "live":
         ok, reason = ai_support.guard_allow(user.sub, KIND)

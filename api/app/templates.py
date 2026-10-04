@@ -107,6 +107,8 @@ READER_DEMO_CANNOT_READ = ("Demo mode cannot read new documents. No model is con
 READER_LIMIT_NOTE = "The reading limit for this session or for today has been reached, so the model was not called."
 READER_MODEL_FAILED = "The model did not answer in time, so the document was not read."
 READER_SCANNED_PDF = "This PDF has no text layer."
+READER_IMAGE_NOTICE = ("This image is sent to the model as is; names, member IDs and dates on it are not removed. "
+                       "Pasting the text instead lets OralCompass remove them first.")
 READER_NO_LINES = "No procedure lines were found in this text."
 READER_CONFIRM_SOURCE = "treatment plan read by OralCompass, confirmed by you on {date}"
 READER_MATCH_CODE = "Matched by the code printed on the estimate ({code})."

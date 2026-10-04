@@ -113,6 +113,10 @@ export const PLAN = {
   readRemoved: (labels: string) => `Removed before reading: ${labels}.`,
   readNothingRemoved: "No personal details were found to remove.",
   readImageNotRedacted: "The image was not redacted before reading.",
+  // security-3 (owner note 11): the pre-send notice the server returns with 409 image_confirmation_required; this copy is the fallback
+  readImageNotice: "This image is sent to the model as is; names, member IDs and dates on it are not removed. Pasting the text instead lets OralCompass remove them first.",
+  readImageSend: "Send the image as is",
+  readImagePaste: "Paste the text instead",
   readDropped: (n: number) => `${n} ${n === 1 ? "line" : "lines"} the model returned ${n === 1 ? "is" : "are"} not in the text and ${n === 1 ? "is" : "are"} not shown.`,
   readReviewTitle: "Review each line",
   readReviewIntro: "Nothing is ticked in advance. A line is added only when it has a procedure identifier, a fee and your tick.",
