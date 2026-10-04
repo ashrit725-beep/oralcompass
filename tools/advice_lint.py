@@ -12,6 +12,8 @@ Rules:
   2. Imperative openers on sentences of ≥ 5 words (UI control labels ≤ 4 words are exempt from rule 2, not from rule 1).
   3. Second-person steering modals: "you can save", "you could save", "you'll save", "you should", "you need to", "you must".
   4. Ranking/winner vocabulary.
+  5. (source files only, tests excluded) No em dash used as punctuation (" — ") in a one-line string literal (antislop R-02; a lone "—"
+     placeholder for a missing value is allowed). Not applied to `--text`/`--json` or to runtime model output (`lint_text` is unchanged).
 """
 from __future__ import annotations
 
@@ -82,6 +84,8 @@ def lint_file(path: Path) -> list[dict]:
         if len(s.split()) == 0 or "://" in s or s.startswith("#") or re.fullmatch(r"[\w\-./:${}()\[\] ,%]+", s) and len(s.split()) <= 2:
             continue
         is_label = len(s.split()) <= UI_EXEMPT_MAX_WORDS
+        if re.search("\\s\u2014\\s", s) and "\n" not in s and ".test." not in path.name:
+            out.append({"rule": "em-dash", "match": "\u2014", "text": s, "file": str(path)})
         for v in lint_text(s, is_ui_label=is_label):
             v["file"] = str(path)
             out.append(v)

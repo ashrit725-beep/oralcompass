@@ -3,7 +3,7 @@ import { PASSAGE } from "../lib/copy/passage";
 import { attributionLabel, dateLabel, stageProgress, statusLabel } from "../lib/journey";
 import { islandAmountText, moneyText } from "../lib/passage";
 import type { InsuranceCheckpointVM, IslandVM, Journey, PassageVM, Stitch } from "../lib/types";
-import type { Selection } from "./atlas/JourneyMap";
+import type { StageSelection as Selection } from "../lib/types";
 import { Money } from "./Money";
 import { EvidenceBadge, StitchChip } from "./Primitives";
 
@@ -112,6 +112,8 @@ export function OverviewList({ journey, onSelect, vm, planTitle, onSelectIsland,
         {journey.stages.map((s) => (
           <li key={s.id}>
             <h3><button type="button" className="linklike" onClick={() => onSelect({ stageId: s.id })}>{s.title}</button> <span className="muted">· {s.island} · {stageProgress(s).label}</span></h3>
+            {/* scrolls sideways inside its own region on phones (the page itself never scrolls sideways; slop-5) */}
+            <div className="ov-scroll" role="region" aria-label={`${s.title}: checkpoints`} tabIndex={0}>
             <table className="ov-table">
               <thead><tr><th scope="col">Checkpoint</th><th scope="col">Status</th><th scope="col">Recorded by</th><th scope="col">Date</th><th scope="col">Source</th></tr></thead>
               <tbody>
@@ -123,6 +125,7 @@ export function OverviewList({ journey, onSelect, vm, planTitle, onSelectIsland,
                 ))}
               </tbody>
             </table>
+            </div>
           </li>
         ))}
       </ol>

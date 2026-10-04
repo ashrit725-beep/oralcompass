@@ -10,7 +10,6 @@ export const BADGE_LABEL: Record<string, string> = {
   DOC: "From the plan document", USER: "You entered", ASSUMED: "Hypothetical you entered", AMBIGUOUS: "Ambiguous in the document",
   UNKNOWN: "Not provided", CONFLICT: "Sources disagree",
 };
-export const BADGE_ICON: Record<string, string> = { DOC: "📄", USER: "✎", ASSUMED: "~", AMBIGUOUS: "?", UNKNOWN: "∅", CONFLICT: "⇄" };
 
 /** Depth-1 sentences for concepts (≤ 20 words). Keyed by topic. */
 export const PLAIN: Record<string, string> = {
@@ -51,8 +50,8 @@ export const UI = {
   appName: "OralCompass",
   ledgerTitle: "Estimated patient payment",
   planPays: "Estimated plan payment",
-  unresolved: "Unresolved — not provided for this plan:",
-  rangeBecause: (lo: string, hi: string, cause: string) => `Between ${lo} and ${hi} — because ${cause} was not provided.`,
+  unresolved: "Unresolved. Not provided for this plan:",
+  rangeBecause: (lo: string, hi: string, cause: string) => `Between ${lo} and ${hi}, because ${cause} was not provided.`,
   openOnPage: "Open on page",
   showInDocuments: "Open in Documents",
   openSource: "Open the official document",
@@ -62,7 +61,7 @@ export const UI = {
   availabilityBanner: "Listed here means the document is public, not that you are eligible to enroll.",
   comparisonNote: "Columns are in the order you selected. Inputs are entered for each plan separately; nothing is copied between plans.",
   fictional: "Fictional demonstration plan",
-  sampleRibbon: "Sample journey — fictional person and records",
+  sampleRibbon: "Sample journey: fictional person and records",
   upperBound: "Plan payment shown is an upper bound: the alternate allowance is not stated in this document.",
   couldChange: "Claims already submitted but not yet processed, services since your statement date, and the plan's own determination can change these amounts. This is an estimate, not the plan's decision.",
   progressNote: "Completion describes recorded activity (documents added, information viewed, dates entered). It is not a statement about treatment or healing.",
@@ -81,6 +80,7 @@ export const UI = {
   missingTitle: "This estimate is waiting for information",
   missingIntro: "The document and your records do not yet support a complete amount. Each missing input is listed with where it comes from.",
   notStated: "Not stated in this document",
+  reconcileWarn: "Amounts do not reconcile in this view. The engine ledger is authoritative; the receipt below lists every step.",
   reconciles: "Amounts reconcile: dentist's fee minus adjustments equals the plan share plus your share.",
   errorTitle: "The records could not be loaded",
   retry: "Try again",
@@ -91,6 +91,9 @@ export const UI = {
   deleteHold: "Hold to delete all my data",
   deleteTap: "Keep holding to delete. This cannot be undone.",
   deleting: "Deleting…",
+  exportFailed: (why: string) => `The copy of your data could not be downloaded (${why}). Nothing was changed.`,
+  deleteFailed: (why: string) => `Your data could not be deleted (${why}). Nothing was removed; the records are still stored.`,
+  auditFailed: (why: string) => `The access log could not be loaded (${why}).`,
   deleteConfirm: "Delete every private record (benefits, treatment items, estimates, journeys, documents)? This cannot be undone.",
   auditTitle: "Access log (ids only)",
   sourcesTitle: "Where the plan rules come from",
@@ -104,6 +107,14 @@ export const UI = {
   reviewCode: "code mapping shown with alternatives",
   codesNote: "Codes appear only as printed in the cited documents; a code on your own estimate takes precedence.",
   renderingDocument: "Rendering the plan document pages…",
+  skipToContent: "Skip to content",
+  viewsLabel: "Views",
+  addJourney: "Add",
+  showChosen: "Show",
+  surfaceDefault: "This part of OralCompass",
+  surfaceFailed: (what: string) => `${what} could not be shown.`,
+  surfaceChunk: "Part of the app could not be downloaded; the connection may be offline.",
+  reloadPage: "Reload the page",
 };
 
 /** Cost-trail step titles, in the fixed order of the trail. */

@@ -1,6 +1,7 @@
 import NumberFlow, { type Format } from "@number-flow/react";
 import type { Evidence } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { BADGE_LABEL } from "@/lib/copy";
 import { EvidenceBadge } from "./Primitives";
 
 /**
@@ -22,6 +23,10 @@ export interface MoneyProps {
   id?: string;
 }
 
+/** Screen-reader words for a hidden badge: the same plain words the visible badge shows ("From the plan document"), never the code (a11y-23). */
+export const evidenceWords = (evidence: Evidence) => `Evidence: ${BADGE_LABEL[evidence] ?? evidence}`;
+export const NO_AMOUNT = "no amount";
+
 const FORMAT: Format = { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 };
 
 export function Money({ cents, evidence, className, badge = true, signed = false, id }: MoneyProps) {
@@ -32,10 +37,10 @@ export function Money({ cents, evidence, className, badge = true, signed = false
         {has ? (
           <NumberFlow value={(signed ? Math.abs(cents) : cents) / 100} locales="en-US" format={FORMAT} prefix={signed ? (cents < 0 ? "−" : cents > 0 ? "+" : "") : undefined} />
         ) : (
-          <span aria-label="no amount">—</span>
+          <><span aria-hidden="true">—</span><span className="sr-only">{NO_AMOUNT}</span></>
         )}
       </span>
-      {badge ? <EvidenceBadge status={evidence} /> : <span className="sr-only">{`Evidence: ${evidence}`}</span>}
+      {badge ? <EvidenceBadge status={evidence} /> : <span className="sr-only">{evidenceWords(evidence)}</span>}
     </span>
   );
 }

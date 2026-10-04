@@ -1,5 +1,6 @@
-import { Suspense, lazy, useEffect, useState, type ReactNode } from "react";
+import { Suspense, lazy, useEffect, useMemo, useState, type ReactNode } from "react";
 import { api } from "@/lib/api";
+import { failureReason, saveJson } from "@/lib/download";
 import { UI } from "@/lib/copy";
 import { PLAN } from "@/lib/copy/plan";
 import { ownedFileObjectUrl } from "@/lib/owned-file";
@@ -8,6 +9,7 @@ import { circled } from "@/lib/stitches";
 import type { PlanEvidence, PlanRef, PlanSummary, PrivateDocument, SourceItem, Stitch, UploadedPlanSummary } from "@/lib/types";
 import { isUpload } from "@/lib/types";
 import { RemindersPanel } from "@/components/notifications/RemindersPanel";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { EvidenceBadge } from "@/components/Primitives";
 import { StageLoader } from "@/components/StageLoader";
 import { UploadWizard } from "@/components/upload/UploadWizard";
@@ -55,19 +57,25 @@ export function DocumentsView({ planCode, plans, onPlan, evidence, stitches, sel
     return () => { cancelled = true; if (url) URL.revokeObjectURL(url); };
   }, [ownedPath]);
 
+  // Each privacy action reports its own failure in the status line (web-correctness-18): a rejected request is never silent.
   async function exportData() {
-    const data = await api.exportMe();
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "oralcompass-my-data.json"; a.click(); URL.revokeObjectURL(a.href);
-    setMsg(PLAN.docsExported);
+    try { saveJson(await api.exportMe(), "oralcompass-my-data.json"); setMsg(PLAN.docsExported); }
+    catch (e) { setMsg(UI.exportFailed(failureReason(e))); }
   }
   // The one irreversible action is a deliberate 1.6 s hold in the product's palette, with the consequence stated above it (delight pass
   // rb-04; it replaces the browser's grey confirm dialog). A tap only explains; releasing early undoes the fill.
   async function deleteData() {
-    const r = await api.deleteMe(); setMsg(PLAN.docsDeleted(Object.entries(r.deleted).map(([k, v]) => `${v} ${k}`).join(", ") || PLAN.docsNothingStored)); setMine([]); onRetry();
+    let r: Awaited<ReturnType<typeof api.deleteMe>>;
+    try { r = await api.deleteMe(); } catch (e) { setMsg(UI.deleteFailed(failureReason(e))); return; }
+    setMsg(PLAN.docsDeleted(Object.entries(r.deleted).map(([k, v]) => `${v} ${k}`).join(", ") || PLAN.docsNothingStored)); setMine([]); setUploads([]); setAudit(null); onRetry();
+  }
+  async function loadAudit() {
+    try { setAudit(await api.audit()); } catch (e) { setMsg(UI.auditFailed(failureReason(e))); }
   }
   const clauses = (evidence?.clauses ?? []).filter((c) => !filter || c.quote.toLowerCase().includes(filter.toLowerCase()) || c.field.toLowerCase().includes(filter.toLowerCase()));
-  const pageUrl = primary?.has_stored_pdf && primary.stored_path ? (ownedPath ? ownedUrl : `/${primary.stored_path.replace(/^fixtures\//, "fixtures/")}`) : null;
+  const pageUrl = primary?.has_stored_pdf && primary.stored_path ? (ownedPath ? ownedUrl : `/${primary.stored_path}`) : null;
+  // one array per stitch set: PageView repaints its overlay only when the set changes (web-correctness-16)
+  const pageStitches = useMemo(() => (primary ? stitches.filter((s) => s.doc === primary.version_label) : []), [stitches, primary?.version_label]);
 
   return (
     <div className="documents">
@@ -75,7 +83,7 @@ export function DocumentsView({ planCode, plans, onPlan, evidence, stitches, sel
         <div className="doc-head">
           <h2 id="docs-h">{PLAN.docsPlan}</h2>
           <label className="plan-pick">{PLAN.planCode}
-            <select value={planCode} onChange={(e) => onPlan(e.target.value)}>
+            <select value={planCode} onChange={(e) => onPlan(e.target.value)} title={upload ? uploadLabel(upload) : summary ? fastPathLabel(summary as PlanSummary) : undefined}>
               {!summary && <option value="">{PLAN.cmpNone}</option>}
               {carriers.filter((c) => !c.fictional).map((c) => <optgroup key={c.key} label={c.label}>{c.plans.flatMap((p) => p.years.map((y) => <option key={y.code} value={y.code}>{fastPathLabel(y.summary)}</option>))}</optgroup>)}
               {carriers.some((c) => c.fictional) && <optgroup label={PLAN.fictionalGroup}>{carriers.filter((c) => c.fictional).flatMap((c) => c.plans.flatMap((p) => p.years.map((y) => <option key={y.code} value={y.code}>{fastPathLabel(y.summary)}</option>)))}</optgroup>}
@@ -97,9 +105,11 @@ export function DocumentsView({ planCode, plans, onPlan, evidence, stitches, sel
           </article>
         ))}
         {pageUrl && primary && (
-          <Suspense fallback={<StageLoader label={UI.renderingDocument} size="sm" />}>
-            <PageView url={pageUrl} stitches={stitches.filter((s) => s.doc === primary.version_label)} selected={selected} onSelect={onSelect} />
-          </Suspense>
+          <ErrorBoundary label={PLAN.docsPlan} resetKey={pageUrl}>
+            <Suspense fallback={<StageLoader label={UI.renderingDocument} size="sm" />}>
+              <PageView url={pageUrl} stitches={pageStitches} selected={selected} onSelect={onSelect} />
+            </Suspense>
+          </ErrorBoundary>
         )}
         {ownedPath && !ownedUrl && <StageLoader label={UI.renderingDocument} size="sm" />}
         <h3>{UI.evidenceTitle} ({clauses.length})</h3>
@@ -165,7 +175,7 @@ export function DocumentsView({ planCode, plans, onPlan, evidence, stitches, sel
         <p>{UI.privacyBody}</p>
         <div className="actions">
           <button type="button" onClick={exportData}>{UI.exportData}</button>
-          <button type="button" className="secondary" onClick={() => api.audit().then(setAudit)}>{UI.auditTitle}</button>
+          <button type="button" className="secondary" onClick={loadAudit}>{UI.auditTitle}</button>
         </div>
         <div className="delete-hold">
           <p className="delete-hold-why">{UI.deleteConfirm}</p>
@@ -175,7 +185,7 @@ export function DocumentsView({ planCode, plans, onPlan, evidence, stitches, sel
             {UI.deleteHold}
           </HoldButton>
         </div>
-        {msg && <p className="note" role="status">{msg}</p>}
+        <p className="note" role="status">{msg ?? ""}</p>
         {audit && <table className="audit"><caption>{UI.auditTitle}</caption><thead><tr><th>when</th><th>action</th><th>type</th><th>id</th><th>outcome</th></tr></thead><tbody>{audit.slice(-25).map((e, i) => <tr key={i}><td>{new Date(e.ts * 1000).toLocaleTimeString()}</td><td>{e.action}</td><td>{e.type}</td><td className="mono">{String(e.id).slice(0, 8)}</td><td>{e.outcome}</td></tr>)}</tbody></table>}
       </section>
     </div>

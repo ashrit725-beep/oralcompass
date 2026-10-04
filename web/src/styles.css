@@ -20,6 +20,8 @@
   --gold: #c59a3c; --gold-soft: #e7cf8f; --terracotta: #b86a4b; --wood: #8a6a45; --rule: rgba(35, 48, 61, .18);
   --sky: #e9e2cf; --hill-far: #b9c2b3; --hill-near: #8fa78a;
   --ok: #3f7d4e; --warn: #9a5b1f; --danger: #9b3b2f;
+  /* text-safe twins (a11y-14): >= 4.5:1 on paper, paper-deep and parchment. The scenery colours above stay for fills, strokes and borders. */
+  --terracotta-text: #94492e; --water-ink-text: #3a6764; --forest-text: #4d6641; --ok-text: #356b43; --wood-text: #73573a;
   --serif: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Palatino, Georgia, "Times New Roman", serif;
   --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -28,11 +30,11 @@
 
   /* semantic aliases (spec §5.1) */
   --bg: var(--paper); --surface: var(--paper-deep); --surface-raised: #fffdf8; --surface-map: var(--water);
-  --text: var(--ink); --text-soft: var(--ink-soft); --text-muted: var(--muted); --border: var(--rule);
+  --text: var(--ink); --text-soft: var(--ink-soft); --text-muted: var(--ink-soft); --border: var(--rule);
   --accent: var(--gold); --accent-soft: var(--gold-soft); --select: var(--terracotta); --select-ring: rgba(184, 106, 75, .35);
-  --you-pay: var(--terracotta); --plan-pays: var(--water-ink); --basis: var(--wood); --nobody: var(--ink-soft);
-  --owner-patient: var(--terracotta); --owner-plan: var(--water-ink); --owner-nobody: var(--ink-soft); --owner-basis: var(--wood);
-  --fog: rgba(246, 240, 227, .85); --closed: var(--terracotta); --visited: var(--sage);
+  --you-pay: var(--terracotta-text); --plan-pays: var(--water-ink-text); --basis: var(--wood-text); --nobody: var(--ink-soft);
+  --owner-patient: var(--terracotta-text); --owner-plan: var(--water-ink-text); --owner-nobody: var(--ink-soft); --owner-basis: var(--wood-text);
+  --fog: rgba(246, 240, 227, .85); --closed: var(--terracotta-text); --visited: var(--sage);
   --focus: var(--terracotta);
 
   /* spacing, radius, shadows (spec §5.3) */
@@ -92,7 +94,7 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
 select, input, textarea { font: inherit; color: var(--ink); background: #fffdf8; border: 1px solid var(--rule); border-radius: 8px; padding: .45rem .6rem; min-height: 40px; }
 textarea { min-height: 80px; }
 label { display: flex; flex-direction: column; gap: .25rem; font-size: .9rem; color: var(--ink-soft); }
-.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 /* ---- shell ---- */
 .app { min-height: 100%; display: flex; flex-direction: column; }
@@ -108,7 +110,8 @@ label { display: flex; flex-direction: column; gap: .25rem; font-size: .9rem; co
 .processing { margin: .5rem 1rem; color: var(--ink-soft); display: flex; align-items: center; gap: .5rem; }
 .view { flex: 1; padding: 1rem; }
 .hint { color: var(--ink-soft); font-style: italic; }
-.flag { background: rgba(197, 154, 60, .12); border-left: 3px solid var(--gold); padding: .4rem .7rem; border-radius: 0 8px 8px 0; font-size: .9rem; margin: .5rem 0; }
+.flag { position: relative; background: color-mix(in srgb, var(--parchment) 45%, transparent); border: 1px solid var(--rule); padding: .4rem .7rem .4rem 2rem; border-radius: var(--r-2); font-size: .9rem; margin: .5rem 0; }
+.flag::before { content: ""; position: absolute; left: .7rem; top: .78em; width: .7rem; height: .7rem; border: 1.5px dashed var(--ink-soft); border-radius: 50%; }
 .note { font-size: .875rem; color: var(--ink-soft); margin: .35rem 0; }
 .could-change { font-size: .85rem; color: var(--ink-soft); border-top: 1px dashed var(--rule); padding-top: .5rem; margin-top: .75rem; }
 
@@ -154,11 +157,11 @@ label { display: flex; flex-direction: column; gap: .25rem; font-size: .9rem; co
 .toggles { display: flex; gap: .5rem; flex-wrap: wrap; align-items: center; margin-bottom: .75rem; }
 .toggles button { background: transparent !important; color: var(--ink) !important; border: 1px solid var(--rule) !important; }
 .toggles button[aria-pressed="true"] { background: var(--parchment) !important; border-color: var(--gold) !important; }
-.detail { background: var(--paper-deep); border: 1px solid var(--rule); border-radius: var(--radius); box-shadow: var(--shadow); max-height: calc(100vh - 140px); overflow: auto; }
+.detail { background: var(--paper-deep); border: 1px solid var(--rule); border-radius: var(--radius); box-shadow: var(--shadow); max-height: calc(100vh - 140px); overflow: auto; scroll-padding-top: 4rem; }
 .detail.is-empty { display: none; }
 .detail-bar { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: .6rem .9rem; border-bottom: 1px solid var(--rule); position: sticky; top: 0; background: var(--paper-deep); z-index: 1; }
 .crumbs { margin: 0; font-size: .85rem; color: var(--ink-soft); }
-.close { background: transparent; border: 1px solid var(--rule); border-radius: 50%; width: 32px; height: 32px; cursor: pointer; color: var(--ink); font-size: 1.1rem; line-height: 1; }
+.close { flex: none; background: transparent; border: 1px solid var(--rule); border-radius: 50%; width: 32px; height: 32px; cursor: pointer; color: var(--ink); font-size: 1.1rem; line-height: 1; }
 .detail-body { padding: .9rem 1rem 1.2rem; }
 .status-line { display: flex; gap: .6rem; align-items: center; flex-wrap: wrap; }
 .pill { display: inline-block; padding: .1rem .55rem; border-radius: 999px; font-size: .8rem; border: 1px solid var(--rule); background: var(--paper); }
@@ -212,15 +215,11 @@ label { display: flex; flex-direction: column; gap: .25rem; font-size: .9rem; co
 /* ---- badges, stitches, dial, wording ---- */
 .badge { display: inline-flex; align-items: center; gap: .25rem; font-size: .72rem; border-radius: 6px; padding: .1rem .4rem; border: 1px solid var(--rule); background: var(--paper); color: var(--ink); white-space: nowrap; }
 .badge-doc { border-color: var(--forest); } .badge-user { border-color: var(--water-ink); } .badge-assumed { border-style: dashed; } .badge-ambiguous { border-color: var(--gold); } .badge-unknown { border-style: dotted; } .badge-conflict { border-color: var(--terracotta); }
-.stitch { display: inline-flex; align-items: center; gap: .15rem; border: 1px solid var(--ink); border-radius: 6px; background: var(--paper); color: var(--ink); padding: .05rem .3rem; cursor: pointer; font-size: .8rem; line-height: 1.3; }
+.stitch { position: relative; display: inline-flex; align-items: center; gap: .15rem; border: 1px solid var(--ink); border-radius: 6px; background: var(--paper); color: var(--ink); padding: .05rem .3rem; cursor: pointer; font-size: .8rem; line-height: 1.3; }
 .stitch .scope { font-family: var(--mono); font-size: .7rem; background: var(--ink); color: var(--paper); padding: 0 .25rem; border-radius: 3px; } .stitch .scope-prominent { font-weight: 700; }
 .stitch-selected { box-shadow: 0 0 0 2px var(--terracotta); }
+.stitch::after { content: ""; position: absolute; inset: -6px -2px; }
 .scope { font-family: var(--mono); font-size: .75rem; background: var(--ink); color: var(--paper); padding: 0 .3rem; border-radius: 3px; }
-.dial { display: inline-flex; border: 1px solid var(--rule); border-radius: 999px; overflow: hidden; margin-left: auto; }
-.dial button { background: transparent !important; color: var(--ink) !important; border: 0 !important; border-radius: 0 !important; padding: .3rem .7rem !important; min-height: 34px !important; }
-.dial button + button { border-left: 1px solid var(--rule) !important; }
-.dial .dial-on { background: var(--parchment) !important; font-weight: 600; }
-.dial-label { font-size: .85rem; }
 .wording { margin: .5rem 0; padding: .6rem .9rem; border-left: 3px solid var(--gold); background: rgba(197, 154, 60, .08); font-family: var(--serif); }
 .wording blockquote { margin: 0; } .wording figcaption { font-size: .8rem; color: var(--ink-soft); margin-top: .3rem; font-family: var(--sans); }
 
@@ -231,7 +230,7 @@ label { display: flex; flex-direction: column; gap: .25rem; font-size: .9rem; co
 .sub { color: var(--ink-soft); }
 .line-tabs { display: flex; gap: .4rem; flex-wrap: wrap; margin: .5rem 0; }
 .line-tabs button { background: transparent !important; color: var(--ink) !important; border: 1px solid var(--rule) !important; } .line-tabs button.is-on { background: var(--parchment) !important; border-color: var(--gold) !important; }
-.line-tabs small { color: var(--ink-soft); }
+.line-tabs small { color: var(--ink-soft); } .line-tabs button.is-on small { color: var(--ink); }
 .trail-steps { list-style: none; margin: .5rem 0; padding: 0; position: relative; }
 .trail-steps::before { content: ""; position: absolute; left: 15px; top: 14px; bottom: 14px; border-left: 2px dashed var(--water-ink); }
 .trail-step { position: relative; padding: .5rem 0 .6rem 2.5rem; }
@@ -239,9 +238,9 @@ label { display: flex; flex-direction: column; gap: .25rem; font-size: .9rem; co
 .trail-step.is-total .ts-n { background: var(--terracotta); color: var(--paper); }
 .ts-head { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; } .ts-head h4 { margin: 0; }
 .ts-amounts { display: grid; grid-template-columns: max-content 1fr; gap: .15rem .8rem; margin: .3rem 0; font-size: .95rem; }
-.ts-amounts dt { color: var(--ink-soft); } .ts-amounts dd { margin: 0; } .ts-amounts .out { font-weight: 700; } .ts-amounts .neg { color: var(--terracotta); }
+.ts-amounts dt { color: var(--ink-soft); } .ts-amounts dd { margin: 0; } .ts-amounts .out { font-weight: 700; } .ts-amounts .neg { color: var(--you-pay); }
 .ts-why { margin: .2rem 0; font-size: .9rem; } .ts-clause { margin: .2rem 0; font-family: var(--serif); font-size: .9rem; color: var(--ink-soft); } .where { font-family: var(--sans); font-size: .8rem; }
-.reconcile { font-size: .9rem; } .reconcile.ok { color: var(--ok); } .reconcile.warn { color: var(--danger); }
+.reconcile { font-size: .9rem; } .reconcile.ok { color: var(--ok-text); } .reconcile.warn { color: var(--danger); }
 .receipt { width: 100%; border-collapse: collapse; font-size: .85rem; } .receipt th, .receipt td { text-align: left; padding: .25rem .4rem; border-bottom: 1px solid var(--rule); } .receipt .amt { text-align: right; white-space: nowrap; }
 .receipt .line-total th, .receipt .line-total td { font-weight: 700; }
 .missing { background: rgba(122, 131, 144, .1); border: 1px dashed var(--ink-soft); border-radius: 10px; padding: .6rem .9rem; margin: .5rem 0; }
@@ -252,7 +251,7 @@ label { display: flex; flex-direction: column; gap: .25rem; font-size: .9rem; co
 .pickers { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: .75rem; margin: .75rem 0; }
 /* The comparison table only (`table.grid`): the bare `.grid` selector also matched Tailwind's `grid` display utility on every shadcn Dialog,
    RubberSegment thumb layer and Popover (640 px minimum on phones); scoped at integration, 2026-10-03. */
-.compare .banner { font-weight: 600; } .grid-scroll { overflow: auto; } table.grid { width: 100%; border-collapse: collapse; font-size: .9rem; min-width: 640px; }
+.compare .banner { font-weight: 600; } .grid-scroll { overflow: auto; scroll-padding-top: 3.5rem; } table.grid { width: 100%; border-collapse: collapse; font-size: .9rem; min-width: 640px; }
 table.grid th, table.grid td { text-align: left; vertical-align: top; padding: .5rem; border-bottom: 1px solid var(--rule); }
 table.grid thead th { background: var(--paper-deep); position: sticky; top: 0; }
 .plan-h small { display: block; font-weight: 400; color: var(--ink-soft); }
@@ -278,6 +277,7 @@ table.grid thead th { background: var(--paper-deep); position: sticky; top: 0; }
 .pdf-host { display: grid; gap: 12px; margin: .75rem 0; } .pdf-page { position: relative; margin: 0 auto; box-shadow: var(--shadow); background: #fff; }
 .pdf-stitch { position: absolute; font-size: .72rem; border: 1px solid var(--ink); background: var(--paper); border-radius: 5px; padding: 0 .3rem; cursor: pointer; }
 .pdf-stitch-margin { position: absolute; }
+.pdf-stitch::after { content: ""; position: absolute; inset: -6px -2px; }
 
 /* ---- clause card ---- */
 .clause { position: fixed; right: 1rem; bottom: 4.5rem; width: min(440px, calc(100vw - 2rem)); background: var(--paper-deep); border: 1px solid var(--rule); border-radius: var(--radius); box-shadow: var(--shadow); padding: .8rem 1rem; z-index: 20; }
@@ -287,7 +287,7 @@ table.grid thead th { background: var(--paper-deep); position: sticky; top: 0; }
 
 /* ---- phone ---- */
 @media (max-width: 760px) {
-  .view { padding: .75rem; }
+  .view { padding: 1rem; }
   .journey-layout, .plan-layout, .documents { grid-template-columns: minmax(0, 1fr); }
   .detail.sheet { position: fixed; left: 0; right: 0; bottom: 0; max-height: 72vh; border-radius: 18px 18px 0 0; z-index: 15; box-shadow: 0 -10px 30px rgba(35, 48, 61, .25); padding-bottom: env(safe-area-inset-bottom, 0px); }
   .detail.sheet::before { content: ""; display: block; width: 44px; height: 4px; border-radius: 2px; background: var(--rule); margin: .4rem auto 0; }
@@ -300,10 +300,88 @@ table.grid thead th { background: var(--paper-deep); position: sticky; top: 0; }
   .appbar .ribbon { order: 5; }
 }
 
-/* overflow guards: long option labels must never widen the page */
-.view { overflow-x: hidden; }
+/* long option labels must never widen the page: selects shrink inside their column (no clipping guard on .view; demo-2, slop-5) */
 .toggles select, .plan-pick select, .pickers select { max-width: 100%; min-width: 0; }
 @media (max-width: 760px) { .toggles select { width: 100%; } .toggles { flex-direction: column; align-items: stretch; } .toggles button { width: 100%; } }
+
+/* ---- native selects (layout-17, mobile-4): WebKit ignores min-height and padding on an appearance:auto select (it rendered 22 px on
+   iPhone); appearance:none gives every engine the same box, and a token-coloured chevron replaces the native one ---- */
+select:not([multiple]):not([size]) {
+  appearance: none; -webkit-appearance: none; background-color: var(--surface-raised);
+  background-image: linear-gradient(45deg, transparent 50%, var(--ink-soft) 50%), linear-gradient(135deg, var(--ink-soft) 50%, transparent 50%);
+  background-position: calc(100% - 17px) 50%, calc(100% - 12px) 50%; background-size: 5px 5px, 5px 5px; background-repeat: no-repeat;
+  padding-right: 2rem; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;   /* WebKit otherwise widens the page by the option text */
+}
+/* documents: long plan names and source URLs wrap inside the column instead of running past it (slop-5) */
+.doc-head .plan-pick { min-width: 0; max-width: 100%; }
+.sources a, .doc-card a, .sources summary { overflow-wrap: anywhere; }
+/* phone passage: the "Completed on your statement" amount sizes to its figure (a percentage max-width inside an auto grid track let
+   "$45.00" run past the card edge, where the old .view clip cut it to "$45.0"; slop-5). "not covered" still wraps (journey.css). */
+.pv-mini:not(.pv-marginal) .pv-amt { max-width: none; }
+.ov-scroll { overflow-x: auto; max-width: 100%; }
+/* choose, then commit (a11y-16) */
+.add-journey-form, .island-strip-select { display: flex; gap: var(--s-2); align-items: stretch; min-width: 0; }
+.add-journey-form select, .island-strip-select select { flex: 1 1 auto; min-width: 0; width: auto; }
+.add-journey-form button, .island-strip-select button { flex: none; }
+.journey-pickers .add-journey-form { flex: 0 1 300px; }
+.journey-pickers .add-journey-form select.add-journey { flex: 1 1 auto; max-width: none; }
+@media (max-width: 760px) { .journey-pickers .add-journey-form { flex: none; width: 100%; } }
+
+/* ---- the shell: one content column at every width (layout-21) ---- */
+@media (min-width: 1700px) {
+  .appbar, .view { padding-left: calc((100% - 1680px) / 2 + 1rem); padding-right: calc((100% - 1680px) / 2 + 1rem); }
+}
+/* My plan uses the full width until a landmark opens (the 420 px column exists only while the detail panel shows) */
+.plan-layout:has(> .detail.is-empty) { grid-template-columns: minmax(0, 1fr); }
+/* the loading banner is an overlay: inserting and removing an in-flow row above <main> shifted the page (mobile-18) */
+.processing { position: fixed; top: var(--s-3); right: var(--s-4); z-index: 30; margin: 0; max-width: min(420px, calc(100vw - 2rem)); padding: var(--s-2) var(--s-3); background: var(--paper-deep); border: 1px solid var(--rule); border-radius: var(--r-3); box-shadow: var(--shadow-2); pointer-events: none; }
+.start-pending { min-height: 60vh; }
+/* status lines are mounted before their message arrives (a11y-25: a region created already filled is often not announced); empty, they take no space */
+p[role="status"]:empty { margin: 0; padding: 0; border: 0; min-height: 0; }
+/* <main id="main"> takes focus only from the "Skip to content" link (tabindex -1); the link itself shows the ring (a11y-4) */
+#main:focus { outline: none; }
+/* the route skip link parks beside "Skip to content", not on top of it */
+.skip-link + .skip-link { left: calc(1rem + 164px); }
+/* a failed view or lazy surface keeps a labelled recovery message inside the shell (web-correctness-3) */
+.surface-error { margin: var(--s-4) 0; }
+
+/* ---- targets: controls that stand on their own line (not links inside running text) reach 32 px on desktop, 44 px on phones ---- */
+td > .linklike, th > .linklike, .ov-stages h3 > .linklike, .facts .v > .linklike, .evidence-source, .doc-card p > a:only-child, .facts .v > a {
+  display: inline-flex; align-items: center; min-height: 32px;
+}
+summary { min-height: 32px; padding-block: 4px; }
+
+/* ---- targets (a11y-13, a11y-28, layout-16) and field text (mobile-3) on phones ---- */
+@media (max-width: 760px) {
+  button:not(.linklike):not(.close):not(.stitch):not(.island-btn):not(.cp-btn):not(.landmark-btn):not(.clause-btn):not(.jv-stage-btn):not(.jv-cp):not([data-slot]):not(.unstyled) { min-height: 44px; }
+  select, input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), .pickers select, .plan-pick select { min-height: 44px; }
+  .close { width: 44px; height: 44px; }
+  .stitch::after, .pdf-stitch::after { inset: -12px -2px; }
+  td > .linklike, th > .linklike, .ov-stages h3 > .linklike, .facts .v > .linklike, .evidence-source, .doc-card p > a:only-child, .facts .v > a, summary { min-height: 44px; }
+  .depth-dial [role="radio"] { position: relative; }
+  .depth-dial [role="radio"]::after { content: ""; position: absolute; inset: calc(var(--rs-inset, 3px) * -1) 0; }
+}
+/* iOS Safari zooms the page into any focused field under 16 px (mobile-3) */
+@media (max-width: 760px), (pointer: coarse) {
+  select, input, textarea, textarea.tpr-textarea { font-size: max(16px, 1rem); }
+}
+
+/* ---- phone navigation: the four view tabs in a bottom dock (orchestrator note 7, mobile-6, slop-30) ---- */
+@media (max-width: 760px) {
+  .tagline { display: none; }
+  .appbar { padding: .6rem 1rem; gap: .4rem .75rem; }
+  .app { padding-bottom: calc(68px + env(safe-area-inset-bottom)); }
+  .dock { position: fixed; left: 0; right: 0; bottom: 0; z-index: 14; background: var(--paper-deep); border-top: 1px solid var(--rule); box-shadow: var(--shadow-1); padding: 6px 8px calc(6px + env(safe-area-inset-bottom)); }
+  .dock-item { display: flex; min-width: 0; }
+  .dock [role="tab"] { color: var(--ink-soft); }
+  .dock [role="tab"][data-state="active"] { color: var(--ink); background: var(--paper); }
+  /* the procedure sheet and the stage sheet sit where the dock is: the dock steps aside while either is open */
+  body:has([data-vaul-drawer][data-state="open"]) .dock, body:has(.detail.sheet:not(.is-empty)) .dock { visibility: hidden; }
+}
+@media (max-width: 760px) and (prefers-reduced-motion: no-preference) {
+  .dock [role="tab"] { transition: color var(--dur-micro) var(--ease-standard), background-color var(--dur-micro) var(--ease-standard), transform var(--dur-micro) var(--ease-standard); }
+  .dock [role="tab"]:active { transform: scale(.97); }
+}
 }
 
 @theme inline {
@@ -330,6 +408,7 @@ table.grid thead th { background: var(--paper-deep); position: sticky; top: 0; }
   --color-sea: var(--water);              --color-sea-light: var(--water-light);  --color-sea-ink: var(--water-ink);
   --color-sage: var(--sage);              --color-sage-light: var(--sage-light);  --color-forest: var(--forest);          --color-sand: var(--sand);
   --color-gold: var(--gold);              --color-gold-soft: var(--gold-soft);    --color-terracotta: var(--terracotta);  --color-wood: var(--wood);
+  --color-terracotta-text: var(--terracotta-text); --color-forest-text: var(--forest-text); --color-sea-ink-text: var(--water-ink-text);
   --color-rule: var(--rule);              --color-ok: var(--ok); --color-warn: var(--warn); --color-danger: var(--danger);
   --color-you-pay: var(--you-pay);        --color-plan-pays: var(--plan-pays);    --color-basis: var(--basis);            --color-nobody: var(--nobody);
 

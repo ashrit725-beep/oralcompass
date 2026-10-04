@@ -32,7 +32,7 @@ export function CostTrail({ estimate, stitches, selected, onSelect, prominentSco
     <section className={`trail ${one ? "trail-one" : ""}`} aria-labelledby={hid}>
       <h3 id={hid} className={one ? "sr-only" : undefined}>{UI.ledgerTitle}</h3>
       {!one && (
-        <p className="hero" aria-live="polite">
+        <p className="hero">
           <span className="total">{money(estimate.user_estimated_payment_cents)}</span>
           <span className="sub">{UI.planPays}: {money(estimate.insurer_estimated_payment_cents)}{estimate.plan_payment_is_upper_bound ? " (upper bound)" : ""}</span>
         </p>
@@ -77,17 +77,17 @@ export function CostTrail({ estimate, stitches, selected, onSelect, prominentSco
                 </dl>
               )}
               <p className="ts-why">{s.explanation}</p>
-              {st && <p className="ts-clause"><q>{st.quote}</q> <span className="where">— {st.doc}, {st.pageNote ?? `p.${st.page}`}</span></p>}
+              {st && <p className="ts-clause"><q>{st.quote}</q> <span className="where">({st.doc}, {st.pageNote ?? `p.${st.page}`})</span></p>}
             </li>
           );
         })}
       </ol>
       {trail.reconciles === true && <p className="reconcile ok">✓ {UI.reconciles}</p>}
-      {trail.reconciles === false && <p className="reconcile warn" role="alert">Amounts do not reconcile in this view — the engine ledger is authoritative; see the receipt below.</p>}
+      {trail.reconciles === false && <p className="reconcile warn" role="alert">{UI.reconcileWarn}</p>}
       {trail.upperBound && <p className="flag">{UI.upperBound}</p>}
       {!one && line.flags.map((f, i) => <p key={i} className="flag">{f}</p>)}
       {line.remaining_after?.deductible_cents != null && (
-        <p className="note">Remaining after this line — deductible {money(line.remaining_after.deductible_cents)} · annual maximum {line.remaining_after.annual_max_cents == null ? "no maximum applies" : money(line.remaining_after.annual_max_cents)}</p>
+        <p className="note">Remaining after this line: deductible {money(line.remaining_after.deductible_cents)} · annual maximum {line.remaining_after.annual_max_cents == null ? "no maximum applies" : money(line.remaining_after.annual_max_cents)}</p>
       )}
       <details className="receipt-details" open={trail.reconciles === false || undefined}>
         <summary>Engine receipt (every step, as computed)</summary>
@@ -118,7 +118,7 @@ export function MissingInputs({ estimate, compact }: { estimate: SavedEstimate; 
       <h3 id="missing-h"><EvidenceBadge status="UNKNOWN" /> {UI.missingTitle}</h3>
       {!compact && <p>{UI.missingIntro}</p>}
       <ul>
-        {estimate.missing_inputs.map((m, i) => <li key={i}><strong>{m.input}</strong> — {m.how}</li>)}
+        {estimate.missing_inputs.map((m, i) => <li key={i}><strong>{m.input}</strong>: {m.how}</li>)}
         {estimate.missing_inputs.length === 0 && estimate.ledger.flags.map((f, i) => <li key={i}>{f}</li>)}
       </ul>
       {estimate.movers?.range && <p className="range">{UI.rangeBecause(money(estimate.movers.range[0]), money(estimate.movers.range[1]), estimate.movers.movers.filter((m) => m.impact_cents).map((m) => m.unknown).join(" and "))}</p>}

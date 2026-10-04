@@ -124,7 +124,7 @@ def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-pref
 
     open_alex(page)
     shot("01-journey")
-    check(f"{device}: sample ribbon labels fictional records", page.get_by_text("Sample journey — fictional person and records").count() > 0)
+    check(f"{device}: sample ribbon labels fictional records", page.get_by_text("Sample journey: fictional person and records").count() > 0)
     check(f"{device}: progress language", page.get_by_text("of", exact=False).filter(has_text="checkpoints completed").count() > 0)
 
     # ---- the Passage (spec §12 "view journey") ----
@@ -136,6 +136,29 @@ def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-pref
     check(f"{device}: closed channel on marginal", page.locator("button[aria-label*='Occlusal night guard'][aria-label*='not covered']").count() > 0)
     END_STATE[device] = passage_names(page)
     shot("11-passage")
+
+    # ---- shell (fix/web-shell): one main landmark, the phone dock, choose-then-commit, the desktop drawer pinned to the viewport ----
+    shell = page.evaluate("""(() => { const tabs = [...document.querySelectorAll('[role=tab]')]; const vh = innerHeight;
+      return { mains: document.querySelectorAll('main:not([role]),[role=main]').length, panelTab: document.querySelector('[role=tabpanel]')?.getAttribute('tabindex'),
+               skip: [...document.querySelectorAll('.skip-link')].map(a => a.textContent), current: document.querySelectorAll('[role=tab][aria-current]').length,
+               dockFixed: !!document.querySelector('.dock') && getComputedStyle(document.querySelector('.dock')).position === 'fixed',
+               tabsAtBottom: tabs.length === 4 && tabs.every(t => { const r = t.getBoundingClientRect(); return r.bottom <= vh + 1 && r.top >= vh - 90 && r.height >= 44; }) }; })()""")
+    check(f"{device}: main landmark and skip link (a11y-4)", shell["mains"] == 1 and shell["panelTab"] == "-1" and shell["skip"][:1] == ["Skip to content"] and shell["current"] == 0, str(shell))
+    if mobile:
+        check(f"{device}: view tabs in the bottom dock (slop-30)", shell["dockFixed"] and shell["tabsAtBottom"], str(shell))
+    add = page.get_by_label("Add a journey", exact=True)
+    before = page.get_by_label("Journey", exact=True).locator("option").count() if page.get_by_label("Journey", exact=True).count() else 0
+    add.select_option("empty"); page.wait_for_timeout(500)
+    after = page.get_by_label("Journey", exact=True).locator("option").count() if page.get_by_label("Journey", exact=True).count() else 0
+    add_btn = page.locator(".add-journey-form button[type=submit]")
+    check(f"{device}: choosing a journey creates nothing until Add (a11y-16)", before == after and add_btn.count() == 1 and add_btn.is_enabled(), f"options {before}->{after}")
+    add.select_option(""); page.wait_for_timeout(200)
+    if not mobile:
+        page.mouse.wheel(0, 500); page.wait_for_timeout(400)
+        open_island("Root canal", 1200)
+        top = page.evaluate("(() => { const d = document.querySelector('.drawer'); return d ? Math.round(d.getBoundingClientRect().top) : null; })()")
+        check(f"{device}: drawer pinned to the viewport after scrolling (demo-2)", top is not None and 0 <= top <= 40, f"drawer top={top}")
+        close_drawer(); page.mouse.wheel(0, -2000); page.wait_for_timeout(400)
 
     # ---- open the root canal island → ProcedureDrawer (spec §12 "open island", "view calculation", "trust") ----
     open_island("Root canal", 1200)

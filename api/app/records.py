@@ -21,7 +21,7 @@ from .data import (CODES_BY_KEY, FEE_BENCHMARKS, PLANS, PLAN_META, PROC_BY_KEY, 
                    INGEST_REPORT, AUDIT_REPORT, clauses, documents_for_meta, documents_for_plan, evidence_rows, plan_summary)
 from .templates import BENCHMARK_NOTE, PRESET_BANNER
 from .store import NOT_FOUND, repo
-from .templates import FOOTER
+from .templates import FOOTER, PRESET_BANNER
 from .uploads import norm_ref, resolve_plan_ref
 
 router = APIRouter()

@@ -46,7 +46,7 @@ export function RedactionPreview({ docId, preview, onPreview, onContinue, busy }
       <p className="up-removed">{UPLOAD.removed(preview.removed.join(", "))}</p>
       {terms.length > 0 && <p className="up-removed">{UPLOAD.extraTerms(terms.join(", "))}</p>}
       <p className="up-caption">{UPLOAD.previewIntro}</p>
-      <pre className="up-pre" tabIndex={0} aria-label={UPLOAD.redactionTitle}>{preview.text.slice(0, PREVIEW_SHOWN_CHARS)}</pre>
+      <pre className="up-pre" tabIndex={0} role="region" aria-label={UPLOAD.redactionTitle}>{preview.text.slice(0, PREVIEW_SHOWN_CHARS)}</pre>
       <form className="up-term" onSubmit={(e) => { e.preventDefault(); void addTerm(); }}>
         <label htmlFor={inputId}>{UPLOAD.addTerm}</label>
         <div className="up-term-row">

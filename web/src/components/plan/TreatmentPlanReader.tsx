@@ -129,7 +129,7 @@ export function TreatmentPlanReader({ onConfirmed }: TreatmentPlanReaderProps) {
 
       {busy && <StageLoader label={PLAN.readWorking} size="sm" className="tpr-loader" />}
       {error && <p role="alert" className="bs-error tpr-error">{error}</p>}
-      {message && <p className="bs-status" role="status">{message}</p>}
+      <p className="bs-status" role="status">{message ?? ""}</p>
 
       {result && (
         <div className="tpr-result">

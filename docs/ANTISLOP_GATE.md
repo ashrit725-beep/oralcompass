@@ -55,7 +55,7 @@ My plan atlas, which read as a cream-themed admin panel.
 
 | Rule | Result | Evidence |
 |---|---|---|
-| R-02 em dash | **FAIL** (slop-1, slop-2) | Ribbon "Sample journey — fictional person and records" and journey H2 (`desktop-01-journey.png`); Compare H1 (`desktop-09-compare.png`); "— no adjustment" (`desktop-13-pipeline.png`); "You pay —" (`desktop-25-fog-drawer.png`); "Deductible — individual" (`mobile-09-compare.png`) |
+| R-02 em dash | **PASS for the shell and server copy** (fix/web-shell, 2026-10-04: ribbon, banners, trail notes, CostTrail, DetailPanel, reconcile warning, comparison topics, missing-input labels; `tools/advice_lint.py` rule 5 now fails an em dash used as punctuation in a source string); was FAIL (slop-1, slop-2) | Ribbon "Sample journey — fictional person and records" and journey H2 (`desktop-01-journey.png`); Compare H1 (`desktop-09-compare.png`); "— no adjustment" (`desktop-13-pipeline.png`); "You pay —" (`desktop-25-fog-drawer.png`); "Deductible — individual" (`mobile-09-compare.png`) |
 | R-03 mobile | **FAIL** (slop-3, slop-4, slop-5, slop-20) | Clipped amounts and select (`mobile-01-journey.png`, `mobile-10-documents.png`; live: 12 nodes end at x = 363, documents select at x = 712, hidden by `.view { overflow-x: hidden }`); "(1)" escapes the plan-source segment (`mobile-05-plan.png`); 12 px gutter |
 | R-17 / R-36 / R-38 numbers and claims | **FAIL** (slop-14) | Computed totals badged "From the plan document" (`desktop-12-drawer.png` $510.00, `desktop-22-harbor-drawer.png` $902.00, `desktop-05-plan.png` $162.00 with only the ML26 stitch) |
 | R-18 testimonials, R-28 FAQ | PASS | None exist |
@@ -84,7 +84,7 @@ My plan atlas, which read as a cream-themed admin panel.
 | R-14 cards | **FAIL** (slop-27, slop-12) | Identical care cards; duplicated callout cards in Compare |
 | R-19 motion | **FAIL** (slop-26) | Scroll parallax on the fog layer (`OceanLayers.tsx:19-20`), which spec §5.5 forbids |
 | R-22 illustration | **FAIL** (slop-21, slop-28) | My plan flat vector atlas; phone header crop of empty water |
-| Colored left stripe (antislop-ui, anti-ai-slop P0) | **FAIL** (slop-13) | `.flag`, `.rm-item`, `.up-note`, `.up-quote`, `.as-mode`, `.wording`, `.tpr-ribbon` (`desktop-09-compare.png`, `desktop-10-documents.png`, `desktop-06-lighthouse.png`) |
+| Colored left stripe (antislop-ui, anti-ai-slop P0) | **PASS** (fix/web-shell, 2026-10-04: `.flag` is a parchment line led by the dashed fog glyph; `.rm-item` a hairline ledger row; `.up-note` lost the rule; `.tpr-ribbon` and `.as-template` use a full hairline border. Kept by design: the clause quotes `.wording` / `.up-quote` (a quotation mark, spec line 71), the `--sand` caption rule `.as-mode`, and the confidence rows that encode state); was FAIL (slop-13) | `.flag`, `.rm-item`, `.up-note`, `.up-quote`, `.as-mode`, `.wording`, `.tpr-ribbon` (`desktop-09-compare.png`, `desktop-10-documents.png`, `desktop-06-lighthouse.png`) |
 
 ### Block 3: Liveliness
 
@@ -177,3 +177,11 @@ My plan atlas, which read as a cream-themed admin panel.
 Only `dock.tsx` + `navbar.tsx` fit (as the phone bottom tab bar, slop-30). Rejected: `blur-fade-text` (per-character blur entrance, banned
 by component plan §4.3), `project-card`, `contributions-card`, `tweet`, `sandpack`, `mdx` (portfolio-specific), and `avatar`, `badge`,
 `button`, `card`, `separator`, `tooltip` (duplicates of the installed shadcn primitives).
+
+### Phone dock (slop-30, fix/web-shell 2026-10-04)
+`web/src/components/eldoraui/dock.tsx` (MIT, © 2024 Mudunuri bhaskara karthikeya varma; `web/THIRD_PARTY_NOTICES.md`) wraps the EXISTING
+Radix tab triggers on phones (≤ 760 px): solid `--paper-deep` bar, `--rule` top hairline, `--shadow-1`, safe-area padding, 52 px items
+with Compass / Anchor / custom two-column glyph / FileText and a visible 12.5 px label, the gold `nav-underline` as the active mark, press
+scale 0.97 over 120 ms (no overshoot; off under reduced motion), magnification only on fine pointers (≤ 1.15×, transform only), hidden while
+the procedure sheet or the stage sheet is open. Desktop keeps the top nav. DOM order is unchanged, so keyboard order and the walk's tab
+names are the same on every width.

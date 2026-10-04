@@ -31,15 +31,15 @@ export interface CostPipelineProps {
   vertical?: boolean;
 }
 
-/** The existing warn sentence (kept verbatim from the lighthouse cost trail; the em dash is pre-existing copy). */
-export const RECONCILE_WARN = "Amounts do not reconcile in this view — the engine ledger is authoritative; see the receipt below.";
+/** The warn sentence shared with the lighthouse cost trail (lib/copy.ts `UI.reconcileWarn`; no em dash, R-02). */
+export const RECONCILE_WARN = UI.reconcileWarn;
 
 /**
  * CostPipeline (spec §4.5, component plan N2-A): a horizontal flow of nodes for one ledger line, built from `buildTrail(line).steps` through
  * `checkpointsForLine`. Connectors are Magic UI AnimatedBeam (ink path, sea → gold sweep, `repeat` 1, `delay = i × 0.12`, keyed on the
  * estimate id so the sweep fires once per recompute in pipeline order; static path under reduced motion). The arrowhead on each node's
  * in-port is the only arrow in the UI (it encodes flow direction). Phone: a 2-column grid without beams (arrows only). Unresolved line:
- * the fee node and a fog node listing the missing inputs; no numbers invented. One `aria-live` region announces "Estimate updated".
+ * the fee node and a fog node listing the missing inputs; no numbers invented. The host surface's live region announces "Estimate updated" (no second region here).
  * Reduced motion: NumberFlow snaps, beams render the static connection, nothing else moves.
  * `vertical` (delight pass mo-10; spec §5.7 decision "vertical pipeline in the drawer"): in the 440 px drawer the horizontal track hid the
  * You pay node behind a sideways scroll. The ledger stacks the nodes; a 2 px rail behind them draws top to bottom once while each row
@@ -72,10 +72,7 @@ export function CostPipeline({ line, item, rule, plan, stitches, estimateId, mis
     setPortsReady((n) => n + 1);
   }, [nodeCount, mobile, outRefs, inRefs]);
 
-  // one live region per surface: announce a recompute once (not on first mount)
-  const firstId = useRef(estimateId);
-  const [live, setLive] = useState("");
-  useEffect(() => { if (estimateId && estimateId !== firstId.current) { firstId.current = estimateId; setLive(DRAWER.estimateUpdated); } }, [estimateId]);
+  // no live region here (a11y-25): the host surface (JourneyView, PlanView) owns the one polite region that announces a recompute
 
   const label = unresolved
     ? DRAWER.pipelineUnresolved(line.label)
@@ -115,7 +112,6 @@ export function CostPipeline({ line, item, rule, plan, stitches, estimateId, mis
             {nodes}
           </ol>
         </div>
-        <p className="sr-only" aria-live="polite">{live}</p>
         {trail.reconciles === true && <p className="reconcile ok">✓ {UI.reconciles}</p>}
         {trail.reconciles === false && <p className="reconcile warn" role="alert">{RECONCILE_WARN}</p>}
         {unresolved && <p className="pipeline-unresolved"><EvidenceBadge status="UNKNOWN" /> {UI.missingTitle}</p>}
@@ -140,7 +136,6 @@ export function CostPipeline({ line, item, rule, plan, stitches, estimateId, mis
         </div>
       </div>
       {!mobile && nodeCount > 3 && <p className="pipeline-hint muted small">{DRAWER.pipelineHint}</p>}
-      <p className="sr-only" aria-live="polite">{live}</p>
       {trail.reconciles === true && <p className="reconcile ok">✓ {UI.reconciles}</p>}
       {trail.reconciles === false && <p className="reconcile warn" role="alert">{RECONCILE_WARN}</p>}
       {unresolved && <p className="pipeline-unresolved"><EvidenceBadge status="UNKNOWN" /> {UI.missingTitle}</p>}

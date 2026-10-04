@@ -70,7 +70,7 @@ const UploadArc = ({ progress, label }: { progress: number | null; label: string
   const r = 42, c = 2 * Math.PI * r;
   const p = progress == null ? 0.75 : Math.max(0, Math.min(1, progress / 100));
   return (
-    <svg viewBox="0 0 100 100" className="h-16 w-16" role="img" aria-label={label}>
+    <svg viewBox="0 0 100 100" className="h-16 w-16" {...(label ? { role: "img", "aria-label": label } : { "aria-hidden": true, focusable: false })}>
       <circle cx="50" cy="50" r={r} fill="none" className="stroke-sand" strokeWidth="6" />
       <circle
         cx="50" cy="50" r={r} fill="none" className="stroke-sea transition-[stroke-dashoffset] duration-300 motion-reduce:transition-none"
@@ -168,7 +168,7 @@ export default function FileUpload({
           onDragOver={handleDragOver}
           onDrop={handleDrop}
         >
-          <div className="relative min-h-[220px]">
+          <div className="relative min-h-[248px]">
             <AnimatePresence mode="wait">
               {status !== "uploading" ? (
                 <motion.div
@@ -214,7 +214,7 @@ export default function FileUpload({
                     <p className="truncate text-sm font-semibold text-ink">{currentFile?.name}</p>
                     <div className="flex items-center justify-center gap-2 text-xs">
                       <span className="text-ink-soft">{formatBytes(currentFile?.size || 0)}</span>
-                      {progress != null && <span className="font-medium tabular-nums text-forest">{Math.round(progress)}%</span>}
+                      {progress != null && <span className="font-medium tabular-nums text-forest-text">{Math.round(progress)}%</span>}
                     </div>
                   </div>
                   {onCancel && (

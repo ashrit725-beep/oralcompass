@@ -111,7 +111,7 @@ export function TreatmentPlanImporter({ procedures, onAdded, compact }: Treatmen
         <Button type="submit" size="touch" disabled={busy || !proc}>{PLAN.addSubmit}</Button>
         <span className="bs-user"><EvidenceBadge status="USER" /></span>
       </div>
-      {message && <p className="bs-status" role="status">{message}</p>}
+      <p className="bs-status" role="status">{message ?? ""}</p>
     </form>
     </div>
   );

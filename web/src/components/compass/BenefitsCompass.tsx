@@ -43,7 +43,7 @@ export function BenefitsCompass({ plan, benefits, estimate, stitches, compact = 
 
   if (compact) {
     return (
-      <p className="cmp-strip" aria-label={COMPASS.panelLabel(plan.title, dedWord, maxWord)}>
+      <p className="cmp-strip" role="group" aria-label={COMPASS.panelLabel(plan.title, dedWord, maxWord)}>
         <span className="cmp-strip-item">{COMPASS.stripDeductible} {vm.deductible.remainingCents == null ? <><span className="cmp-word">{COMPASS.notProvided}</span> <EvidenceBadge status="UNKNOWN" /></> : <Money cents={vm.deductible.remainingCents} evidence="USER" />}</span>
         <span className="cmp-strip-sep" aria-hidden="true">·</span>
         <span className="cmp-strip-item">{COMPASS.stripMax} {vm.annualMax.unlimited ? <><span className="cmp-word">{COMPASS.unlimited}</span> <EvidenceBadge status={vm.annualMax.limitStatus} /></> : vm.annualMax.remainingCents == null ? <><span className="cmp-word">{COMPASS.notProvided}</span> <EvidenceBadge status="UNKNOWN" /></> : <Money cents={vm.annualMax.remainingCents} evidence="USER" />}</span>
@@ -100,7 +100,8 @@ export function BenefitsCompass({ plan, benefits, estimate, stitches, compact = 
       {vm.conflict && <p className="cmp-conflict"><EvidenceBadge status="CONFLICT" /> {vm.conflict.note}</p>}
       <p className="cmp-note">{COMPASS.derivedNote}</p>
 
-      <table className="sr-only">
+      {/* the visually hidden figures table sits in a clipped wrapper: a table ignores width:1px and widened the phone page to 530 px */}
+      <div className="sr-only"><table>
         <caption>{COMPASS.tableCaption}</caption>
         <thead><tr><th scope="col">{COMPASS.colFigure}</th><th scope="col">{COMPASS.colAmount}</th><th scope="col">{COMPASS.colEvidence}</th></tr></thead>
         <tbody>
@@ -113,7 +114,7 @@ export function BenefitsCompass({ plan, benefits, estimate, stitches, compact = 
           <tr><th scope="row">{COMPASS.annualMax} {COMPASS.afterPlanned}</th><td>{vm.annualMax.afterCents == null ? (vm.annualMax.afterWaiting ? COMPASS.waiting : COMPASS.notProvided) : money(vm.annualMax.afterCents)}</td><td>{vm.annualMax.afterCents == null ? "UNKNOWN" : vm.annualMax.limitStatus}</td></tr>
           {vm.coverage.map((c) => <tr key={c.name}><th scope="row">{c.name}</th><td>{c.pctIn == null ? COMPASS.shareNotStated : COMPASS.planPays(String(c.pctIn))}</td><td>{c.statusIn}</td></tr>)}
         </tbody>
-      </table>
+      </table></div>
     </section>
   );
 }

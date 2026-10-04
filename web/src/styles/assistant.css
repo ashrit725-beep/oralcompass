@@ -31,13 +31,13 @@
 .as-chip { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: .35em; font-size: 13px; line-height: 18px; color: var(--ink); border: 1px solid var(--rule); border-radius: var(--r-1); padding: var(--s-1) var(--s-2); background: var(--paper); }
 .as-chip-label { color: var(--ink-soft); }
 .as-chip-btn { height: auto; min-height: 44px; white-space: normal; text-align: left; gap: .35em; }
-.as-template { border-left: 3px solid var(--gold); padding-left: var(--s-3); display: flex; flex-direction: column; gap: var(--s-1); }
-.as-template[data-key="out_of_scope"] { border-left-color: var(--ink-soft); }
+.as-template { border: 1px solid var(--rule); border-radius: var(--r-2); padding: var(--s-2) var(--s-3); display: flex; flex-direction: column; gap: var(--s-1); }
+.as-template[data-key="out_of_scope"] { border-style: dashed; }
 .as-label { display: inline-block; align-self: flex-start; font-size: 12px; line-height: 16px; font-weight: 600; color: var(--ink); background: var(--gold-soft); border: 1px solid var(--gold); border-radius: 6px; padding: .1rem .5rem; }
 .as-template[data-key="out_of_scope"] .as-label { background: var(--paper); border-color: var(--rule); }
 .as-options { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--s-2); }
 .as-answer-foot { display: flex; flex-wrap: wrap; gap: var(--s-1) var(--s-3); margin-top: var(--s-3); padding-top: var(--s-2); border-top: 1px dashed var(--rule); font-size: 12px; line-height: 16px; color: var(--ink-soft); }
-.as-guard { color: var(--terracotta); }
+.as-guard { color: var(--terracotta-text); }
 .as-tools { font-family: var(--mono); overflow-wrap: anywhere; }
 .as-section { margin-top: var(--s-4); }
 

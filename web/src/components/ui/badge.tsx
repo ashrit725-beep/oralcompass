@@ -26,7 +26,7 @@ const badgeVariants = cva(
         user: "bg-paper-deep text-ink border-ink/30",
         assumed: "bg-sand/60 text-ink border-gold border-dashed",
         ambiguous: "bg-gold-soft/50 text-ink border-gold",
-        unknown: "bg-transparent text-terracotta border-terracotta border-dotted",
+        unknown: "bg-transparent text-terracotta-text border-terracotta border-dotted",
         conflict: "bg-transparent text-danger border-danger",
         /* confidence (spec §7.4 review table) */
         numeric: "tabular-nums border-border bg-paper text-ink",
