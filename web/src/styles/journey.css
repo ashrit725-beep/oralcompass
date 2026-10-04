@@ -14,16 +14,16 @@
 .passage-main { min-width: 0; display: flex; flex-direction: column; gap: var(--s-4); }
 .passage-detail { min-width: 0; position: sticky; top: var(--s-4); }
 .passage-detail > .detail { max-height: calc(100vh - 136px); }
-.drawer-thread { position: absolute; height: 1px; background: var(--gold); transform-origin: left center; pointer-events: none; z-index: 12; }
 
 /* ---- answers log (spec §2.4): a log line, not stat tiles ---- */
 .log { margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 var(--s-5); font-family: var(--serif); font-size: 15px; line-height: 22px; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
-.log-row { display: grid; grid-template-columns: 9.5rem minmax(0, 1fr); gap: var(--s-2); padding: var(--s-2) 0; border-bottom: 1px solid var(--rule); min-width: 0; }
+.log-row { display: grid; grid-template-columns: 8rem minmax(0, 1fr); gap: var(--s-2); padding: 6px 0; border-bottom: 1px solid var(--rule); min-width: 0; }
 .log-row:nth-last-child(-n + 2) { border-bottom: 0; }
 .log-row.log-from { grid-column: 1 / -1; }
 .log dt { font-weight: 600; color: var(--ink-soft); font-size: 13px; line-height: 22px; letter-spacing: .01em; }
 .log dd { margin: 0; min-width: 0; }
-.log-link { font-family: var(--serif); font-size: 15px; line-height: 22px; text-align: left; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; color: var(--ink); }
+/* rows wrap to two lines instead of cutting a sentence with "…" (the full text is also the button's title) */
+.log-link { font-family: var(--serif); font-size: 15px; line-height: 22px; text-align: left; max-width: 100%; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow-wrap: anywhere; color: var(--ink); }
 @media (max-width: 760px) {
   .log { grid-template-columns: minmax(0, 1fr); }
   .log-row { grid-template-columns: minmax(0, 1fr); gap: 2px; padding: 6px 0; }
@@ -33,8 +33,29 @@
   .log-link { white-space: normal; overflow-wrap: anywhere; }
 }
 
-/* ---- segment row ---- */
-.segment-row button { min-height: 44px; }
+/* ---- journey header and segment row (delight pass mo-05: the chart starts inside the first 1366×900 viewport) ---- */
+.journey-head h2 { text-wrap: balance; margin-bottom: var(--s-1); }
+.progress-line { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--s-2); }
+.progress-note { display: inline; color: var(--ink-soft); font-size: 14px; }
+.progress-note > summary { display: inline; cursor: pointer; color: var(--ink-soft); text-decoration: underline; text-decoration-color: var(--gold); text-underline-offset: 3px; list-style: none; min-height: 32px; }
+.progress-note > summary::-webkit-details-marker { display: none; }
+.progress-note[open] > p { margin: var(--s-1) 0 0; max-width: 72ch; }
+.journey-controls { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-3); }
+.journey-controls .segment-row { margin: 0; }
+.segmented { display: inline-grid; grid-auto-flow: column; grid-auto-columns: 1fr; padding: 3px; gap: 0; border: 1px solid var(--rule); border-radius: 999px; background: var(--paper-deep); }
+.segmented > button.seg-btn { position: relative; isolation: isolate; min-height: 40px; padding: 0 var(--s-4); border: 0 !important; background: transparent !important; color: var(--ink-soft) !important; border-radius: 999px; font-size: 15px; white-space: nowrap; transition: color var(--dur-micro) var(--ease-standard); }
+.segmented > button.seg-btn[aria-pressed="true"] { color: var(--ink) !important; font-weight: 600; }
+.segmented .seg-thumb { position: absolute; inset: 0; z-index: -1; border-radius: 999px; background: var(--parchment); box-shadow: inset 0 0 0 1px var(--gold); }
+.journey-pickers { display: flex; flex-wrap: wrap; gap: var(--s-2); flex: 1 1 320px; min-width: 0; }
+.journey-pickers select { min-height: 44px; min-width: 0; flex: 1 1 220px; max-width: 360px; }
+.journey-pickers select.add-journey { flex: 0 1 220px; }
+@media (max-width: 760px) {
+  .journey-controls { flex-direction: column; align-items: stretch; gap: var(--s-2); }
+  .segmented { display: grid; width: 100%; }
+  .segmented > button.seg-btn { min-height: 44px; padding: 0 var(--s-2); font-size: 14px; }
+  .journey-pickers { flex-direction: column; }
+  .journey-pickers select, .journey-pickers select.add-journey { max-width: none; flex: 1 1 auto; width: 100%; }
+}
 
 /* ---- the passage plate ---- */
 .passage-block { min-width: 0; }
@@ -63,20 +84,20 @@
 /* ocean layers (plan N13) */
 .ocean-layers { position: absolute; inset: 0; z-index: 1; pointer-events: none; overflow: hidden; }
 .ocean-seigaiha { position: absolute; inset: -5% -40% -5% 0; }
-.ocean-fog { position: absolute; left: -10%; right: -10%; top: -4%; width: 120%; height: auto; opacity: .28; will-change: transform; }
-.ocean-horizon-blur { pointer-events: none; }
-.ocean-horizon-tint { position: absolute; left: 0; right: 0; top: 0; height: 22%; background: linear-gradient(to bottom, color-mix(in srgb, var(--paper) 55%, transparent), transparent); z-index: 2; }
-@media (max-width: 760px), (hover: none) { .ocean-fog, .ocean-horizon-blur, .ocean-horizon-tint { display: none; } }
+.ocean-fog { position: absolute; left: -10%; right: -10%; top: -4%; width: 120%; height: auto; opacity: .28; }
+.ocean-horizon-tint { position: absolute; left: 0; right: 0; top: 0; height: 22%; background: linear-gradient(to bottom, color-mix(in srgb, var(--paper) 28%, transparent), transparent); z-index: 2; }
+@media (max-width: 760px), (hover: none) { .ocean-fog, .ocean-horizon-tint { display: none; } }
 
 /* ---- island / frame / visited / marginal buttons (parchment lozenges; never text on the painting) ---- */
 .passage-controls .island-btn, .passage-controls .frame-btn, .passage-controls .visited-btn {
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; min-height: 44px; padding: 4px 8px; width: 128px; max-width: 128px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; min-height: 44px; padding: 4px 8px; width: 152px; max-width: 152px;
   background: var(--paper); color: var(--ink); border: 1px solid var(--rule); border-radius: var(--r-2); box-shadow: var(--shadow-1); cursor: pointer; text-align: center; line-height: 1.15;
   transition: background-color var(--dur-micro) var(--ease-standard), opacity var(--dur-standard) var(--ease-standard), box-shadow var(--dur-micro) var(--ease-standard);
 }
 .passage-controls .frame-btn { width: 150px; max-width: 150px; }
 .passage-controls .light-btn { width: 170px; max-width: 170px; }
-.passage-controls .visited-btn { width: 100px; max-width: 100px; height: 44px; min-height: 44px; padding: 2px 6px; background: var(--paper-deep); overflow: hidden; }
+.passage-controls .visited-btn { width: 112px; max-width: 112px; height: 52px; min-height: 52px; padding: 3px 8px; background: var(--paper-deep); overflow: hidden; }
+.passage-controls .visited-btn.visited-more { height: 44px; min-height: 44px; }
 .passage-controls .visited-more { font-weight: 600; }
 .passage-controls .marginal-btn { border-style: dashed; }
 .passage-layout.is-dense .passage-controls .island-btn { width: 104px; max-width: 104px; min-height: 44px; }
@@ -90,7 +111,7 @@
 .passage-controls .island-btn.is-pending { background: var(--paper-deep); }
 .ctl-title { font-family: var(--serif); font-weight: 600; font-size: 13px; line-height: 15px; max-width: 100%; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow-wrap: anywhere; }
 .passage-controls .island-btn { min-height: 60px; }
-.passage-controls .frame-btn .ctl-title, .passage-controls .visited-btn .ctl-title { -webkit-line-clamp: 1; }
+.passage-controls .frame-btn .ctl-title { -webkit-line-clamp: 1; }
 .ctl-sub { font-size: 11px; line-height: 13px; color: var(--ink-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
 .ctl-amt { font-size: 12px; line-height: 15px; font-variant-numeric: tabular-nums; color: var(--ink); white-space: nowrap; display: inline-flex; align-items: baseline; gap: 3px; }
 .ctl-amt .amt { font-weight: 600; }
@@ -98,8 +119,11 @@
 .ctl-amt.unresolved, .ctl-amt.pending, .ctl-amt.mentioned { color: var(--ink-soft); font-style: italic; }
 .ctl-pennant { font-size: 11px; line-height: 13px; color: var(--ink); background: var(--gold-soft); border: 1px solid var(--gold); border-radius: var(--r-1); padding: 0 4px; }
 .visited-mark { color: var(--forest); display: inline-flex; }
-.visited-btn .ctl-title { font-size: 12px; }
-.visited-btn .ctl-sub { font-size: 10px; }
+.passage-controls .visited-btn { position: absolute; padding-left: 20px; align-items: flex-start; text-align: left; }
+.passage-controls .visited-btn .visited-mark { position: absolute; left: 6px; top: 7px; }
+.visited-btn .ctl-title { font-size: 12px; line-height: 14px; }
+.visited-btn .ctl-sub { font-size: 11px; line-height: 13px; }
+.passage-controls .visited-btn.visited-more { padding-left: 8px; align-items: center; text-align: center; }
 
 /* ---- checkpoint buttons: 32 px visual inside a 44 × 44 hit box ---- */
 .passage-controls .cp-btn { width: 44px; height: 44px; padding: 0; background: transparent; border: 0; display: grid; place-items: center; cursor: pointer; border-radius: 50%; }
@@ -120,11 +144,11 @@
 .lg-mark.tone-marginal { border-style: dashed; border-color: var(--ink-soft); }
 
 /* ---- soundings lozenge (ink on parchment) ---- */
-.sounding { margin: 0; pointer-events: none; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0 6px; align-items: center; width: 140px; min-height: 44px; padding: 3px 8px; background: var(--parchment); color: var(--ink); border: 1px solid var(--rule); border-radius: var(--r-1); box-shadow: var(--shadow-1); font-size: 11px; line-height: 14px; }
+.sounding { margin: 0; pointer-events: none; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0 8px; align-items: center; width: 160px; min-height: 44px; padding: 4px 8px; background: var(--parchment); color: var(--ink); border: 1px solid var(--rule); border-radius: var(--r-1); box-shadow: var(--shadow-1); font-size: 11px; line-height: 14px; }
 .sounding .sounding-row { display: contents; }
-.sounding-term { color: var(--ink-soft); white-space: nowrap; }
-.sounding .amt { font-size: 12px; font-weight: 600; justify-self: end; }
-.sounding .badge { grid-column: 1 / -1; justify-self: start; font-size: .62rem; padding: 0 .3rem; margin-top: 1px; }
+.sounding-term { color: var(--ink-soft); white-space: nowrap; font-size: 12px; }
+.sounding .amt { font-size: 13px; font-weight: 600; justify-self: end; }
+.sounding .badge { grid-column: 1 / -1; justify-self: start; font-size: 11px; padding: 0 .3rem; margin-top: 2px; }
 .sounding-none { font-style: italic; color: var(--ink-soft); font-size: 11px; }
 .sounding-inline { position: static; transform: none; width: auto; max-width: 100%; pointer-events: auto; margin: 6px 0 0; display: flex; flex-wrap: wrap; gap: 2px 12px; min-height: 28px; padding: 4px 10px; font-size: 12px; }
 .sounding-inline .sounding-row { display: inline-flex; gap: 6px; align-items: baseline; }

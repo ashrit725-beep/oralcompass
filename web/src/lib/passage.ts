@@ -442,16 +442,18 @@ export function layoutPassage(vm: PassageVM, mode: "desktop" | "phone", opts: La
   const { start, destination, destinationR } = framePoints(n);
   const selected = opts.selected ?? null;
   const dense = denseFrom(n);
-  const btnW = u(dense ? 104 : 128), btnH = hit, islH = u(dense ? 44 : 60);
+  // island buttons: 152 px so "Crown, porcelain/ceramic" breaks into two whole lines; 72 px tall is the real two-line title + sub + amount
+  const btnW = u(dense ? 104 : 152), btnH = hit, islH = u(dense ? 44 : 72);
   const startButton = rectAt(start.x, start.y + u(46), u(150), btnH, "start");
   const destinationButton = rectAt(destination.x, destination.y + destinationR * 0.7 + u(36), u(170), btnH, "destination");
 
   // visited: a short column on the left shore above START (max 3, then "+k more"); marginal: lower margin right of centre (max 3, then +k)
-  const visitedW = u(100);
-  const vTop = n === 3 ? 80 : 136, vPitch = hit + 4;
-  const visited: SmallIslandLayout[] = vm.visited.slice(0, 3).map((v, j) => { const cx = 60, cy = vTop + j * vPitch; return { id: v.id, cx, cy, r: 24, button: rectAt(cx, cy, visitedW, btnH, v.id) }; });
+  // visited chips are 112 × 52 px so a two-line name fits ("Adult cleaning (prophylaxis)") instead of truncating to "Adult cleani…"
+  const visitedW = u(112), visitedH = u(52);
+  const vTop = n === 3 ? 44 : 56, vPitch = visitedH + u(4), vCx = u(10) + visitedW / 2;
+  const visited: SmallIslandLayout[] = vm.visited.slice(0, 3).map((v, j) => { const cx = vCx, cy = vTop + j * vPitch; return { id: v.id, cx, cy, r: 24, button: rectAt(cx, cy, visitedW, visitedH, v.id) }; });
   const visitedOverflow = Math.max(0, vm.visited.length - 3);
-  const visitedMore = visitedOverflow ? rectAt(60, vTop + 3 * vPitch, visitedW, btnH, "visited:more") : null;
+  const visitedMore = visitedOverflow ? rectAt(vCx, vTop + 3 * vPitch - (visitedH - btnH) / 2, visitedW, btnH, "visited:more") : null;
   const maxMarginal = n >= 7 ? 2 : 3;
   const marginal: SmallIslandLayout[] = vm.marginal.slice(0, maxMarginal).map((m, j) => { const cx = n >= 7 ? 930 - j * 118 : 640 - j * 150, cy = n >= 7 ? 500 : 512; return { id: m.id, cx, cy, r: 36, button: rectAt(cx, cy + 28 + u(26), btnW, btnH, m.id) }; });
   const marginalOverflow = Math.max(0, vm.marginal.length - maxMarginal);
@@ -471,10 +473,26 @@ export function layoutPassage(vm: PassageVM, mode: "desktop" | "phone", opts: La
       const down = prev.y + prev.h + 4 + islH / 2;
       button = down + islH / 2 <= VB_H - 4 ? rectAt(cx, down, btnW, islH, isl.id) : rectAt(cx, cy - r * 0.75 - u(36), btnW, islH, isl.id);
     }
+    // the wider (152 px) island buttons slide sideways off the START / Harbor Light buttons instead of touching them
+    for (const f of [startButton, destinationButton]) {
+      if (!rectsIntersect(f, button)) continue;
+      const right = f.x + f.w + u(4) - button.x, left = button.x + button.w - (f.x - u(4));
+      button = { ...button, x: button.x + (f.x + f.w / 2 < button.x + button.w / 2 ? right : -left) };
+    }
     placedButtons.push(button);
     return { isl, cx, cy, plate, button };
   });
   fixed.push(...bases.map((b) => b.button));
+  // a marginal ("mentioned") button that meets an island button slides right along the lower margin (or left at the edge)
+  for (const m of marginal) {
+    for (const b of bases) {
+      if (!rectsIntersect(m.button, b.button)) continue;
+      const blockers = fixed.filter((f) => f !== m.button);
+      const xs = [b.button.x + b.button.w + u(4), b.button.x - u(4) - m.button.w].filter((x) => x >= 4 && x + m.button.w <= VB_W - 4);
+      const x = xs.find((xx) => !blockers.some((f) => rectsIntersect(f, { ...m.button, x: xx })));
+      if (x != null) m.button.x = x;
+    }
+  }
   let collapsed = false, plain = false;
   const placedRects: Rect[] = [];
   const islands: IslandLayout[] = bases.map(({ isl, cx, cy, plate, button }, i) => {
@@ -507,16 +525,29 @@ export function layoutPassage(vm: PassageVM, mode: "desktop" | "phone", opts: La
   }
 
   // soundings (two-line lozenge, 120 × 44 px) midway along each leg, probed against the controls; never printed on a control
-  const soundW = u(140), soundH = hit;
+  // The rect is the lozenge as rendered (160 × 60 px: two figure rows and the badge row) plus a 6 px gap, probed against every control,
+  // every island's arc ring (markers) and the soundings already placed; candidates fan out from the leg midpoint toward open water.
+  const soundW = u(172), soundH = u(66);
   const soundings: SoundingLayout[] = [];
+  const taken: Rect[] = [...controls];
   islands.forEach((isl, i) => {
     if (!vm.islands[i].soundingsAfter) return;
     const next: Pt = islands[i + 1] ? islands[i + 1].arcStart : { x: destination.x - destinationR, y: destination.y };
-    const x = (isl.arcEnd.x + next.x) / 2, yLeg = (isl.arcEnd.y + next.y) / 2;
-    const candidates = [u(48), -u(44), u(88), -u(84), u(128)];
-    const clear = (yy: number) => !controls.some((rc) => rectsIntersect(rc, rectAt(x, yy, soundW, soundH, "sounding")));
-    const dy = candidates.find((c) => clear(yLeg + c)) ?? candidates[0];
-    soundings.push({ islandId: isl.id, x, y: yLeg + dy });
+    const mx = (isl.arcEnd.x + next.x) / 2, yLeg = (isl.arcEnd.y + next.y) / 2;
+    const dys = [u(56), u(96), -u(56), u(136), -u(96), u(176)];
+    const dxs = [0, -u(36), u(36), -u(72), u(72)];
+    let best: Pt | null = null;
+    for (const dy of dys) {
+      for (const dx of dxs) {
+        const x = Math.min(Math.max(mx + dx, soundW / 2 + 4), VB_W - soundW / 2 - 4), y = Math.min(Math.max(yLeg + dy, soundH / 2 + 4), VB_H - soundH / 2 - 4);
+        const rc = rectAt(x, y, soundW, soundH, `sounding:${isl.id}`);
+        if (!taken.some((t) => rectsIntersect(t, rc))) { best = { x, y }; break; }
+      }
+      if (best) break;
+    }
+    if (!best) return;                                    // honest degrade: no water left, the figures stay in the drawer and the overview
+    taken.push(rectAt(best.x, best.y, soundW, soundH, `sounding:${isl.id}`));
+    soundings.push({ islandId: isl.id, x: best.x, y: best.y });
   });
 
   return { w: VB_W, h: VB_H, mode, dense, collapsed, plain, start, destination, startButton, destinationButton, destinationR, islands, visited, visitedOverflow, visitedMore, marginal, marginalOverflow, route, soundings, controls, collisions: findCollisions(controls) };

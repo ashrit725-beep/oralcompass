@@ -21,11 +21,11 @@ export function FinalCostSection(props: SectionProps & { estimateId?: string; fi
     <Section k="finalCost" title={DRAWER.sFinalCost} className={cn(first && "dsec-first")}>
       <p className={cn("final-hero", unresolved && "final-hero-unresolved")}>
         <span className="final-hero-term">{DRAWER.youPay}</span>
-        <Figure cents={line.patient_cents} evidence="DOC" hero stitches={chips.slice(0, 3)} onSelectStitch={onSelectStitch} className="final-hero-amt" />
+        <Figure cents={line.patient_cents} evidence="DOC" calc hero stitches={chips.slice(0, 3)} onSelectStitch={onSelectStitch} className="final-hero-amt" />
       </p>
       <p className="final-sub">
         <span>{DRAWER.estimatedPlanPayment}</span>{" "}
-        <Figure cents={line.plan_cents} evidence="DOC" stitch={chips[0]} onSelectStitch={onSelectStitch} className="fig-plan" />
+        <Figure cents={line.plan_cents} evidence="DOC" calc stitch={chips[0]} onSelectStitch={onSelectStitch} className="fig-plan" />
         {line.plan_is_upper_bound ? <span className="muted"> {DRAWER.upperBoundWord}</span> : null}
         {line.benefit_year ? <span className="muted"> · {DRAWER.benefitYear(line.benefit_year)}</span> : null}
       </p>

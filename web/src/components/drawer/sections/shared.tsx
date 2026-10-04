@@ -66,18 +66,22 @@ export function Section({ k, title, children, collapsible, defaultOpen = true, c
  * sibling; `roll` switches to `Money`/NumberFlow where the amount re-measures on a new estimate. `null` cents render the em dash plus the
  * waiting words with the UNKNOWN badge, never $0.00.
  */
-export function Figure({ cents, evidence, stitch, stitches, onSelectStitch, signed: isSigned, waiting = true, className, hero, roll }: {
+export function Figure({ cents, evidence, stitch, stitches, onSelectStitch, signed: isSigned, waiting = true, className, hero, roll, calc }: {
   cents: number | null | undefined; evidence: Evidence; stitch?: Stitch | null; stitches?: Stitch[]; onSelectStitch?: (s: Stitch) => void; signed?: boolean; waiting?: boolean; className?: string; hero?: boolean; roll?: boolean;
+  /** An engine total (document rules applied to your figures): instead of a single evidence badge it says it was calculated and carries
+   *  the stitches of the clauses behind it (orchestrator note 1; no seventh evidence status). Falls back to the badge without stitches. */
+  calc?: boolean;
 }) {
   const missing = cents == null;
-  const chips = stitches ?? (stitch ? [stitch] : []);
+  const chips = (stitches ?? (stitch ? [stitch] : [])).filter(Boolean) as Stitch[];
+  const asCalc = !!calc && !missing && chips.length > 0 && !!onSelectStitch;
   const text = missing ? "—" : isSigned ? signed(cents) : money(cents);
   return (
     <span className={cn("fig", hero && "fig-hero", missing && "fig-missing", className)} data-amount={missing ? undefined : text}>
       {roll && !missing ? <Money cents={cents} evidence={evidence} signed={isSigned} /> : (
         <>
           <span className="amt font-sans tabular-nums text-ink" aria-label={missing ? DRAWER.noAmount : undefined}>{text}</span>
-          <EvidenceBadge status={missing ? "UNKNOWN" : evidence} />
+          {asCalc ? <span className="fig-calc">{DRAWER.calculated}</span> : <EvidenceBadge status={missing ? "UNKNOWN" : evidence} />}
         </>
       )}
       {missing && waiting ? <span className="fig-waiting">{DRAWER.waitingInfo}</span> : null}

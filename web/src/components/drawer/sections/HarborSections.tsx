@@ -25,11 +25,11 @@ export function HarborSections({ island, vm, estimate, stitches, onSelectStitch 
       <Section k="finalCost" title={DRAWER.sTotals} className="dsec-first">
         <p className={cn("final-hero", unresolved && "final-hero-unresolved")}>
           <span className="final-hero-term">{DRAWER.routeYouPay}</span>
-          <Figure cents={unresolved ? null : vm.totals.youPay} evidence="DOC" hero stitches={chips.slice(0, 3)} onSelectStitch={onSelectStitch} className="final-hero-amt" />
+          <Figure cents={unresolved ? null : vm.totals.youPay} evidence="DOC" calc hero stitches={chips.slice(0, 3)} onSelectStitch={onSelectStitch} className="final-hero-amt" />
         </p>
         <p className="final-sub">
           <span>{DRAWER.routePlanPays}</span>{" "}
-          <Figure cents={unresolved ? null : vm.totals.planPays} evidence="DOC" stitch={chips[0]} onSelectStitch={onSelectStitch} className="fig-plan" />
+          <Figure cents={unresolved ? null : vm.totals.planPays} evidence="DOC" calc stitch={chips[0]} onSelectStitch={onSelectStitch} className="fig-plan" />
           {vm.totals.upperBound ? <span className="muted"> {DRAWER.upperBoundWord}</span> : null}
         </p>
         {estimate?.movers?.range && estimate.movers.range[0] !== estimate.movers.range[1] && (

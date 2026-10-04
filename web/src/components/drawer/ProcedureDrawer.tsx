@@ -63,6 +63,8 @@ export interface ProcedureDrawerProps {
   returnFocus?: HTMLElement | null;
   /** Additive (optional): called after the drawer records a figure (allowed amount, benefit statement) so the host re-estimates. */
   onRecordsChanged?: () => void;
+  /** Additive (optional): false when the drawer was opened from the keyboard; the gold cast line then stays off (opacity-only entrance). */
+  castLine?: boolean;
 }
 
 const SHEET_STAGGER = {
@@ -71,7 +73,7 @@ const SHEET_STAGGER = {
 };
 
 export function ProcedureDrawer(props: ProcedureDrawerProps) {
-  const { island, vm, plan, rules, benefits, estimate, stitches, selectedCheckpoint, onSelectStitch, onOpenDocuments, onClose, mobile, returnFocus, onRecordsChanged } = props;
+  const { island, vm, plan, rules, benefits, estimate, stitches, selectedCheckpoint, onSelectStitch, onOpenDocuments, onClose, mobile, returnFocus, onRecordsChanged, castLine = true } = props;
   const reduce = useReducedMotion();
   const item = island.item;
   // A planned island whose estimate has no ledger lines at all (usage not provided) is in fog: give the sections an unresolved pseudo-line so
@@ -161,8 +163,8 @@ export function ProcedureDrawer(props: ProcedureDrawerProps) {
       {!mobile && island.kind === "procedure" && line && (
         <p className={cn("drawer-lede", unresolved && "drawer-lede-unresolved")}>
           <span className="drawer-lede-term">{DRAWER.youPayLede}</span>{" "}
-          <Figure cents={line.patient_cents} evidence="DOC" className="drawer-lede-amt" stitches={lineStitches.slice(0, 2)} onSelectStitch={onSelectStitch} />
-          {!unresolved && <><span className="muted"> · {DRAWER.planPaysLede} </span><Figure cents={line.plan_cents} evidence="DOC" className="fig-plan" /></>}
+          <Figure cents={line.patient_cents} evidence="DOC" calc className="drawer-lede-amt" stitches={lineStitches.slice(0, 2)} onSelectStitch={onSelectStitch} />
+          {!unresolved && <><span className="muted"> · {DRAWER.planPaysLede} </span><Figure cents={line.plan_cents} evidence="DOC" calc className="fig-plan" stitches={lineStitches.slice(0, 1)} onSelectStitch={onSelectStitch} /></>}
         </p>
       )}
       {island.kind === "procedure" && cps.length > 0 && (
@@ -201,29 +203,53 @@ export function ProcedureDrawer(props: ProcedureDrawerProps) {
   return (
     <motion.aside
       ref={regionRef} role="region" aria-label={DRAWER.region} className="drawer drawer-desktop detail side"
-      initial={reduce ? false : { x: 24, opacity: 0 }} animate={{ x: 0, opacity: 1, transition: transitions.drawerRise }} exit={{ x: 24, opacity: 0, transition: transitions.drawerExit }}
+      initial={reduce ? false : { opacity: 0 }} animate={{ opacity: 1, transition: transitions.drawerRise }}
       onKeyDown={(e) => { if (e.key === "Escape" && !document.querySelector('.clause[role="dialog"]')) { e.stopPropagation(); close(); } }}
       onClickCapture={onClickCapture}
     >
-      {!reduce && <CastLine from={returnFocus ?? null} to={regionRef} />}
+      {!reduce && castLine && <CastLine key={island.id} from={returnFocus ?? null} to={regionRef} />}
       <div ref={bodyRef} className="drawer-body">
-        <div className="drawer-head">{header}</div>
-        <div className="drawer-sections">{sections}</div>
+        {/* switching islands while open crossfades the body only; the column stays put (no second drawer-rise) */}
+        <motion.div key={island.id} initial={reduce ? false : { opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={transitions.drawerRise}>
+          <div className="drawer-head">{header}</div>
+          <div className="drawer-sections">{sections}</div>
+        </motion.div>
       </div>
     </motion.aside>
   );
 }
 
-/** The gold cast line (spec §5.5 `drawer-rise`): 1 px, from the island button's edge to the drawer's edge, drawn in 240 ms then faded. */
+/** Left edge of an element once every transform on it and its ancestors has settled (the drawer is still translated while it rises). */
+function settledLeft(el: HTMLElement): number {
+  let x = el.getBoundingClientRect().left;
+  for (let n: HTMLElement | null = el; n; n = n.parentElement) {
+    const t = getComputedStyle(n).transform;
+    if (t && t !== "none") { try { x -= new DOMMatrixReadOnly(t).m41; } catch { /* unparsable transform: keep the measured edge */ } }
+  }
+  return x;
+}
+
+/**
+ * The gold cast line (spec §5.5 `drawer-rise`): 1 px, from the island button's edge to the drawer's final edge, drawn in 240 ms with the
+ * drawer, held, then faded (≈ 700 ms in all) and unmounted. Keyed on the island so a switch re-casts it; scrolling cancels it (the line
+ * is fixed-position and would otherwise point at the wrong place). Pointer opens only; never under reduced motion.
+ */
 function CastLine({ from, to }: { from: HTMLElement | null; to: React.RefObject<HTMLElement | null> }) {
   const [d, setD] = useState<string | null>(null);
   const [done, setDone] = useState(false);
   useLayoutEffect(() => {
     if (!from || !to.current || !document.contains(from)) return;
     const a = from.getBoundingClientRect(); const b = to.current.getBoundingClientRect();
-    const x1 = a.right, y1 = a.top + a.height / 2, x2 = b.left, y2 = Math.min(Math.max(y1, b.top + 24), b.bottom - 24);
+    const x2 = settledLeft(to.current);
+    const x1 = a.right, y1 = a.top + a.height / 2, y2 = Math.min(Math.max(y1, b.top + 24), b.bottom - 24);
+    if (x2 - x1 < 12) return;
     setD(`M ${x1} ${y1} C ${(x1 + x2) / 2} ${y1}, ${(x1 + x2) / 2} ${y2}, ${x2} ${y2}`);
   }, [from, to]);
+  useEffect(() => {
+    const cancel = () => setDone(true);
+    window.addEventListener("scroll", cancel, { passive: true, once: true });
+    return () => window.removeEventListener("scroll", cancel);
+  }, []);
   if (!d || done) return null;
   return (
     <svg className="cast-line" aria-hidden="true" focusable="false">

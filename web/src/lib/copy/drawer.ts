@@ -34,6 +34,7 @@ export const DRAWER = {
   sExclusions: "Exclusions",
   sFinalCost: "Final cost",
   sCalculation: "How was this calculated?",
+  calculated: "Calculated from the clauses cited",
   sEvidence: "Clause evidence",
   sPlan: "Plan",
   sRecords: "Records",

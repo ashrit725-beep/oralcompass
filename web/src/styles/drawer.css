@@ -197,3 +197,4 @@ details[open] > .dsec-summary .dsec-toggle { transform: rotate(-135deg); margin-
 .drawer-lede .drawer-lede-amt .amt { color: var(--you-pay); }
 .clause-in-sheet { position: absolute; left: 0; right: 0; bottom: 0; width: auto; max-height: 70%; overflow-y: auto; border-radius: 18px 18px 0 0; z-index: 45; box-shadow: var(--shadow-3); }
 .thread-pull-in-sheet { position: absolute; z-index: 44; }
+.fig-calc { font-size: 12px; line-height: 18px; color: var(--ink-soft); white-space: nowrap; }

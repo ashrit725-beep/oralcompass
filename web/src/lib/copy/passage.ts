@@ -82,6 +82,7 @@ export const PASSAGE = {
   soundingsAria: (deductible: string, maximum: string) => `Soundings after this island: deductible left ${deductible}, maximum left ${maximum}`,
   soundingsBefore: "Before the route",
   careTimeline: "Care timeline",
+  whatCompletionMeans: "What completion means",
   showOnChart: "Show on the chart",
   mapView: "Map view",
   jumpTo: "Jump to a procedure",

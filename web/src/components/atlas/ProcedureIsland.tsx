@@ -1,4 +1,4 @@
-import { motion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 import { useReducedMotion } from "@/lib/motion";
 import type { IslandLayout } from "@/lib/passage";
 import type { IslandVM } from "@/lib/types";
@@ -11,11 +11,15 @@ import { Island } from "./Paper";
  * selected = terracotta ring), pennants for `notices` (gold flags, count = notices.length) and the compound badge in dense layouts.
  * `focus-island` (pointer only): the selected plate eases to scale 1.04 (transform only, 600 ms `--ease-land`); keyboard selection and
  * reduced motion apply the end state instantly. Other islands dim to .72 while one is focused.
+ * Delight pass (mo-02): the entrance delay (the island appears when the pen reaches it) lives on the outer group only, so dimming after a
+ * click answers within 240 ms instead of waiting up to 1.3 s; the terracotta ring is drawn (pathLength 0 → 1, 240 ms) with the scale
+ * rather than popping in. `instant` (chart already drawn this session, or reduced motion) renders every end state on the first frame.
  */
-export interface ProcedureIslandProps { island: IslandVM; layout: IslandLayout; selected: boolean; dim: boolean; pointer: boolean; drawDelay: number }
+export interface ProcedureIslandProps { island: IslandVM; layout: IslandLayout; selected: boolean; dim: boolean; pointer: boolean; drawDelay: number; instant?: boolean }
 
-export function ProcedureIsland({ island, layout, selected, dim, pointer, drawDelay }: ProcedureIslandProps) {
-  const reduce = useReducedMotion();
+export function ProcedureIsland({ island, layout, selected, dim, pointer, drawDelay, instant = false }: ProcedureIslandProps) {
+  const reduce = useReducedMotion() || instant;
+  const animateSelect = !reduce && pointer;
   const { cx, cy, r, plate } = layout;
   const pending = island.state === "pending";
   const n = island.notices.length;
@@ -23,20 +27,32 @@ export function ProcedureIsland({ island, layout, selected, dim, pointer, drawDe
     <motion.g
       className={`island island-${island.state}`}
       initial={reduce ? false : { opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={reduce ? { duration: 0 } : { opacity: { duration: 0.24, delay: Math.max(0, drawDelay - 0.12), ease: [0.2, 0.7, 0.2, 1] } }}
+    >
+    <motion.g
+      initial={false}
       animate={{ opacity: dim ? 0.72 : 1 }}
-      transition={reduce ? { duration: 0 } : { opacity: { duration: 0.3, delay: drawDelay } }}
+      transition={reduce ? { duration: 0 } : dim ? { duration: 0.24, ease: [0.2, 0.7, 0.2, 1] } : { duration: 0.17, ease: [0.4, 0, 1, 1] }}
     >
       <motion.g
         style={{ transformOrigin: `${cx}px ${cy}px`, transformBox: "view-box" } as React.CSSProperties}
         animate={{ scale: selected ? 1.04 : 1 }}
-        transition={reduce || !pointer ? { duration: 0 } : { duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+        transition={animateSelect ? { duration: 0.6, ease: [0.16, 1, 0.3, 1] } : { duration: 0 }}
       >
         <ellipse cx={cx + 4} cy={cy + plate.h * 0.36} rx={plate.w * 0.42} ry={plate.h * 0.16} fill="var(--water-ink)" opacity={0.22} />
         <g opacity={pending ? 0.55 : 1}>
           <ArtPlate slot={plate.slot} x={plate.x} y={plate.y} w={plate.w} h={plate.h} preserveAspectRatio="xMidYMid meet" fallback={<Island cx={cx} cy={cy} r={r} muted={pending} />} />
         </g>
         {pending && <ellipse cx={cx} cy={cy} rx={r * 1.15} ry={r * 0.82} fill="none" stroke="var(--paper)" strokeWidth={2} strokeDasharray="4 6" />}
-        {selected && <ellipse cx={cx} cy={cy + r * 0.1} rx={r * 1.35} ry={r * 0.95} fill="none" stroke="var(--select)" strokeWidth={2.2} opacity={0.9} />}
+        <AnimatePresence initial={false}>
+          {selected && (
+            <motion.ellipse key="ring" cx={cx} cy={cy + r * 0.1} rx={r * 1.35} ry={r * 0.95} fill="none" stroke="var(--select)" strokeWidth={2.2} strokeLinecap="round"
+                            initial={animateSelect ? { pathLength: 0, opacity: 0.9 } : false} animate={{ pathLength: 1, opacity: 0.9 }}
+                            exit={animateSelect ? { opacity: 0, transition: { duration: 0.17, ease: [0.4, 0, 1, 1] } } : { opacity: 0, transition: { duration: 0 } }}
+                            transition={{ pathLength: { duration: 0.24, ease: [0.2, 0.7, 0.2, 1] } }} />
+          )}
+        </AnimatePresence>
       </motion.g>
       {/* pennants: one small flag per notice, raised after the markers (pennant-raise, 120 ms) */}
       {n > 0 && (
@@ -49,6 +65,7 @@ export function ProcedureIsland({ island, layout, selected, dim, pointer, drawDe
           ))}
         </motion.g>
       )}
+    </motion.g>
       {/* dense routes: a single count badge until the island is selected (not a control; the island button carries the count) */}
       {layout.compound && island.checkpoints.length > 0 && (
         <g transform={`translate(${layout.badge.x} ${layout.badge.y})`}>

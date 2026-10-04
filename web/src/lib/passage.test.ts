@@ -191,6 +191,15 @@ describe("layoutPassage — 44 px targets at the 854 px plate (addendum B1/B2/B3
     // islands sit inside the backdrop's open water (addendum §C.1)
     for (const i of layout.islands) { expect(i.cx).toBeGreaterThan(180); expect(i.cx).toBeLessThan(830); expect(i.cy - i.arcR).toBeGreaterThan(90); }
   });
+  it("soundings never sit on a control or on each other (delight pass mo-06; closes follow-up 7)", () => {
+    for (const vm of [buildPassage(alex), buildPassage(sam)]) {
+      const l = layoutPassage(vm, "desktop");
+      const u = (px: number) => (px * VB_W) / BINDING_PX;
+      const rects = l.soundings.map((s) => ({ x: s.x - u(160) / 2, y: s.y - u(60) / 2, w: u(160), h: u(60), id: `s:${s.islandId}` }));
+      expect(findCollisions([...l.controls, ...rects]).filter(([a, b]) => a.startsWith("s:") || b.startsWith("s:"))).toEqual([]);
+      for (const r of rects) { expect(r.x).toBeGreaterThanOrEqual(0); expect(r.x + r.w).toBeLessThanOrEqual(VB_W); }
+    }
+  });
   it("Sam: the 7-checkpoint crown widens its arc instead of crowding", () => {
     const layout = layoutPassage(buildPassage(sam), "desktop");
     expect(layout.collisions).toEqual([]);

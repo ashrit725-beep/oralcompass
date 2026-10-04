@@ -38,6 +38,9 @@ type Segment = "map" | "care" | "overview";
  * One aria-live region per surface: "Recalculating…" while a new estimate runs, "Estimate updated" when it lands.
  * Keyboard: Escape closes the top-most surface (the ClauseCard first, then the drawer) and returns focus to its opener.
  */
+/** Journey labels arrive with an em dash ("Sample journey — Alex Chen …"); the heading reads it as a label and a colon (copy rule R-02). */
+const headingLabel = (label: string) => label.replace(/\s+—\s+/, ": ").replace(/\s+—\s+/g, ", ");
+
 export function JourneyView({ data, selection, mobile, onOpenLandmark, onOpenDocuments, onSelectStitch }: JourneyViewProps) {
   const { view, journeys, samples, plans, busy, startJourney, setView, patch, instructions, items, estimate, benefits, rules, plan, procedures, stitches, planRef, loading, loadRecords, reestimate } = data;
   /** The drawer's Allowance input and the Benefit statement form change private records: reload them and re-run the estimate. */
@@ -46,8 +49,8 @@ export function JourneyView({ data, selection, mobile, onOpenLandmark, onOpenDoc
   const [segment, setSegment] = useState<Segment>("map");
   const [pointer, setPointer] = useState(false);
   const [announce, setAnnounce] = useState("");
-  const [thread, setThread] = useState<{ x: number; y: number; w: number } | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
+  const segPointer = useRef(false);
   const lastEstimateId = useRef<string | null>(null);
   const realCount = plans.filter((p) => !p.is_fictional).length;
   const newUser = journeys !== null && journeys.length === 0 && !view;
@@ -71,16 +74,12 @@ export function JourneyView({ data, selection, mobile, onOpenLandmark, onOpenDoc
   const selectIsland = useCallback((islandId: string, checkpointKey: string | undefined, el: HTMLElement | null, viaKeyboard: boolean) => {
     setPointer(!viaKeyboard);
     selection.selectIsland({ islandId, checkpointKey } as MapSelection, el);
-    if (!viaKeyboard && !mobile && el && rootRef.current && !reduce) {
-      const r = el.getBoundingClientRect(), root = rootRef.current.getBoundingClientRect();
-      setThread({ x: r.right - root.left, y: r.top + r.height / 2 - root.top, w: Math.max(0, root.width - 440 - (r.right - root.left)) });
-    } else setThread(null);
-  }, [selection, mobile, reduce]);
+  }, [selection]);
 
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     if (e.key !== "Escape") return;
     if (document.querySelector('[role="dialog"][aria-modal="true"], .clause[role="dialog"]')) return;   // the top-most surface closes first
-    if (islandSel || stage) { e.preventDefault(); selection.clear(); setThread(null); }
+    if (islandSel || stage) { e.preventDefault(); selection.clear(); }
   };
 
   const focusIn = (sel: string) => { const el = rootRef.current?.querySelector<HTMLElement>(sel); el?.focus(); return !!el; };
@@ -115,7 +114,7 @@ export function JourneyView({ data, selection, mobile, onOpenLandmark, onOpenDoc
   const hasDetail = !!(islandSel || stage);
   const drawer = islandSel && selectedIsland && plan ? (
     <ProcedureDrawer island={selectedIsland} vm={vm} plan={plan} rules={rules} benefits={benefitsFor} estimate={estimate} stitches={stitches} selectedCheckpoint={islandSel.checkpointKey}
-                     onSelectStitch={(s) => onSelectStitch?.(s)} onOpenDocuments={onOpenDocuments} onClose={() => { selection.clear(); setThread(null); }} mobile={mobile} returnFocus={selection.returnFocusRef.current} onRecordsChanged={onRecordsChanged} />
+                     onSelectStitch={(s) => onSelectStitch?.(s)} onOpenDocuments={onOpenDocuments} onClose={() => { selection.clear(); }} mobile={mobile} returnFocus={selection.returnFocusRef.current} onRecordsChanged={onRecordsChanged} castLine={pointer} />
   ) : null;
   const stagePanel = stage ? <DetailPanel view={view} selection={stage} onSelect={(s) => selection.selectStage(s)} onOpenLandmark={onOpenLandmark} onOpenDocuments={onOpenDocuments} onPatch={patch} onInstructions={instructions} busy={busy} mobile={mobile} onClose={() => selection.clear()} /> : null;
   const dense = denseFrom(vm.islands.length);
@@ -124,18 +123,29 @@ export function JourneyView({ data, selection, mobile, onOpenLandmark, onOpenDoc
     <div ref={rootRef} className={`passage-layout ${hasDetail && !mobile ? "has-detail" : ""} ${mobile ? "is-mobile" : ""}`} onKeyDown={onKeyDown}>
       <motion.div layout={!reduce} transition={transitions.drawerRise} className="passage-main">
         <div className="journey-head">
-          <h2>{view.journey.label}</h2>
-          <p className="progress-line"><strong className="num">{view.progress.label}</strong> <span className="muted">· {view.progress.note}</span></p>
+          <h2>{headingLabel(view.journey.label)}</h2>
+          <div className="progress-line">
+            <strong className="num">{view.progress.label}</strong>
+            {view.progress.note && <details className="progress-note"><summary>{PASSAGE.whatCompletionMeans}</summary><p>{view.progress.note}</p></details>}
+          </div>
         </div>
         <AnswersLog vm={vm} view={view} plan={plan} estimate={estimate} recalculating={recalculating} onFocus={onAnswer} />
         <p className="sr-only" aria-live="polite" role="status">{announce}</p>
-        <div className="toggles segment-row" role="group" aria-label="Journey views">
-          <button type="button" aria-pressed={segment === "map"} onClick={() => setSegment("map")}>{UI.mapView}</button>
-          <button type="button" aria-pressed={segment === "care"} onClick={() => setSegment("care")}>{PASSAGE.careTimeline}</button>
-          <button type="button" aria-pressed={segment === "overview"} onClick={() => setSegment("overview")}>{UI.overview}</button>
-          {journeys && journeys.length > 0 && samples.length > 0 && <select aria-label="Journey" value={view.id} onChange={(e) => { const v = journeys.find((j) => j.id === e.target.value); if (v) setView(v); }}>
-            {journeys.map((j) => <option key={j.id} value={j.id}>{j.journey.label}</option>)}</select>}
-          <select aria-label="Add a journey" value="" onChange={(e) => e.target.value && startJourney(e.target.value)}><option value="">Add another journey…</option><option value="empty">Empty (no documents yet)</option>{samples.filter((s) => s.id !== "empty").map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}</select>
+        <div className="journey-controls">
+          {/* one segmented control: the parchment thumb glides to the pressed segment on pointer (200 ms), snaps for keyboard and reduced motion */}
+          <div className="segment-row segmented" role="group" aria-label="Journey views">
+            {([["map", UI.mapView], ["care", PASSAGE.careTimeline], ["overview", UI.overview]] as const).map(([k, label]) => (
+              <button key={k} type="button" className="seg-btn" aria-pressed={segment === k} onClick={(e) => { segPointer.current = e.detail > 0; setSegment(k); }}>
+                {segment === k && <motion.span layoutId="segment-thumb" className="seg-thumb" aria-hidden="true" transition={reduce || !segPointer.current ? { duration: 0 } : { duration: 0.2, ease: [0.2, 0.7, 0.2, 1] }} />}
+                {label}
+              </button>
+            ))}
+          </div>
+          <div className="journey-pickers">
+            {journeys && journeys.length > 0 && samples.length > 0 && <select aria-label="Journey" title={headingLabel(view.journey.label)} value={view.id} onChange={(e) => { const v = journeys.find((j) => j.id === e.target.value); if (v) setView(v); }}>
+              {journeys.map((j) => <option key={j.id} value={j.id}>{headingLabel(j.journey.label)}</option>)}</select>}
+            <select className="add-journey" aria-label="Add a journey" value="" onChange={(e) => e.target.value && startJourney(e.target.value)}><option value="">Add another journey…</option><option value="empty">Empty (no documents yet)</option>{samples.filter((s) => s.id !== "empty").map((s) => <option key={s.id} value={s.id}>{headingLabel(s.label)}</option>)}</select>
+          </div>
         </div>
         {!plan && <p className="hint">{PASSAGE.noPlanSelected}</p>}
         {segment === "overview" && <OverviewList journey={view.journey} vm={vm} planTitle={plan?.title} onSelect={(s) => { selection.selectStage(s); setSegment("map"); }} onSelectIsland={(id, cp) => { selectIsland(id, cp, null, true); }} onSelectStitch={onSelectStitch} />}
@@ -162,12 +172,6 @@ export function JourneyView({ data, selection, mobile, onOpenLandmark, onOpenDoc
           )}
         </AnimatePresence>
       )}
-      <AnimatePresence>
-        {thread && hasDetail && !mobile && (
-          <motion.span key={`${thread.x}-${thread.y}`} className="drawer-thread" aria-hidden="true" style={{ left: thread.x, top: thread.y, width: thread.w }}
-                       initial={{ scaleX: 0, opacity: 1 }} animate={{ scaleX: 1, opacity: 0 }} transition={{ scaleX: transitions.drawerRise, opacity: { delay: 0.3, duration: 0.3 } }} onAnimationComplete={() => setThread(null)} />
-        )}
-      </AnimatePresence>
     </div>
   );
 }

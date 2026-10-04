@@ -16,7 +16,7 @@ export function AnswersLog({ vm, view, plan, estimate, recalculating = false, on
       {rows.map((r) => (
         <div key={r.key} className={`log-row log-${r.key}`}>
           <dt>{r.dt}</dt>
-          <dd><button type="button" className="linklike log-link num" title={r.title} onClick={() => onFocus(r.target)}>{r.dd}</button></dd>
+          <dd><button type="button" className="linklike log-link num" title={r.title ?? r.dd} onClick={() => onFocus(r.target)}>{r.dd}</button></dd>
         </div>
       ))}
     </dl>

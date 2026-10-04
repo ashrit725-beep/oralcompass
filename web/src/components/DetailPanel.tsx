@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { motion } from "motion/react";
+import { SHEET_SPRING, useReducedMotion } from "../lib/motion";
 import { ATTRIBUTION, UI, type LandmarkId } from "../lib/copy";
 import { attributionLabel, dateLabel, nextCheckpoint, stageProgress, statusLabel } from "../lib/journey";
 import { money } from "../lib/stitches";
@@ -16,17 +18,21 @@ interface Props {
 /** Desktop: side panel. Phone: bottom sheet. Shows the selected island or checkpoint: status, explanation, dates/amounts/documents, source, next action. */
 export function DetailPanel(props: Props) {
   const { view, selection, mobile, onClose } = props;
+  const reduce = useReducedMotion();
   const stage = view.journey.stages.find((s) => s.id === selection.stageId);
   if (!stage) return null;
   const cp = selection.cpId ? stage.checkpoints.find((c) => c.id === selection.cpId) : undefined;
   return (
-    <aside className={`detail ${mobile ? "sheet" : "side"}`} role={mobile ? "dialog" : "region"} aria-labelledby="detail-h" aria-modal={mobile ? "false" : undefined}>
+    // One entrance owner: on phones the sheet rises from the bottom edge on the sheet spring (no overshoot); on desktop the
+    // surrounding column in JourneyView owns drawer-rise, so the panel itself does not animate. Reduced motion: present at once.
+    <motion.aside className={`detail ${mobile ? "sheet" : "side"}`} role={mobile ? "dialog" : "region"} aria-labelledby="detail-h" aria-modal={mobile ? "false" : undefined}
+                  initial={mobile && !reduce ? { y: "100%" } : false} animate={{ y: 0 }} transition={SHEET_SPRING}>
       <div className="detail-bar">
         <p className="crumbs">{stage.title} <span className="muted">· {stage.island}</span>{cp ? <> › {cp.label}</> : null}</p>
         <button type="button" className="close" onClick={onClose} aria-label="Close details">×</button>
       </div>
       {cp ? <CheckpointDetail {...props} stage={stage} cp={cp} /> : <StageDetail {...props} stage={stage} />}
-    </aside>
+    </motion.aside>
   );
 }
 

@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { hasDrawn, markDrawn } from "@/lib/drawRegistry";
 import { motion } from "motion/react";
 import { PASSAGE } from "@/lib/copy/passage";
 import { DUR, useReducedMotion } from "@/lib/motion";
@@ -22,6 +23,8 @@ import { StartHarbor } from "./StartHarbor";
  * in trail order with a 60 ms stagger once the route reaches the island), fog over unresolved islands, the Harbor Light, the vignette;
  * then the HTML control layer (PassageControls) and the legend. The SVG is `aria-hidden`; the controls are the accessible surface.
  * `focus-island` runs on pointer selection only: others dim to .72, the selected plate eases to 1.04; keyboard and reduced motion snap.
+ * chart-draw runs once per `drawKey` per session (lib/drawRegistry): returning from another tab shows the drawn chart at once, and a
+ * selection made while the pen is still moving snaps the whole chart to its end state before the selection plays (delight pass mo-01 A).
  */
 export interface PassageMapProps {
   vm: PassageVM; selected: MapSelection | null; onSelect: SelectIsland; planCode: string; drawKey: string; recalculating?: boolean; pointer: boolean; desktop: boolean; mapId?: string;
@@ -29,10 +32,19 @@ export interface PassageMapProps {
 }
 
 export function PassageMap({ vm, selected, onSelect, planCode, drawKey, recalculating = false, pointer, desktop, mapId = "passage-map" }: PassageMapProps) {
-  const reduce = useReducedMotion();
+  const reduceMotion = useReducedMotion();
+  const [drawnAtMount] = useState(() => hasDrawn(drawKey));
+  const [snapKey, setSnapKey] = useState<string | null>(drawnAtMount ? drawKey : null);
+  useEffect(() => { markDrawn(drawKey); }, [drawKey]);
+  // an island or checkpoint chosen mid-draw: finish the drawing at once (remounting the scene with every end state on its first frame)
+  useEffect(() => { if (selected && snapKey !== drawKey) setSnapKey(drawKey); }, [selected, drawKey, snapKey]);
+  const instant = snapKey === drawKey;
+  const reduce = reduceMotion || instant;
   const [backdropFallback, setBackdropFallback] = useState(false);
   const layout = useMemo(() => layoutPassage(vm, "desktop", { selected: selected?.islandId ?? null }), [vm, selected?.islandId]);
-  const segDelay = (i: number) => (reduce ? 0 : i * DUR.journey * 0.6);
+  // the pen moves leg by leg in route order; spacing shrinks on long routes so the whole chart lands in about 2 s (addendum B1 asks ≤ 1.4 s of pen)
+  const segStep = Math.min(DUR.journey * 0.6, 1.4 / Math.max(1, layout.route.length));
+  const segDelay = (i: number) => (reduce ? 0 : i * segStep);
   // the route reaches island i after its approach segment: segments are [approach, arc] per island
   const islandDelay = (i: number) => segDelay(i * 2 + 1);
   const lit = vm.status === "estimate";
@@ -55,7 +67,7 @@ export function PassageMap({ vm, selected, onSelect, planCode, drawKey, recalcul
           } />
         </svg>
         <OceanLayers desktop={desktop} />
-        <svg className="passage-svg passage-svg-scene" viewBox={`0 0 ${layout.w} ${layout.h}`} aria-hidden="true" focusable="false" preserveAspectRatio="xMidYMid slice">
+        <svg key={instant ? "drawn" : "drawing"} className="passage-svg passage-svg-scene" viewBox={`0 0 ${layout.w} ${layout.h}`} aria-hidden="true" focusable="false" preserveAspectRatio="xMidYMid slice">
           {/* visited islets in the wake */}
           {layout.visited.map((v, j) => (
             <g key={v.id} opacity={0.92}>
@@ -64,14 +76,14 @@ export function PassageMap({ vm, selected, onSelect, planCode, drawKey, recalcul
               {j === 0 && null}
             </g>
           ))}
-          <RouteLine segments={layout.route} drawKey={drawKey} pending={vm.status !== "estimate"} segmentDelay={segDelay} />
+          <RouteLine segments={layout.route} drawKey={drawKey} pending={vm.status !== "estimate"} segmentDelay={segDelay} instant={instant} />
           <StartHarbor x={layout.start.x} y={layout.start.y} wakeTo={visitedWake} />
           {vm.islands.map((isl, i) => {
             const L = layout.islands[i];
             const sel = selected?.islandId === isl.id;
             return (
               <g key={isl.id}>
-                <ProcedureIsland island={isl} layout={L} selected={sel} dim={anySelected && !sel && pointer} pointer={pointer} drawDelay={islandDelay(i)} />
+                <ProcedureIsland island={isl} layout={L} selected={sel} dim={anySelected && !sel && pointer} pointer={pointer} drawDelay={islandDelay(i)} instant={instant} />
                 <motion.g initial={reduce ? false : "hidden"} animate="shown" variants={{ hidden: {}, shown: { transition: { staggerChildren: 0.06, delayChildren: islandDelay(i) } } }}>
                   {L.checkpoints.map((c) => {
                     const cp = isl.checkpoints.find((x) => x.key === c.key) ?? null;

@@ -50,9 +50,10 @@ export const transitions = {
 } as const;
 
 /** TransitionPanel variants for the view switch (component plan §2 N3-B). */
+/** wash-in: the entering view rises 8 px over the page token (420 ms, standard ease); the leaving view only fades, fast (120 ms). */
 export const viewVariants = {
   enter: { opacity: 0, y: 8 },
-  center: { opacity: 1, y: 0 },
-  exit: { opacity: 0, y: -8 },
+  center: { opacity: 1, y: 0, transition: { duration: DUR.page, ease: EASE.standard } },
+  exit: { opacity: 0, transition: { duration: DUR.micro, ease: EASE.exit } },
 };
-export const viewTransition: Transition = { duration: 0.2, ease: "easeOut" };
+export const viewTransition: Transition = { duration: DUR.page, ease: EASE.standard };

@@ -600,7 +600,7 @@ def run_reduced_desktop(pw):
 def static_checks():
     # anti-slop: forbidden motion keywords in product code (styles.css, styles/*.css and non-vendored components; vendored registry
     # files under components/{ui,magicui,kokonutui,animata,eldoraui,vendor,motion-primitives} keep their own patched sources)
-    pat = re.compile(r"bounce|pulse|confetti|particle|shimmer", re.I)
+    pat = re.compile(r"bounce|pulse|confetti|particle|shimmer|useScroll|animation: bob|washin|blur\(\d+px\)\s*;?\s*}|backdrop-filter", re.I)
     hits = []
     files = [ROOT / "web/src/styles.css", *(ROOT / "web/src/styles").glob("*.css"), *(p for p in (ROOT / "web/src").rglob("*.tsx") if not re.search(r"/components/(ui|magicui|kokonutui|animata|eldoraui|vendor|motion-primitives)/", p.as_posix()))]
     for f in files:
