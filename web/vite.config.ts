@@ -2,13 +2,14 @@ import path from "node:path";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
+import { appShellPlugin } from "./scripts/app-shell-plugin";
 
 // Parallel local runs (worktrees, review agents) point the dev/preview proxy at their own API port; the default matches docs/WEB_FOUNDATION_NOTES.md.
 const apiTarget = process.env.ORALCOMPASS_API_TARGET ?? "http://127.0.0.1:8000";
 const apiProxy = { "/api": { target: apiTarget, changeOrigin: true, rewrite: (p: string) => p.replace(/^\/api/, "") } };
 
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [react(), tailwindcss(), appShellPlugin()],   // appShellPlugin stamps dist/sw.js with the precache list + build version
   resolve: { alias: { "@": path.resolve(__dirname, "./src") } },
   build: {
     rollupOptions: {

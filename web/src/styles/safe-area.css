@@ -2,3 +2,9 @@
    In the components layer, so a sheet that sets its own bottom padding (a utility class) keeps it. */
 [data-slot="drawer-content"][data-vaul-drawer-direction="bottom"] { padding-bottom: env(safe-area-inset-bottom, 0px); }
 body { padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px); }
+
+/* Installed on iOS the status bar is black-translucent (index.html): the page draws under it, so the content starts below the top inset and
+   a band of ink sits behind the white status text (contrast on parchment). env(safe-area-inset-top) is 0 in a browser tab and on desktop,
+   so neither rule changes anything there. */
+body { padding-top: env(safe-area-inset-top, 0px); }
+html::after { content: ""; position: fixed; inset: 0 0 auto 0; height: env(safe-area-inset-top, 0px); background: var(--ink); z-index: 2147483000; pointer-events: none; }

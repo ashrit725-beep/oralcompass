@@ -131,3 +131,4 @@ export { COMPASS } from "./copy/compass";
 export { PLAN } from "./copy/plan";
 export { UPLOAD } from "./copy/upload";
 export { ASSIST } from "./copy/assistant";
+export { OFFLINE } from "./copy/offline";
