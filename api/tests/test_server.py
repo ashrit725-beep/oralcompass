@@ -101,3 +101,14 @@ def test_api_env_file_is_read_only_outside_production(env, loads, tmp_path):
     out = subprocess.run([sys.executable, "-c", code], cwd=api, env=child, capture_output=True, text=True, timeout=120)
     assert out.returncode == 0, out.stderr[-2000:]
     assert (out.stdout.strip().splitlines()[-1] != "0") is loads
+
+
+def test_responses_are_compressed_once(dist):
+    """mobile-15: large JSON and JS go out gzip-compressed (once, even though the API and the server both carry the middleware)."""
+    (dist / "assets" / "big-XyZ.js").write_text("console.log('oralcompass');\n" * 400)
+    c = TestClient(server.app)
+    r = c.get("/assets/big-XyZ.js", headers={"Accept-Encoding": "gzip"})
+    assert r.headers.get("content-encoding") == "gzip" and "oralcompass" in r.text and "content-security-policy" in r.headers
+    r = c.get("/api/plans", headers={"Accept-Encoding": "gzip", "X-Dev-User": "gzip-user"})
+    assert r.status_code == 200 and r.headers.get("content-encoding") == "gzip" and r.json()["items"]
+    assert c.get("/api/health", headers={"Accept-Encoding": "identity"}).headers.get("content-encoding") is None

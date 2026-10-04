@@ -15,6 +15,7 @@ from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel, Field
+from starlette.middleware.gzip import GZipMiddleware
 
 # api/.env (gitignored; values are never logged) is the local development file. Production takes its settings from the platform's
 # environment only: a developer's api/.env (which can carry ORALCOMPASS_DEV_AUTH=1 and a live key) must never switch a production run
@@ -38,6 +39,7 @@ from .security import SecurityMiddleware  # noqa: E402
 _PROD = os.getenv("ORALCOMPASS_ENV") == "production"     # production: no interactive docs (they load CDN scripts the CSP blocks)
 app = FastAPI(title="OralCompass API", version="0.1.0", docs_url=None if _PROD else "/docs", redoc_url=None if _PROD else "/redoc",
               openapi_url=None if _PROD else "/openapi.json")
+app.add_middleware(GZipMiddleware, minimum_size=1024)    # innermost: responses over 1 KB are compressed (an outer copy skips them)
 app.add_middleware(SessionMiddleware)      # production: per-visitor signed-cookie sessions (inactive under ORALCOMPASS_DEV_AUTH=1 or Cognito)
 app.add_middleware(SecurityMiddleware)     # outermost: CSP and security headers, body size limits, ids-only request logs (security.py)
 extractor = FixtureExtractor()

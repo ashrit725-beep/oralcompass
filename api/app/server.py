@@ -62,8 +62,10 @@ configure_logging()
 
 from .main import app as api_app  # noqa: E402  (after the config check: importing the API loads the plans)
 from .security import SecurityMiddleware  # noqa: E402
+from starlette.middleware.gzip import GZipMiddleware  # noqa: E402
 
 app = FastAPI(title="OralCompass", docs_url=None, redoc_url=None, openapi_url=None)
+app.add_middleware(GZipMiddleware, minimum_size=1024)    # inside SecurityMiddleware: JSON, JS, CSS and the pdf.js worker compressed (mobile-15)
 app.add_middleware(SecurityMiddleware, skip_prefix="/api")
 app.mount("/api", api_app)
 
