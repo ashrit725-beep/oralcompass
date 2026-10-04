@@ -10,13 +10,17 @@ export const DRAWER = {
   close: "Close details",
   crumbs: (order: number, n: number, place: string) => `Island ${order} of ${n} · ${place}`,
   crumbsStart: (place: string) => `Start · ${place}`,
-  crumbsLight: (place: string) => `Harbor Light · ${place}`,
+  // the Harbor Light island's place is "Harbor Light" itself (lib/islands.ts LIGHT_PLACE): never print it twice (slop-18)
+  crumbsLight: (place: string) => (place === "Harbor Light" ? "End of the route" : `Harbor Light · ${place}`),
   crumbsVisited: (place: string) => `Completed on your statement · ${place}`,
   crumbsMarginal: (place: string) => `Mentioned at the consultation · ${place}`,
   checkpointStrip: "Checkpoints on this island, in trail order",
   checkpointName: (term: string, amount: string) => `${term}: ${amount}`,
   youPayLede: "You pay",
   planPaysLede: "plan",
+  planPaysRow: "Plan pays",
+  beforeIsland: "Before this island",
+  calculatedShort: "calculated",
   waitingInfo: "Waiting for information",
   noAmount: "no amount",
   estimateUpdated: "Estimate updated",
@@ -34,7 +38,10 @@ export const DRAWER = {
   sExclusions: "Exclusions",
   sFinalCost: "Final cost",
   sCalculation: "How was this calculated?",
-  calculated: "Calculated from the clauses cited",
+  calculated: "Calculated from the steps below",
+  calcFromRoute: "Calculated from your statement and the islands up to here",
+  remainingBeforeLater: "The figure after the previous island on the route: your statement figure, then each earlier island in processing order.",
+  harborTableNote: "Each figure is calculated from that island's steps; its stitch opens the clause behind it.",
   sEvidence: "Clause evidence",
   sPlan: "Plan",
   sRecords: "Records",
@@ -75,6 +82,7 @@ export const DRAWER = {
   allowedRecorded: "Recorded. The estimate is recalculated from your records.",
   allowedFailed: "The allowed amount could not be recorded.",
   allowedSourceRequired: "A source is required with the figure.",
+  allowedInvalid: "The allowed amount is a dollar figure above zero, such as 812.50.",
 
   // 3 Deductible
   planDeductible: "Plan deductible",
@@ -139,7 +147,7 @@ export const DRAWER = {
 
   // 9 Exclusions
   excludedSentence: "This document lists this service under its exclusions.",
-  notExcludedSentence: "The pages read list no exclusion naming this service.",
+  notExcludedSentence: "The pages read list no exclusion naming this service. Absence is not confirmed.",
   relatedWording: "Related wording in the document (shown, not applied)",
 
   // 10 Final cost
@@ -174,6 +182,8 @@ export const DRAWER = {
   reconcilesOnlyNote: "The reconciliation line is printed only when the display sum equals the engine's line totals.",
 
   // 12 Clause evidence
+  clauseSection: (section: string) => `Where it sits: ${section}`,
+  clauseOption: (option: string) => `The figure for this plan is read from the ${option} column.`,
   evidenceIntro: "Every clause behind this line, each with its document and page.",
   openInDocuments: "Open in Documents",
   noStoredPdf: "The document is not stored here; the official source is linked in Documents.",
@@ -216,7 +226,9 @@ export const DRAWER = {
   soundingsAfterRoute: "Soundings after the last island",
   deductibleLeft: "deductible left",
   maximumLeft: "maximum left",
-  afterRouteStages: (n: number) => `${n} care stage${n === 1 ? "" : "s"} follow the route; their checkpoints are on the Care timeline.`,
+  afterRouteStages: (n: number) => (n === 1 ? "1 care stage follows the route; its checkpoints are on the Care timeline." : `${n} care stages follow the route; their checkpoints are on the Care timeline.`),
+  stageProgress: (title: string, done: number, total: number) => `${title} · ${done} of ${total} checkpoint${total === 1 ? "" : "s"} completed`,
+  rangeOnly: (lo: string, hi: string) => `Between ${lo} and ${hi}.`,
   noAfterRoute: "No care stages follow the route.",
   orderNote: "Processing order",
   missingTitle: "This estimate is waiting for information",

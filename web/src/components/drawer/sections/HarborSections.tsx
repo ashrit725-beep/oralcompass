@@ -2,8 +2,9 @@ import { MissingInputs } from "@/components/CostTrail";
 import { EvidenceBadge } from "@/components/Primitives";
 import { UI } from "@/lib/copy";
 import { DRAWER } from "@/lib/copy/drawer";
-import { money, stitchesForLine, uniqueStitches } from "@/lib/stitches";
-import type { IslandVM, PassageVM, Stitch } from "@/lib/types";
+import { calcInputs, rangeWords } from "@/lib/drawer";
+import { stepContextFor, stitchesForLine, uniqueStitches } from "@/lib/stitches";
+import type { CoverageRule, IslandVM, PassageVM, Progress, Stitch } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { WhatIfNetwork } from "@/components/journey/WhatIfNetwork";
 import { Figure, Row, Section, type SectionProps } from "./shared";
@@ -16,27 +17,37 @@ const statusWord = (i: IslandVM) => (i.state === "estimate" ? DRAWER.statusEstim
  * assumptions and movers range, the "could change" sentence, and the count of care stages after the route. Visited islands' claim figures
  * never enter these totals.
  */
-export function HarborSections({ island, vm, estimate, stitches, onSelectStitch, hypotheticals, onHypotheticals, benefits }: SectionProps & { vm: PassageVM }) {
+/** The stitch a per-island cell carries: the line's coverage-share clause (its own class row), else the first clause behind the line. */
+function cellStitch(i: IslandVM, rules: CoverageRule[], stitches: Stitch[]): Stitch | undefined {
+  if (!i.line) return undefined;
+  const ctx = stepContextFor(i.line, rules);
+  const list = stitchesForLine(i.line, stitches, ctx);
+  return list.find((s) => ctx?.coverageCite && s.quote === ctx.coverageCite.quote) ?? list.find((s) => s.ruleCodes.includes("CO")) ?? list[0];
+}
+
+export function HarborSections({ island, vm, rules, benefits, estimate, stitches, onSelectStitch, stageProgress, hypotheticals, onHypotheticals }: SectionProps & { vm: PassageVM; stageProgress?: Progress["stages"] }) {
   const hypoNet = hypotheticals?.network === "in" || hypotheticals?.network === "out" ? hypotheticals.network : null;
   const recordedNet = (vm.islands.find((i) => i.item?.network)?.item?.network ?? (benefits as { network_default?: string } | null)?.network_default ?? null) as string | null;
   const unresolved = !estimate || estimate.status === "unresolved";
-  const chips: Stitch[] = estimate ? uniqueStitches(estimate.ledger.lines.flatMap((l) => stitchesForLine(l, stitches))) : [];
+  const chips: Stitch[] = estimate ? uniqueStitches(estimate.ledger.lines.flatMap((l) => stitchesForLine(l, stitches, stepContextFor(l, rules)))) : [];
   const last = vm.islands[vm.islands.length - 1];
   const after = last?.soundingsAfter ?? null;
+  const inputs = calcInputs(undefined, estimate, benefits);
+  const stagesAfter = island.stageIds.map((id) => stageProgress?.find((p) => p.id === id)).filter((p): p is Progress["stages"][number] => !!p);
   return (
     <>
       <Section k="finalCost" title={DRAWER.sTotals} className="dsec-first">
         <p className={cn("final-hero", unresolved && "final-hero-unresolved")}>
           <span className="final-hero-term">{DRAWER.routeYouPay}</span>
-          <Figure cents={unresolved ? null : vm.totals.youPay} evidence="DOC" calc hero stitches={chips.slice(0, 3)} onSelectStitch={onSelectStitch} className="final-hero-amt" />
+          <Figure cents={unresolved ? null : vm.totals.youPay} evidence="DOC" calc inputs={inputs} hero stitches={chips.slice(0, 3)} onSelectStitch={onSelectStitch} className="final-hero-amt" />
         </p>
         <p className="final-sub">
           <span>{DRAWER.routePlanPays}</span>{" "}
-          <Figure cents={unresolved ? null : vm.totals.planPays} evidence="DOC" calc stitch={chips[0]} onSelectStitch={onSelectStitch} className="fig-plan" />
+          <Figure cents={unresolved ? null : vm.totals.planPays} evidence="DOC" calc inputs={inputs} calcLabel={null} stitch={chips[0]} onSelectStitch={onSelectStitch} className="fig-plan" />
           {vm.totals.upperBound ? <span className="muted"> {DRAWER.upperBoundWord}</span> : null}
         </p>
         {estimate?.movers?.range && estimate.movers.range[0] !== estimate.movers.range[1] && (
-          <p className="range"><EvidenceBadge status="UNKNOWN" /> {UI.rangeBecause(money(estimate.movers.range[0]), money(estimate.movers.range[1]), estimate.movers.movers.filter((m) => m.impact_cents).map((m) => m.unknown).join(" and "))}</p>
+          <p className="range"><EvidenceBadge status="UNKNOWN" /> {rangeWords(estimate.movers.range, estimate.movers.movers)}</p>
         )}
         {estimate && estimate.status === "unresolved" && <MissingInputs estimate={estimate} compact />}
         {onHypotheticals && vm.islands.length > 0 && (
@@ -45,25 +56,33 @@ export function HarborSections({ island, vm, estimate, stitches, onSelectStitch,
       </Section>
       {vm.islands.length > 0 && (
         <Section k="calculation" title={DRAWER.sPerIsland}>
-          <table className="harbor-table">
-            <thead><tr><th scope="col">{DRAWER.island}</th><th scope="col">{DRAWER.youPay}</th><th scope="col">{DRAWER.planPaysLede}</th><th scope="col">{DRAWER.status}</th></tr></thead>
-            <tbody>
-              {vm.islands.map((i) => (
-                <tr key={i.id} className={`island-${i.state}`}>
-                  <th scope="row">{i.title}{i.subtitle ? <span className="muted"> · {i.subtitle}</span> : null}</th>
-                  <td><Figure cents={i.youPay} evidence={i.state === "estimate" || i.state === "not_covered" ? "DOC" : "UNKNOWN"} waiting={false} /></td>
-                  <td><Figure cents={i.planPays} evidence={i.state === "estimate" || i.state === "not_covered" ? "DOC" : "UNKNOWN"} waiting={false} /></td>
-                  <td>{statusWord(i)}{i.upperBound ? ` ${DRAWER.upperBoundWord}` : ""}</td>
-                </tr>
-              ))}
+          <p className="dsec-note">{DRAWER.harborTableNote}</p>
+          {/* explicit roles: the phone sheet restyles the rows as blocks, which drops native table semantics in Chromium and WebKit */}
+          <table className="harbor-table" role="table">
+            <thead role="rowgroup"><tr role="row"><th scope="col" role="columnheader">{DRAWER.island}</th><th scope="col" role="columnheader">{DRAWER.youPay}</th><th scope="col" role="columnheader">{DRAWER.planPaysRow}</th><th scope="col" role="columnheader">{DRAWER.status}</th></tr></thead>
+            <tbody role="rowgroup">
+              {vm.islands.map((i) => {
+                const known = i.state === "estimate" || i.state === "not_covered";
+                const st = known ? cellStitch(i, rules, stitches) : undefined;
+                const cellInputs = st ? [] : calcInputs(i.item, estimate, benefits);
+                return (
+                  <tr key={i.id} role="row" className={`island-${i.state}`}>
+                    <th scope="row" role="rowheader">{i.title}{i.subtitle ? <span className="muted"> · {i.subtitle}</span> : null}</th>
+                    {/* data-label: the column name shown above each figure when the phone stacks the row (drawer.css) */}
+                    <td role="cell" data-label={DRAWER.youPay}><Figure cents={i.youPay} evidence={known ? "USER" : "UNKNOWN"} calc={known} inputs={cellInputs} calcLabel={null} stitch={st} onSelectStitch={onSelectStitch} waiting={false} className="fig-patient" /></td>
+                    <td role="cell" data-label={DRAWER.planPaysRow}><Figure cents={i.planPays} evidence={known ? "USER" : "UNKNOWN"} calc={known} inputs={cellInputs} calcLabel={null} stitch={st} onSelectStitch={onSelectStitch} waiting={false} className="fig-plan" /></td>
+                    <td role="cell" data-label={DRAWER.status}>{statusWord(i)}{i.upperBound ? ` ${DRAWER.upperBoundWord}` : ""}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
           {after && (
             <dl className="dsec-dl">
               <Row term={DRAWER.soundingsAfterRoute}>
                 <span className="soundings-line">
-                  <span>{DRAWER.deductibleLeft} <Figure cents={after.deductible} evidence="USER" waiting={false} /></span>
-                  <span>{DRAWER.maximumLeft} {after.unlimited || after.annualMax == null ? <span className="muted">{DRAWER.noMaxApplies}</span> : <Figure cents={after.annualMax} evidence="USER" waiting={false} />}</span>
+                  <span>{DRAWER.deductibleLeft} <Figure cents={after.deductible} evidence="USER" calc inputs={["USER"]} calcLabel={DRAWER.calculatedShort} waiting={false} /></span>
+                  <span>{DRAWER.maximumLeft} {after.unlimited || after.annualMax == null ? <span className="muted">{DRAWER.noMaxApplies}</span> : <Figure cents={after.annualMax} evidence="USER" calc inputs={["USER"]} calcLabel={DRAWER.calculatedShort} waiting={false} />}</span>
                 </span>
               </Row>
             </dl>
@@ -74,6 +93,11 @@ export function HarborSections({ island, vm, estimate, stitches, onSelectStitch,
         {estimate?.ledger.order_note && <p className="note"><strong>{DRAWER.orderNote}.</strong> {estimate.ledger.order_note}</p>}
         {estimate && estimate.assumptions.length > 0 && <p className="note"><EvidenceBadge status="ASSUMED" /> {estimate.assumptions.join("; ")}</p>}
         <p className="dsec-lede">{island.stageIds.length ? DRAWER.afterRouteStages(island.stageIds.length) : DRAWER.noAfterRoute}</p>
+        {stagesAfter.length > 0 && (
+          <ul className="dsec-list harbor-stages">
+            {stagesAfter.map((p) => <li key={p.id}>{DRAWER.stageProgress(p.title, p.completed, p.total)}</li>)}
+          </ul>
+        )}
         <p className="could-change">{estimate?.ledger.could_change ?? UI.couldChange}</p>
       </Section>
     </>

@@ -38,7 +38,7 @@ export const RECONCILE_WARN = UI.reconcileWarn;
 
 /**
  * CostPipeline (spec §4.5, component plan N2-A): a horizontal flow of nodes for one ledger line, built from `buildTrail(line).steps` through
- * `checkpointsForLine`. Connectors are Magic UI AnimatedBeam (ink path, sea → gold sweep, `repeat` 1, `delay = i × 0.12`, keyed on the
+ * `checkpointsForLine`. Connectors are Magic UI AnimatedBeam (ink path, sea → gold sweep, `repeat` 0 (one sweep), `delay = i × 0.12`, keyed on the
  * estimate id so the sweep fires once per recompute in pipeline order; static path under reduced motion). The arrowhead on each node's
  * in-port is the only arrow in the UI (it encodes flow direction). Phone: a 2-column grid without beams (arrows only). Unresolved line:
  * the fee node and a fog node listing the missing inputs; no numbers invented. The host surface's live region announces "Estimate updated" (no second region here).
@@ -56,7 +56,7 @@ export function CostPipeline({ line, item, rule, plan, stitches, benefits = null
   const trail = useMemo(() => buildTrail(line), [line]);
   const lineMissing = useMemo(() => missingForLine(missing, line), [missing, line]);
   const cps = useMemo(() => checkpointsForLine(line, item, rule, plan, stitches, lineMissing, benefits), [line, item, rule, plan, stitches, lineMissing, benefits]);
-  const lineStitches = useMemo(() => stitchesForLine(line, stitches), [line, stitches]);
+  const lineStitches = useMemo(() => stitchesForLine(line, stitches, rule ? { coverageCite: rule.coverage_cite } : undefined), [line, stitches, rule]);
   const unresolved = line.status === "unresolved";
   const nodeCount = cps.length + (unresolved && item ? 1 : 0);
 

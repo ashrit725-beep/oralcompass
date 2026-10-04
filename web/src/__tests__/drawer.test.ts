@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { checkpointAmountWords, checkpointAriaName, checkpointsForLine, citeForRule, clockWords, conditionWords, missingForLine, rememberStitchAnchor, sectionForRule, stitchForCheckpoint, stitchScopeLabel, takeStitchAnchor } from "@/lib/drawer";
-import { stitchesForLine, stitchesFromClauses, uniqueStitches } from "@/lib/stitches";
-import type { Clause, CoverageRule, LedgerLine, PlanFixture } from "@/lib/types";
+import { calcInputs, checkpointAmountWords, drawerPlanRef, checkpointAriaName, checkpointsForLine, citeForRule, rangeWords, remainingBeforeLine, clockWords, conditionWords, missingForLine, rememberStitchAnchor, sectionForRule, stitchForCheckpoint, stitchScopeLabel, takeStitchAnchor } from "@/lib/drawer";
+import { stepContextFor, stitchesForLine, stitchesFromClauses, stitchForStep, uniqueStitches } from "@/lib/stitches";
+import type { Benefits, Clause, CoverageRule, LedgerLine, PlanFixture, SavedEstimate, TreatmentItem } from "@/lib/types";
+import { DRAWER } from "@/lib/copy/drawer";
 
 /** Alex's root canal line as the API returns it (api/app/records.py → engine): no D step (deductible met), no M step (within the maximum). */
 const alexLine: LedgerLine = {
@@ -114,5 +115,93 @@ describe("thread-pull anchor bridge", () => {
     rememberStitchAnchor(r);
     expect(takeStitchAnchor()).toBe(r);
     expect(takeStitchAnchor()).toBeNull();
+  });
+});
+
+describe("demo-3: a coinsurance step cites its own class row", () => {
+  // ML26 page 25 holds the coverage table for every class; sorted by quote, the Type I "100%" row comes first.
+  const page25: Clause[] = [
+    { n: 1, field: "classes[0].plan_share_bp_in.cite", doc: "ML26", page: 25, quote: "100% 100% 100% after deductible" },
+    { n: 2, field: "classes[2].plan_share_bp_in.cite", doc: "ML26", page: 25, quote: "50% after deductible 50% after deductible Not Covered" },
+    { n: 3, field: "classes[1].plan_share_bp_in.cite", doc: "ML26", page: 25, quote: "80% after deductible 60% after deductible 50% after deductible" },
+  ];
+  const st = stitchesFromClauses(page25);
+  it("resolves the root canal CO steps through the rule row's coverage cite, not the first CO quote on the page", () => {
+    const withoutCtx = stitchesForLine(alexLine, st);
+    expect(withoutCtx[0].quote.startsWith("100%")).toBe(true);           // the old behaviour this guards against
+    const list = stitchesForLine(alexLine, st, stepContextFor(alexLine, [rule]));
+    const co = list.find((s) => s.ruleCodes.includes("CO") && s.quote.includes("60%"));
+    expect(co).toBeDefined();
+    const coSteps = alexLine.steps.filter((s) => s.rule === "CO").map((s) => stitchForStep(s, st, stepContextFor(alexLine, [rule])));
+    expect(coSteps.every((s) => s?.quote.includes("60%") && !s.quote.startsWith("100%"))).toBe(true);
+    expect(stitchForStep(alexLine.steps[2], st, { coverageCite: rule.coverage_cite })?.quote).toContain("60%");
+  });
+  it("leaves non-CO steps and lines without a rule row on the page lookup", () => {
+    expect(stepContextFor({ procedure_key: "unknown" }, [rule])).toBeUndefined();
+    expect(stitchForStep(alexLine.steps[0], st, { coverageCite: rule.coverage_cite })?.quote).toBe(st[0].quote);
+  });
+});
+
+describe("demo-4: remaining before a line follows the route", () => {
+  const crownLine: LedgerLine = { ...alexLine, label: "Crown", plan_cents: 51000, patient_cents: 51000, remaining_after: { deductible_cents: 0, annual_max_cents: 16200 }, procedure_key: "crown" };
+  const lines = [alexLine, crownLine];
+  const benefits = { remaining_deductible_cents: 0, remaining_max_cents: 126000 } as unknown as Benefits;
+  it("starts the first line from the statement and later lines from the previous line's remaining_after", () => {
+    expect(remainingBeforeLine("max", 0, lines, benefits)).toEqual({ cents: 126000, calculated: false });
+    expect(remainingBeforeLine("max", 1, lines, benefits)).toEqual({ cents: 67200, calculated: true });   // $672.00, not the statement's $1,260.00
+    expect(remainingBeforeLine("deductible", 1, lines, benefits)).toEqual({ cents: 0, calculated: true });
+    expect(remainingBeforeLine("max", undefined, lines, benefits).cents).toBe(126000);
+  });
+  it("reconciles: before − consumed = after for the crown", () => {
+    const before = remainingBeforeLine("max", 1, lines, benefits).cents ?? 0;
+    expect(before - crownLine.plan_cents!).toBe(crownLine.remaining_after.annual_max_cents);
+  });
+});
+
+describe("orchestrator note 1: calculated totals list the evidence of their inputs", () => {
+  it("names USER for entered figures and ASSUMED for hypotheticals, never DOC", () => {
+    const item = { id: "i", procedure_key: "crown", quantity: 1, dentist_fee_cents: 100000, allowed_cents: 90000, allowed_status: "USER", status: "planned" } as unknown as TreatmentItem;
+    expect(calcInputs(item, null)).toEqual(["USER"]);
+    expect(calcInputs({ ...item, allowed_status: "ASSUMED" }, null)).toEqual(["USER", "ASSUMED"]);
+    const est = { inputs: { treatment_item_ids: ["i"], hypotheticals: {} }, assumptions: ["network assumed in"] } as unknown as SavedEstimate;
+    expect(calcInputs(undefined, est)).toEqual(["USER", "ASSUMED"]);
+    expect(calcInputs(item, null)).not.toContain("DOC");
+  });
+});
+
+describe("demo-15: the movers range sentence never prints an empty cause", () => {
+  it("names the measured movers, else every unknown input, else no 'because' clause", () => {
+    expect(rangeWords([64000, 66500], [{ unknown: "remaining deductible", impact_cents: 2500, zero_impact: false }])).toContain("because remaining deductible was not provided");
+    const multi = rangeWords([64000, 120000], [{ unknown: "remaining deductible", impact_cents: null, zero_impact: false }, { unknown: "enrollment date", impact_cents: null, zero_impact: false }]);
+    expect(multi).toContain("remaining deductible and enrollment date");
+    expect(multi).not.toMatch(/because\s+was/);
+    expect(rangeWords([64000, 120000], [])).toBe("Between $640.00 and $1,200.00.");
+  });
+});
+
+describe("demo-16 / slop-18: Harbor Light words", () => {
+  it("agrees the verb for one stage, lists stage progress and does not repeat the place in the crumbs", () => {
+    expect(DRAWER.afterRouteStages(1)).toMatch(/^1 care stage follows the route/);
+    expect(DRAWER.afterRouteStages(2)).toMatch(/^2 care stages follow the route/);
+    expect(DRAWER.stageProgress("Follow-up", 0, 2)).toBe("Follow-up · 0 of 2 checkpoints completed");
+    expect(DRAWER.crumbsLight("Harbor Light")).not.toContain("Harbor Light");
+  });
+});
+
+describe("web-correctness-23: uploaded plans send their upload ref, not the version label", () => {
+  it("prefers the app's selected plan ref over the model's plan_code", () => {
+    expect(drawerPlanRef("upload:abc123", null, { plan_code: "UP1" })).toBe("upload:abc123");
+    expect(drawerPlanRef(undefined, { plan_code: "ML26" }, { plan_code: "ML26" })).toBe("ML26");
+    expect(drawerPlanRef(undefined, null, { plan_code: "HB26" })).toBe("HB26");
+  });
+});
+
+describe("demo-13: a table-row quote carries its section and plan option", () => {
+  it("keeps the clause's section and the option column from the fact id", () => {
+    const [s] = stitchesFromClauses([{ n: 30, field: "classes[1].plan_share_bp_in.cite", doc: "ML26", page: 25, quote: "80% after deductible 60% after deductible 50% after deductible",
+      section: "Summary of Dental Benefits — Type II — Basic Services (row 1)", fact_id: "ncflex-2026-plan-details:coinsurance_type2_basic:Classic" }]);
+    expect(s.section).toContain("Type II");
+    expect(s.option).toBe("Classic");
+    expect(DRAWER.clauseOption("Classic")).toContain("Classic column");
   });
 });

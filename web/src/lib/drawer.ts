@@ -4,10 +4,12 @@
  * rules, resolve the clause stitch behind a checkpoint (the rule row's exact cite first, the engine's page label second) and format words.
  */
 import { checkpointEvidence } from "./checkpoints";
+import { UI } from "./copy";
 import { DRAWER } from "./copy/drawer";
 import { money, signed, stitchForCite, stitchForStep } from "./stitches";
+import { dollarsToCents } from "./plan-catalog";
 import { buildTrail, type Trail, type TrailStep } from "./trail";
-import type { Benefits, CheckpointRule, Cite, CoverageRule, Evidence, InsuranceCheckpointVM, LedgerLine, MissingInput, PlanFixture, Stitch, TreatmentItem } from "./types";
+import type { Benefits, CheckpointRule, Cite, CoverageRule, Evidence, InsuranceCheckpointVM, LedgerLine, MissingInput, Movers, PlanFixture, SavedEstimate, Stitch, TreatmentItem } from "./types";
 
 export type DrawerSectionKey =
   | "procedure" | "allowance" | "deductible" | "share" | "annualMax" | "frequency" | "waiting" | "alternate" | "exclusions" | "finalCost" | "calculation" | "evidence" | "ask";
@@ -155,6 +157,60 @@ export function networkWord(network: string | null | undefined): string | null {
 
 /** Fee × quantity for display of the item's own fee (the engine multiplies the same way in records.lines_from_items; nothing new is computed). */
 export const itemFeeCents = (item: TreatmentItem | undefined): number | null => (item ? item.dentist_fee_cents * (item.quantity || 1) : null);
+
+/**
+ * The evidence of the figures a calculated total rests on, besides the document's clauses (which appear as stitch chips): the dentist's fee
+ * and the allowed amount as entered (USER, or ASSUMED for a hypothetical), the statement figures (USER) and any engine assumption (ASSUMED).
+ * Orchestrator note 1: an engine total is never labelled "From the plan document" on its own; no seventh evidence status is added.
+ */
+export function calcInputs(item: TreatmentItem | undefined, estimate: SavedEstimate | null | undefined, benefits?: Benefits | null): Evidence[] {
+  const out = new Set<Evidence>();
+  if (item || benefits || (estimate && estimate.inputs.treatment_item_ids.length)) out.add("USER");
+  const a = item?.allowed_status;
+  if (a === "ASSUMED") out.add("ASSUMED");
+  if (estimate && (estimate.assumptions.length > 0 || Object.keys(estimate.inputs.hypotheticals ?? {}).length > 0)) out.add("ASSUMED");
+  return [...out];
+}
+
+/**
+ * Remaining deductible / annual maximum before one ledger line (demo-4): the statement's figure for the first line, otherwise the previous
+ * line's `remaining_after` (the engine applies the lines in order, so the crown starts from what the root canal left). Mirrors
+ * api/app/assistant.py `_remaining_before`. `calculated` marks the second case (derived from the statement and the earlier lines).
+ */
+export function remainingBeforeLine(which: "deductible" | "max", lineIndex: number | undefined, lines: LedgerLine[], benefits: Benefits | null): { cents: number | null; calculated: boolean } {
+  const fromStatement = which === "deductible" ? benefits?.remaining_deductible_cents ?? null : benefits?.remaining_max_cents ?? null;
+  if (lineIndex == null || lineIndex <= 0 || !lines[lineIndex - 1]) return { cents: fromStatement, calculated: false };
+  const prev = lines[lineIndex - 1].remaining_after ?? {};
+  const cents = which === "deductible" ? prev.deductible_cents ?? null : prev.annual_max_cents ?? null;
+  return { cents, calculated: true };
+}
+
+/**
+ * The movers range sentence (demo-15). The cause names the movers with a measured impact; when several inputs are unknown at once the engine
+ * measures none of them alone (every impact is null), so the sentence names all the unknown inputs instead, and drops the "because" clause
+ * entirely when there is nothing to name (never "because  was not provided").
+ */
+export function rangeWords(range: [number, number], movers: Movers["movers"]): string {
+  const measured = movers.filter((m) => m.impact_cents).map((m) => m.unknown);
+  const names = measured.length ? measured : [...new Set(movers.map((m) => m.unknown).filter((u) => !!u && u.trim()))];
+  return names.length ? UI.rangeBecause(money(range[0]), money(range[1]), names.join(" and ")) : DRAWER.rangeOnly(money(range[0]), money(range[1]));
+}
+
+/**
+ * The drawer's allowed-amount parser (web-correctness-9): the shared strict `dollarsToCents`, plus commas only as thousands separators
+ * ("1,5" is refused rather than read as $15.00). Returns cents above zero, or undefined for anything else (the form then says so).
+ */
+export function parseAllowedCents(input: string): number | undefined {
+  if (/,(?!\d{3}(?!\d))/.test(input)) return undefined;
+  const cents = dollarsToCents(input);
+  return cents != null && cents > 0 ? cents : undefined;
+}
+
+/** The plan reference the drawer sends to the API: the app's selected ref first ("upload:<id>" for an uploaded plan, whose model
+ *  `plan_code` is only its version label "UP1" and answers 404), then the estimate's, then the model's (web-correctness-23). */
+export function drawerPlanRef(selected: string | undefined, estimate: { plan_code: string } | null | undefined, plan: { plan_code: string }): string {
+  return selected || estimate?.plan_code || plan.plan_code;
+}
 
 /** Missing inputs that name this line (or none) — spec §3.3 "Unresolved". */
 export function missingForLine(missing: MissingInput[], line: LedgerLine | undefined): MissingInput[] {

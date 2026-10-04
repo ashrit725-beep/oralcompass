@@ -1,14 +1,18 @@
 import { useState } from "react";
 import { UI } from "../lib/copy";
-import { money, signed, stitchForLabel, stitchForStep } from "../lib/stitches";
+import { DRAWER } from "../lib/copy/drawer";
+import { money, signed, stepContextFor, stitchForLabel, stitchForStep } from "../lib/stitches";
+import { rangeWords } from "../lib/drawer";
 import { buildTrail } from "../lib/trail";
-import type { LedgerLine, SavedEstimate, Stitch } from "../lib/types";
+import type { CoverageRule, LedgerLine, SavedEstimate, Stitch } from "../lib/types";
 import { EvidenceBadge, StitchChip } from "./Primitives";
 
 interface Props {
   estimate: SavedEstimate; stitches: Stitch[]; selected?: Stitch; onSelect: (s: Stitch) => void; prominentScope?: boolean;
   /** Render one line only, without the line tabs, the estimate hero and the estimate-level notes (the drawer's "How was this calculated?"). */
   lineIndex?: number;
+  /** The plan's coverage rule rows: a coinsurance step then cites its own class row, not the first CO quote on the page. */
+  rules?: CoverageRule[];
 }
 
 /**
@@ -17,7 +21,7 @@ interface Props {
  * With `lineIndex` the same trail renders a single line inside the procedure drawer: no tabs, no hero (the drawer's Final cost section
  * carries it), every amount sits in the step's `<li>` next to its stitch chip or badge, and the receipt table keeps its stitch in the amount cell.
  */
-export function CostTrail({ estimate, stitches, selected, onSelect, prominentScope, lineIndex }: Props) {
+export function CostTrail({ estimate, stitches, selected, onSelect, prominentScope, lineIndex, rules }: Props) {
   const lines = estimate.ledger.lines;
   const [idx, setIdx] = useState(0);
   const one = lineIndex != null;
@@ -27,6 +31,9 @@ export function CostTrail({ estimate, stitches, selected, onSelect, prominentSco
   const line: LedgerLine | undefined = lines[Math.min(one ? lineIndex : idx, lines.length - 1)];
   if (!line) return <MissingInputs estimate={estimate} />;
   const trail = buildTrail(line);
+  const ctx = stepContextFor(line, rules);
+  // a total is the engine's arithmetic over the steps (document rules applied to your figures): it says so instead of "From the plan document"
+  const calcMark = <><span className="fig-calc">{DRAWER.calculatedShort}</span> <EvidenceBadge status="USER" /></>;
   const hid = one ? `trail-h-${lineIndex}` : "trail-h";
   return (
     <section className={`trail ${one ? "trail-one" : ""}`} aria-labelledby={hid}>
@@ -39,9 +46,10 @@ export function CostTrail({ estimate, stitches, selected, onSelect, prominentSco
       )}
       {!one && estimate.status === "unresolved" && <MissingInputs estimate={estimate} compact />}
       {!one && lines.length > 1 && (
-        <div className="line-tabs" role="tablist" aria-label="Procedures on this estimate">
+        // a group of toggle buttons (aria-pressed), not a tablist: there is no tabpanel and no roving focus to honour the tab pattern (a11y-19)
+        <div className="line-tabs" role="group" aria-label="Procedures on this estimate">
           {lines.map((l, i) => (
-            <button key={i} role="tab" type="button" aria-selected={i === idx} className={i === idx ? "is-on" : ""} onClick={() => setIdx(i)}>
+            <button key={i} type="button" aria-pressed={i === idx} className={i === idx ? "is-on" : ""} onClick={() => setIdx(i)}>
               {l.label} <small>{l.status === "estimate" ? money(l.patient_cents) : l.status === "not_covered" ? "not covered" : "unresolved"}</small>
             </button>
           ))}
@@ -49,8 +57,8 @@ export function CostTrail({ estimate, stitches, selected, onSelect, prominentSco
       )}
       <ol className="trail-steps" aria-label={`Cost trail for ${line.label}`}>
         {trail.steps.map((s, i) => {
-          const st = stitchForLabel(s.stitch, s.rule, stitches);
-          const mark = st ? <StitchChip stitch={st} selected={selected?.id === st.id} prominent={prominentScope} onSelect={onSelect} /> : s.rule === "fee" ? <EvidenceBadge status="USER" /> : one ? <EvidenceBadge status={s.rule === "total" ? "DOC" : "USER"} /> : null;
+          const st = stitchForLabel(s.stitch, s.rule, stitches, ctx);
+          const mark = st ? <StitchChip stitch={st} selected={selected?.id === st.id} prominent={prominentScope} onSelect={onSelect} /> : s.rule === "fee" ? <EvidenceBadge status="USER" /> : one ? (s.rule === "total" ? calcMark : <EvidenceBadge status="USER" />) : null;
           return (
             <li key={s.key} className={`trail-step owner-${s.owner} ${s.key === "you" ? "is-total" : ""}`}>
               <div className="ts-head">
@@ -93,7 +101,7 @@ export function CostTrail({ estimate, stitches, selected, onSelect, prominentSco
         <summary>Engine receipt (every step, as computed)</summary>
         <table className="receipt"><tbody>
           {line.steps.map((s, i) => {
-            const st = one ? stitchForStep(s, stitches) : undefined;
+            const st = one ? stitchForStep(s, stitches, ctx) : undefined;
             return (
               <tr key={i} className={`owner-${s.owner}`}>
                 <th scope="row">{s.label}</th>
@@ -102,7 +110,7 @@ export function CostTrail({ estimate, stitches, selected, onSelect, prominentSco
               </tr>
             );
           })}
-          <tr className="line-total"><th scope="row">Line: you pay · plan pays</th><td className="amt">{money(line.patient_cents)} · {money(line.plan_cents)}{one ? <> <EvidenceBadge status="DOC" /></> : null}</td>{!one && <td />}</tr>
+          <tr className="line-total"><th scope="row">Line: you pay · plan pays</th><td className="amt">{money(line.patient_cents)} · {money(line.plan_cents)}{one ? <> {calcMark}</> : null}</td>{!one && <td />}</tr>
         </tbody></table>
       </details>
       {!one && estimate.ledger.order_note && <p className="note">{estimate.ledger.order_note}</p>}
@@ -121,7 +129,7 @@ export function MissingInputs({ estimate, compact }: { estimate: SavedEstimate; 
         {estimate.missing_inputs.map((m, i) => <li key={i}><strong>{m.input}</strong>: {m.how}</li>)}
         {estimate.missing_inputs.length === 0 && estimate.ledger.flags.map((f, i) => <li key={i}>{f}</li>)}
       </ul>
-      {estimate.movers?.range && <p className="range">{UI.rangeBecause(money(estimate.movers.range[0]), money(estimate.movers.range[1]), estimate.movers.movers.filter((m) => m.impact_cents).map((m) => m.unknown).join(" and "))}</p>}
+      {estimate.movers?.range && <p className="range">{rangeWords(estimate.movers.range, estimate.movers.movers)}</p>}
     </section>
   );
 }

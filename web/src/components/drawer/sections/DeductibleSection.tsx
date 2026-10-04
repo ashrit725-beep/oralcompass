@@ -1,6 +1,6 @@
 import { UI } from "@/lib/copy";
 import { DRAWER } from "@/lib/copy/drawer";
-import { stitchForCheckpoint } from "@/lib/drawer";
+import { remainingBeforeLine, stitchForCheckpoint } from "@/lib/drawer";
 import { stitchForCite } from "@/lib/stitches";
 import { docOf, Fact, Figure, Row, Section, type SectionProps } from "./shared";
 
@@ -9,7 +9,7 @@ import { docOf, Fact, Figure, Row, Section, type SectionProps } from "./shared";
  * remaining before this procedure (USER + the server's derivation sentence), applied to this line (the D step; $0.00 is information) with
  * the checkpoint explanation, and remaining after (the engine's `remaining_after`). Omitted when the plan has no deductible field.
  */
-export function DeductibleSection({ line, trail, rule, plan, benefits, stitches, onSelectStitch }: SectionProps) {
+export function DeductibleSection({ island, line, trail, rule, plan, benefits, estimate, stitches, onSelectStitch }: SectionProps) {
   const doc = docOf(plan);
   const ded = plan.deductible_individual;
   if (!ded) return null;
@@ -19,7 +19,8 @@ export function DeductibleSection({ line, trail, rule, plan, benefits, stitches,
   const category = rule?.category ?? null;
   const waived = category ? plan.deductible_waived_classes.includes(category) : false;
   const applies = rule?.deductible_applies ?? (category ? !waived : null);
-  const remainingBefore = benefits?.remaining_deductible_cents ?? null;
+  const beforeLine = remainingBeforeLine("deductible", island.lineIndex, estimate?.ledger.lines ?? [], benefits);
+  const remainingBefore = beforeLine.cents;
   const derivation = benefits?.derivation?.remaining_deductible ?? null;
   return (
     <Section k="deductible" title={DRAWER.sDeductible}>
@@ -31,8 +32,9 @@ export function DeductibleSection({ line, trail, rule, plan, benefits, stitches,
           {applies == null ? <Fact evidence="UNKNOWN"><span className="muted">{UI.notStated}</span></Fact>
             : <Fact evidence="DOC" stitch={stitchForCite(rule?.deductible_cite, stitches, doc) ?? planStitch} onSelectStitch={onSelectStitch}>{applies ? DRAWER.applies : DRAWER.waivedFor(category ?? "")}</Fact>}
         </Row>
-        <Row term={DRAWER.remainingBefore} note={derivation}>
-          <Figure cents={remainingBefore} evidence="USER" />
+        <Row term={DRAWER.remainingBefore} note={beforeLine.calculated ? DRAWER.remainingBeforeLater : derivation}>
+          {beforeLine.calculated ? <Figure cents={remainingBefore} evidence="USER" calc inputs={["USER"]} calcLabel={DRAWER.calcFromRoute} stitch={dStitch} onSelectStitch={onSelectStitch} />
+            : <Figure cents={remainingBefore} evidence="USER" />}
         </Row>
         {dStep && (
           <Row term={DRAWER.appliedToLine} note={dStep.explanation}>
@@ -41,7 +43,7 @@ export function DeductibleSection({ line, trail, rule, plan, benefits, stitches,
         )}
         {line && line.status === "estimate" && (
           <Row term={DRAWER.remainingAfter}>
-            <Figure cents={line.remaining_after?.deductible_cents ?? null} evidence="USER" stitch={dStitch} onSelectStitch={onSelectStitch} />
+            <Figure cents={line.remaining_after?.deductible_cents ?? null} evidence="USER" calc inputs={["USER"]} calcLabel={DRAWER.calcFromRoute} stitch={dStitch} onSelectStitch={onSelectStitch} />
           </Row>
         )}
       </dl>

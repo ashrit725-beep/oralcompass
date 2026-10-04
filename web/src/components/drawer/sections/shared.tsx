@@ -34,6 +34,8 @@ export interface SectionProps {
   /** Additive (finding demo-5): the plan's "what if" values and their setter; the Harbor Light shows the network hypothetical. */
   hypotheticals?: Record<string, unknown>;
   onHypotheticals?: (values: Record<string, unknown>) => void;
+  /** The selected plan reference from the app state ("ML26" or "upload:<id>"); an uploaded model's `plan_code` is its version label ("UP1"), which the API does not resolve (web-correctness-23). */
+  planRef?: string;
 }
 
 /** The section frame: `<section aria-labelledby>` + focusable `<h3>` (tabindex -1); collapsible sections render as `<details>` on request. */
@@ -69,22 +71,32 @@ export function Section({ k, title, children, collapsible, defaultOpen = true, c
  * sibling; `roll` switches to `Money`/NumberFlow where the amount re-measures on a new estimate. `null` cents render the em dash plus the
  * waiting words with the UNKNOWN badge, never $0.00.
  */
-export function Figure({ cents, evidence, stitch, stitches, onSelectStitch, signed: isSigned, waiting = true, className, hero, roll, calc }: {
+export function Figure({ cents, evidence, stitch, stitches, onSelectStitch, signed: isSigned, waiting = true, className, hero, roll, calc, inputs, calcLabel }: {
   cents: number | null | undefined; evidence: Evidence; stitch?: Stitch | null; stitches?: Stitch[]; onSelectStitch?: (s: Stitch) => void; signed?: boolean; waiting?: boolean; className?: string; hero?: boolean; roll?: boolean;
-  /** An engine total (document rules applied to your figures): instead of a single evidence badge it says it was calculated and carries
-   *  the stitches of the clauses behind it (orchestrator note 1; no seventh evidence status). Falls back to the badge without stitches. */
+  /** An engine total (document rules applied to your figures): instead of a single evidence badge it says it was calculated, carries the
+   *  stitches of the clauses behind it and the badges of the figures it used (`inputs`, e.g. USER for what you entered). Orchestrator
+   *  note 1; no seventh evidence status. Falls back to `evidence` when there is neither a stitch nor an input to show. */
   calc?: boolean;
+  /** The evidence of the non-document figures a calculated total used (see `calcInputs` in lib/drawer.ts). */
+  inputs?: Evidence[];
+  /** Caption for a calculated figure; `null` shortens it to "calculated" (or hides it when no input badge is shown, e.g. table cells whose
+   *  table note says it once). */
+  calcLabel?: string | null;
 }) {
   const missing = cents == null;
   const chips = (stitches ?? (stitch ? [stitch] : [])).filter(Boolean) as Stitch[];
-  const asCalc = !!calc && !missing && chips.length > 0 && !!onSelectStitch;
+  const inputBadges = [...new Set(inputs ?? [])];
+  const asCalc = !!calc && !missing && ((chips.length > 0 && !!onSelectStitch) || inputBadges.length > 0);
   const text = missing ? "—" : isSigned ? signed(cents) : money(cents);
+  // `null` hides the long caption, but a figure that shows input badges always says "calculated" beside them: a lone "You entered" next to
+  // an engine total would claim the user typed it
+  const label = calcLabel === undefined ? DRAWER.calculated : calcLabel === null ? (inputBadges.length ? DRAWER.calculatedShort : null) : calcLabel;
   return (
-    <span className={cn("fig", hero && "fig-hero", missing && "fig-missing", className)} data-amount={missing ? undefined : text}>
-      {roll && !missing ? <Money cents={cents} evidence={evidence} signed={isSigned} /> : (
+    <span className={cn("fig", hero && "fig-hero", missing && "fig-missing", asCalc && "fig-calculated", className)} data-amount={missing ? undefined : text}>
+      {roll && !missing && !asCalc ? <Money cents={cents} evidence={evidence} signed={isSigned} /> : (
         <>
           <span className="amt font-sans tabular-nums text-ink">{missing ? <><span aria-hidden="true">{text}</span><span className="sr-only">{DRAWER.noAmount}</span></> : text}</span>
-          {asCalc ? <span className="fig-calc">{DRAWER.calculated}</span> : <EvidenceBadge status={missing ? "UNKNOWN" : evidence} />}
+          {asCalc ? <>{label ? <span className="fig-calc">{label}</span> : null}{inputBadges.map((e) => <EvidenceBadge key={e} status={e} />)}</> : <EvidenceBadge status={missing ? "UNKNOWN" : evidence} />}
         </>
       )}
       {missing && waiting ? <span className="fig-waiting">{DRAWER.waitingInfo}</span> : null}

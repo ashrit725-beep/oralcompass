@@ -26,7 +26,8 @@ export function ExclusionsSection({ line, item, rule, plan, stitches, onSelectSt
           {closed && <Flag text={closed.label} />}
         </>
       ) : (
-        <p className="dsec-lede"><Fact evidence="DOC">{DRAWER.notExcludedSentence}</Fact></p>
+        // a claim about absence with no clause behind it: UNKNOWN, as the alternate-benefit section treats absence (info-only-9)
+        <p className="dsec-lede"><Fact evidence="UNKNOWN">{DRAWER.notExcludedSentence}</Fact></p>
       )}
       {planNote && <p className="dsec-note">{planNote}</p>}
       {related.length > 0 && (

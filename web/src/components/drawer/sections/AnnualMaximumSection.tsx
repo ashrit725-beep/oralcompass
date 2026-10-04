@@ -1,6 +1,6 @@
 import { UI } from "@/lib/copy";
 import { DRAWER } from "@/lib/copy/drawer";
-import { stitchForCheckpoint } from "@/lib/drawer";
+import { calcInputs, remainingBeforeLine, stitchForCheckpoint } from "@/lib/drawer";
 import { money, stitchForCite } from "@/lib/stitches";
 import { docOf, Fact, Figure, Row, Section, type SectionProps } from "./shared";
 
@@ -10,7 +10,7 @@ import { docOf, Fact, Figure, Row, Section, type SectionProps } from "./shared";
  * (the M step, or "within the remaining maximum"), remaining after (the engine's `remaining_after`), and a compact meter with before/after
  * marks (`role="img"`, dataviz: one hue, thin marks). Collapsed by default on the phone. Omitted when the plan has no annual-maximum field.
  */
-export function AnnualMaximumSection({ line, trail, rule, plan, benefits, stitches, onSelectStitch, mobile }: SectionProps) {
+export function AnnualMaximumSection({ island, item, line, trail, rule, plan, benefits, estimate, stitches, onSelectStitch, mobile }: SectionProps) {
   const doc = docOf(plan);
   const mx = plan.annual_max;
   if (!mx) return null;
@@ -20,7 +20,9 @@ export function AnnualMaximumSection({ line, trail, rule, plan, benefits, stitch
   const mStitch = stitchForCheckpoint("M", mStep?.stitch ?? null, rule, plan, stitches) ?? planStitch;
   const category = rule?.category ?? null;
   const exempt = category ? (plan.annual_max_exempt_classes ?? []).includes(category) : false;
-  const before = benefits?.remaining_max_cents ?? null;
+  const beforeLine = remainingBeforeLine("max", island.lineIndex, estimate?.ledger.lines ?? [], benefits);
+  const before = beforeLine.cents;
+  const inputs = calcInputs(item, estimate, benefits);
   const after = line?.remaining_after?.annual_max_cents ?? null;
   const total = mx.value ?? null;
   const pct = (c: number | null) => (total && c != null ? Math.max(0, Math.min(100, (c / total) * 100)) : null);
@@ -32,10 +34,12 @@ export function AnnualMaximumSection({ line, trail, rule, plan, benefits, stitch
             : total != null ? <Figure cents={total} evidence={mx.status} stitch={planStitch} onSelectStitch={onSelectStitch} />
             : <Fact evidence={mx.status ?? "UNKNOWN"}><span className="muted">{UI.notStated}</span></Fact>}
         </Row>
-        {!unlimited && <Row term={DRAWER.remainingBefore} note={benefits?.derivation?.remaining_max ?? null}><Figure cents={before} evidence="USER" /></Row>}
+        {!unlimited && (beforeLine.calculated
+          ? <Row term={DRAWER.remainingBefore} note={DRAWER.remainingBeforeLater}><Figure cents={before} evidence="USER" calc inputs={["USER"]} calcLabel={DRAWER.calcFromRoute} stitch={mStitch} onSelectStitch={onSelectStitch} /></Row>
+          : <Row term={DRAWER.remainingBefore} note={benefits?.derivation?.remaining_max ?? null}><Figure cents={before} evidence="USER" /></Row>)}
         {line && line.status === "estimate" && (
           <Row term={DRAWER.consumedByLine} note={exempt ? DRAWER.exemptNote(category ?? "") : DRAWER.consumedNote}>
-            <Figure cents={line.plan_cents} evidence="DOC" stitch={mStitch} onSelectStitch={onSelectStitch} className="fig-plan" />
+            <Figure cents={line.plan_cents} evidence="DOC" calc inputs={inputs} calcLabel={null} stitch={mStitch} onSelectStitch={onSelectStitch} className="fig-plan" />
           </Row>
         )}
         {mStep && (
@@ -47,7 +51,7 @@ export function AnnualMaximumSection({ line, trail, rule, plan, benefits, stitch
         {line && line.status === "estimate" && (
           <Row term={DRAWER.remainingAfter}>
             {unlimited || (after == null && total == null) ? <Fact evidence={mx.status}>{DRAWER.noMaxApplies}</Fact>
-              : <Figure cents={after} evidence="USER" stitch={mStitch} onSelectStitch={onSelectStitch} />}
+              : <Figure cents={after} evidence="USER" calc inputs={["USER"]} calcLabel={DRAWER.calcFromRoute} stitch={mStitch} onSelectStitch={onSelectStitch} />}
           </Row>
         )}
       </dl>

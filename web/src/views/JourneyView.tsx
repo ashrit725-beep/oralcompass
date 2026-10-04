@@ -127,7 +127,7 @@ export function JourneyView({ data, selection, mobile, onOpenLandmark, onOpenDoc
   const hasDetail = !!(islandSel || stage);
   const drawer = islandSel && selectedIsland && plan ? (
     <ProcedureDrawer island={selectedIsland} vm={vm} plan={plan} rules={rules} benefits={benefitsFor} estimate={estimate} stitches={stitches} selectedCheckpoint={islandSel.checkpointKey}
-                     onSelectStitch={(s) => onSelectStitch?.(s)} onOpenDocuments={onOpenDocuments} onClose={() => { selection.clear(); }} mobile={mobile} returnFocus={selection.returnFocusRef.current} onRecordsChanged={onRecordsChanged} castLine={pointer} hypotheticals={hypotheticals} onHypotheticals={setHypotheticals} />
+                     onSelectStitch={(s) => onSelectStitch?.(s)} onOpenDocuments={onOpenDocuments} onClose={() => { selection.clear(); }} mobile={mobile} returnFocus={selection.returnFocusRef.current} onRecordsChanged={onRecordsChanged} castLine={pointer} stageProgress={view.progress.stages} planRef={planRef} hypotheticals={hypotheticals} onHypotheticals={setHypotheticals} />
   ) : null;
   const stagePanel = stage ? <DetailPanel view={view} selection={stage} onSelect={(s) => selection.selectStage(s)} onOpenLandmark={onOpenLandmark} onOpenDocuments={onOpenDocuments} onPatch={patch} onInstructions={instructions} busy={busy} mobile={mobile} estimate={estimate} onClose={() => selection.clear()} returnFocus={selection.returnFocusRef.current} /> : null;
   const dense = denseFrom(vm.islands.length);

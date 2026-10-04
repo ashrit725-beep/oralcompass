@@ -1,6 +1,6 @@
 // Magic UI "Animated Beam" (https://magicui.design/docs/components/animated-beam, registry @magicui/animated-beam), MIT, installed 2026-10-03.
-// Patched for OralCompass (component plan §2 N2): defaults are the palette (ink path 0.18 / 1.5 px, sea → gold pulse), `repeat` 1 (never
-// Infinity), duration 0.9 s, `aria-hidden`. Reduced motion: only the static stroked path renders at full opacity (the connection IS the end state).
+// Patched for OralCompass (component plan §2 N2): defaults are the palette (ink path 0.18 / 1.5 px, sea → gold pulse), `repeat` 0 (one sweep per
+// recompute; never Infinity), duration 0.9 s, `aria-hidden`. Reduced motion: only the static stroked path renders at full opacity (the connection IS the end state).
 import { useEffect, useId, useState, type RefObject } from "react"
 import { motion, useReducedMotion } from "motion/react"
 
@@ -42,7 +42,7 @@ export const AnimatedBeam: React.FC<AnimatedBeamProps> = ({
   pathOpacity = 0.18,
   gradientStartColor = "var(--water)",
   gradientStopColor = "var(--gold)",
-  repeat = 1,
+  repeat = 0,
   repeatDelay = 0,
   startXOffset = 0,
   startYOffset = 0,

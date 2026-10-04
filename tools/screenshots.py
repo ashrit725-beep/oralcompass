@@ -184,6 +184,9 @@ def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-pref
 
     # ---- open the root canal island → ProcedureDrawer (spec §12 "open island", "view calculation", "trust") ----
     open_island("Root canal", 1200)
+    if mobile:   # web-drawer mobile-2: focus enters the aria-modal sheet on open (it stayed on the island card behind it)
+        in_dlg = page.evaluate("!!(document.activeElement && document.activeElement.closest('[role=dialog]'))")
+        check(f"{device}: sheet takes focus on open", in_dlg, page.evaluate("document.activeElement && document.activeElement.tagName"))
     h3s = drawer_h3s()
     check(f"{device}: drawer opens with sections", page.locator(".drawer").count() > 0 and all(any(h.startswith(n) for h in h3s) for n in DRAWER_H3), "; ".join(h3s)[:200])
     if not mobile:
@@ -248,6 +251,8 @@ def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-pref
     page.locator(".drawer [data-section='share'] .stitch").first.click(); page.wait_for_timeout(600)
     card = page.locator(".clause[role=dialog]")
     opened = card.count() > 0
+    # web-drawer a11y-5: the non-modal clause card takes focus when it opens (keyboard users landed nowhere near it)
+    check(f"{device}: clause card takes focus", opened and page.evaluate("!!(document.activeElement && document.activeElement.closest('.clause'))"))
     if opened:
         page.get_by_role("radio", name="Exact wording").click(); page.wait_for_timeout(300)
     quote = card.locator("blockquote").first.inner_text() if opened and card.locator("blockquote").count() else ""
@@ -262,11 +267,17 @@ def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-pref
         check(f"{device}: escape closes drawer and returns focus", page.locator(".drawer").count() == 0 and (after or "").startswith("Root canal"), f"after={str(after)[:30]!r}")
     else:
         close_drawer()
+        page.wait_for_timeout(300)   # web-drawer mobile-2: closing the sheet returns focus to the island (it fell to <body>)
+        after = page.evaluate("document.activeElement && (document.activeElement.getAttribute('aria-label') || '')")
+        check(f"{device}: closing the sheet returns focus to the island", (after or "").startswith("Root canal"), f"after={str(after)[:30]!r}")
 
     # you pay per line: the crown's hero after the root canal's
     open_island("Crown", 900)
     hero2 = hero_text()
     check(f"{device}: you pay per line", "$392.00" in hero1 and "$510.00" in hero2, f"{hero1!r} → {hero2!r}")
+    # web-drawer demo-4: the crown starts from what the root canal left ($672.00), not the statement's $1,260.00
+    mx = page.evaluate("(document.querySelector('.drawer [data-section=annualMax]') || {}).textContent || ''")
+    check(f"{device}: remaining maximum before the crown follows the route", "$672.00" in mx and "$1,260.00" not in mx, mx[:120])
     shot("12-drawer")
     close_drawer()
 
@@ -286,6 +297,9 @@ def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-pref
     rows = page.locator(".drawer table.harbor-table tbody tr")
     soundings = page.locator(".drawer", has_text="maximum left").count() > 0 and has_amount(page, ".drawer", "$162.00")
     check(f"{device}: Harbor Light drawer totals", has_amount(page, ".drawer", "$902.00") and has_amount(page, ".drawer", "$1,098.00") and rows.count() == 2 and soundings, f"rows={rows.count()} soundings={soundings}")
+    # web-drawer layout-10 / demo-11 / slop-18: no overlapping figures, badges or stitches in the island table; crumbs do not repeat the place
+    hb = page.evaluate("""(() => { let n = 0; document.querySelectorAll('.drawer table.harbor-table tbody tr').forEach(tr => { const els = [...tr.querySelectorAll('.badge,.stitch,.amt')]; for (let i = 0; i < els.length; i++) for (let j = i + 1; j < els.length; j++) { const a = els[i].getBoundingClientRect(), b = els[j].getBoundingClientRect(); if (Math.min(a.right, b.right) - Math.max(a.left, b.left) > 1 && Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 1) n++; } }); const c = document.querySelector('.drawer .crumbs'); return [n, c ? c.textContent : '']; })()""")
+    check(f"{device}: Harbor Light table without overlaps", hb[0] == 0 and "Harbor Light · Harbor Light" not in hb[1], f"overlaps={hb[0]} crumbs={hb[1]!r}")
     shot("22-harbor-drawer")
     close_drawer()
     open_island("Occlusal night guard", 900)

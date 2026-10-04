@@ -1,17 +1,16 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { X } from "lucide-react";
-import { BenefitsCompass } from "@/components/compass/BenefitsCompass";
 import { TextAnimate } from "@/components/magicui/text-animate";
 import { RuleGlyph } from "@/components/pipeline/RuleGlyph";
 import { Sheet } from "@/components/Primitives/Sheet";
 import { Button } from "@/components/ui/button";
 import { DRAWER } from "@/lib/copy/drawer";
-import { checkpointAriaName, rememberStitchAnchor, ruleFor, sectionForRule, type DrawerSectionKey } from "@/lib/drawer";
+import { calcInputs, checkpointAriaName, drawerPlanRef, remainingBeforeLine, rememberStitchAnchor, ruleFor, sectionForRule, type DrawerSectionKey } from "@/lib/drawer";
 import { transitions } from "@/lib/motion";
-import { stitchesForLine } from "@/lib/stitches";
+import { stepContextFor, stitchesForLine, stitchForCite } from "@/lib/stitches";
 import { buildTrail } from "@/lib/trail";
-import type { AssistScope, Benefits, CoverageRule, InsuranceCheckpointVM, IslandVM, LedgerLine, PassageVM, PlanFixture, SavedEstimate, Stitch } from "@/lib/types";
+import type { AssistScope, Benefits, CoverageRule, InsuranceCheckpointVM, IslandVM, LedgerLine, PassageVM, PlanFixture, Progress, SavedEstimate, Stitch } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { AskSection } from "./sections/AskSection";
 import { AllowanceSection } from "./sections/AllowanceSection";
@@ -68,6 +67,10 @@ export interface ProcedureDrawerProps {
   /** Additive (optional; finding demo-5): the plan's "what if" values and their setter (the Harbor Light's network hypothetical). */
   hypotheticals?: Record<string, unknown>;
   onHypotheticals?: (values: Record<string, unknown>) => void;
+  /** Additive (optional): the journey's stage progress; the Harbor Light lists each care stage after the route with its checkpoints completed. */
+  stageProgress?: Progress["stages"];
+  /** Additive (optional): the selected plan reference ("ML26" or "upload:<id>") for API calls; preferred over the model's plan_code. */
+  planRef?: string;
 }
 
 const SHEET_STAGGER = {
@@ -76,7 +79,7 @@ const SHEET_STAGGER = {
 };
 
 export function ProcedureDrawer(props: ProcedureDrawerProps) {
-  const { island, vm, plan, rules, benefits, estimate, stitches, selectedCheckpoint, onSelectStitch, onOpenDocuments, onClose, mobile, returnFocus, onRecordsChanged, castLine = true, hypotheticals, onHypotheticals } = props;
+  const { island, vm, plan, rules, benefits, estimate, stitches, selectedCheckpoint, onSelectStitch, onOpenDocuments, onClose, mobile, returnFocus, onRecordsChanged, castLine = true, stageProgress, planRef: planRefProp, hypotheticals, onHypotheticals } = props;
   const reduce = useReducedMotion();
   const item = island.item;
   // A planned island whose estimate has no ledger lines at all (usage not provided) is in fog: give the sections an unresolved pseudo-line so
@@ -118,8 +121,8 @@ export function ProcedureDrawer(props: ProcedureDrawerProps) {
     return () => window.clearTimeout(t);
   }, [island.id, selectedCheckpoint, arrivedAt, goTo, mobile, titleId]);
 
-  const sectionProps: SectionProps = { island, line, item, rule, trail, plan, rules, benefits, estimate, stitches, onSelectStitch, onOpenDocuments, mobile, arrivedAt, onRecordsChanged, hypotheticals, onHypotheticals };
-  const planRef = estimate?.plan_code ?? plan.plan_code;
+  const planRef = drawerPlanRef(planRefProp, estimate, plan);
+  const sectionProps: SectionProps = { island, line, item, rule, trail, plan, rules, benefits, estimate, stitches, onSelectStitch, onOpenDocuments, mobile, arrivedAt, onRecordsChanged, planRef, hypotheticals, onHypotheticals };
   const scope: AssistScope = {
     plan_ref: planRef, estimate_id: estimate?.id, treatment_item_id: item?.id, line_index: island.lineIndex,
     step_key: selectedCp && selectedCp.rule !== "missing" ? selectedCp.rule : undefined, checkpoint_key: selectedCp?.key,
@@ -128,24 +131,26 @@ export function ProcedureDrawer(props: ProcedureDrawerProps) {
 
   const sections = useMemo<ReactNode[]>(() => {
     if (island.kind === "start") return [<StartSections key="start" {...sectionProps} />];
-    if (island.kind === "destination") return [<HarborSections key="harbor" {...sectionProps} vm={vm} />];
+    if (island.kind === "destination") return [<HarborSections key="harbor" {...sectionProps} vm={vm} stageProgress={stageProgress} />];
     if (island.kind === "visited") return [<VisitedSection key="visited" {...sectionProps} />];
     if (island.kind === "marginal") return [<MarginalSection key="marginal" {...sectionProps} />, <ClauseEvidenceSection key="evidence" {...sectionProps} />];
     const core = [
-      <ProcedureSection key="procedure" {...sectionProps} />, <AllowanceSection key="allowance" {...sectionProps} />, <DeductibleSection key="deductible" {...sectionProps} />,
+      <ProcedureSection key="procedure" {...sectionProps} />, <AllowanceSection key={`allowance-${item?.id ?? island.id}`} {...sectionProps} />, <DeductibleSection key="deductible" {...sectionProps} />,
       <CoverageShareSection key="share" {...sectionProps} />, <AnnualMaximumSection key="annualMax" {...sectionProps} />, <FrequencySection key="frequency" {...sectionProps} />,
       <WaitingSection key="waiting" {...sectionProps} />, <AlternateBenefitSection key="alternate" {...sectionProps} />, <ExclusionsSection key="exclusions" {...sectionProps} />,
     ];
     const finalCost = <FinalCostSection key="finalCost" {...sectionProps} estimateId={estimate?.id} first={mobile} />;
-    const tail = [<CalculationSection key="calculation" {...sectionProps} />, <ClauseEvidenceSection key="evidence" {...sectionProps} />, <AskSection key="ask" scope={scope} onOpenStitch={openStitch} />];
+    const tail = [<CalculationSection key="calculation" {...sectionProps} />, <ClauseEvidenceSection key="evidence" {...sectionProps} />, <AskSection key={`ask-${island.id}`} scope={scope} onOpenStitch={openStitch} />];
     return mobile ? [finalCost, ...core, ...tail] : [...core, finalCost, ...tail];
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [island, vm, plan, rules, benefits, estimate, stitches, mobile, arrivedAt, selectedCp?.key, hypotheticals, onHypotheticals]);
+  }, [island, vm, plan, rules, benefits, estimate, stitches, mobile, arrivedAt, selectedCp?.key, stageProgress, planRef, hypotheticals, onHypotheticals]);
 
   const crumbs = island.kind === "start" ? DRAWER.crumbsStart(island.place) : island.kind === "destination" ? DRAWER.crumbsLight(island.place)
     : island.kind === "visited" ? DRAWER.crumbsVisited(island.place) : island.kind === "marginal" ? DRAWER.crumbsMarginal(island.place)
     : DRAWER.crumbs(island.order, vm.islands.length, island.place);
-  const lineStitches = line ? stitchesForLine(line, stitches) : [];
+  const lineStitches = line ? stitchesForLine(line, stitches, stepContextFor(line, rules)) : [];
+  // the plan's figure carries the coverage-share clause (its own class row), not whichever clause the first step cites
+  const shareStitch = stitchForCite(rule?.coverage_cite, stitches, plan.source_document.version_label) ?? lineStitches[0];
   const unresolved = island.kind === "procedure" && (island.state === "unresolved" || island.state === "pending");
 
   const header = (
@@ -164,11 +169,18 @@ export function ProcedureDrawer(props: ProcedureDrawerProps) {
       )}
       {island.subtitle && <p className="drawer-subtitle">{island.subtitle}</p>}
       {!mobile && island.kind === "procedure" && line && (
-        <p className={cn("drawer-lede", unresolved && "drawer-lede-unresolved")}>
-          <span className="drawer-lede-term">{DRAWER.youPayLede}</span>{" "}
-          <Figure cents={line.patient_cents} evidence="DOC" calc className="drawer-lede-amt" stitches={lineStitches.slice(0, 2)} onSelectStitch={onSelectStitch} />
-          {!unresolved && <><span className="muted"> · {DRAWER.planPaysLede} </span><Figure cents={line.plan_cents} evidence="DOC" calc className="fig-plan" stitches={lineStitches.slice(0, 1)} onSelectStitch={onSelectStitch} /></>}
-        </p>
+        <div className={cn("drawer-lede", unresolved && "drawer-lede-unresolved")}>
+          <p className="drawer-lede-row">
+            <span className="drawer-lede-term">{DRAWER.youPayLede}</span>{" "}
+            <Figure cents={line.patient_cents} evidence="DOC" calc inputs={calcInputs(item, estimate, benefits)} className="drawer-lede-amt" stitches={lineStitches.slice(0, 2)} onSelectStitch={onSelectStitch} />
+          </p>
+          {!unresolved && (
+            <p className="drawer-lede-row drawer-lede-plan">
+              <span className="drawer-lede-term-plan">{DRAWER.planPaysRow}</span>{" "}
+              <Figure cents={line.plan_cents} evidence="DOC" calc inputs={calcInputs(item, estimate, benefits)} calcLabel={null} className="fig-plan" stitch={shareStitch} onSelectStitch={onSelectStitch} />
+            </p>
+          )}
+        </div>
       )}
       {island.kind === "procedure" && cps.length > 0 && (
         <ol className="cp-strip" aria-label={DRAWER.checkpointStrip}>
@@ -184,7 +196,7 @@ export function ProcedureDrawer(props: ProcedureDrawerProps) {
           })}
         </ol>
       )}
-      {island.kind === "procedure" && <BenefitsCompass plan={plan} benefits={benefits} estimate={estimate} stitches={stitches} compact onOpenLandmark={() => undefined} onSelectStitch={onSelectStitch} />}
+      {island.kind === "procedure" && <RemainingBefore island={island} plan={plan} benefits={benefits} estimate={estimate} />}
     </>
   );
 
@@ -219,6 +231,28 @@ export function ProcedureDrawer(props: ProcedureDrawerProps) {
         </motion.div>
       </div>
     </motion.aside>
+  );
+}
+
+/**
+ * The header's remaining strip (demo-4, slop-16, layout-24): the deductible and annual maximum left BEFORE this island, an unboxed caption
+ * line. The first island starts from the benefit statement (USER); later islands start from the previous line's `remaining_after`, so the
+ * crown reads $672.00 after the root canal, not the statement's $1,260.00, and says it is calculated. No separators that can orphan.
+ */
+function RemainingBefore({ island, plan, benefits, estimate }: { island: IslandVM; plan: PlanFixture; benefits: Benefits | null; estimate: SavedEstimate | null }) {
+  const lines = estimate?.ledger.lines ?? [];
+  const d = remainingBeforeLine("deductible", island.lineIndex, lines, benefits);
+  const m = remainingBeforeLine("max", island.lineIndex, lines, benefits);
+  const unlimited = !!plan.annual_max?.unlimited || !!benefits?.annual_max_unlimited;
+  const fig = (r: { cents: number | null; calculated: boolean }) => r.calculated
+    ? <Figure cents={r.cents} evidence="USER" calc inputs={["USER"]} calcLabel={DRAWER.calculatedShort} waiting={false} />
+    : <Figure cents={r.cents} evidence="USER" waiting={false} />;
+  return (
+    <p className="drawer-remaining">
+      <span className="drawer-remaining-k">{DRAWER.beforeIsland}</span>
+      <span className="drawer-remaining-item">{DRAWER.deductibleLeft} {fig(d)}</span>
+      <span className="drawer-remaining-item">{DRAWER.maximumLeft} {unlimited ? <span className="muted">{DRAWER.noMaxApplies}</span> : fig(m)}</span>
+    </p>
   );
 }
 

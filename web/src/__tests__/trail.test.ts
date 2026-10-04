@@ -50,3 +50,30 @@ describe("buildTrail", () => {
     expect(t.steps[0].explanation).toContain("not provided");
   });
 });
+
+describe("web-correctness-11: the share percentage comes from the rule, not from rounded dollars", () => {
+  it("keeps the plan's 60% when the deductible absorbs the whole line", () => {
+    const t = buildTrail({
+      label: "Filling", status: "estimate", plan_cents: 0, patient_cents: 8000, plan_is_upper_bound: false, flags: [], remaining_after: {}, benefit_year: 2026,
+      steps: [
+        { label: "Deductible", cents: 8000, owner: "patient", rule: "D", stitch: "ML26#p25" },
+        { label: "Your share (40% of the amount after deductible)", cents: 0, owner: "patient", rule: "CO", stitch: "ML26#p25" },
+        { label: "Plan pays 60% before the annual maximum", cents: 0, owner: "plan_pre", rule: "CO", stitch: "ML26#p25" },
+      ],
+    });
+    const share = t.steps.find((s) => s.key === "share")!;
+    expect(share.split?.planPct).toBe(60);
+    expect(share.explanation).not.toMatch(/0% of the amount/);
+    expect(t.reconciles).toBe(true);
+  });
+  it("keeps a fractional rule percentage as printed", () => {
+    const t = buildTrail({
+      label: "x", status: "estimate", plan_cents: 6250, patient_cents: 3750, plan_is_upper_bound: false, flags: [], remaining_after: {}, benefit_year: 2026,
+      steps: [
+        { label: "Your share (37.5% of the amount after deductible)", cents: 3750, owner: "patient", rule: "CO", stitch: null },
+        { label: "Plan pays 62.5% before the annual maximum", cents: 6250, owner: "plan_pre", rule: "CO", stitch: null },
+      ],
+    });
+    expect(t.steps.find((s) => s.key === "share")?.split?.planPct).toBe(62.5);
+  });
+});

@@ -1,6 +1,7 @@
 import { CostPipeline } from "@/components/pipeline/CostPipeline";
 import { DRAWER } from "@/lib/copy/drawer";
-import { stitchesForLine } from "@/lib/stitches";
+import { calcInputs } from "@/lib/drawer";
+import { stepContextFor, stitchesForLine, stitchForCite } from "@/lib/stitches";
 import type { Stitch } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Figure, Flag, Section, type SectionProps } from "./shared";
@@ -12,20 +13,22 @@ import { Figure, Flag, Section, type SectionProps } from "./shared";
  * Not covered → the engine's closed-step label and the "full fee is your share" sentence. Always rendered for procedure islands.
  */
 export function FinalCostSection(props: SectionProps & { estimateId?: string; first?: boolean }) {
-  const { island, line, item, rule, plan, estimate, stitches, onSelectStitch, mobile, estimateId, first, benefits } = props;
+  const { island, line, item, rule, plan, rules, benefits, estimate, stitches, onSelectStitch, mobile, estimateId, first } = props;
   if (!line) return null;
-  const chips: Stitch[] = stitchesForLine(line, stitches);
+  const chips: Stitch[] = stitchesForLine(line, stitches, stepContextFor(line, rules));
   const unresolved = line.status === "unresolved";
+  const inputs = calcInputs(item, estimate, benefits);
+  const shareStitch = stitchForCite(rule?.coverage_cite, stitches, plan.source_document.version_label) ?? chips[0];
   const otherFlags = line.flags.filter((f) => !/waiting|alternate/i.test(f));
   return (
     <Section k="finalCost" title={DRAWER.sFinalCost} className={cn(first && "dsec-first")}>
       <p className={cn("final-hero", unresolved && "final-hero-unresolved")}>
         <span className="final-hero-term">{DRAWER.youPay}</span>
-        <Figure cents={line.patient_cents} evidence="DOC" calc hero stitches={chips.slice(0, 3)} onSelectStitch={onSelectStitch} className="final-hero-amt" />
+        <Figure cents={line.patient_cents} evidence="DOC" calc inputs={inputs} hero stitches={chips.slice(0, 3)} onSelectStitch={onSelectStitch} className="final-hero-amt" />
       </p>
       <p className="final-sub">
         <span>{DRAWER.estimatedPlanPayment}</span>{" "}
-        <Figure cents={line.plan_cents} evidence="DOC" calc stitch={chips[0]} onSelectStitch={onSelectStitch} className="fig-plan" />
+        <Figure cents={line.plan_cents} evidence="DOC" calc inputs={inputs} calcLabel={null} stitch={shareStitch} onSelectStitch={onSelectStitch} className="fig-plan" />
         {line.plan_is_upper_bound ? <span className="muted"> {DRAWER.upperBoundWord}</span> : null}
         {line.benefit_year ? <span className="muted"> · {DRAWER.benefitYear(line.benefit_year)}</span> : null}
       </p>
