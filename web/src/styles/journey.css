@@ -330,3 +330,4 @@
   .log-row { grid-template-columns: 6.5rem minmax(0, 1fr); gap: var(--s-2); align-items: start; padding: 2px 0; }
   .log dt { font-size: 12px; line-height: 16px; padding-top: 12px; }
 }
+.segment-target { min-width: 0; }

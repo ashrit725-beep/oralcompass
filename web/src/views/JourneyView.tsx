@@ -164,8 +164,8 @@ export function JourneyView({ data, selection, mobile, onOpenLandmark, onOpenDoc
           {mobile ? <details className="journey-switch"><summary>{PASSAGE.journeysSummary(journeys?.length ?? 0)}</summary>{pickers}</details> : pickers}
         </div>
         {!plan && <p className="hint">{PASSAGE.noPlanSelected}</p>}
-        {segment === "overview" && <OverviewList journey={view.journey} vm={vm} planTitle={plan?.title} onSelect={(s) => { selection.selectStage(s); setSegment("map"); }} onSelectIsland={(id, cp) => { selectIsland(id, cp, null, true); }} onSelectStitch={onSelectStitch} />}
-        {segment === "care" && <CareTimeline journey={view.journey} progress={view.progress} selected={stage} onSelect={(s, el) => selection.selectStage(s, el)} currentStageId={currentStageId(view.journey)} mobile linkedIsland={linkedIsland} onShowOnChart={(id) => { setSegment("map"); selectIsland(id, undefined, null, true); }} />}
+        {segment === "overview" && <div id="passage-islands" tabIndex={-1} className="segment-target"><OverviewList journey={view.journey} vm={vm} planTitle={plan?.title} onSelect={(s) => { selection.selectStage(s); setSegment("map"); }} onSelectIsland={(id, cp) => { selectIsland(id, cp, null, true); }} onSelectStitch={onSelectStitch} /></div>}
+        {segment === "care" && <div id="passage-islands" tabIndex={-1} className="segment-target"><CareTimeline journey={view.journey} progress={view.progress} selected={stage} onSelect={(s, el) => selection.selectStage(s, el)} currentStageId={currentStageId(view.journey)} mobile linkedIsland={linkedIsland} onShowOnChart={(id) => { setSegment("map"); selectIsland(id, undefined, null, true); }} /></div>}
         {segment === "map" && (
           <>
             {dense && <IslandStrip vm={vm} selected={islandSel} onSelect={(id, el) => selectIsland(id, undefined, el, false)} mobile={mobile} />}

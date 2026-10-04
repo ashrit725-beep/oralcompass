@@ -38,7 +38,8 @@ export default function App() {
 
   return (
     <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)} className="app gap-0">
-      {tab === "journey" && <a href="#passage-islands" className="skip-link">{PASSAGE.skipToRoute}</a>}
+      {/* the target exists in every segment of a loaded journey (map: the chart's controls; care timeline and overview: their content) */}
+      {tab === "journey" && data.view && <a href="#passage-islands" className="skip-link">{PASSAGE.skipToRoute}</a>}
       <header className="appbar">
         <div className="brand"><h1>{UI.appName}</h1><p className="tagline">{TAGLINE}</p></div>
         <nav className="topnav" aria-label="Views">

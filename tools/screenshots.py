@@ -287,6 +287,7 @@ def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-pref
     # overview list (accessible equivalent): the route table first, then the stage tables
     page.get_by_role("button", name="Overview list").click(); page.wait_for_timeout(300)
     check(f"{device}: overview table present", page.locator("table.ov-table").count() >= 3)
+    check(f"{device}: skip link target exists in the overview segment", page.evaluate("(() => { const a = document.querySelector('a.skip-link'); return !!a && !!document.querySelector(a.getAttribute('href')); })()"))
     check(f"{device}: overview route table lists the islands", page.locator("table.ov-islands tr.ov-island").count() == 2 and page.locator("table.ov-islands number-flow-react[data*='$392.00']").count() > 0)
     shot("04-overview")
     page.get_by_role("button", name="Map view").click(); page.wait_for_timeout(300)
