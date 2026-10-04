@@ -245,7 +245,8 @@
 .pv-mini .visited-mark { grid-area: mark; }
 .pv-mini .pv-title { grid-area: title; font-size: 14px; }
 .pv-mini .pv-sub { grid-area: sub; }
-.pv-mini .pv-amt { grid-area: amt; white-space: normal; max-width: 42%; text-align: right; font-size: 13px; line-height: 17px; justify-self: end; }
+/* the plan-paid figure is never squeezed: a percentage max-width on an `auto` column resolved against the column itself (19 px) and cut "$45.00" to "$45.0" */
+.pv-mini .pv-amt { grid-area: amt; white-space: nowrap; min-width: max-content; text-align: right; font-size: 13px; line-height: 17px; justify-self: end; }
 .pv-mini .pv-amt .pv-wait { font-size: 12px; }
 .pv-mini.pv-marginal { border-style: dashed; grid-template-areas: "title amt" "sub amt"; grid-template-columns: minmax(0, 1fr) auto; }
 .pv-mini.is-selected { border-color: var(--select); box-shadow: 0 0 0 3px var(--select-ring); }
@@ -263,7 +264,7 @@
 .ov-cp-details summary { cursor: pointer; min-height: 44px; padding: 10px 0; font-weight: 600; }
 .ov-sound { font-size: .85rem; color: var(--ink-soft); white-space: nowrap; }
 
-.pv-mini.pv-marginal .pv-amt { max-width: 55%; white-space: normal; text-align: right; }   /* "not covered" wraps instead of clipping at 360 px */
+.pv-mini.pv-marginal .pv-amt { min-width: 0; max-width: 9rem; white-space: normal; text-align: right; }   /* words ("not covered") may wrap; a fixed length, not a circular percentage */
 /* care rail (delight pass mo-20d): on desktop every stage card fits the column instead of the last one being cut at the edge */
 @media (min-width: 1100px) {
   .care-rail { overflow-x: visible; gap: var(--s-2); }

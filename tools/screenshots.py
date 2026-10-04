@@ -138,6 +138,9 @@ def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-pref
     check(f"{device}: closed channel on marginal", page.locator("button[aria-label*='Occlusal night guard'][aria-label*='not covered']").count() > 0)
     END_STATE[device] = passage_names(page)
     shot("11-passage")
+    if mobile:   # money is never cut: every phone passage amount fits its box and the screen (trust test)
+        cut = page.evaluate("[...document.querySelectorAll('.passage-vertical-wrap .amt')].filter(e => { const r = e.getBoundingClientRect(), box = e.closest('.pv-amt, .pv-amt-line'), card = e.closest('button'); return (box && r.right > box.getBoundingClientRect().right + 0.5) || (card && r.right > card.getBoundingClientRect().right + 0.5) || r.right > document.documentElement.clientWidth + 0.5; }).map(e => e.closest('button')?.getAttribute('aria-label')?.slice(0, 40))")
+        check(f"{device}: phone passage amounts are not clipped", not cut, str(cut[:4]))
 
     # ---- open the root canal island → ProcedureDrawer (spec §12 "open island", "view calculation", "trust") ----
     open_island("Root canal", 1200)
