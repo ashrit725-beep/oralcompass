@@ -42,7 +42,7 @@ export function Sheet({ open, onOpenChange, title, description, originRect, retu
         style={origin ? ({ transformOrigin: origin } as React.CSSProperties) : undefined}
       >
         <div className="sticky top-0 z-10 flex min-h-12 items-center justify-between gap-2 border-b border-rule bg-paper-deep px-4">
-          <DrawerTitle className="truncate">{title}</DrawerTitle>
+          <DrawerTitle className="line-clamp-3 min-w-0 py-1 [overflow-wrap:break-word]">{title}</DrawerTitle>
           <DrawerClose asChild>
             <Button variant="ghost" size="icon-touch" aria-label={closeLabel} className="-mr-2 shrink-0"><X aria-hidden="true" /></Button>
           </DrawerClose>
