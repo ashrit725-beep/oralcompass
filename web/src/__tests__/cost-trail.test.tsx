@@ -22,7 +22,7 @@ describe("CostTrail on the lighthouse", () => {
   });
 
   it("says the totals are calculated from the steps", () => {
-    expect(html).toMatch(/<p class="hero"[^>]*>.*\$902\.00.*Calculated from the steps below/);
+    expect(html).toMatch(/<p class="hero"[^>]*>.*\$902\.00.*We did the math with the steps below/);
   });
 
   it("gives every receipt row a mark", () => {

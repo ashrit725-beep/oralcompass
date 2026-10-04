@@ -24,13 +24,13 @@ describe("form fields and errors", () => {
   it("BenefitStatementForm", () => {
     const html = renderToStaticMarkup(<BenefitStatementForm planRef="ML26" plan={ml26} benefits={null} onSaved={() => undefined} />);
     checkForm(html);
-    expect(html).toMatch(/<label for="[^"]+">Statement \(label, required\)<\/label>/);
+    expect(html).toMatch(/<label for="[^"]+">Which letter \(needed\)<\/label>/);
   });
   it("TreatmentPlanImporter (manual form)", () => {
     const html = renderToStaticMarkup(<TreatmentPlanImporter procedures={procedures} onAdded={() => undefined} />);
     const form = html.slice(html.indexOf('<form class="tpi-form'));
     checkForm(form);
-    expect(form).toMatch(/<label for="[^"]+">Dentist&#x27;s fee \(dollars\)<\/label>/);
+    expect(form).toMatch(/<label for="[^"]+">Dentist&#x27;s price \(dollars\)<\/label>/);
   });
 });
 

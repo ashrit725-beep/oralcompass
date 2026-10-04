@@ -396,7 +396,7 @@ def run(pw, device: str, reduced_motion: str = "no-preference"):
 
     # ---- START, Harbor Light, marginal, visited drawers ----
     open_island("Start ·", 900)
-    check(f"{device}: START drawer shows the statement figures", has_amount(page, ".drawer", "$1,260.00") and page.locator(".drawer", has_text="Benefit statement figures").count() > 0)
+    check(f"{device}: START drawer shows the statement figures", has_amount(page, ".drawer", "$1,260.00") and page.locator(".drawer", has_text="Numbers from your insurance letter").count() > 0)
     shot("21-start-drawer")
     close_drawer()
     open_island("Harbor Light", 900)
@@ -479,7 +479,7 @@ def run(pw, device: str, reduced_motion: str = "no-preference"):
     q = page.evaluate("(() => { const h = document.querySelector('.compass .cmp-q'); if (!h) return ''; const c = h.cloneNode(true); c.querySelectorAll('.sr-only').forEach(e => e.remove()); return c.textContent.replace(/\\s+/g, ' ').trim(); })()")
     stitch_beside = page.evaluate("(() => { const a = document.querySelector('.cmp-a'); return !!a && !!a.querySelector('.amt') && !!a.querySelector('.stitch'); })()")
     figs = page.locator(".cmp-figures")
-    figs_ok = has_amount(page, ".cmp-figures", "$1,260.00") and has_amount(page, ".cmp-figures", "$240.00") and figs.locator(".badge", has_text="You entered").count() >= 2
+    figs_ok = has_amount(page, ".cmp-figures", "$1,260.00") and has_amount(page, ".cmp-figures", "$240.00") and figs.locator(".badge", has_text="You typed this").count() >= 2
     check(f"{device}: answers from the compass", q.startswith("How much of the") and has_amount(page, ".compass .cmp-q", "$1,500.00") and "maximum remains after the planned work?" in q and has_amount(page, ".cmp-a", "$162.00") and stitch_beside and figs_ok and page.locator(".cmp-classes li").count() == 4,
           f"q={q[:70]!r} stitch={stitch_beside} figs={figs_ok} classes={page.locator('.cmp-classes li').count()}")
     # a11y-22: the view's h2 comes before the compass question (h3); no heading level is skipped on My plan
@@ -521,22 +521,22 @@ def run(pw, device: str, reduced_motion: str = "no-preference"):
     # benefit statement form at depth 2 on the bridge (figures identical to the seeded statement, so nothing downstream changes)
     page.locator("button[aria-label^='Deductible']").first.click(); page.wait_for_timeout(400)
     page.get_by_role("radio", name="Your numbers").first.click(); page.wait_for_timeout(400)
-    form = page.locator("form", has_text="Benefit statement figures").first
-    btn = form.get_by_role("button", name="Record these figures")
+    form = page.locator("form", has_text="Numbers from your insurance letter").first
+    btn = form.get_by_role("button", name="Use these numbers")
     bbox = btn.bounding_box() if btn.count() else None
-    fields_ok = all(form.get_by_label(l, exact=False).count() > 0 for l in ["Deductible met so far this benefit year (dollars)", "Statement (label, required)", "Statement date (required)"])
-    form.get_by_label("Statement (label, required)", exact=False).fill("")
+    fields_ok = all(form.get_by_label(l, exact=False).count() > 0 for l in ["Part you pay first, paid so far this year (dollars)", "Which letter (needed)", "Letter date (needed)"])
+    form.get_by_label("Which letter (needed)", exact=False).fill("")
     btn.click(); page.wait_for_timeout(400)
     alert_ok = form.get_by_role("alert").filter(has_text="A statement label is required.").count() > 0 or page.get_by_role("alert").filter(has_text="A statement label is required.").count() > 0
-    form.get_by_label("Deductible met so far this benefit year (dollars)", exact=False).fill("25.00")
+    form.get_by_label("Part you pay first, paid so far this year (dollars)", exact=False).fill("25.00")
     form.get_by_label("Paid by the plan so far this benefit year (dollars)", exact=False).fill("240.00")
-    form.get_by_label("Statement (label, required)", exact=False).fill("MetLife benefit statement dated 2026-09-20, figures entered by the user")
-    form.get_by_label("Statement date (required)", exact=False).fill("2026-09-20")
+    form.get_by_label("Which letter (needed)", exact=False).fill("MetLife benefit statement dated 2026-09-20, figures entered by the user")
+    form.get_by_label("Letter date (needed)", exact=False).fill("2026-09-20")
     btn.click(); page.wait_for_timeout(1500)
     deriv = page.locator(".bs-derivation")
     live = " | ".join(page.evaluate("[...document.querySelectorAll('[aria-live], [role=status]')].map(e => e.textContent.trim()).filter(Boolean)"))
-    live_ok = "Benefit statement figures recorded" in live or "Estimate updated" in live
-    check(f"{device}: benefit statement", bbox is not None and bbox["height"] >= 44 and fields_ok and alert_ok and deriv.count() > 0 and deriv.locator(".badge", has_text="You entered").count() >= 1 and live_ok,
+    live_ok = "Insurance letter numbers kept" in live or "Numbers updated" in live
+    check(f"{device}: benefit statement", bbox is not None and bbox["height"] >= 44 and fields_ok and alert_ok and deriv.count() > 0 and deriv.locator(".badge", has_text="You typed this").count() >= 1 and live_ok,
           f"btn={bbox and round(bbox['height'])} fields={fields_ok} alert={alert_ok} derivation={deriv.count()} live={live!r}")
     shot("24-benefit-statement")
     close_plan_sheet()
@@ -758,11 +758,11 @@ def run(pw, device: str, reduced_motion: str = "no-preference"):
         tooth_for_crown = page.get_by_label("Tooth or area", exact=False).count() > 0
         proc.select_option(label="Adult cleaning (prophylaxis)"); page.wait_for_timeout(200)
         tooth_for_cleaning = page.get_by_label("Tooth or area", exact=False).count() > 0
-        page.get_by_label("Dentist's fee (dollars)", exact=False).first.fill("125.00")
-        page.get_by_role("button", name="Add this procedure").click(); page.wait_for_timeout(500)
+        page.get_by_label("Dentist's price (dollars)", exact=False).first.fill("125.00")
+        page.get_by_role("button", name="Add this care").click(); page.wait_for_timeout(500)
         src_required = page.get_by_role("alert").filter(has_text="A source is required.").count() > 0
         page.get_by_label(re.compile("^Source"), exact=False).first.fill("Dentist's estimate dated 2026-10-01 (screenshot walk)")
-        page.get_by_role("button", name="Add this procedure").click(); page.wait_for_timeout(2500)
+        page.get_by_role("button", name="Add this care").click(); page.wait_for_timeout(2500)
         added_text = page.get_by_text("was added to your records. The estimate is recalculating.", exact=False).count() > 0
         page.get_by_role("tab", name="My journey").click(); page.wait_for_timeout(2500)
         after_n = page.locator("#passage-islands .pv-island-card").count()
