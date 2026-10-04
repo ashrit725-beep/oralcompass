@@ -1,4 +1,4 @@
-// Reads a PDF's text layer with pdf.js (the same library and the same joining rule the browser upload uses in web/src/lib/upload.ts)
+// Reads a PDF's text layer with pdf.js (the same library and the same joining rule the browser upload uses in web/src/lib/pdf-text.ts)
 // and prints JSON to stdout: { pages: string[], lines: string[] }.
 //   pages: per page, every text item joined with " " and whitespace collapsed (exactly what inspectPdf() produces today);
 //   lines: per page, the same text with a "\n" wherever pdf.js marks an end of line (hasEOL), for detectors that keep line structure.

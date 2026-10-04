@@ -867,20 +867,5 @@ export function maskValue(c: IdentifierCategory, v: string): string {
   }
 }
 
-/**
- * Page text from pdf.js `getTextContent().items`, keeping line breaks (items with `hasEOL` end a line). The detector reads label/value pairs
- * line by line ("Member: Avery Rowan" ends at the line end), so this gives it better text than a whitespace-collapsed page.
- */
-export function pageTextFromItems(items: ReadonlyArray<{ str?: string; hasEOL?: boolean } | object>): string {
-  let out = "";
-  for (const it of items) {
-    const item = it as { str?: unknown; hasEOL?: unknown };
-    const s = typeof item.str === "string" ? item.str : "";
-    if (s) {
-      if (out && !out.endsWith("\n") && !out.endsWith(" ") && !s.startsWith(" ")) out += " ";
-      out += s;
-    }
-    if (item.hasEOL === true) out = out.replace(/[ \t]+$/u, "") + "\n";
-  }
-  return out.replace(/[ \t]{2,}/gu, " ").replace(/\n{3,}/gu, "\n\n").trim();
-}
+/** Page text from pdf.js items, kept in its own tiny module so upload.ts (main bundle) shares it without pulling in this lazy chunk. */
+export { pageTextFromItems } from "./pdf-text";

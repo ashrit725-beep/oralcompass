@@ -4,7 +4,8 @@ import { UPLOAD } from "./copy/upload";
 import type { FoundIdentifier } from "./redact";
 import { categoryCounts, maskedVisible, pageRanges, previewPages, sortIdentifiers, termOccurrences, tokenize } from "./redaction-view";
 import { buildClientRedaction, CLIENT_REDACTION_LIMITS, loadSampleStatement, SAMPLE_STATEMENT } from "./client-redaction";
-import { pageTextFromItems, serverRedactionSummary, uploadErrorCopy } from "./upload";
+import { pageTextFromItems } from "./pdf-text";
+import { serverRedactionSummary, uploadErrorCopy } from "./upload";
 
 const f = (category: FoundIdentifier["category"], value: string, occurrences = 1, pages = [1]): FoundIdentifier => ({ id: `${category}:${value}`, category, value, occurrences, pages });
 
