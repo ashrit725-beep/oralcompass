@@ -224,7 +224,10 @@ class Sweep:
                 if i == 2:
                     self.assistant()
                 self.action = f"journey: Escape from '{name[:50]}'"
-                self.close_overlays(); self.wait(300)
+                self.close_overlays(); self.wait(400)
+                lost = p.evaluate("!document.activeElement || document.activeElement === document.body")
+                if lost:
+                    note("focus", "focus lost to <body> after closing the detail surface", f"{self.label} / {self.action}")
             except PWError:
                 self.close_overlays()
         self.click_all("My journey")
