@@ -10,7 +10,7 @@
 // `allComplete` turns every indicator forest after publish.
 // Fix pass (2026-10-04, layout-7): the pane height is re-measured with a ResizeObserver, so a pane that grows is never clipped.
 import React, { useState, Children, useRef, useLayoutEffect, type HTMLAttributes, type ReactNode } from 'react';
-import { motion, AnimatePresence, type Variants } from 'motion/react';
+import { motion, AnimatePresence, useReducedMotion, type Variants } from 'motion/react';
 import { cn } from '@/lib/utils';
 
 interface StepperProps extends HTMLAttributes<HTMLDivElement> {
@@ -198,6 +198,9 @@ interface StepContentWrapperProps {
 
 function StepContentWrapper({ isCompleted, currentStep, direction, children, className = '' }: StepContentWrapperProps) {
   const [parentHeight, setParentHeight] = useState<number>(0);
+  // layout-7: MotionConfig does not stop a height spring; under reduced motion the wrapper takes the measured height at once, so a pane
+  // that grows is never clipped while a 0.4 s spring catches up
+  const reduce = useReducedMotion();
 
   return (
     <motion.div
@@ -205,7 +208,7 @@ function StepContentWrapper({ isCompleted, currentStep, direction, children, cla
       // review footer, mobile-17) sticks to the dialog's scroll box instead of this wrapper
       style={{ position: 'relative', overflow: 'clip' }}
       animate={{ height: isCompleted ? 0 : parentHeight }}
-      transition={{ type: 'spring', duration: 0.4, bounce: 0 }}
+      transition={reduce ? { duration: 0 } : { type: 'spring', duration: 0.4, bounce: 0 }}
       className={className}
     >
       <AnimatePresence initial={false} mode="wait" custom={direction}>
