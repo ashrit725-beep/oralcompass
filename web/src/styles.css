@@ -86,6 +86,11 @@ body::before {
 }
 h1, h2, h3, h4 { font-family: var(--serif); font-weight: 600; letter-spacing: .01em; color: var(--ink); margin: 0 0 .35em; }
 h1 { font-size: 1.5rem; } h2 { font-size: 1.35rem; } h3 { font-size: 1.1rem; } h4 { font-size: 1rem; }
+/* 375 px wrapping (rm/mobile pixel pass): headings balance their lines; running text, list rows, table cells and term/definition
+   pairs avoid a lone last word ("Estimated you / pay", "2 rules not / stated", "for more / columns."). Engines without
+   text-wrap fall back to normal wrapping, so this changes no content. */
+h1, h2, h3, h4, dt { text-wrap: balance; }   /* dt: short labels in a narrow column ("Estimated / you pay", not "Estimated you / pay") */
+p, li, dd, td, th, figcaption, summary, label, caption { text-wrap: pretty; }
 .num, .amt, .total { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
 a { color: var(--ink); text-decoration-color: var(--gold); text-underline-offset: 3px; }
 button { font: inherit; }
