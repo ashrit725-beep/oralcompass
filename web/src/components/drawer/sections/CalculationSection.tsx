@@ -18,19 +18,19 @@ function Part({ p }: { p: EquationPart }) {
 }
 
 /**
- * Section 11 · How was this calculated? (spec §4.4, addendum B3 graft): a `<details>` (open on desktop, and on the phone when the drawer was
- * opened from a checkpoint) holding the equation rows ("$980.00 × 60% = $588.00 plan share", formatted only from the trail's reconciled step
+ * Section 11 · How was this calculated? (spec §4.4, addendum B3 graft): a `<details>` (open when the drawer was opened from a checkpoint,
+ * closed otherwise) holding the equation rows ("$980.00 × 60% = $588.00 plan share", formatted only from the trail's reconciled step
  * amounts, each row ending with its stitch chip), the reconciliation line only when the trail reconciles, then the existing CostTrail for
  * this line alone (no line tabs) with the engine receipt table one click away. Always rendered for procedure islands.
  */
-export function CalculationSection({ line, island, trail, rule, plan, rules, benefits, estimate, stitches, onSelectStitch, mobile, arrivedAt }: SectionProps) {
+export function CalculationSection({ line, island, trail, rule, plan, rules, benefits, estimate, stitches, onSelectStitch, arrivedAt }: SectionProps) {
   if (!line || !trail || !estimate) return null;
   const rows = equationRows(trail, {
     fee: DRAWER.eqFee, allowed: DRAWER.eqAllowed, basis: DRAWER.eqBasis, afterDeductible: DRAWER.eqAfterDeductible, planShare: DRAWER.eqPlanShare,
     yourShare: DRAWER.eqYourShare, planPays: DRAWER.eqPlanPays, youPay: DRAWER.eqYouPay, fullFee: DRAWER.eqFullFee,
   });
   const lineIndex = island.lineIndex ?? estimate.ledger.lines.indexOf(line);
-  const open = !mobile || !!arrivedAt;
+  const open = !!arrivedAt;   // collapsed unless the drawer was opened from a checkpoint (the phone layout is the only layout)
   return (
     <Section k="calculation" title={DRAWER.sCalculation} collapsible defaultOpen={open} className="calc-section">
       <ol className="eq-rows" aria-label={DRAWER.equationsLabel}>

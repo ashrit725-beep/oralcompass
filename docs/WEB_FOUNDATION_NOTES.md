@@ -8,6 +8,24 @@ State of the merged tree at the time of writing: `cd web && npm run build` PASS 
 `npm run check:bundle` OK (main 88.2 KB gzip; pdfjs separate); `api` 35 tests PASS; `engine` 21 tests PASS; `tools/advice_lint.py web/src/lib
 api/app/templates.py api/app/assistant_templates.py` 0 violations; `tools/screenshots.py` 44/44 (desktop 1366x900, phone 360x780 reduced motion).
 
+> **Mobile-only (owner direction 2026-10-04, "its fully a mobile app"; branch `mob/shell`).** The phone layout is the only layout. On a
+> window wider than 480 px the same phone app renders in the centred `.app` column (`--col: 480px`) over the painted journey backdrop
+> (`.cinema`: fixed, cover, ink scrim + vignette, no blur; phones never fetch it). Consequences for every agent:
+> - Never branch on the window width. `useMobile()` is pinned to `true` (kept so older code compiles); `@media (max-width: 760px)` blocks were
+>   unwrapped (their rules always apply) and desktop `min-width` blocks deleted; Tailwind's `sm:`…`2xl:` breakpoints are pinned out of reach,
+>   so `md:` never matches and `max-md:` always does. Allowed media queries: reduced motion, `(hover: hover)`, short landscape, `(max-width: 400px)`
+>   for the narrowest phones, and `(min-width: 481px)` for the stage behind the column (`src/__tests__/mobile-shell.test.ts` enforces this).
+> - `position: fixed` layers stay inside the column: `left: 0; right: 0; margin-inline: auto; max-width: var(--col)` (or `var(--col-inset)`);
+>   vaul bottom sheets and the upload dialog already do (styles.css, unlayered shell block).
+> - The dock (bottom tabs), bottom sheets and phone views at every width; no desktop top nav, side column, popover or drawer column.
+> - Native feel lives in styles.css + `hooks/useNativeShell.ts`: no rubber-band/tap flash/double-tap delay, 16 px fields, a `scale: .97` press
+>   on buttons and tabs (base layer), hover tints only under `(hover: hover)`, the dock hides while the on-screen keyboard is up
+>   (`html[data-keyboard]`, `--kb-inset`), a focused field under the keyboard scrolls into view, and a tab change opens the new view at the top
+>   and (after a tap on the dock) focuses its heading. Each view sits in `<div data-view="journey|plan|compare|documents">`.
+> - Tools: `tools/screenshots.py` walks iPhone 13 (WebKit) and Pixel 7 (Chromium), a Pixel 7 reduced-motion pass and a 1440×900 column check
+>   (`ORALCOMPASS_WALK_DEVICES=iphone13,pixel7,reduced,wide` picks runs); `tools/layout_audit.py` audits phone-360, iphone-13, pixel-7 and
+>   wide-1440 (overflow measured against the column); `tools/error_sweep.py` runs iPhone 13, Pixel 7 and the wide column.
+
 ---
 
 ## 0. Exact commands
@@ -37,10 +55,10 @@ cd web && npm run build && npx vite preview --port 4173 --host 127.0.0.1        
 
 # screenshot walk (needs both servers; writes PNGs + checks.json to the given directory; exit 1 on any failed check)
 python3 tools/screenshots.py shots/<your-agent-name>
-# zero-errors gate (API in demo mode, fresh data dir): clicks every control on every view on desktop / iPhone 13 WebKit / Pixel 7, motion on
+# zero-errors gate (API in demo mode, fresh data dir): clicks every control on every view on the wide column / iPhone 13 WebKit / Pixel 7, motion on
 # and reduced; exit 1 on any console error/warning, pageerror, unhandled rejection, unexpected >= 400 or React warning, printed with the
 # action that triggered it. React warnings only exist in a dev bundle, so also run it against `npx vite` (dev server).
-# `--only iphone|pixel|"x900 chromium motion"|"x900 chromium reduced"` runs one device (run them in parallel); `--quick` = desktop + Pixel 7.
+# `--only iphone|pixel|"x900 chromium motion"|"x900 chromium reduced"` runs one device (run them in parallel); `--quick` = wide column + Pixel 7.
 python3 tools/error_sweep.py
 ```
 
@@ -221,7 +239,8 @@ rulesByRef / evidenceByRef` route `upload:` refs to `/me/plans/{id}...`. After a
 
 `useJourneySelection(view)` returns `{ selection: { stage?: StageSelection; island?: MapSelection }, selectStage(sel | null, fromEl?),
 selectIsland(sel | null, fromEl?), clear() /* restores focus to fromEl */, returnFocusRef }` (type `JourneySelectionApi`). One of stage/island is
-open at a time. When `view.id` changes it selects the current care stage. `useMobile()` is the 760 px breakpoint (matches `@media (max-width: 760px)`).
+open at a time. When `view.id` changes it selects the current care stage. `useMobile()` was the 760 px breakpoint; since the mobile-only
+direction it always returns `true` (see the note at the top).
 
 ### 2.3 `web/src/lib/types.ts` additions (bottom of the file) and `lib/upload-types.ts`
 

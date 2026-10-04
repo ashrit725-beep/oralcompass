@@ -147,4 +147,9 @@ export const PASSAGE = {
   visitedFigures: "Plan-paid figures as you entered them from your benefit statement.",
   tableScrolls: "The table scrolls sideways for more columns.",
   tableRegion: (name: string) => `${name} (table, scrolls sideways)`,
+  // ---- the phone journey (mobile-only app): compact header over the painting, the rest below the map ----
+  journeyDetails: "Journey details",
+  journeyTitleLabel: "Journey",
+  overviewHeading: "Overview list",
+  overviewNote: "The same route, stops and stages as tables.",
 } as const satisfies Record<string, string | ((...a: never[]) => string)>;

@@ -1,75 +1,157 @@
-/* OralCompass journey view styles (passage map, controls, soundings, answers log, care rail, vertical passage, overview tables).
-   Owner: web foundation + map agent (spec §13.1). Imported by src/styles.css inside @layer components; colours come from the :root
-   tokens in styles.css only (no hex here). Motion: scenery drifts carry the class `motion-drift` (zeroed under reduced motion by
-   styles.css); nothing here loops under 2 s; `--dur-*` / `--ease-*` tokens for everything on cause. */
+/* OralCompass journey view styles: the cinematic stage (shared with My plan), the phone passage painted on it, soundings, the answers
+   log, the care timeline, the overview tables. Mobile-only app (owner direction "its fully a mobile app"): there is one layout, so no
+   rule here sits behind a width media query; on wide screens the same phone column renders inside the shell's centred app column.
+   Imported by src/styles.css inside @layer components; colours come from the :root tokens in styles.css only (no hex here).
+   Motion: transform and opacity only; scenery loops carry `motion-drift` (zeroed under reduced motion by styles.css); nothing here loops
+   under 2 s; `--dur-*` / `--ease-*` tokens for everything on cause. */
 
 /* ---- skip link (first focusable element; spec §9.2) ---- */
-.skip-link { position: absolute; left: 1rem; top: -100px; z-index: 60; background: var(--ink); color: var(--paper); padding: .6rem 1rem; border-radius: var(--r-2); font-weight: 600; text-decoration: none; }
+.skip-link { position: absolute; left: 1rem; top: -100px; z-index: 60; background: var(--ink); color: var(--paper); padding: .6rem 1rem; border-radius: var(--r-2); font-weight: 600; text-decoration: none; min-height: 44px; }
 .skip-link:focus-visible { top: .5rem; outline: 3px solid var(--focus); outline-offset: 2px; }
 
-/* ---- layout (spec §4.1): the detail column exists only while a selection is open ---- */
-.passage-layout { position: relative; display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-5); align-items: start; }
-.passage-layout.has-detail { grid-template-columns: minmax(0, 1fr) 440px; }
-@media (min-width: 1700px) { .passage-layout.has-detail { grid-template-columns: minmax(0, 1fr) 480px; } .passage-layout { max-width: 1680px; margin: 0 auto; } }
-.passage-main { min-width: 0; display: flex; flex-direction: column; gap: var(--s-4); }
-.passage-detail { min-width: 0; position: sticky; top: var(--s-4); }
-.passage-detail > .detail { max-height: calc(100vh - 136px); }
+/* =================================================================================================================================
+   The cinematic stage (CinematicStage.tsx). No box: no border, radius or card. The painting runs edge to edge across the app column
+   (negative margins cancel the view's gutter; the shell may set --view-gutter if it changes the view padding), starts under the
+   header and dissolves into the parchment through a tall fade.
+   ================================================================================================================================= */
+/* clipped sideways only: the camera may lift a selection above the stage's top edge into the strip over the bottom sheet */
+.cin-stage { position: relative; isolation: isolate; overflow: hidden; overflow: clip visible; margin: calc(-1 * var(--view-gutter, 1rem)) calc(-1 * var(--view-gutter, 1rem)) 0; background: var(--water-ink); }
+.cin-camera { position: relative; transition: transform 700ms cubic-bezier(.76, 0, .24, 1); }
+.cin-stage[data-dolly] .cin-camera { will-change: transform; }
+.cin-plate { position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+.cin-settle { transform-origin: 50% 0; }
+.cin-settle.is-establishing { animation: cin-establish 1.6s cubic-bezier(.16, 1, .3, 1) both; }
+.cin-drift { transform-origin: 50% 18%; animation: cin-kenburns 40s ease-in-out 1.6s infinite alternate; }
+.cin-stage[data-hidden] .cin-drift { animation-play-state: paused; }
+.cin-tile { display: block; width: 100%; height: auto; aspect-ratio: 1080 / 1920; object-fit: cover; user-select: none; -webkit-user-drag: none; }
+.cin-tile.is-mirror { transform: scaleY(-1); }
+/* the vignette: the painting darkens toward the column's edges and settles under the title card */
+.cin-vignette { position: absolute; inset: 0; background:
+  linear-gradient(90deg, color-mix(in srgb, var(--ink) 26%, transparent), transparent 16%, transparent 84%, color-mix(in srgb, var(--ink) 26%, transparent)),
+  linear-gradient(180deg, color-mix(in srgb, var(--ink) 12%, transparent), transparent 22%); }
+@keyframes cin-establish { from { transform: scale(1.06); } to { transform: none; } }
+@keyframes cin-kenburns { from { transform: none; } to { transform: scale(1.02); } }
 
-/* ---- answers log (spec §2.4): a log line, not stat tiles ---- */
-.log { margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 var(--s-5); font-family: var(--serif); font-size: 15px; line-height: 22px; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
-.log-row { display: grid; grid-template-columns: 8rem minmax(0, 1fr); gap: var(--s-2); padding: 6px 0; border-bottom: 1px solid var(--rule); min-width: 0; }
-.log-row:nth-last-child(-n + 2) { border-bottom: 0; }
-.log-row.log-from { grid-column: 1 / -1; }
-.log dt { font-weight: 600; color: var(--ink-soft); font-size: 13px; line-height: 22px; letter-spacing: .01em; }
-.log dd { margin: 0; min-width: 0; }
-/* rows wrap to two lines instead of cutting a sentence with "…" (the full text is also the button's title) */
-.log-link { font-family: var(--serif); font-size: 15px; line-height: 22px; text-align: left; max-width: 100%; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow-wrap: anywhere; color: var(--ink); min-height: 32px; }
-@media (max-width: 760px) {
-  .log { grid-template-columns: minmax(0, 1fr); }
-  .log-row { grid-template-columns: minmax(0, 1fr); gap: 2px; padding: 6px 0; }
-  .log-row:nth-last-child(-n + 2) { border-bottom: 1px solid var(--rule); }
-  .log-row:last-child { border-bottom: 0; }
-  .log dt { font-size: 11px; line-height: 14px; }
-  .log-link { white-space: normal; overflow-wrap: anywhere; }
-}
+/* the title card over the painted sky: parchment to clear, the text always on the opaque upper part (AA over the darkest water) */
+.cin-title { position: relative; z-index: 2; padding: 20px 16px 64px; background: linear-gradient(180deg,
+  color-mix(in srgb, var(--paper) 97%, transparent) 0%, color-mix(in srgb, var(--paper) 92%, transparent) 52%, color-mix(in srgb, var(--paper) 60%, transparent) 76%, transparent 100%); }
+.cin-title-h { margin: 0 0 6px; font-family: var(--serif); font-size: 30px; line-height: 34px; font-weight: 600; letter-spacing: 0; text-wrap: balance; color: var(--ink); }
+.cin-title-h:focus { outline: none; }
+.cin-title-h:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; border-radius: var(--r-1); }
+.cin-facts { display: grid; gap: 2px; justify-items: start; }
+.cin-fact-line { margin: 0; font-size: 15px; line-height: 22px; color: var(--ink); text-wrap: pretty; font-variant-numeric: tabular-nums; }
+.cin-fact { white-space: nowrap; }
+.cin-fact-cost .amt { font-weight: 600; }
+.cin-fact-cost > span:first-of-type .amt { color: var(--you-pay); }
+.cin-sep { color: var(--ink-soft); }
+.cin-calc { font-style: italic; }
+.cin-hint { position: relative; z-index: 2; margin: 0 4px 8px; padding: 8px 12px; border-radius: var(--r-3); background: color-mix(in srgb, var(--paper) 94%, transparent); }
 
-/* ---- journey header and segment row (delight pass mo-05: the chart starts inside the first 1366×900 viewport) ---- */
-.journey-head h2 { text-wrap: balance; margin-bottom: var(--s-1); }
-.progress-line { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--s-2); }
-.progress-note { display: inline; color: var(--ink-soft); font-size: 14px; }
-.progress-note > summary { display: inline-flex; align-items: center; cursor: pointer; color: var(--ink-soft); text-decoration: underline; text-decoration-color: var(--gold); text-underline-offset: 3px; list-style: none; min-height: 32px; }
-.progress-note > summary::-webkit-details-marker { display: none; }
-.progress-note[open] > p { margin: var(--s-1) 0 0; max-width: 72ch; }
-.journey-controls { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-3); }
-.journey-controls .segment-row { margin: 0; }
-.segmented { display: inline-grid; grid-auto-flow: column; grid-auto-columns: 1fr; padding: 3px; gap: 0; border: 1px solid var(--rule); border-radius: 999px; background: var(--paper-deep); }
-.segmented > button.seg-btn { position: relative; isolation: isolate; min-height: 40px; padding: 0 var(--s-4); border: 0 !important; background: transparent !important; color: var(--ink-soft) !important; border-radius: 999px; font-size: 15px; white-space: nowrap; transition: color var(--dur-micro) var(--ease-standard); }
-.segmented > button.seg-btn[aria-pressed="true"] { color: var(--ink) !important; font-weight: 600; }
-.segmented .seg-thumb { position: absolute; inset: 0; z-index: -1; border-radius: 999px; background: var(--parchment); box-shadow: inset 0 0 0 1px var(--gold); }
-.journey-pickers { display: flex; flex-wrap: wrap; gap: var(--s-2); flex: 1 1 320px; min-width: 0; }
-.journey-pickers select { min-height: 44px; min-width: 0; flex: 1 1 220px; max-width: 360px; }
-.journey-pickers select.add-journey { flex: 0 1 220px; }
-@media (max-width: 760px) {
-  .journey-controls { flex-direction: column; align-items: stretch; gap: var(--s-2); }
-  .segmented { display: grid; width: 100%; }
-  .segmented > button.seg-btn { min-height: 44px; padding: 0 var(--s-2); font-size: 14px; }
-  .journey-pickers { flex-direction: column; flex: none; }
-  .journey-pickers select, .journey-pickers select.add-journey { max-width: none; flex: none; width: 100%; height: auto; min-height: 44px; }
-}
+/* the map layer; the bottom padding leaves the last stop clear of the fade */
+.cin-map { position: relative; z-index: 1; margin-top: -40px; padding: 0 12px 150px; }
+.cin-fade { position: absolute; left: 0; right: 0; bottom: 0; height: 180px; z-index: 3; pointer-events: none; background: linear-gradient(180deg,
+  transparent 0%, color-mix(in srgb, var(--paper) 55%, transparent) 45%, color-mix(in srgb, var(--paper) 90%, transparent) 75%, var(--paper) 100%); }
 
-/* ---- the passage plate ---- */
-.passage-block { min-width: 0; }
-.passage-layout:not(.has-detail) .passage-block { max-width: 1180px; }
-.passage { position: relative; width: 100%; aspect-ratio: 1000 / 600; border-radius: var(--r-4); overflow: hidden; box-shadow: var(--shadow-2); border: 1px solid var(--rule); background: var(--water); isolation: isolate; }
-.passage-paint { position: absolute; inset: 0; z-index: 0; }
-.passage-svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-.passage-svg-scene { z-index: 3; }
-.passage.is-recalculating .island, .passage.is-recalculating .ctl-amt { opacity: .6; transition: opacity var(--dur-standard) var(--ease-standard); }
-.passage-controls { position: absolute; inset: 0; z-index: 10; }
-.passage-controls:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; border-radius: var(--r-4); }
-.ctl-island-group { display: contents; }
-.ctl { position: absolute; left: calc(var(--px) / 1000 * 100%); top: calc(var(--py) / 600 * 100%); transform: translate(-50%, -50%); }
-.passage-empty-note { position: absolute; left: 50%; top: 58%; transform: translate(-50%, -50%); z-index: 11; margin: 0; max-width: 32ch; text-align: center; font-family: var(--serif); background: var(--paper); border: 1px solid var(--rule); border-radius: var(--r-3); padding: var(--s-3) var(--s-4); box-shadow: var(--shadow-1); }
+/* =================================================================================================================================
+   The phone passage on the stage (PassageVertical.tsx): stops are HTML, the inked route is measured from them (.pv-route).
+   ================================================================================================================================= */
+.passage-vertical-wrap { position: relative; min-width: 0; }
+.passage-vertical-wrap:focus { outline: none; }
+.pv-route { position: absolute; left: 0; top: 0; z-index: 0; pointer-events: none; overflow: visible; }
+.passage-vertical { position: relative; z-index: 1; list-style: none; margin: 0; padding: 0; min-width: 0; }
+.pv-item { position: relative; margin: 0 0 14px; min-width: 0; }
+.pv-anchor { position: absolute; width: 2px; height: 2px; margin: -1px 0 0 -1px; pointer-events: none; }
+
+/* a stop: the whole painted island (or pier, or lighthouse) and its label are one button */
+.pv-station { position: relative; display: block; width: 100%; padding: 0; border: 0; background: transparent; color: var(--ink); font: inherit; text-align: left; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+.pv-station:focus-visible { outline: none; }
+.pv-station:focus-visible .pv-label { outline: 3px solid var(--focus); outline-offset: 2px; }
+/* the label: the Passage island label style (familiar term prominent, the value with its calculated mark, the place name small italic) */
+.pv-label { position: relative; display: grid; gap: 1px; width: max-content; max-width: min(15.5rem, 58%); min-width: 0; padding: 8px 12px 9px; border-radius: var(--r-3);
+  background: color-mix(in srgb, var(--paper) 96%, transparent); box-shadow: 0 1px 0 color-mix(in srgb, var(--ink) 14%, transparent), 0 8px 18px -10px color-mix(in srgb, var(--ink) 55%, transparent);
+  overflow-wrap: break-word; transition: background-color var(--dur-micro) var(--ease-standard), scale var(--dur-micro) var(--ease-standard), box-shadow var(--dur-micro) var(--ease-standard); }
+.pv-station.is-selected .pv-label { box-shadow: 0 0 0 2px var(--select), 0 0 0 5px var(--select-ring); }
+.pv-title { font-family: var(--serif); font-weight: 600; font-size: 17px; line-height: 21px; text-wrap: balance; }
+.pv-sub { font-size: 13px; line-height: 18px; color: var(--ink-soft); }
+.pv-place { font-family: var(--serif); font-style: italic; font-size: 13px; line-height: 18px; color: var(--ink-soft); }
+.pv-amt-line { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 0 4px; font-size: 15px; line-height: 21px; font-variant-numeric: tabular-nums; }
+.pv-amt-line .amt { font-weight: 600; }
+.pv-amt-line.estimate > .inline-flex:first-of-type .amt, .pv-island-card .pv-amt-line.estimate .amt { color: var(--you-pay); }
+.pv-amt-line.unresolved, .pv-amt-line.pending { color: var(--ink-soft); font-style: italic; }
+.pv-island-card.is-closed .pv-amt-line { color: var(--closed); }
+.pv-island-card.is-fog .pv-label { outline: 1.5px dashed var(--ink-soft); outline-offset: -4px; }
+.pv-notices { margin: 2px 0 0; font-size: 12px; line-height: 16px; color: var(--ink-soft); }
+.pv-label .fig-calc { white-space: normal; font-style: italic; }
+.ctl-pennant { justify-self: start; font-size: 12px; line-height: 16px; color: var(--ink); background: var(--gold-soft); border: 1px solid var(--gold); border-radius: var(--r-1); padding: 0 4px; }
+
+/* START: the pier with its boat, the label beside it */
+.pv-start .pv-station { display: flex; align-items: center; gap: 8px; min-height: 96px; padding-top: 4px; }
+.pv-pier { position: relative; flex: 0 0 128px; height: 68px; }
+.pv-pier svg { width: 100%; height: 100%; overflow: visible; }
+.pv-anchor-pier { left: 50%; top: 92%; }
+.pv-start .pv-label { max-width: none; flex: 0 1 auto; }
+
+/* an island: the painted plate (74 % of the column, bleeding past the edge on its side) and the label over the water beside it */
+.pv-island-card { min-height: 0; }
+.pv-plate { position: relative; display: block; width: 74%; aspect-ratio: 300 / 233; }
+.side-right .pv-plate { margin: 0 -7% 0 auto; }
+.side-left .pv-plate { margin: 0 auto 0 -7%; }
+.pv-plate-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.pv-island-card .pv-label { position: absolute; top: 50%; translate: 0 -50%; }
+.side-right .pv-label { left: 0; }
+.side-left .pv-label { right: 0; }
+.side-right .pv-anchor-in { left: 32%; top: 18%; }
+.side-right .pv-anchor-out { left: 28%; top: 84%; }
+.side-left .pv-anchor-in { left: 60%; top: 18%; }
+.side-left .pv-anchor-out { left: 42%; top: 84%; }
+
+/* checkpoints: a marker on the route (the lane at 28 px) and the leg's term, amount and evidence on a parchment strip beside it */
+.pv-cps { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 6px; }
+.pv-cp-item { position: relative; isolation: isolate; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 4px; min-height: 48px; min-width: 0; padding-right: 8px; }
+.pv-cp-item::before { content: ""; position: absolute; z-index: -1; inset: 2px 0 2px 42px; border-radius: var(--r-3); background: color-mix(in srgb, var(--paper) 93%, transparent);
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--ink) 12%, transparent); transition: background-color var(--dur-micro) var(--ease-standard); }
+.pv-cp { display: grid; grid-template-columns: 32px minmax(0, 1fr) auto; gap: 12px; align-items: center; min-height: 44px; min-width: 0; width: 100%; padding: 2px 4px 2px 0; border: 0; background: transparent; color: var(--ink); font: inherit; text-align: left; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+.pv-cp .cp-visual { width: 32px; height: 32px; box-shadow: 0 1px 2px color-mix(in srgb, var(--ink) 30%, transparent); transition: scale var(--dur-micro) var(--ease-standard), box-shadow var(--dur-micro) var(--ease-standard); }
+.pv-cp.is-selected .cp-visual { box-shadow: 0 0 0 3px var(--select-ring), 0 0 0 1.5px var(--select); border-color: var(--select); }
+.pv-cp:focus-visible { outline: none; }
+.pv-cp:focus-visible .cp-visual { outline: 3px solid var(--focus); outline-offset: 2px; }
+.pv-cp:focus-visible .pv-term { text-decoration: underline; text-decoration-color: var(--focus); text-underline-offset: 3px; }
+.pv-term { font-size: 15px; line-height: 20px; min-width: 0; }
+.pv-owner { display: block; color: var(--ink-soft); font-size: 12px; line-height: 16px; }
+.pv-owner-sep { display: none; }
+.pv-amt { display: inline-flex; gap: 4px; align-items: center; justify-content: flex-end; font-size: 15px; line-height: 20px; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+.pv-amt .amt { font-weight: 600; color: var(--ink); }
+.pv-amt.is-yours .amt { color: var(--owner-patient); }
+.pv-amt.is-closed { color: var(--closed); }
+.pv-split { display: inline-grid; justify-items: end; white-space: nowrap; line-height: 18px; }
+.pv-split .amt { font-size: 15px; }
+.pv-split, .pv-nochange, .pv-wait { font-size: 13px; color: var(--ink-soft); }
+.pv-evidence { display: inline-flex; }
+.pv-evidence .fig-calc { white-space: normal; max-width: 6.5rem; font-size: 12px; line-height: 15px; font-style: italic; text-align: right; }
+/* the 20 px stitch chips keep their look but get a 44 px tall hit area */
+.passage-vertical .stitch { position: relative; }
+.passage-vertical .stitch::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 44px; transform: translateY(-50%); }
+
+/* soundings on the water after each leg */
+.sounding.pv-sounding { display: grid; grid-template-columns: max-content max-content; gap: 0 10px; align-items: baseline; width: max-content; max-width: calc(100% - 42px); margin: 8px 0 2px 42px; padding: 6px 12px 7px;
+  border: 0; border-radius: var(--r-3); background: color-mix(in srgb, var(--parchment) 95%, transparent); box-shadow: 0 1px 0 color-mix(in srgb, var(--ink) 14%, transparent), 0 8px 18px -10px color-mix(in srgb, var(--ink) 55%, transparent); }
+.sounding.pv-sounding .sounding-row { display: contents; }
+.sounding.pv-sounding .amt { justify-self: end; }
+.sounding.pv-sounding .badge { grid-column: 1 / -1; margin-top: 2px; }
+
+/* the Harbor Light: the lighthouse plate centred, its label under it */
+.pv-light { margin-top: 18px; }
+.pv-light .pv-station { display: grid; justify-items: center; }
+.pv-lighthouse { position: relative; width: 80%; aspect-ratio: 220 / 176; }
+.pv-lighthouse svg { width: 100%; height: 100%; overflow: visible; }
+.pv-anchor-light { left: 27%; top: 60%; }
+.pv-light .pv-label { margin-top: -14px; justify-items: center; text-align: center; max-width: min(19rem, 92%); }
+.pv-empty-note { position: relative; z-index: 2; margin: 8px 0 0; padding: 10px 14px; border-radius: var(--r-3); background: color-mix(in srgb, var(--paper) 94%, transparent); font-family: var(--serif); }
+
+/* pressed state within 120 ms (motionsites technique 9, milder): the label or strip inverts toward parchment and settles to .97 */
+.pv-station:active .pv-label { background: var(--parchment); scale: .97; }
+.pv-cp-item:has(.pv-cp:active)::before { background: var(--parchment); }
+.pv-cp:active .cp-visual { scale: .94; }
 
 /* route marching dashes (18 s linear is the one legitimate linear; off under reduced motion via styles.css `.route`) */
 .route-group .route.motion-drift { stroke-dasharray: 7 9; }
@@ -81,58 +163,8 @@
 @keyframes oc-fog-drift-1 { to { transform: translateX(28px); } }
 @keyframes oc-fog-drift-2 { to { transform: translateX(-36px); } }
 
-/* ocean layers (plan N13) */
-.ocean-layers { position: absolute; inset: 0; z-index: 1; pointer-events: none; overflow: hidden; }
-.ocean-seigaiha { position: absolute; inset: -5% -40% -5% 0; }
-.ocean-fog { position: absolute; left: -10%; right: -10%; top: -4%; width: 120%; height: auto; opacity: .28; }
-.ocean-horizon-tint { position: absolute; left: 0; right: 0; top: 0; height: 22%; background: linear-gradient(to bottom, color-mix(in srgb, var(--paper) 28%, transparent), transparent); z-index: 2; }
-@media (max-width: 760px), (hover: none) { .ocean-fog, .ocean-horizon-tint { display: none; } }
-
-/* ---- island / frame / visited / marginal buttons (parchment lozenges; never text on the painting) ---- */
-.passage-controls .island-btn, .passage-controls .frame-btn, .passage-controls .visited-btn {
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; min-height: 44px; padding: 4px 8px; width: 152px; max-width: 152px;
-  background: var(--paper); color: var(--ink); border: 1px solid var(--rule); border-radius: var(--r-2); box-shadow: var(--shadow-1); cursor: pointer; text-align: center; line-height: 1.15;
-  transition: background-color var(--dur-micro) var(--ease-standard), opacity var(--dur-standard) var(--ease-standard), box-shadow var(--dur-micro) var(--ease-standard);
-}
-.passage-controls .frame-btn { width: 150px; max-width: 150px; }
-.passage-controls .light-btn { width: 170px; max-width: 170px; }
-.passage-controls .visited-btn { width: 128px; max-width: 128px; height: 52px; min-height: 52px; padding: 3px 8px; background: var(--paper-deep); overflow: hidden; }
-.passage-controls .visited-btn.visited-more { height: 44px; min-height: 44px; }
-.passage-controls .visited-more { font-weight: 600; }
-.passage-controls .marginal-btn { border-style: dashed; }
-.passage-layout.is-dense .passage-controls .island-btn { width: 104px; max-width: 104px; min-height: 44px; }
-.passage-layout.is-dense .ctl-title { -webkit-line-clamp: 1; }
-.passage-controls .island-btn:hover, .passage-controls .frame-btn:hover, .passage-controls .visited-btn:hover { background: var(--parchment); }
-.passage-controls .island-btn:active, .passage-controls .frame-btn:active { transform: translate(-50%, -50%) scale(.98); }
-.passage-controls .island-btn.is-selected, .passage-controls .frame-btn.is-selected, .passage-controls .visited-btn.is-selected { border-color: var(--select); box-shadow: 0 0 0 3px var(--select-ring), var(--shadow-1); }
-/* a non-selected island keeps full-contrast text (opacity .72 put its 11-12 px lines near 3.3:1); only its lift goes, the painted plate dims */
-.passage-controls .island-btn.is-dim { box-shadow: none; }
-.passage-controls .island-btn.is-fog { border-style: dashed; }
-.passage-controls .island-btn.is-closed .ctl-amt { color: var(--closed); }
-.passage-controls .island-btn.is-pending { background: var(--paper-deep); }
-.ctl-title { font-family: var(--serif); font-weight: 600; font-size: 13px; line-height: 15px; max-width: 100%; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow-wrap: anywhere; }
-.passage-controls .island-btn { min-height: 60px; }
-.passage-controls .frame-btn .ctl-title { -webkit-line-clamp: 1; }
-.ctl-sub { font-size: 11px; line-height: 13px; color: var(--ink-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
-.ctl-amt { font-size: 12px; line-height: 15px; font-variant-numeric: tabular-nums; color: var(--ink); white-space: nowrap; display: inline-flex; align-items: baseline; gap: 3px; }
-.ctl-amt .amt { font-weight: 600; }
-.ctl-amt.estimate .amt { color: var(--you-pay); }
-.ctl-amt.unresolved, .ctl-amt.pending, .ctl-amt.mentioned { color: var(--ink-soft); font-style: italic; }
-.ctl-pennant { font-size: 11px; line-height: 13px; color: var(--ink); background: var(--gold-soft); border: 1px solid var(--gold); border-radius: var(--r-1); padding: 0 4px; }
-.visited-mark { color: var(--forest); display: inline-flex; }
-.passage-controls .visited-btn { position: absolute; padding-left: 18px; padding-right: 6px; align-items: flex-start; text-align: left; }
-.passage-controls .visited-btn .visited-mark { position: absolute; left: 6px; top: 7px; }
-.visited-btn .ctl-title { font-size: 12px; line-height: 14px; overflow-wrap: break-word; }
-.visited-btn .ctl-sub { font-size: 11px; line-height: 13px; }
-.passage-controls .visited-btn.visited-more { padding-left: 8px; align-items: center; text-align: center; }
-
-/* ---- checkpoint buttons: 32 px visual inside a 44 × 44 hit box ---- */
-.passage-controls .cp-btn { width: 44px; height: 44px; padding: 0; background: transparent; border: 0; display: grid; place-items: center; cursor: pointer; border-radius: 50%; }
-.cp-visual { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: var(--paper); border: 1.6px solid var(--ink); color: var(--ink); box-shadow: var(--shadow-1); transition: box-shadow var(--dur-micro) var(--ease-standard), background-color var(--dur-micro) var(--ease-standard); }
-.cp-btn:hover .cp-visual { background: var(--parchment); }
-.cp-btn:active .cp-visual { transform: scale(.98); }
-.cp-btn.is-selected .cp-visual { box-shadow: 0 0 0 3px var(--select-ring), 0 0 0 1.5px var(--select); border-color: var(--select); }
-.cp-btn:focus-visible { outline: 3px solid var(--focus); outline-offset: 0; }
+/* checkpoint marker tones (owner is never colour alone: glyph + word travel together) */
+.cp-visual { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: var(--paper); border: 1.6px solid var(--ink); color: var(--ink); }
 .tone-patient .cp-visual, .lg-mark.tone-patient { border-color: var(--owner-patient); color: var(--owner-patient); }
 .tone-plan .cp-visual, .lg-mark.tone-plan { border-color: var(--owner-plan); color: var(--owner-plan); }
 .tone-nobody .cp-visual, .lg-mark.tone-nobody { border-color: var(--ink); color: var(--ink); background: repeating-linear-gradient(45deg, var(--sand) 0 3px, var(--paper) 3px 5px); }
@@ -151,32 +183,77 @@
 .sounding .amt { font-size: 15px; font-weight: 600; justify-self: end; font-variant-numeric: tabular-nums; }   /* slop-15: soundings 15 px */
 .sounding .badge { grid-column: 1 / -1; justify-self: start; margin-top: 2px; }
 .sounding-none { font-style: italic; color: var(--ink-soft); font-size: 11px; }
-.sounding-inline { position: static; transform: none; width: auto; max-width: 100%; pointer-events: auto; margin: 6px 0 0; display: flex; flex-wrap: wrap; gap: 2px 12px; min-height: 28px; padding: 4px 10px; font-size: 12px; }
+.sounding-inline { position: static; transform: none; pointer-events: auto; display: flex; flex-wrap: wrap; gap: 2px 12px; min-height: 28px; padding: 5px 10px; font-size: 12px; }
 .sounding-inline .sounding-row { display: inline-flex; gap: 6px; align-items: baseline; }
 .sounding-inline .badge { grid-column: auto; margin: 0; }
 
-/* ---- legend ---- */
-.passage-legend { display: flex; gap: .5rem 1rem; flex-wrap: wrap; font-size: 13px; line-height: 18px; color: var(--ink-soft); padding: .45rem .75rem; margin: 0; background: var(--paper-deep); position: relative; z-index: 2; border-top: 1px solid var(--rule); }
+/* =================================================================================================================================
+   Below the map: native list sections (journey details, completed and mentioned islands, legend, care timeline, overview list)
+   ================================================================================================================================= */
+.journey-phone { position: relative; display: flex; flex-direction: column; min-width: 0; }
+.journey-section { margin: 20px 0 0; min-width: 0; }
+.journey-section-h { margin: 0 0 8px; font-size: 20px; line-height: 26px; }
+/* disclosure rows: a 48 px summary between hairlines, a chevron that turns (colour and rotation only) */
+.journey-details, .journey-overview { border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
+.journey-details + .pv-side, .journey-details + .passage-legend { margin-top: 20px; }
+.journey-details > summary, .journey-overview > summary { position: relative; display: flex; align-items: center; min-height: 48px; padding-right: 32px; cursor: pointer; list-style: none; font-family: var(--serif); font-weight: 600; font-size: 17px; color: var(--ink); touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+.journey-details > summary::-webkit-details-marker, .journey-overview > summary::-webkit-details-marker { display: none; }
+.journey-details > summary::after, .journey-overview > summary::after { content: ""; position: absolute; right: 10px; top: 50%; width: 8px; height: 8px; margin-top: -6px; border-right: 2px solid var(--ink-soft); border-bottom: 2px solid var(--ink-soft); rotate: 45deg; transition: rotate var(--dur-micro) var(--ease-standard); }
+.journey-details[open] > summary::after, .journey-overview[open] > summary::after { rotate: 225deg; margin-top: -2px; }
+.journey-details > summary:active, .journey-overview > summary:active { color: var(--ink-soft); }
+.journey-details[open], .journey-overview[open] { padding-bottom: 12px; }
+.journey-details[open] > summary { margin-bottom: 4px; }
+.jd-title { margin: 0 0 8px; font-family: var(--serif); font-size: 15px; line-height: 22px; text-wrap: pretty; }
+.jd-term { display: block; font-family: var(--sans); font-size: 12px; line-height: 16px; font-weight: 600; color: var(--ink-soft); }
+
+/* ---- answers log (spec §2.4): a log line, not stat tiles; label | value rows ---- */
+.log { margin: 0; display: grid; grid-template-columns: minmax(0, 1fr); font-family: var(--serif); font-size: 15px; line-height: 22px; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
+.log-row { display: grid; grid-template-columns: 6.5rem minmax(0, 1fr); gap: var(--s-2); align-items: start; padding: 2px 0; border-bottom: 1px solid var(--rule); min-width: 0; }
+.log-row:last-child { border-bottom: 0; }
+.log dt { font-weight: 600; color: var(--ink-soft); font-size: 12px; line-height: 16px; padding-top: 12px; letter-spacing: .01em; }
+.log dd { margin: 0; min-width: 0; }
+/* rows wrap to two lines instead of cutting a sentence with "…" (the full text is also the button's title) */
+.log-link { font-family: var(--serif); font-size: 15px; line-height: 22px; text-align: left; max-width: 100%; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow-wrap: anywhere; white-space: normal; color: var(--ink); min-height: 44px; }
+.log-cost dd { display: block; }
+.log-calc { display: block; margin: 2px 0 0; }
+
+.progress-note { display: block; margin: 6px 0 0; color: var(--ink-soft); font-size: 14px; }
+.progress-note > summary { display: inline-flex; align-items: center; min-height: 44px; cursor: pointer; color: var(--ink-soft); text-decoration: underline; text-decoration-color: var(--gold); text-underline-offset: 3px; list-style: none; }
+.progress-note > summary::-webkit-details-marker { display: none; }
+.progress-note[open] > p { margin: var(--s-1) 0 0; max-width: 72ch; }
+.journey-pickers { display: flex; flex-direction: column; gap: var(--s-2); margin-top: var(--s-2); min-width: 0; }
+.journey-pickers select { width: 100%; max-width: none; height: auto; min-height: 44px; font-size: 16px; }   /* 16 px: iOS never zooms into a select */
+.add-journey-form { display: flex; flex-direction: column; gap: var(--s-2); }
+.add-journey-form button { align-self: flex-start; min-height: 44px; }
+
+/* ---- completed on the statement, mentioned at the consultation, legend ---- */
+.pv-side { margin: 20px 0 0; }
+.pv-side-h { font-size: 20px; line-height: 26px; margin: 0 0 6px; }
+.pv-side-note { margin: 0 0 .4rem; font-size: 13px; line-height: 18px; color: var(--ink-soft); display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; }
+.pv-side-list { list-style: none; margin: 0; padding: 0; display: grid; border-top: 1px solid var(--rule); }
+.pv-mini { width: 100%; min-height: 52px; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "mark title amt" "mark sub amt"; gap: 0 10px; align-items: center; text-align: left; background: transparent; border: 0; border-bottom: 1px solid var(--rule); padding: 6px 4px; color: var(--ink); cursor: pointer; font: inherit; min-width: 0; touch-action: manipulation; -webkit-tap-highlight-color: transparent; transition: background-color var(--dur-micro) var(--ease-standard); }
+.pv-mini .visited-mark { grid-area: mark; }
+.pv-mini .pv-title { grid-area: title; font-size: 15px; line-height: 20px; }
+.pv-mini .pv-sub { grid-area: sub; }
+.pv-mini .pv-amt { grid-area: amt; white-space: nowrap; min-width: max-content; text-align: right; font-size: 14px; line-height: 18px; justify-self: end; }
+.pv-mini .pv-amt .pv-wait { font-size: 12px; }
+.pv-mini.pv-marginal { grid-template-areas: "title amt" "sub amt"; grid-template-columns: minmax(0, 1fr) auto; }
+.pv-mini.pv-marginal .pv-amt { min-width: 0; max-width: 9rem; white-space: normal; text-align: right; }   /* words ("not covered") may wrap */
+.pv-mini.is-selected { background: color-mix(in srgb, var(--gold) 14%, transparent); }
+.pv-mini:active { background: var(--parchment); }
+.pv-mini:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; }
+.visited-mark { color: var(--forest); display: inline-flex; }
+.passage-legend { display: flex; gap: .5rem 1rem; flex-wrap: wrap; font-size: 13px; line-height: 18px; color: var(--ink-soft); padding: 10px 0 0; margin: 16px 0 0; position: relative; }
 .lg { display: inline-flex; align-items: center; gap: 6px; }
 .lg-mark { width: 18px; height: 18px; border-radius: 50%; border: 1.4px solid var(--ink); display: inline-grid; place-items: center; background: var(--paper); flex: none; }
 .lg-note { flex-basis: 100%; font-style: italic; }
 
-/* ---- island strip (7+) ---- */
-.island-strip { list-style: none; margin: 0; padding: 0; display: flex; gap: var(--s-2); flex-wrap: wrap; }
-.island-chip { min-height: 44px; padding: 0 12px; border: 1px solid var(--rule); border-radius: var(--r-2); background: var(--paper-deep); color: var(--ink); font: inherit; font-size: 14px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
-.island-chip small { color: var(--ink-soft); }
-.island-chip.is-selected { border-color: var(--select); box-shadow: 0 0 0 3px var(--select-ring); }
-.island-strip-select { position: sticky; top: 0; z-index: 5; background: var(--paper); padding: 4px 0; }
-.island-strip-select select { width: 100%; }
-
-/* ---- care timeline rail (desktop) ---- */
-.care-rail-wrap { min-width: 0; }
-.care-rail-h { font-size: 1rem; margin: 0 0 .4rem; }
-.care-rail { list-style: none; margin: 0; padding: 2px 2px 6px; display: flex; gap: var(--s-3); overflow-x: auto; scroll-snap-type: x proximity; }
-.care-card { flex: 0 0 220px; min-width: 220px; background: var(--paper-deep); border: 1px solid var(--rule); border-radius: var(--r-3); padding: var(--s-3) var(--s-4); position: relative; display: flex; flex-direction: column; gap: 6px; scroll-snap-align: start; }
-.care-card.is-current { border-color: var(--gold); }
-.care-stage-btn { position: relative; display: grid; gap: 1px; width: 100%; text-align: left; background: transparent; border: 1px solid transparent; border-radius: var(--r-2); padding: 4px 6px 4px 6px; color: var(--ink); min-height: 44px; cursor: pointer; font: inherit; }
-.care-stage-btn:hover { background: var(--parchment); }
+/* ---- care timeline (Aceternity Timeline restyled) ---- */
+.care-timeline-phone { min-width: 0; }
+.care-timeline-phone .sticky { position: static; }
+.care-entry { display: grid; gap: 6px; min-width: 0; margin-left: -1.5rem; }
+.care-stage-btn { position: relative; display: grid; gap: 1px; width: 100%; text-align: left; background: var(--paper-deep); border: 1px solid var(--rule); border-radius: var(--r-2); padding: 4px 6px; color: var(--ink); min-height: 44px; cursor: pointer; font: inherit; touch-action: manipulation; -webkit-tap-highlight-color: transparent; transition: background-color var(--dur-micro) var(--ease-standard), scale var(--dur-micro) var(--ease-standard); }
+.care-stage-btn:active { background: var(--parchment); scale: .98; }
 .care-stage-btn.is-selected { border-color: var(--select); box-shadow: 0 0 0 3px var(--select-ring); }
 .care-stage-btn.is-current .care-title { padding-left: 20px; }
 .care-pin { position: absolute; left: 4px; top: 7px; display: inline-flex; }
@@ -184,90 +261,24 @@
 .care-island { font-family: var(--serif); font-style: italic; font-size: 13px; line-height: 18px; color: var(--ink-soft); }
 .care-progress { font-size: 13px; line-height: 18px; color: var(--ink-soft); }
 .care-cps { list-style: none; margin: 0; padding: 0; display: flex; gap: 0; flex-wrap: wrap; }
-.care-cp { width: 44px; height: 44px; display: grid; place-items: center; background: transparent; border: 0; padding: 0; cursor: pointer; border-radius: 50%; color: var(--ink); }
-.care-cp:hover .care-cp-glyph circle:first-child { stroke-width: 2.4; }
-.care-cp.is-selected { box-shadow: inset 0 0 0 3px var(--select-ring); }
-.care-cp:focus-visible { outline: 3px solid var(--focus); outline-offset: -2px; }
-.care-show-chart { font-size: 13px; align-self: flex-start; }
-
-/* ---- care timeline (phone; Aceternity Timeline restyled) ---- */
-.care-timeline-phone { min-width: 0; }
-.care-entry { display: grid; gap: 6px; min-width: 0; margin-left: -1.5rem; }
-.care-entry .care-stage-btn { background: var(--paper-deep); border-color: var(--rule); }
 .care-cps-rows { flex-direction: column; gap: 4px; }
 .care-cps-rows li { width: 100%; }
-.care-cp-row { width: 100%; height: auto; min-height: 44px; place-items: center start; justify-items: start; display: grid; grid-template-columns: 28px minmax(0, 1fr); grid-template-rows: auto auto; gap: 0 8px; align-items: center; text-align: left; padding: 4px 6px; border-bottom: 1px solid var(--rule); border-radius: 0; }
+.care-cp { width: 44px; height: 44px; display: grid; place-items: center; background: transparent; border: 0; padding: 0; cursor: pointer; border-radius: 50%; color: var(--ink); -webkit-tap-highlight-color: transparent; }
+.care-cp:focus-visible { outline: 3px solid var(--focus); outline-offset: -2px; }
+.care-cp:active { background: color-mix(in srgb, var(--gold) 18%, transparent); }
+.care-cp-row { width: 100%; height: auto; min-height: 44px; justify-items: start; display: grid; grid-template-columns: 28px minmax(0, 1fr); grid-template-rows: auto auto; gap: 0 8px; align-items: center; text-align: left; padding: 4px 6px; border-bottom: 1px solid var(--rule); border-radius: 0; }
 .care-cp-row .care-cp-glyph { grid-row: 1 / span 2; }
 .care-cp-row.is-selected { background: color-mix(in srgb, var(--gold) 14%, transparent); box-shadow: none; }
 .care-cp-label { font-size: 15px; line-height: 20px; min-width: 0; overflow-wrap: normal; }
 .care-cp-status { font-size: 12px; color: var(--ink-soft); }
-.care-timeline-phone .sticky { position: static; }
-
-/* ---- vertical passage (phone, spec §4.3) ---- */
-.passage-vertical-wrap { min-width: 0; }
-/* the phone header is a crop of the painted chart's left shore, where the route sets out (the harbor coast), not the open water in the
-   middle of the plate (finding slop-28); a 1200x500 crop file so phones never download the full ~0.5 MB plate (mobile-14) */
-.pv-header { height: 132px; border-radius: var(--r-3); background: var(--water) url("/art/journey-backdrop-phone.webp") 0% 50% / cover no-repeat; border: 1px solid var(--rule); margin-bottom: var(--s-3); }
-.passage-vertical { list-style: none; margin: 0; padding: 0 0 0 52px; position: relative; min-width: 0; }
-.passage-vertical::before { content: ""; position: absolute; left: 27px; top: 12px; bottom: 12px; border-left: 3px dashed var(--water-ink); }
-.pv-item { position: relative; margin: 0 0 var(--s-4); min-width: 0; }
-.pv-item::before { content: ""; position: absolute; left: -31px; top: 22px; width: 14px; height: 14px; border-radius: 50%; background: var(--sage); border: 2px solid var(--forest); }
-.pv-item.is-unresolved::before { background: var(--paper); border-style: dashed; border-color: var(--ink-soft); }
-.pv-item.is-not_covered::before { background: var(--paper); border-color: var(--closed); }
-.pv-light::before { background: var(--gold); border-color: var(--ink); }
-.pv-start::before { background: var(--wood); border-color: var(--ink); }
-.pv-card { width: 100%; min-height: 72px; text-align: left; background: var(--paper-deep); border: 1px solid var(--rule); border-radius: var(--r-3); padding: 10px 12px; color: var(--ink); display: grid; gap: 2px; cursor: pointer; font: inherit; min-width: 0; overflow-wrap: anywhere; }
-.pv-island-card { min-height: 88px; }
-.pv-card.is-selected { border-color: var(--select); box-shadow: 0 0 0 3px var(--select-ring); }
-.pv-card.is-fog { border-style: dashed; }
-.pv-card.is-closed .pv-amt-line { color: var(--closed); }
-.pv-title { font-family: var(--serif); font-weight: 600; font-size: 16px; line-height: 20px; }
-.pv-sub, .pv-place { font-size: 13px; line-height: 18px; color: var(--ink-soft); }
-.pv-place { font-family: var(--serif); font-style: italic; }
-.pv-amt-line { font-size: 15px; line-height: 20px; font-variant-numeric: tabular-nums; display: inline-flex; gap: 4px; align-items: baseline; flex-wrap: wrap; }
-.pv-amt-line.estimate .amt { color: var(--you-pay); font-weight: 600; }
-.pv-amt-line.unresolved, .pv-amt-line.pending { color: var(--ink-soft); font-style: italic; }
-.pv-cps { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 8px; }
-.pv-cp-item { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; justify-items: end; }
-.pv-cp-item .pv-cp { justify-self: stretch; }
-.pv-cp { min-height: 44px; width: 100%; display: grid; grid-template-columns: 32px minmax(0, 1fr) auto; gap: 8px; align-items: center; text-align: left; background: var(--paper); border: 1px solid var(--rule); border-radius: var(--r-2); padding: 4px 8px; color: var(--ink); cursor: pointer; font: inherit; min-width: 0; }
-.pv-cp.is-selected { border-color: var(--select); box-shadow: 0 0 0 3px var(--select-ring); }
-.pv-cp .cp-visual { width: 28px; height: 28px; box-shadow: none; }
-.pv-term { font-size: 15px; line-height: 20px; min-width: 0; overflow-wrap: normal; }
-.pv-owner { color: var(--ink-soft); font-size: 12px; }
-.pv-amt { font-size: 15px; line-height: 20px; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; display: inline-flex; gap: 4px; align-items: center; }
-.pv-amt.is-yours .amt { color: var(--owner-patient); }
-.pv-amt.is-closed { color: var(--closed); }
-.pv-split, .pv-nochange, .pv-wait { font-size: 13px; color: var(--ink-soft); }
-/* phones: the figure outweighs its label (600 vs 400), and "not owed by you" sits on its own caption line instead of orphaning "· not" */
-@media (max-width: 767px) {
-  .pv-amt .amt, .pv-split .amt { font-weight: 600; color: var(--ink); }
-  .pv-amt.is-yours .amt { color: var(--owner-patient); }
-  .pv-owner { display: block; line-height: 16px; }
-  .pv-owner-sep { display: none; }
-}
-.pv-evidence { display: inline-flex; padding-right: 4px; }
-.pv-notices { margin: 6px 0 0; font-size: 12px; color: var(--ink-soft); }
-.pv-side { margin: var(--s-4) 0 0; }
-.pv-side-h { font-size: 1rem; margin: 0 0 .4rem; }
-.pv-side-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
-.pv-mini { width: 100%; min-height: 44px; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "mark title amt" "mark sub amt"; gap: 0 8px; align-items: center; text-align: left; background: var(--paper-deep); border: 1px solid var(--rule); border-radius: var(--r-2); padding: 6px 10px; color: var(--ink); cursor: pointer; font: inherit; min-width: 0; }
-.pv-mini .visited-mark { grid-area: mark; }
-.pv-mini .pv-title { grid-area: title; font-size: 14px; }
-.pv-mini .pv-sub { grid-area: sub; }
-/* the plan-paid figure is never squeezed: a percentage max-width on an `auto` column resolved against the column itself (19 px) and cut "$45.00" to "$45.0" */
-.pv-mini .pv-amt { grid-area: amt; white-space: nowrap; min-width: max-content; text-align: right; font-size: 13px; line-height: 17px; justify-self: end; }
-.pv-mini .pv-amt .pv-wait { font-size: 12px; }
-.pv-mini.pv-marginal { border-style: dashed; grid-template-areas: "title amt" "sub amt"; grid-template-columns: minmax(0, 1fr) auto; }
-.pv-mini.is-selected { border-color: var(--select); box-shadow: 0 0 0 3px var(--select-ring); }
-.pv-legend { margin-top: var(--s-3); border-radius: var(--r-2); border: 1px solid var(--rule); }
+.care-show-chart { font-size: 13px; align-self: flex-start; min-height: 44px; display: inline-flex; align-items: center; }
 
 /* ---- overview tables ---- */
 .ov-route { margin: .5rem 0 1rem; }
 .ov-route h3 { margin-top: 1rem; }
 /* each table stays ONE real table (header and body share their columns) inside a focusable sideways scroller; the edge shadows
-   appear only on the side that has more columns (background-attachment local/scroll), and phones print a one-line hint */
-.ov-scroll { max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; margin: .3rem 0 1rem; border-radius: var(--r-1);
+   appear only on the side that has more columns (background-attachment local/scroll), with a one-line hint */
+.ov-scroll { max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; margin: .3rem 0 1rem; border-radius: var(--r-1);
   background:
     linear-gradient(to right, var(--paper) 40%, transparent) left / 28px 100% no-repeat local,
     linear-gradient(to left, var(--paper) 40%, transparent) right / 28px 100% no-repeat local,
@@ -279,91 +290,42 @@
 .ov-table.ov-cps { min-width: 640px; }
 .ov-table.ov-visited, .ov-table.ov-marginal, .ov-table.ov-stage { min-width: 560px; }
 .ov-table th, .ov-table td { vertical-align: baseline; }
-.ov-scroll-hint { display: none; margin: 0 0 .25rem; }
-@media (max-width: 760px) { .ov-scroll-hint { display: block; } }
+.ov-scroll-hint { display: block; margin: 0 0 .25rem; }
 .ov-frame th, .ov-frame td { background: var(--paper-deep); }
 .ov-cp-details { margin: .25rem 0 .75rem; }
 .ov-cp-details summary { cursor: pointer; min-height: 44px; padding: 10px 0; font-weight: 600; }
 .ov-sound { font-size: .85rem; color: var(--ink-soft); min-width: 11rem; }
 .ov-table .linklike { text-align: left; }
-/* a figure's badge drops under it when the column is narrow, so the route table fits a desktop column instead of scrolling */
 .ov-table td > .inline-flex { flex-wrap: wrap; row-gap: 2px; }
+/* target sizes on the overview tables (findings layout-15, mobile-8): 44 px row-header links and stage titles; the 20 px stitch chips
+   keep their look and get the same hit height */
+.ov-table .linklike, .ov-stages h3 .linklike { min-height: 44px; display: inline-flex; align-items: center; }
+.ov-table .stitch { position: relative; }
+.ov-table .stitch::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 44px; transform: translateY(-50%); }
 
-.pv-mini.pv-marginal .pv-amt { min-width: 0; max-width: 9rem; white-space: normal; text-align: right; }   /* words ("not covered") may wrap; a fixed length, not a circular percentage */
-/* care rail (delight pass mo-20d): on desktop every stage card fits the column instead of the last one being cut at the edge */
-@media (min-width: 1100px) {
-  .care-rail { overflow-x: visible; gap: var(--s-2); }
-  .care-card { flex: 1 1 0; min-width: 0; padding: var(--s-3); }
-}
-/* layout audit (delight pass): the marginal chip is a two-line 44 px control, not a 60 px island card (it was cut by the plate's bottom
-   edge); the care rail's text button gets a 32 px target */
-.passage-controls .island-btn.marginal-btn { min-height: 44px; }
-.care-show-chart { min-height: 32px; display: inline-flex; align-items: center; }
-.segmented > button.seg-btn { cursor: pointer; font-family: inherit; }
-@media (max-width: 760px) {
-  .log-link, .care-show-chart { min-height: 44px; }
-  .progress-note > summary { min-height: 44px; }
-  .skip-link { min-height: 44px; }
-}
-/* phone passage: the 20 px stitch chips keep their look but get a 44 px tall hit area */
-.passage-vertical .stitch { position: relative; }
-.passage-vertical .stitch::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 44px; transform: translateY(-50%); }
-
-/* ---- care-stage / checkpoint detail (DetailPanel): desktop side panel, phone modal Sheet (findings a11y-3, mobile-1, layout-15) ---- */
+/* ---- care-stage / checkpoint detail (DetailPanel as a modal Sheet; findings a11y-3, mobile-1, layout-15) ---- */
 .detail-bar .close { flex: none; width: 44px; height: 44px; display: inline-grid; place-items: center; }
 .detail-sheet .crumbs { margin: 0 0 var(--s-2); }
 .detail-sheet .detail-body { padding: 0 0 max(16px, env(safe-area-inset-bottom)); }
 /* `:not(#_)` lifts this over the legacy pill rule in styles.css (ten :not() classes, min-height 40px) without repeating its list */
 .detail-sheet .detail-body button:not(.linklike):not(#_) { min-height: 44px; }
 
-/* engine totals on the journey surfaces say how they were made (finding info-only-5; same treatment as the drawer's .fig-calc) */
-.log-cost dd { display: flex; flex-wrap: wrap; align-items: center; gap: 0 8px; }
-.log-calc { display: inline-block; }
-@media (max-width: 760px) { .log-cost dd { display: block; } .log-calc { display: block; margin: 2px 0 0; } }
-.pv-side-note { margin: 0 0 .4rem; font-size: 13px; line-height: 18px; color: var(--ink-soft); display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; }
-.pv-card .fig-calc { white-space: normal; }
-
-/* target sizes on the overview tables (findings layout-15, mobile-8): row-header links and stage titles are 32 px tall on desktop and
-   44 px on phones; the 20 px stitch chips keep their look and get the same hit height (as on the phone passage) */
-.ov-table .linklike, .ov-stages h3 .linklike { min-height: 32px; display: inline-flex; align-items: center; }
-.ov-table .stitch { position: relative; }
-.ov-table .stitch::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 32px; transform: translateY(-50%); }
-@media (max-width: 760px) {
-  .ov-table .linklike, .ov-stages h3 .linklike { min-height: 44px; }
-  .ov-table .stitch::after { height: 44px; }
-}
-
-/* phone journey header (findings slop-3, layout-20, layout-9, demo-10; orchestrator note 5): a smaller balanced heading, the Answers log
-   as label | value rows, and the journey pickers inside a 44 px disclosure, so the passage starts about 200 px higher */
-.journey-switch > summary { display: flex; align-items: center; min-height: 44px; cursor: pointer; color: var(--ink); font-weight: 600; text-decoration: underline; text-decoration-color: var(--gold); text-underline-offset: 3px; }
-.journey-switch[open] > summary { margin-bottom: var(--s-2); }
-@media (max-width: 760px) {
-  .journey-head h2 { font-size: 1.2rem; line-height: 1.35; }
-  .log-row { grid-template-columns: 6.5rem minmax(0, 1fr); gap: var(--s-2); align-items: start; padding: 2px 0; }
-  .log dt { font-size: 12px; line-height: 16px; padding-top: 12px; }
-}
-.segment-target { min-width: 0; }
-
-/* pressed feedback on the phone touch surfaces (finding mobile-21): an on-palette press within 120 ms instead of WebKit's grey tap
-   rectangle over the rounded parchment; no scale under reduced motion */
-.pv-card, .pv-cp, .pv-mini, .care-stage-btn, .care-cp, .segmented > button.seg-btn, .journey-switch > summary, .passage-vertical .stitch { -webkit-tap-highlight-color: transparent; }
-.pv-card, .pv-cp, .pv-mini, .care-stage-btn { transition: transform var(--dur-micro) var(--ease-standard), background-color var(--dur-micro) var(--ease-standard); }
-.pv-card:active, .pv-cp:active, .pv-mini:active, .care-stage-btn:active { background: var(--parchment); transform: scale(.98); }
-.care-cp:active { background: color-mix(in srgb, var(--gold) 18%, transparent); }
-.segmented > button.seg-btn:active { color: var(--ink) !important; }
-@media (prefers-reduced-motion: reduce) { .pv-card:active, .pv-cp:active, .pv-mini:active, .care-stage-btn:active { transform: none; } }
-.island-strip-pages { display: flex; flex-wrap: wrap; gap: var(--s-2); }
-.island-strip-pages .island-chip[aria-pressed="true"] { border-color: var(--select); font-weight: 600; }
-.passage-controls .marginal-more { font-weight: 600; width: 112px; max-width: 112px; min-height: 44px; }
-
 /* "what if" on the Harbor Light and the tooth field in the Procedure section (finding demo-5) */
 .what-if { margin: var(--s-3) 0 0; padding: var(--s-2) var(--s-3) var(--s-3); border: 1px dashed var(--rule); border-radius: var(--r-2); min-width: 0; }
 .what-if legend { padding: 0 4px; font-weight: 600; font-size: 14px; }
 .what-if label { display: block; margin-bottom: 4px; font-size: 13px; color: var(--ink-soft); }
 /* an explicit height: WebKit ignores min-height on a native select (it measured 23 px on iPhone) */
-.what-if select { display: block; width: 100%; height: 44px; min-height: 44px; max-width: 100%; }
+.what-if select { display: block; width: 100%; height: 44px; min-height: 44px; max-width: 100%; font-size: 16px; }
 .what-if-note { margin: 4px 0 0; font-size: 13px; display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: center; }
 .tooth-edit { margin-top: var(--s-2); }
-.tooth-edit input { max-width: 8rem; min-height: 44px; }
-/* start screen: the pill buttons are 44 px tall on every screen (the legacy rule gives 40 px; :not(#_) outranks its :not() list) */
+.tooth-edit input { max-width: 8rem; min-height: 44px; font-size: 16px; }
+/* start screen: the pill buttons are 44 px tall (the legacy rule gives 40 px; :not(#_) outranks its :not() list) */
 .start-actions button:not(#_) { min-height: 44px; }
+
+/* reduced motion: every end state at once (the camera jumps, the plate rests at scale 1, no press scale) */
+@media (prefers-reduced-motion: reduce) {
+  .cin-settle.is-establishing, .cin-drift { animation: none !important; }
+  .cin-camera { transition: none !important; }
+  .pv-station:active .pv-label, .pv-cp:active .cp-visual, .care-stage-btn:active { scale: none; }
+  .journey-details > summary::after, .journey-overview > summary::after { transition: none; }
+}

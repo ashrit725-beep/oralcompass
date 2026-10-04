@@ -1,5 +1,5 @@
 import { DRAWER } from "@/lib/copy/drawer";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { COMPASS } from "@/lib/copy/compass";
 import type { LandmarkId } from "@/lib/copy";
 import { compassModel } from "@/lib/compass-model";
@@ -12,8 +12,8 @@ import { Gauge } from "./Gauge";
 import { RestrictionsList } from "./RestrictionsList";
 
 /**
- * BenefitsCompass (spec §4.6; addendum B2/B3 grafts). One parchment panel divided by hairlines into four quadrants around the
- * navigator's chest (`benefits-chest.webp`, ≤ 96 px, decorative), titled by the question it answers from fields:
+ * BenefitsCompass (spec §4.6; addendum B2/B3 grafts). One parchment panel of four sections divided by hairlines (one column: the app
+ * is phone-only), titled by the question it answers from fields:
  * "How much of the $1,500.00 maximum remains after the planned work? $162.00". Quadrants: Deductible and Annual maximum (Gauge:
  * bullet-bar meters, no radial dial), Coverage (CoverageMeter per class), Restrictions (RestrictionsList). `compact` renders the
  * one-line strip for a drawer header ("Deductible remaining $0.00 · Annual maximum remaining $1,260.00").
@@ -38,7 +38,6 @@ export function BenefitsCompass({ plan, benefits, estimate, stitches, compact = 
   const doc = plan.source_document.version_label;
   const maxStitch = stitchForCite(vm.annualMax.limitCite, stitches, doc);
   const dedStitch = stitchForCite(vm.deductible.limitCite, stitches, doc);
-  const [chestFailed, setChestFailed] = useState(false);
   const dedWord = vm.deductible.remainingCents == null ? COMPASS.notProvided : money(vm.deductible.remainingCents);
   const maxWord = vm.annualMax.unlimited ? COMPASS.unlimited : vm.annualMax.remainingCents == null ? COMPASS.notProvided : money(vm.annualMax.remainingCents);
 
@@ -46,8 +45,7 @@ export function BenefitsCompass({ plan, benefits, estimate, stitches, compact = 
     return (
       <p className="cmp-strip" role="group" aria-label={COMPASS.panelLabel(plan.title, dedWord, maxWord)}>
         <span className="cmp-strip-item">{COMPASS.stripDeductible} {vm.deductible.remainingCents == null ? <><span className="cmp-word">{COMPASS.notProvided}</span> <EvidenceBadge status="UNKNOWN" /></> : <Money cents={vm.deductible.remainingCents} evidence="USER" />}</span>
-        <span className="cmp-strip-sep" aria-hidden="true">·</span>
-        <span className="cmp-strip-item">{COMPASS.stripMax} {vm.annualMax.unlimited ? <><span className="cmp-word">{COMPASS.unlimited}</span> <EvidenceBadge status={vm.annualMax.limitStatus} /></> : vm.annualMax.remainingCents == null ? <><span className="cmp-word">{COMPASS.notProvided}</span> <EvidenceBadge status="UNKNOWN" /></> : <Money cents={vm.annualMax.remainingCents} evidence="USER" />}</span>
+        <span className="cmp-strip-item"><span className="cmp-strip-k"><span className="cmp-strip-sep" aria-hidden="true">· </span>{COMPASS.stripMax}</span> {vm.annualMax.unlimited ? <><span className="cmp-word">{COMPASS.unlimited}</span> <EvidenceBadge status={vm.annualMax.limitStatus} /></> : vm.annualMax.remainingCents == null ? <><span className="cmp-word">{COMPASS.notProvided}</span> <EvidenceBadge status="UNKNOWN" /></> : <Money cents={vm.annualMax.remainingCents} evidence="USER" />}</span>
       </p>
     );
   }
@@ -56,7 +54,6 @@ export function BenefitsCompass({ plan, benefits, estimate, stitches, compact = 
   return (
     <section className="compass" aria-label={COMPASS.panelLabel(plan.title, dedWord, maxWord)}>
       <header className="cmp-head">
-        {!chestFailed && <img className="cmp-chest" src="/art/benefits-chest.webp" alt="" width={72} height={72} loading="lazy" decoding="async" onError={() => setChestFailed(true)} />}
         <div className="cmp-head-text">
           <p className="cmp-kicker">{COMPASS.title}</p>
           <h3 className="cmp-q">

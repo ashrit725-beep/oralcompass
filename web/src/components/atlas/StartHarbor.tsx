@@ -3,7 +3,7 @@ import { ArtPlate } from "./ArtPlate";
 /**
  * START harbor (spec §3.4, §6): a painted quay with a mast at the left shore, the navigator's chest plate (benefits-chest, ≤ 72 px,
  * lazy) beside it, and a faint dotted wake running in from the margin where the visited islets sit. Decorative only (inside the
- * aria-hidden scene); the HTML "Start · {plan} · {network}" button is rendered by PassageControls.
+ * aria-hidden scene); the HTML "Start · {plan} · {network}" button is rendered by PassageVertical.
  */
 export function StartHarbor({ x, y, wakeTo }: { x: number; y: number; wakeTo?: { x: number; y: number } | null }) {
   return (

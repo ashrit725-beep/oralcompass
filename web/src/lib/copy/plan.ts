@@ -189,6 +189,18 @@ export const PLAN = {
   cmpUpperBound: "(upper bound)",
   cmpUnresolvedFor: "Unresolved. Not provided for this plan:",
   cmpClose: "Close clause",
+  // phone Compare (mobile-only direction): one plan per card under a sticky plan switcher
+  cmpChoose: "Choose plans",
+  cmpChooseClose: "Close plan choice",
+  cmpDone: "Done",
+  cmpPickTwo: "Two or more plans are needed for a comparison.",
+  cmpOrderNote: "Plans appear in the order you chose. Inputs are entered for each plan separately; nothing is copied between plans.",
+  cmpSwitcher: "Plans in this comparison",
+  cmpCardsRegion: "Plan cards. Swipe sideways to move between plans.",
+  cmpCardPos: (i: number, n: number) => `Plan ${i} of ${n}`,
+  cmpDiffers: "Differs between plans",
+  cmpWhoCanEnroll: "Where offered and who can enroll",
+  cmpCardEstimate: "Estimated you pay for the procedures compared",
   // ---- documents ----
   docsPlan: "Plan documents",
   docsMine: "Your documents",
@@ -205,6 +217,10 @@ export const PLAN = {
   docsPages: "pages",
   docsFilter: "Filter clauses",
   docsFilterPlaceholder: "deductible, crown, page…",
+  docsNoMatch: (q: string) => `No clause in this document contains “${q}”. Clear the search to see every clause.`,
+  docsNoClauses: "No clauses are recorded for this plan yet.",
+  docsRemindersSummary: (n: number, next: string | null) => (n === 0 ? "None listed for your records" : `${n} listed${next ? ` · next ${next}` : ""}`),
+  docsRemindersClose: "Close reminders",
   docsPageReview: "page attribution needs review",
   docsExported: "A copy of your records was downloaded.",
   docsDeleted: (what: string) => `Deleted: ${what}.`,
@@ -240,3 +256,16 @@ export const DOC_WORDS: { kind: Record<string, string>; status: Record<string, s
   status: { cited_facts_verified_in_text: "figures checked against the document text", typed_by_user: "figures typed by you",
     cached: "read earlier", uploaded: "uploaded, not read yet" },
 };
+
+/** My plan as a painted passage (owner direction 05:58 / 06:00: the plan map in the journey's concept, full-bleed, phone only). */
+export const PLAN_MAP = {
+  mapLabel: "Plan map: five landmarks on one route",
+  documentSection: "Plan document",
+  youPay: "you pay",
+  plan: "plan",
+  planPays: "plan pays",
+  calculated: "calculated",
+  upperBound: "(upper bound)",
+  noPlanned: "no planned procedures",
+  waiting: "Waiting for information",
+} as const;

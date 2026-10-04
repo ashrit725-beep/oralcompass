@@ -4,7 +4,7 @@ import type { InsuranceCheckpointVM } from "@/lib/types";
 /**
  * Checkpoint glyphs (spec §5.6): every rule glyph is an SVG path, never emoji; the word travels in the control's accessible name.
  * `Glyph` renders one glyph in a 24-box (used by the scene markers, the HTML checkpoint buttons, the vertical passage rows, the care
- * rail and the legend). `CheckpointMarker` is the painted marker in the aria-hidden scene; its HTML twin lives in PassageControls.
+ * rail and the legend). `CheckpointMarker` is the painted marker in the aria-hidden scene; its HTML twin is the checkpoint row in PassageVertical.
  * Owner is never colour alone: terracotta is reserved for owner `patient` and the you-pay landing; owner `nobody` is a sand hatch
  * (addendum B1/B2); `plan` is sea ink; `basis` is wood; pass-through markers are hollow.
  */

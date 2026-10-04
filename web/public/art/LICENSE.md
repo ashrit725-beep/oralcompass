@@ -15,6 +15,7 @@ redistributed as part of OralCompass under the repository's license.
 | emblem.png · icons/* · favicon.ico | OralCompass mark, PWA icons derived from it | PNG / ICO |
 | fog-layer-1.webp · fog-layer-2.webp | translucent mist layers for depth/parallax (2000×667) | WebP + alpha |
 | paper-texture.webp | ivory parchment brushwork tile (1254×1254, repainted 2026-10-03) | WebP |
+| journey-passage.webp · plan-passage.webp | portrait plates for the phone stage: journey-backdrop.webp turned 90° clockwise (journey) and counter-clockwise (plan), 1080×1920 (derived 2026-10-04) | WebP |
 
 The SVG scenes in `web/src/components/atlas/` remain the fallback whenever a file here is missing or fails to load.
 

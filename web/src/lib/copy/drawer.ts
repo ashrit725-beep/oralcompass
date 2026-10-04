@@ -24,7 +24,6 @@ export const DRAWER = {
   waitingInfo: "Waiting for information",
   noAmount: "no amount",
   estimateUpdated: "Estimate updated",
-  pipelineHint: "The pipeline scrolls sideways; every node is also a row in the receipt below.",
 
   // section headings (spec §4.4; the checks look for these exact texts)
   sProcedure: "Procedure",

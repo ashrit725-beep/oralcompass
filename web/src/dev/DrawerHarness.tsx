@@ -3,7 +3,6 @@ import { AnimatePresence } from "motion/react";
 import { ClauseCard } from "@/components/ClauseCard";
 import { ProcedureDrawer } from "@/components/drawer/ProcedureDrawer";
 import { StageLoader } from "@/components/StageLoader";
-import { useMobile } from "@/hooks/useMobile";
 import { api } from "@/lib/api";
 import { UI } from "@/lib/copy";
 import { money, stitchesFromClauses } from "@/lib/stitches";
@@ -18,7 +17,6 @@ import { buildHarnessPassage } from "./harnessVm";
  * Nothing here ships in the product views; the integrator keeps it hash-gated.
  */
 export function DrawerHarness() {
-  const mobile = useMobile();
   const [plans, setPlans] = useState<PlanSummary[]>([]);
   const [planRef, setPlanRef] = useState("ML26");
   const [plan, setPlan] = useState<PlanFixture | null>(null);
@@ -68,7 +66,7 @@ export function DrawerHarness() {
     : i.kind === "destination" ? `${i.title} · ${vm?.totals.youPay != null ? `you pay ${money(vm.totals.youPay)}` : "waiting for information"}` : i.title;
 
   return (
-    <div className={`harness ${mobile ? "is-mobile" : ""}`}>
+    <div className="harness is-mobile">
       <header className="harness-head">
         <h1>Drawer harness</h1>
         <label className="plan-pick">Plan <select value={planRef} onChange={(e) => { setSel(null); setPlanRef(e.target.value); }}>{plans.map((p) => <option key={p.plan_code} value={p.plan_code}>{p.plan_code} · {p.title}{p.is_fictional ? " (fictional)" : ""}</option>)}</select></label>
@@ -92,7 +90,7 @@ export function DrawerHarness() {
         <AnimatePresence>
           {island && plan && vm && (
             <ProcedureDrawer key={island.id} island={island} vm={vm} plan={plan} rules={rules} benefits={benefitsFor} estimate={estimate} stitches={stitches} selectedCheckpoint={sel?.cp}
-                             onSelectStitch={setStitch} onOpenDocuments={() => setStatus("Documents tab (harness: no-op)")} onClose={() => setSel(null)} mobile={mobile}
+                             onSelectStitch={setStitch} onOpenDocuments={() => setStatus("Documents tab (harness: no-op)")} onClose={() => setSel(null)}
                              returnFocus={openers.current[island.id]} onRecordsChanged={() => setTick((t) => t + 1)} />
           )}
         </AnimatePresence>

@@ -10,7 +10,7 @@ import { docOf, Fact, Figure, Row, Section, type SectionProps } from "./shared";
  * (the M step, or "within the remaining maximum"), remaining after (the engine's `remaining_after`), and a compact meter with before/after
  * marks (`role="img"`, dataviz: one hue, thin marks). Collapsed by default on the phone. Omitted when the plan has no annual-maximum field.
  */
-export function AnnualMaximumSection({ island, item, line, trail, rule, plan, benefits, estimate, stitches, onSelectStitch, mobile }: SectionProps) {
+export function AnnualMaximumSection({ island, item, line, trail, rule, plan, benefits, estimate, stitches, onSelectStitch }: SectionProps) {
   const doc = docOf(plan);
   const mx = plan.annual_max;
   if (!mx) return null;
@@ -27,7 +27,7 @@ export function AnnualMaximumSection({ island, item, line, trail, rule, plan, be
   const total = mx.value ?? null;
   const pct = (c: number | null) => (total && c != null ? Math.max(0, Math.min(100, (c / total) * 100)) : null);
   return (
-    <Section k="annualMax" title={DRAWER.sAnnualMax} collapsible={mobile} defaultOpen={!mobile}>
+    <Section k="annualMax" title={DRAWER.sAnnualMax} collapsible defaultOpen={false}>
       <dl className="dsec-dl">
         <Row term={DRAWER.planAnnualMax}>
           {unlimited ? <Fact evidence={mx.status} stitch={planStitch} onSelectStitch={onSelectStitch}>{DRAWER.unlimited}</Fact>

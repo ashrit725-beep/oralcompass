@@ -52,9 +52,8 @@
 
 /* fin/mobile-plan: on phones the on-screen keyboard shrinks the visual viewport; when the question box takes focus the browser scrolls it
    into view, and this margin keeps the send row clear of the home indicator / keyboard edge instead of flush against it. */
-@media (max-width: 760px) {
-  .ai-prompt-shell, .as-composer { scroll-margin-bottom: calc(env(safe-area-inset-bottom, 0px) + 24px); }
-}
+/* phone layout, always on (mobile-only app) */
+.ai-prompt-shell, .as-composer { scroll-margin-bottom: calc(env(safe-area-inset-bottom, 0px) + 24px); }
 
 /* ---- simple terms first (every answer card): the plain-words lead, "Even simpler", the two quiet actions, the details disclosure ---- */
 .as-simple { display: flex; flex-direction: column; gap: var(--s-1); }

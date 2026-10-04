@@ -8,7 +8,7 @@ import { docOf, Fact, Flag, Row, Section, type SectionProps } from "./shared";
  * this procedure on the benefit statement (USER) or "None recorded", and, when the line is closed by a frequency limit, the engine's own
  * step label verbatim. Collapsed by default on the phone. Omitted when the rule has no frequency clause and no F step.
  */
-export function FrequencySection({ line, item, rule, plan, benefits, stitches, onSelectStitch, mobile }: SectionProps) {
+export function FrequencySection({ line, item, rule, plan, benefits, stitches, onSelectStitch }: SectionProps) {
   const doc = docOf(plan);
   const freq = rule?.frequency ?? [];
   const closed = line?.status === "not_covered" && line.steps[0]?.rule === "F" ? line.steps[0] : null;
@@ -16,7 +16,7 @@ export function FrequencySection({ line, item, rule, plan, benefits, stitches, o
   const key = item?.procedure_key ?? line?.procedure_key ?? rule?.procedure_key;
   const dates = claimsOf(benefits?.claims).filter((c) => c.procedure_key === key).map((c) => c.date).sort();
   return (
-    <Section k="frequency" title={DRAWER.sFrequency} collapsible={mobile} defaultOpen={!mobile}>
+    <Section k="frequency" title={DRAWER.sFrequency} collapsible defaultOpen={false}>
       {closed && <Flag text={closed.label} />}
       <ul className="dsec-list dsec-rules">
         {freq.map((f, i) => (
