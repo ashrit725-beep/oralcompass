@@ -8,7 +8,7 @@
  */
 import { ApiError, api } from "./api";
 import { UPLOAD } from "./copy/upload";
-import type { ExtractedField, ExtractionStatus, ReviewDecision } from "./types";
+import type { ExtractedField, ExtractionStatus, ReviewDecision, UploadResponse } from "./types";
 
 export const MAX_BYTES = 32 * 1024 * 1024;
 export const MAX_PAGES = 100;
@@ -34,6 +34,12 @@ export type ExtractionStatusFull = ExtractionStatus & {
   model?: string | null;
   reason?: string | null;
 };
+
+/** POST /me/documents/upload also returns `mode` and the preview's `note` (additive to the frozen `UploadResponse`). */
+export type UploadResponseX = UploadResponse & { mode?: "demo" | "live"; redaction_preview: UploadResponse["redaction_preview"] & { note?: string } };
+
+/** Dev auth header the frozen api.ts sends; mirrored here for the one direct fetch (the stored PDF bytes for the page preview). */
+export const DEV_USER_HEADER = { "X-Dev-User": "demo-user" } as const;
 
 export type FileProblem = "not_pdf" | "too_large" | "too_many_pages" | "unreadable";
 export type FileCheck = { ok: true } | { ok: false; problem: FileProblem };
