@@ -1,10 +1,10 @@
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { BADGE_LABEL, LANDMARKS, PLAIN, UI, type LandmarkId } from "@/lib/copy";
 import { PLAN } from "@/lib/copy/plan";
 import { COMPASS } from "@/lib/copy/compass";
 import { compassModel } from "@/lib/compass-model";
 import type { UploadSummary } from "@/lib/plan-catalog";
-import { money, stitchForCite } from "@/lib/stitches";
+import { stitchForCite } from "@/lib/stitches";
 import type { Benefits, Cite, CoverageRule, PlanFixture, PlanRef, PlanSummary, SavedEstimate, Stitch, VJson } from "@/lib/types";
 import { isUpload } from "@/lib/types";
 import { DepthDial } from "@/components/DepthDial";
@@ -40,7 +40,9 @@ export function LandmarkContent({ landmark, plan, summary, benefits, rules, esti
   const vm = useMemo(() => compassModel(plan, benefits, estimate), [plan, benefits, estimate]);
   const chip = (st: Stitch | undefined) => (st ? <StitchChip stitch={st} selected={selected?.id === st.id} prominent={prominentScope} onSelect={onSelect} /> : null);
 
-  const Fig = ({ v, label, kind = "money" }: { v: VJson<any> | undefined | null; label: string; kind?: "money" | "text" | "pct" }) => {
+  // a plain render helper, not a component declared in render: a new component type per render would remount every figure on each
+  // update (a pressed stitch chip lost focus, NumberFlow restarted instead of rolling; web-correctness-6)
+  const fig = ({ v, label, kind = "money" }: { v: VJson<any> | undefined | null; label: string; kind?: "money" | "text" | "pct" }) => {
     if (!v) return <li><span className="k">{label}</span><span className="v"><span>{UI.notStated}</span> <EvidenceBadge status="UNKNOWN" /></span></li>;
     const st = stitchForCite(v.cite ?? undefined, stitches, doc);
     return (
@@ -81,7 +83,7 @@ export function LandmarkContent({ landmark, plan, summary, benefits, rules, esti
           {upload?.banner && <li><span className="k">Source of the rules</span><span className="v">{upload.banner}</span></li>}
           {summary.currency_note && <li><span className="k">{UI.outdated}</span><span className="v"><EvidenceBadge status="AMBIGUOUS" /> {summary.currency_note}</span></li>}
           <li><span className="k">Eligibility</span><span className="v">{summary.eligibility?.text ?? UI.notStated}</span></li>
-          <Fig v={plan.premium_monthly.employee_only ?? plan.premium_monthly.self_only ?? Object.values(plan.premium_monthly)[0]} label="Premium (employee only, monthly)" />
+          {fig({ v: plan.premium_monthly.employee_only ?? plan.premium_monthly.self_only ?? Object.values(plan.premium_monthly)[0], label: "Premium (employee only, monthly)" })}
           <li><span className="k">Evidence</span><span className="v"><button type="button" className="linklike" onClick={onOpenDocuments}>{UI.evidenceTitle}</button>
             {plan.source_document.url && <> · <a href={plan.source_document.url} target="_blank" rel="noreferrer">{UI.openSource}</a></>}</span></li>
           {(plan.conflicts?.length ?? 0) > 0 && depth >= 2 && (
@@ -93,9 +95,9 @@ export function LandmarkContent({ landmark, plan, summary, benefits, rules, esti
       {landmark === "bridge" && (
         <>
           <ul className="facts">
-            <Fig v={plan.deductible_individual} label="Deductible (per person)" />
-            <Fig v={plan.deductible_family} label="Deductible (per family)" />
-            {plan.deductible_individual_out?.value != null && <Fig v={plan.deductible_individual_out} label="Out-of-network deductible (per person)" />}
+            {fig({ v: plan.deductible_individual, label: "Deductible (per person)" })}
+            {fig({ v: plan.deductible_family, label: "Deductible (per family)" })}
+            {plan.deductible_individual_out?.value != null && fig({ v: plan.deductible_individual_out, label: "Out-of-network deductible (per person)" })}
             <li><span className="k">Not applied to</span><span className="v">{plan.deductible_waived_classes.length ? plan.deductible_waived_classes.join(", ") : "no class is exempt in this document"}{plan.deductible_waiver_note && depth >= 2 ? <small className="note">{plan.deductible_waiver_note}</small> : null}</span></li>
           </ul>
           {depth >= 2 && (
@@ -111,7 +113,7 @@ export function LandmarkContent({ landmark, plan, summary, benefits, rules, esti
       {landmark === "cove" && (
         <>
           <ul className="facts">
-            {plan.classes.map((c) => <Fig key={c.name} v={c.plan_share_bp_in} label={`${c.name}, plan pays (in-network)`} kind="pct" />)}
+            {plan.classes.map((c) => <Fragment key={c.name}>{fig({ v: c.plan_share_bp_in, label: `${c.name}, plan pays (in-network)`, kind: "pct" })}</Fragment>)}
             <li><span className="k">Network rule</span><span className="v"><EvidenceBadge status={plan.oon_rule.status} /> {typeof plan.oon_rule.value === "string" ? plan.oon_rule.value : plan.oon_rule.value?.out ?? UI.notStated}{chip(stitchForCite(plan.oon_rule.cite, stitches, doc))}</span></li>
             <li><span className="k">Alternate benefit</span><span className="v"><EvidenceBadge status={plan.alternate_benefit.status} /> {plan.alternate_benefit.note || (plan.alternate_benefit.status === "DOC" ? "Clause present." : UI.notStated)}{chip(stitchForCite(plan.alternate_benefit.cite, stitches, doc))}
               {depth === 3 && plan.alternate_benefit.cite && <Wording cite={plan.alternate_benefit.cite} doc={doc} />}</span></li>
@@ -152,10 +154,10 @@ export function LandmarkContent({ landmark, plan, summary, benefits, rules, esti
       {landmark === "lookout" && (
         <>
           <ul className="facts">
-            <Fig v={plan.annual_max} label="Annual maximum (per person)" />
-            {plan.annual_max_out && (plan.annual_max_out.value != null || plan.annual_max_out.unlimited) && <Fig v={plan.annual_max_out} label="Out-of-network annual maximum" />}
+            {fig({ v: plan.annual_max, label: "Annual maximum (per person)" })}
+            {plan.annual_max_out && (plan.annual_max_out.value != null || plan.annual_max_out.unlimited) && fig({ v: plan.annual_max_out, label: "Out-of-network annual maximum" })}
             {(plan.annual_max_exempt_classes?.length ?? 0) > 0 && <li><span className="k">Does not count toward it</span><span className="v">{plan.annual_max_exempt_classes!.join(", ")}</span></li>}
-            <Fig v={plan.benefit_year_start_month} label="Benefit year starts (month)" kind="text" />
+            {fig({ v: plan.benefit_year_start_month, label: "Benefit year starts (month)", kind: "text" })}
             {depth >= 2 && estimate?.status === "estimate" && (
               <li><span className="k">After the planned work</span>
                 <span className="v">{estimate.ledger.lines.map((l) => <span key={l.label} className="lm-after">{l.label}: {l.remaining_after?.annual_max_cents == null ? <><span>{COMPASS.noMaxApplies}</span> <EvidenceBadge status={plan.annual_max.status} /></> : <Money cents={l.remaining_after.annual_max_cents} evidence={plan.annual_max.status} badge={!stitchForCite(plan.annual_max.cite, stitches, doc)} />} {chip(stitchForCite(plan.annual_max.cite, stitches, doc))} left</span>)}</span></li>
@@ -186,7 +188,5 @@ function Wording({ cite, doc }: { cite: Cite; doc: string }) {
 /** Where the statement figures came from (label + date), with the USER badge; or the honest absence. */
 function UsageSource({ benefits }: { benefits: Benefits | null }) {
   if (!benefits) return <p className="note"><EvidenceBadge status="UNKNOWN" /> {PLAN.bsNoneEntered}</p>;
-  return <p className="note"><EvidenceBadge status="USER" /> {BADGE_LABEL.USER}: {benefits.source?.label ?? UI.notStated}{benefits.source?.date ? ` (${benefits.source.date})` : ""}{benefits.remaining_max_cents != null ? "" : ""}</p>;
+  return <p className="note"><EvidenceBadge status="USER" /> {BADGE_LABEL.USER}: {benefits.source?.label ?? UI.notStated}{benefits.source?.date ? ` (${benefits.source.date})` : ""}</p>;
 }
-
-export { money as _money };

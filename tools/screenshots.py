@@ -323,6 +323,17 @@ def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-pref
     dial_widths = [group.get_by_role("radio").nth(i).bounding_box()["width"] for i in range(group.get_by_role("radio").count())]
     check(f"{device}: depth dial", group.get_by_role("radio").count() == 3 and bool(after_arrow) and "Your numbers" in str(after_arrow) and exact_again == "true" and (not mobile or all(w >= 100 for w in dial_widths)) and (not mobile or page.evaluate("document.documentElement.scrollWidth") == width),
           f"after_arrow={str(after_arrow)[:20]!r} exact={exact_again} widths={[round(w) for w in dial_widths]}")
+    # web-correctness-6: a stitch chip in the landmark card survives the re-render its press causes, so closing the clause card returns
+    # focus to that same chip (figures are no longer remounted on every render)
+    lm_chip = page.locator(".landmark .facts .stitch").first
+    chip_label = lm_chip.get_attribute("aria-label") if lm_chip.count() else None
+    if chip_label:
+        page.evaluate("document.querySelector('.landmark .facts .stitch').dataset.walkMark = '1'")
+        lm_chip.focus(); page.keyboard.press("Enter"); page.wait_for_timeout(500)
+        if page.get_by_role("button", name="Close clause card").count():
+            page.get_by_role("button", name="Close clause card").click(); page.wait_for_timeout(300)
+    chip_back = page.evaluate("(() => { const a = document.activeElement; return !!a && a.dataset.walkMark === '1'; })()")
+    check(f"{device}: landmark stitch keeps focus across its card", bool(chip_label) and chip_back, f"chip={str(chip_label)[:40]!r} back={chip_back}")
     close_sheet()
     # benefit statement form at depth 2 on the bridge (figures identical to the seeded statement, so nothing downstream changes)
     page.locator("button[aria-label^='Deductible']").first.click(); page.wait_for_timeout(400)
