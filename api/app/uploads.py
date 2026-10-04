@@ -372,7 +372,8 @@ def build_plan_dict(doc: dict, st: dict, version_label: str, published_at: str) 
     am = plan.get("annual_max")
     if am and am.get("status") in ("DOC", "USER", "AMBIGUOUS"):
         plan["annual_max_exempt_classes"] = list(structure.get("annual_max_exempt_classes") or [])
-        if am.get("value") == "unlimited" or structure.get("annual_max_unlimited"):
+        # the extraction's "unlimited" flag only stands while the row keeps the document's value; an owner's edit wins (api-correctness-10)
+        if am.get("value") == "unlimited" or (structure.get("annual_max_unlimited") and am.get("status") in ("DOC", "AMBIGUOUS") and am.get("value") is None):
             am["value"], am["unlimited"] = None, True
     for i, c in enumerate(structure.get("classes") or []):
         share_in = v(f"classes[{i}].plan_share_bp_in") or {"value": None, "status": "UNKNOWN"}

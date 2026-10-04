@@ -572,3 +572,16 @@ def test_live_mode_against_openrouter_once(monkeypatch):
     if fields["annual_max"]["confidence"] in ("confirmed", "likely"):
         assert fields["annual_max"]["proposed_value"] == 150000
     assert all(not extraction.looks_like_injection(n) for n in st["notes"])
+
+
+def test_edited_annual_max_wins_over_an_unlimited_extraction():
+    """api-correctness-10: the owner's edit of the annual maximum is published as entered, not replaced by the 'unlimited' flag."""
+    from app.uploads import build_plan_dict
+    doc = {"id": "d1", "filename": "p.pdf", "sha256": "0" * 64, "pages": 2, "uploaded_at": "2026-10-01T00:00:00+00:00"}
+    row = {"field_path": "annual_max", "proposed_value": "unlimited", "page": 1, "quote": "q", "evidence_status": "VERIFIED"}
+    edited = build_plan_dict(doc, {"fields": [{**row, "decision": {"kind": "edited", "value": 150000, "source": "my statement"}}], "structure": {"annual_max_unlimited": True}},
+                             "UP1", "2026-10-01T00:00:00+00:00")["annual_max"]
+    assert edited["value"] == 150000 and edited["status"] == "USER" and not edited.get("unlimited")
+    confirmed = build_plan_dict(doc, {"fields": [{**row, "decision": {"kind": "confirmed"}}], "structure": {"annual_max_unlimited": True}},
+                                "UP1", "2026-10-01T00:00:00+00:00")["annual_max"]
+    assert confirmed["value"] is None and confirmed["unlimited"] is True and confirmed["status"] == "DOC"
