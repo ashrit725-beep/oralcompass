@@ -281,6 +281,8 @@ def _confirmed_items(confirmed: Optional[Iterable[Any]]) -> list[tuple[str, str]
             cat, val = c.get("category"), c.get("value")
         elif isinstance(c, (tuple, list)) and len(c) == 2:
             cat, val = c
+        elif isinstance(c, str):
+            cat, val = classify_term(c), c          # a bare value: categorised by its shape, like a typed term
         else:
             continue
         if cat in CATEGORIES and isinstance(val, str) and val.strip():
@@ -335,40 +337,56 @@ def redact_pages(pages: Sequence[str], confirmed: Optional[Iterable[Any]] = None
             add(_Entry(classify_term(term), term.strip(), key, "term", term=term.strip(), pattern=_value_pattern(key)))
     device = [e for e in order if e.source in ("device", "term")]
 
-    # layer 1: confirmed values and typed terms, longest first where they overlap
     out = [str(p or "") for p in pages]
+    found_server: list[_Entry] = []
+
+    def server_pass(patterns: list[tuple[str, re.Pattern]], credit_contained: bool = False) -> None:
+        """Server patterns, category by category; a match that touches a placeholder is already handled. A match whose value the device
+        confirmed counts for the device entry (one identifier, never two). With credit_contained, a confirmed value inside the match (a name
+        inside an email address) is removed with it and counts as found."""
+        for category, pat in patterns:
+            for i, text in enumerate(out):
+                mask = None
+                spans = []
+                for m in pat.finditer(text):
+                    span = _accept(category, m, text)
+                    if span is None:
+                        continue
+                    s, e = span
+                    if mask is None:
+                        mask = _protected_mask(text)
+                    if any(mask[s:e]):
+                        continue
+                    value = text[s:e]
+                    key = value_key(value)
+                    if len(key) < MIN_KEY_CHARS:
+                        continue
+                    ent = entries.get(key) or add(_Entry(category, " ".join(value.split()), key, "server", pattern=_value_pattern(key)))
+                    ent.occurrences += 1
+                    ent.pages.add(i + 1)
+                    if credit_contained:
+                        proj = _projection(value)[0]
+                        for d in device:
+                            if d is not ent and d.pattern is not None and d.pattern.search(proj):
+                                d.occurrences += 1
+                                d.pages.add(i + 1)
+                    if ent.source == "server" and ent not in found_server:
+                        found_server.append(ent)
+                    spans.append((s, e, ent))
+                if spans:
+                    out[i] = _apply(text, spans)
+
+    # layer 0: email addresses first, whole: a confirmed name inside 'sam.rivera@example.com' must not split the address
+    server_pass([p for p in SERVER_PATTERNS if p[0] == "email"], credit_contained=True)
+
+    # layer 1: confirmed values and typed terms, longest first where they overlap
     for i, text in enumerate(out):
         spans = _value_spans(text, device, i + 1)
         if spans:
             out[i] = _apply(text, spans)
 
-    # layer 2: server patterns, category by category; a match that touches a placeholder is already handled
-    found_server: list[_Entry] = []
-    for category, pat in SERVER_PATTERNS:
-        for i, text in enumerate(out):
-            mask = None
-            spans = []
-            for m in pat.finditer(text):
-                span = _accept(category, m, text)
-                if span is None:
-                    continue
-                s, e = span
-                if mask is None:
-                    mask = _protected_mask(text)
-                if any(mask[s:e]):
-                    continue
-                value = text[s:e]
-                key = value_key(value)
-                if len(key) < MIN_KEY_CHARS:
-                    continue
-                ent = entries.get(key) or add(_Entry(category, " ".join(value.split()), key, "server", pattern=_value_pattern(key)))
-                ent.occurrences += 1
-                ent.pages.add(i + 1)
-                if ent.source == "server" and ent not in found_server:
-                    found_server.append(ent)
-                spans.append((s, e, ent))
-            if spans:
-                out[i] = _apply(text, spans)
+    # layer 2: every other server pattern
+    server_pass([p for p in SERVER_PATTERNS if p[0] != "email"])
 
     # layer 3: an identifier the server found (a name next to its label, an ID after 'Member ID') is removed wherever else it appears,
     # however it is spaced there (prose, letters, page footers, 'HB26 0042 7731' on a later page)
