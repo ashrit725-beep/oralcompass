@@ -1,2 +1,133 @@
-/* OralCompass plan view styles (plan selector, benefits compass, benefit statement form, treatment plan importer). Owner: web foundation + map agent.
-   Imported by src/styles.css inside @layer components; colours come from the :root tokens in styles.css only (no hex here). */
+/* OralCompass plan view styles (plan selector, benefits compass, benefit statement form, treatment plan importer, compare cells, depth dial).
+   Owner: web foundation + map agent. Imported by src/styles.css inside @layer components; colours come from the :root tokens in
+   styles.css only (no hex here). Motion: the meter fills use one transform transition (--dur-standard); it is zeroed under reduced motion
+   and the end state (the final width) is set by the inline style, so nothing is lost. Nothing in this file loops. */
+
+/* ---- plan selector ---- */
+.plan-selector { display: grid; gap: var(--s-3); width: 100%; }
+.ps-mode { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2) var(--s-4); }
+.ps-mode-label { font-size: .9rem; color: var(--ink-soft); }
+.ps-toggle [data-slot="toggle-group-item"] { font-family: var(--serif); }
+.ps-row { display: grid; gap: var(--s-3); align-items: end; grid-template-columns: minmax(0, 1fr); }
+.ps-cascade { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-3); }
+.ps-cascade select, .ps-upload select, .plan-selector .plan-pick select { width: 100%; min-height: 44px; }
+.ps-upload { display: grid; gap: var(--s-3); padding: var(--s-3) var(--s-4); border: 1px dashed var(--rule); border-radius: var(--r-3); background: var(--paper-deep); }
+.ps-noup { margin: 0; }
+.plan-banner .ribbon { margin-left: 0; margin-right: .4rem; }
+.plan-empty { font-family: var(--serif); color: var(--ink-soft); margin: var(--s-2) 0 0; }
+.plan-head { align-items: start; }
+@media (min-width: 761px) {
+  .ps-row { grid-template-columns: minmax(220px, 1fr) minmax(0, 2fr); }
+}
+@media (max-width: 760px) {
+  .ps-cascade { display: none; }                 /* phones keep the single grouped select (addendum B2: fewer controls at 360 px) */
+  .ps-mode { flex-direction: column; align-items: stretch; }
+  .ps-toggle { width: 100%; } .ps-toggle [data-slot="toggle-group-item"] { flex: 1; }
+}
+
+/* ---- depth dial (RubberSegment wrapper) ---- */
+.depth-dial { margin-left: auto; max-width: 100%; }
+.depth-dial .depth-n { font-family: var(--sans); font-size: .75rem; opacity: .75; margin-right: .3rem; }
+/* Two cascade repairs for the vendored RubberSegment: (1) the legacy `.grid` table rule in styles.css (width 100 %, min-width 640 px)
+   also matches Tailwind's `grid` utility on the thumb layer; (2) the `[font:inherit]` utility is emitted after `text-[length:var(--rs-font)]`,
+   so the slot font falls back to the inherited size. Setting the size on the track restores it through inheritance on both layers. */
+.depth-dial [role="radiogroup"] { font-size: 14px; }
+.depth-dial [role="radiogroup"] > .grid { min-width: 0; width: auto; border-collapse: separate; }
+@media (max-width: 760px) {
+  .depth-dial { margin-left: 0; width: 100%; } .depth-dial > div { width: 100%; }
+  /* 3 slots in ~326 px: the inline `--rs-pad: 18px` is overridden here (author !important beats an inline normal declaration) and the digit is dropped */
+  .depth-dial [role="radiogroup"] { --rs-pad: 8px !important; }
+  .depth-dial .depth-n { display: none; }
+}
+
+/* ---- benefits compass ---- */
+.compass { margin-top: var(--s-5); padding: var(--s-4) var(--s-5); background: var(--paper-deep); border: 1px solid var(--rule); border-radius: var(--r-4); }
+.cmp-head { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--s-4); align-items: center; padding-bottom: var(--s-4); border-bottom: 1px solid var(--rule); }
+.cmp-chest { width: 72px; height: 72px; object-fit: contain; display: block; }
+.cmp-kicker { margin: 0; font-family: var(--serif); font-style: italic; color: var(--ink-soft); font-size: .9rem; }
+.cmp-q { margin: .1rem 0 0; font-size: 1.2rem; line-height: 1.35; }
+.cmp-q .amt { font-family: var(--sans); font-size: 1.05em; }
+.cmp-a { margin: .25rem 0 0; display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); }
+.cmp-a-amt .amt { font-size: 1.75rem; font-weight: 700; line-height: 1.1; }
+.cmp-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.cmp-quad { padding: var(--s-4) var(--s-4) var(--s-4) 0; min-width: 0; }
+.cmp-ne, .cmp-se { padding-left: var(--s-4); padding-right: 0; border-left: 1px solid var(--rule); }
+.cmp-sw, .cmp-se { border-top: 1px solid var(--rule); }
+.cmp-h { margin: 0 0 var(--s-2); font-size: 1rem; }
+.cmp-limit { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-1) var(--s-2); margin-bottom: var(--s-2); }
+.cmp-limit .amt { font-size: 1.15rem; font-weight: 600; }
+.cmp-word { color: var(--ink-soft); }
+.cmp-meter { position: relative; height: 8px; border-radius: var(--r-1); background: var(--parchment); overflow: visible; margin: var(--s-2) 0 var(--s-3); }
+.cmp-meter-thin { height: 6px; margin: var(--s-1) 0 var(--s-2); }
+.cmp-meter.is-unknown { background: transparent; border: 1px dotted var(--ink-soft); }
+.cmp-fill { position: absolute; inset: 0; border-radius: var(--r-1); background: var(--water); transform-origin: left center; transition: transform var(--dur-standard) var(--ease-standard); }
+.cmp-meter.is-unknown .cmp-fill, .cmp-meter.is-empty .cmp-fill { display: none; }
+.cmp-tick { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--terracotta); transform: translateX(-1px); }
+.cmp-tick-glyph { color: var(--terracotta); }
+.cmp-figures { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: var(--s-1) var(--s-3); margin: 0; font-size: .95rem; align-items: baseline; }
+.cmp-figures dt { color: var(--ink-soft); } .cmp-figures dd { margin: 0; min-width: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-1) var(--s-2); }
+.cmp-figures dd > span, .cmp-limit > span, .cmp-a > span, .cmp-strip-item > span { flex-wrap: wrap; }   /* <Money> is an inline-flex pair; let the badge drop to the next line at 360 px */
+/* the phone landmark rows opt out of the legacy pill-button rule (styles.css) through `.unstyled`; restore their own look */
+.landmark-list .landmark-row.unstyled { background: var(--paper); color: var(--ink); border: 1px solid var(--rule); border-radius: 10px; padding: .45rem .7rem; min-height: 44px; }
+.landmark-list .landmark-row.unstyled.is-selected { border-color: var(--terracotta); box-shadow: 0 0 0 3px var(--select-ring); }
+.cmp-derivation { margin: var(--s-2) 0 0; font-size: .8rem; color: var(--ink-soft); }
+.cmp-classes { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s-2); }
+.cmp-class-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s-2); flex-wrap: wrap; font-size: .9rem; }
+.cmp-class-name { font-weight: 500; } .cmp-class-pct { display: inline-flex; align-items: center; gap: var(--s-2); }
+.cmp-out { margin: 0; font-size: .8rem; color: var(--ink-soft); }
+.cmp-restrictions { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s-1); }
+.cmp-restriction { min-height: 44px; text-align: left; font-size: .95rem; display: inline-flex; align-items: center; }
+.cmp-conflict, .cmp-note { font-size: .85rem; color: var(--ink-soft); margin: var(--s-3) 0 0; }
+.cmp-strip { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-1) var(--s-2); margin: 0; padding: var(--s-2) var(--s-3); background: var(--paper-deep); border: 1px solid var(--rule); border-radius: var(--r-2); font-size: .9rem; }
+.cmp-strip-item { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-1) var(--s-2); color: var(--ink-soft); }
+.cmp-strip-sep { color: var(--ink-soft); }
+.cmp-gauge.is-compact .cmp-meter { margin-bottom: 0; }
+@media (max-width: 760px) {
+  .compass { padding: var(--s-4); }
+  .cmp-grid { grid-template-columns: minmax(0, 1fr); }
+  .cmp-quad { padding: var(--s-4) 0; border-left: 0; border-top: 1px solid var(--rule); }
+  .cmp-nw { border-top: 0; }
+  .cmp-head { grid-template-columns: minmax(0, 1fr); } .cmp-chest { display: none; }
+  .cmp-q { font-size: 1.05rem; }
+}
+@media (prefers-reduced-motion: reduce) { .cmp-fill { transition: none; } }
+
+/* ---- landmark card additions ---- */
+.lm-ribbons { margin: 0 0 var(--s-2); display: flex; flex-wrap: wrap; gap: var(--s-1); } .lm-ribbons .ribbon { margin-left: 0; }
+.lm-usage { margin-top: var(--s-4); padding-top: var(--s-3); border-top: 1px dashed var(--rule); display: grid; gap: var(--s-3); }
+.lm-after { display: inline-flex; flex-wrap: wrap; gap: var(--s-1); align-items: baseline; margin-right: var(--s-3); }
+
+/* ---- benefit statement form, add a procedure ---- */
+.bs-form, .tpi-form { display: grid; gap: var(--s-3); padding: var(--s-4); background: var(--paper); border: 1px solid var(--rule); border-radius: var(--r-3); }
+.bs-h { margin: 0; font-size: 1rem; }
+.bs-note { margin: 0; font-size: .85rem; color: var(--ink-soft); }
+.bs-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-3); }
+.bs-grid label { min-width: 0; } .bs-grid input, .bs-grid select { min-height: 44px; width: 100%; }
+.bs-span { grid-column: 1 / -1; margin: 0; }
+.bs-error { color: var(--danger); font-size: .8rem; }
+.bs-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-3); }
+.bs-user { display: inline-flex; align-items: center; gap: var(--s-2); }
+.bs-status { margin: 0; font-size: .9rem; }
+.bs-derivation { margin: 0; font-size: .85rem; } .bs-derivation dt { color: var(--ink-soft); } .bs-derivation dd { margin: .2rem 0 0; }
+.is-compact .bs-grid { grid-template-columns: minmax(0, 1fr); }
+.plan-add { margin-top: var(--s-4); }
+.plan-add > summary { cursor: pointer; font-family: var(--serif); font-weight: 600; min-height: 44px; display: flex; align-items: center; padding: 0 var(--s-2); border-radius: var(--r-2); }
+.plan-add > summary:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.plan-add[open] > summary { margin-bottom: var(--s-2); }
+@media (max-width: 760px) { .bs-grid { grid-template-columns: minmax(0, 1fr); } }
+
+/* ---- compare grid cells and cards ---- */
+.compare .grid th, .compare .grid td { vertical-align: top; }
+.compare .grid thead th { position: sticky; top: 0; }
+.cmp-cell-face { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-1) var(--s-2); }
+.cmp-cell-face .amt { font-weight: 600; }
+.cmp-cell-face .cite { color: var(--ink-soft); font-size: .78rem; flex-basis: 100%; }
+.cmp-card-figure { margin: 0 0 var(--s-2); font-size: 1.1rem; display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-2); }
+.cmp-card .wording { margin: 0; }
+.rail-total .amt { font-family: var(--serif); font-size: 2.2rem; font-weight: 700; line-height: 1.1; }
+.rail .rail-total .amt { font-size: 1.6rem; }
+.amt-cell { text-align: right; white-space: nowrap; }
+@media (max-width: 760px) { .rail-total .amt { font-size: 1.8rem; } }
+
+/* ---- documents additions ---- */
+.doc-wording { margin-top: var(--s-4); } .doc-wording h3 { font-size: 1rem; }
