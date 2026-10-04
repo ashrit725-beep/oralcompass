@@ -52,15 +52,21 @@ export function ClauseCard({ stitch, lines, onClose, onOpenOnPage, askSlot, askS
 
   // Escape closes the card before anything beneath it: a capture listener on `window` runs before Radix's document-level handlers
   // (vaul sheet, dialogs) and stops the event there, so the sheet or drawer under the card stays open (addendum B1 Escape order).
+  // The listener reads `onClose` through a ref and subscribes once; focus returns to the opener only when the card UNMOUNTS, never on a
+  // parent re-render (web-correctness-15: an inline onClose used to pull focus out of the card's composer on every App render).
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
+  const returnRef = useRef(returnFocus);
+  returnRef.current = returnFocus;
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") { e.stopPropagation(); e.preventDefault(); onClose(); } };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") { e.stopPropagation(); e.preventDefault(); closeRef.current(); } };
     window.addEventListener("keydown", onKey, true);
-    return () => {
-      window.removeEventListener("keydown", onKey, true);
-      const el = returnFocus ?? opener.current;
-      if (el && document.contains(el)) el.focus();
-    };
-  }, [onClose, returnFocus]);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, []);
+  useEffect(() => () => {
+    const el = returnRef.current ?? opener.current;
+    if (el && document.contains(el)) el.focus();
+  }, []);
 
   const card = (
     <>
