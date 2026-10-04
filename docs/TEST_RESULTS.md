@@ -51,3 +51,15 @@ Final gate (actual output tails):
 - `advice_lint.py web/src/lib api/app/templates.py api/app/assistant_templates.py api/app/assistant_glossary.py`: 0 violation(s)
 - web `npm run lint:copy`: 0 violation(s)
 - web `npm run check:bundle`: OK-bundle main=139.0KB
+
+## Post-merge phone check (2026-10-04, 07:35)
+
+Independent check of build/journey-v2 in LIVE mode (`/health`: llm_mode live, providers openrouter → bedrock, model anthropic/claude-haiku-4.5),
+VITE_DEV_AUTH preview, iPhone 13 (WebKit) and Pixel 7 (Chromium): every tab opens at the top, no horizontal scroll, no page errors, no console
+errors, no 5xx. Two issues found and fixed with tests:
+- 0609639: assistant answers showed a line's you-pay / plan-pays (and what remains after it) with the bare "From the plan document" badge; they
+  now read "Calculated from the clauses cited" (an assumption keeps its ASSUMED badge).
+- 288580d: journey-level answers (definitions, totals, remaining benefits, procedure by name, compare terms, document overview) are composed
+  from the engine's figures in every mode; on a live server they are labelled "Fixed template", not "Demo mode".
+Gate after the fixes: web build OK; vitest 51 files / 562 tests passed; lint:copy 0; check:bundle OK (main 139.1 KB). api/ and engine/
+unchanged since the merge round gate above (API 523 passed / 3 skipped; engine 22 passed).
