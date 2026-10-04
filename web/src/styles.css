@@ -298,7 +298,8 @@ table.grid thead th { background: var(--paper-deep); position: sticky; top: 0; }
 .pdf-stitch-list { position: absolute; top: calc(100% + 4px); left: 0; z-index: 2; list-style: none; margin: 0; padding: var(--s-1); min-width: 14rem; max-height: 18rem; overflow-y: auto; background: var(--paper); border: 1px solid var(--rule); border-radius: var(--r-2); box-shadow: var(--shadow-1); }
 .pdf-stitch-margin .pdf-stitch-list { left: auto; right: 0; }
 .pdf-stitch-item { display: flex; width: 100%; min-height: 44px; align-items: center; gap: .4rem; padding: 0 var(--s-2); text-align: left; font-size: .8rem; color: var(--ink); background: none; border: 0; border-radius: var(--r-1); cursor: pointer; }
-.pdf-stitch-item:hover, .pdf-stitch-item[aria-pressed="true"] { background: var(--paper-deep); }
+.pdf-stitch-item[aria-pressed="true"] { background: var(--paper-deep); }
+@media (hover: hover) { .pdf-stitch-item:hover { background: var(--paper-deep); } }   /* no sticky hover tint after a tap on touch screens */
 
 /* ---- clause card ---- */
 /* max-height + its own scroll + a sticky header: a tall card (depth 3 + the Ask composer) never pushes its title and close button off-screen (layout-3) */
@@ -474,7 +475,8 @@ summary { min-height: 32px; padding-block: 4px; }
 .cv-banner { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); margin: 0 0 var(--s-2); font-size: 15px; color: var(--ink); }
 table.grid tr.differences td { padding: 0; border: 0; height: 0; }
 table.grid tbody tr:not(.differences) { transition: background-color var(--dur-micro) var(--ease-standard); }
-table.grid tbody tr:not(.differences):hover, table.grid tbody tr:not(.differences):focus-within { background: color-mix(in srgb, var(--parchment) 60%, transparent); }
+table.grid tbody tr:not(.differences):focus-within { background: color-mix(in srgb, var(--parchment) 60%, transparent); }
+@media (hover: hover) { table.grid tbody tr:not(.differences):hover { background: color-mix(in srgb, var(--parchment) 60%, transparent); } }   /* no sticky hover tint after a tap on touch screens */
 .compare > h3 { margin-top: var(--s-5); }
 
 /* ---- custom radio + checkbox (motionsites technique 8, adapted): an ink ring with a terracotta dot / an ink-filled square with a paper
@@ -495,7 +497,7 @@ input[type="radio"]:disabled, input[type="checkbox"]:disabled { cursor: not-allo
    above); Compare's column-header controls do the same. No overshoot; reduced motion keeps the colour change and drops the scale. ---- */
 .dock [role="tab"]:active { background: var(--ink); color: var(--paper); }
 .compare .grid thead th :is(button, select) { transition: color var(--dur-micro) var(--ease-standard), background-color var(--dur-micro) var(--ease-standard), transform var(--dur-micro) var(--ease-standard); }
-.compare .grid thead th button:hover { background: var(--ink); color: var(--paper); }
+@media (hover: hover) { .compare .grid thead th button:hover { background: var(--ink); color: var(--paper); } }   /* no sticky hover tint after a tap on touch screens */
 .compare .grid thead th :is(button, select):active { background: var(--ink); color: var(--paper); }
 @media (prefers-reduced-motion: no-preference) { .compare .grid thead th button:active { transform: scale(.97); } }
 
@@ -519,6 +521,9 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; overscroll-behavi
 body { overscroll-behavior: none; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
 .app { position: relative; width: 100%; max-width: var(--col); margin-inline: auto; min-height: 100vh; min-height: 100dvh; }
 .appbar { padding-top: calc(.6rem + env(safe-area-inset-top)); }
+/* the compact app bar: the wordmark and the sample ribbon take ~76 px, so the view's own header and map start high on the screen */
+.brand h1 { font-size: 1.3rem; line-height: 1.25; }
+.appbar .ribbon { margin-left: 0; font-size: 12px; line-height: 16px; }
 .cinema { display: none; }
 @media (min-width: 481px) {
   body { background: var(--ink); }

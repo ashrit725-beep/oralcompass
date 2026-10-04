@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
-"""Visual + behavioural verification of the web app with Playwright (desktop 1366×900, phone 360×780 with reduced motion, and a
-desktop reduced-motion pass that diffs end states against the full-motion run).
+"""Visual + behavioural verification of the web app with Playwright. OralCompass is a MOBILE-ONLY app (owner direction 2026-10-04, "its
+fully a mobile app"): the full walk runs on iPhone 13 (WebKit) and Pixel 7 (Chromium), a reduced-motion pass on Pixel 7 diffs the end states
+against the full-motion run, and a wide-window run (1440×900) checks that the same phone app renders in the centred 480 px column on the
+painted cinema stage. Desktop-only checks were converted to phone checks or removed (each removal names this direction).
 
 Walks: new-user start → labeled sample journey (Alex, real NC plan) → the Passage map (answers log, START, islands, soundings, closed channel)
 → the ProcedureDrawer (sections, Final cost hero, pipeline, equation rows, receipt table, checkpoint strip, thread to the clause card, the
@@ -9,7 +11,7 @@ marginal / visited drawers → care stage / checkpoint detail → record a check
 cascade, preset/upload switch, benefits compass, restriction → cove, depth dial, benefit statement form) → cost trail (reconciles) → FM26H
 (nothing transfers: fog, compass without a maximum, fogged drawer) → Compare (grid, clause popover/sheet, rails) → Documents (clauses,
 sources, privacy, reminders, upload wizard: type validation, demo extraction, review table, hold-to-publish → UP1) → keyboard navigation
-(skip link, arrow keys, Escape) → add a procedure (desktop; reverted) → reduced motion.
+(skip link, Escape) → add a procedure (reverted) → reduced motion → the wide-window column.
 Requires the API on :8000 (ORALCOMPASS_DEV_AUTH=1, demo llm mode for the extraction/assistant checks) and the web preview on :4173
 (override with ORALCOMPASS_WEB_BASE). Writes PNGs to the given directory and prints checks; exit 1 on any failed check.
 """
@@ -96,22 +98,32 @@ def dev_context(browser, **kwargs):
     return ctx
 
 
-def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-preference"):
-    browser = pw.chromium.launch()
-    ctx = dev_context(browser, viewport={"width": width, "height": height}, device_scale_factor=1, reduced_motion=reduced_motion)
+PHONES = {"iphone13": ("webkit", "iPhone 13"), "pixel7": ("chromium", "Pixel 7"), "iphonese": ("webkit", "iPhone SE")}
+
+
+def phone_context(pw, device: str, reduced_motion: str = "no-preference"):
+    """A Playwright phone profile (viewport, user agent, touch, mobile) on its own engine; DPR 1 keeps the full-page PNGs small."""
+    engine, profile = PHONES[device]
+    browser = getattr(pw, engine).launch()
+    spec = {**pw.devices[profile], "device_scale_factor": 1}
+    return browser, dev_context(browser, **spec, reduced_motion=reduced_motion)
+
+
+def run(pw, device: str, reduced_motion: str = "no-preference"):
+    browser, ctx = phone_context(pw, device, reduced_motion)
     page = ctx.new_page()
+    width = page.viewport_size["width"]
     errors = []
     page.on("pageerror", lambda e: errors.append(str(e)))
     widths: list[int] = []
     def shot(name: str):
         page.screenshot(path=OUT / f"{device}-{name}.png", full_page=True)
         widths.append(page.evaluate("document.documentElement.scrollWidth"))
-    mobile = device == "mobile"
     def close_sheet():
-        if mobile and page.get_by_role("button", name="Close details").count():
+        if page.get_by_role("button", name="Close details").count():
             page.get_by_role("button", name="Close details").first.click(); page.wait_for_timeout(300)
     def drawer_gone(ms: int = 2000) -> bool:
-        """Desktop: with nothing selected the detail column leaves (exit + the map's layout glide), so wait for the drawer to detach."""
+        """With nothing selected the sheet leaves (its exit), so wait for the drawer to detach."""
         try:
             page.wait_for_function("!document.querySelector('.drawer')", timeout=ms); return True
         except Exception:  # noqa: BLE001
@@ -132,7 +144,7 @@ def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-pref
 
     open_alex(page)
     shot("01-journey")
-    # nothing opens by itself: no stage panel, sheet or drawer at load, and the desktop map keeps the full width (no detail column)
+    # nothing opens by itself: no stage panel, sheet or drawer at load
     check(f"{device}: no detail surface open at load", page.locator(".detail, .drawer, .passage-layout.has-detail").count() == 0)
     check(f"{device}: sample ribbon labels fictional records", page.get_by_text("Sample journey: fictional person and records").count() > 0)
     check(f"{device}: progress language", page.get_by_text("of", exact=False).filter(has_text="checkpoints completed").count() > 0)
@@ -143,56 +155,45 @@ def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-pref
     check(f"{device}: route has start and light", page.locator("button[aria-label^='Start ·']").count() > 0 and page.locator("button[aria-label^='Harbor Light ·']").count() > 0)
     # NumberFlow renders digits in a shadow root: the lozenge's aria-label and the custom element's data attribute carry the figures
     check(f"{device}: soundings printed", page.locator(".sounding[aria-label*='maximum left $672.00']").count() > 0 and page.locator(".sounding number-flow-react[data*='$672.00']").count() > 0)
-    if not mobile:   # findings layout-1 / slop-7: each lozenge holds its figures and covers no control on the chart
-        sd = page.evaluate("""(() => { const ctl = [...document.querySelectorAll('#passage-islands button')].map(b => b.getBoundingClientRect());
-          return [...document.querySelectorAll('#passage-islands .sounding')].map(s => { const r = s.getBoundingClientRect();
-            const spill = [...s.querySelectorAll('.amt')].some(a => a.getBoundingClientRect().right > r.right + 0.5);
-            const hit = ctl.some(c => c.left < r.right - 2 && r.left < c.right - 2 && c.top < r.bottom - 2 && r.top < c.bottom - 2);
-            return spill || hit; }).filter(Boolean).length; })()""")
-        check(f"{device}: soundings hold their figures and cover no control", sd == 0, f"bad={sd}")
+    # (mobile-only direction: the desktop chart's "soundings cover no control" check was removed; phone soundings are inline lines)
     check(f"{device}: closed channel on marginal", page.locator("button[aria-label*='Occlusal night guard'][aria-label*='not covered']").count() > 0)
     END_STATE[device] = passage_names(page)
     shot("11-passage")
-    if mobile:   # money is never cut: every phone passage amount fits its box and the screen (trust test)
+    if True:   # money is never cut: every phone passage amount fits its box and the screen (trust test)
         cut = page.evaluate("[...document.querySelectorAll('.passage-vertical-wrap .amt')].filter(e => { const r = e.getBoundingClientRect(), box = e.closest('.pv-amt, .pv-amt-line'), card = e.closest('button'); return (box && r.right > box.getBoundingClientRect().right + 0.5) || (card && r.right > card.getBoundingClientRect().right + 0.5) || r.right > document.documentElement.clientWidth + 0.5; }).map(e => e.closest('button')?.getAttribute('aria-label')?.slice(0, 40))")
         check(f"{device}: phone passage amounts are not clipped", not cut, str(cut[:4]))
         tap = page.evaluate("getComputedStyle(document.querySelector('.pv-card')).webkitTapHighlightColor")
         check(f"{device}: phone cards use the on-palette pressed state (no grey tap rectangle)", tap in ("rgba(0, 0, 0, 0)", "transparent"), str(tap))
 
-    # ---- shell (fix/web-shell): one main landmark, the phone dock, choose-then-commit, the desktop drawer pinned to the viewport ----
+    # ---- shell (fix/web-shell): one main landmark, the phone dock, choose-then-commit ----
     shell = page.evaluate("""(() => { const tabs = [...document.querySelectorAll('[role=tab]')]; const vh = innerHeight;
       return { mains: document.querySelectorAll('main:not([role]),[role=main]').length, panelTab: document.querySelector('[role=tabpanel]')?.getAttribute('tabindex'),
                skip: [...document.querySelectorAll('.skip-link')].map(a => a.textContent), current: document.querySelectorAll('[role=tab][aria-current]').length,
                dockFixed: !!document.querySelector('.dock') && getComputedStyle(document.querySelector('.dock')).position === 'fixed',
                tabsAtBottom: tabs.length === 4 && tabs.every(t => { const r = t.getBoundingClientRect(); return r.bottom <= vh + 1 && r.top >= vh - 90 && r.height >= 44; }) }; })()""")
     check(f"{device}: main landmark and skip link (a11y-4)", shell["mains"] == 1 and shell["panelTab"] == "-1" and shell["skip"][:1] == ["Skip to content"] and shell["current"] == 0, str(shell))
-    if mobile:
-        check(f"{device}: view tabs in the bottom dock (slop-30)", shell["dockFixed"] and shell["tabsAtBottom"], str(shell))
+    check(f"{device}: view tabs in the bottom dock (slop-30)", shell["dockFixed"] and shell["tabsAtBottom"], str(shell))
     add = page.get_by_label("Add a journey", exact=True)
+    if add.count() and not add.first.is_visible() and page.locator("details.journey-switch > summary").count():
+        page.locator("details.journey-switch > summary").first.click(); page.wait_for_timeout(200)   # the pickers sit in a closed disclosure
     before = page.get_by_label("Journey", exact=True).locator("option").count() if page.get_by_label("Journey", exact=True).count() else 0
     add.select_option("empty"); page.wait_for_timeout(500)
     after = page.get_by_label("Journey", exact=True).locator("option").count() if page.get_by_label("Journey", exact=True).count() else 0
     add_btn = page.locator(".add-journey-form button[type=submit]")
     check(f"{device}: choosing a journey creates nothing until Add (a11y-16)", before == after and add_btn.count() == 1 and add_btn.is_enabled(), f"options {before}->{after}")
     add.select_option(""); page.wait_for_timeout(200)
-    if not mobile:
-        page.mouse.wheel(0, 500); page.wait_for_timeout(400)
-        open_island("Root canal", 1200)
-        top = page.evaluate("(() => { const d = document.querySelector('.drawer'); return d ? Math.round(d.getBoundingClientRect().top) : null; })()")
-        check(f"{device}: drawer pinned to the viewport after scrolling (demo-2)", top is not None and 0 <= top <= 40, f"drawer top={top}")
-        close_drawer(); page.mouse.wheel(0, -2000); page.wait_for_timeout(400)
+    # (mobile-only direction: "drawer pinned to the viewport after scrolling" was a desktop-column check; the sheet is fixed by design)
 
     # ---- open the root canal island → ProcedureDrawer (spec §12 "open island", "view calculation", "trust") ----
     open_island("Root canal", 1200)
-    if mobile:   # web-drawer mobile-2: focus enters the aria-modal sheet on open (it stayed on the island card behind it)
+    if True:   # web-drawer mobile-2: focus enters the aria-modal sheet on open (it stayed on the island card behind it)
         in_dlg = page.evaluate("!!(document.activeElement && document.activeElement.closest('[role=dialog]'))")
         check(f"{device}: sheet takes focus on open", in_dlg, page.evaluate("document.activeElement && document.activeElement.tagName"))
     h3s = drawer_h3s()
     check(f"{device}: drawer opens with sections", page.locator(".drawer").count() > 0 and all(any(h.startswith(n) for h in h3s) for n in DRAWER_H3), "; ".join(h3s)[:200])
-    if not mobile:
-        check(f"{device}: other island labels keep full contrast while one is selected", page.evaluate("[...document.querySelectorAll('.island-btn:not(.is-selected)')].every(b => getComputedStyle(b).opacity === '1')"))
-        crumbs = page.locator(".drawer .crumbs, .drawer [class*='crumb']").first.inner_text() if page.locator(".drawer .crumbs, .drawer [class*='crumb']").count() else ""
-        check(f"{device}: drawer is a labelled region with crumbs", page.locator("[role=region][aria-label='Procedure details']").count() > 0 and "Island 1 of 2" in crumbs and "Narrow Strait" in crumbs, crumbs[:80])
+    # the sheet's crumbs name the island and its place (was the desktop "labelled region with crumbs" check; mobile-only direction)
+    crumbs = page.locator(".drawer .crumbs").first.inner_text() if page.locator(".drawer .crumbs").count() else ""
+    check(f"{device}: drawer crumbs name the island", "Island 1 of 2" in crumbs and "Narrow Strait" in crumbs, crumbs[:80])
     hero1 = hero_text()
     nodes = page.locator(".drawer .pipeline .node")
     rules = page.evaluate("[...document.querySelectorAll('.drawer .pipeline .node')].map(n => n.getAttribute('data-rule'))")
@@ -200,8 +201,7 @@ def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-pref
     eq = page.locator(".drawer .eq-rows li")
     share_row = page.locator(".drawer .eq-rows li", has_text="plan share")
     check(f"{device}: equation rows", eq.count() == 7 and share_row.count() > 0 and share_row.first.locator(".stitch").count() > 0, f"rows={eq.count()}")
-    if mobile:
-        page.locator(".drawer details[data-section='calculation'] > summary").first.click(); page.wait_for_timeout(300)
+    page.locator(".drawer details[data-section='calculation'] > summary").first.click(); page.wait_for_timeout(300)
     page.locator(".drawer details.full-trail > summary").first.click(); page.wait_for_timeout(300)
     page.locator(".drawer details.receipt-details > summary").first.click(); page.wait_for_timeout(300)
     check(f"{device}: receipt table one click", page.locator(".drawer table.receipt").first.is_visible())
@@ -212,7 +212,7 @@ def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-pref
     page.locator(".drawer .cp-strip button").nth(3).click(); page.wait_for_timeout(300)
     focused = page.evaluate("document.activeElement && [document.activeElement.tagName, document.activeElement.getAttribute('tabindex'), document.activeElement.textContent]")
     check(f"{device}: chip focuses section", bool(focused) and focused[0] == "H3" and focused[1] == "-1" and focused[2] == "Coverage share", str(focused))
-    if mobile:
+    if True:
         dlg = page.locator("[role=dialog][aria-modal='true']")
         box = page.get_by_role("button", name="Close details").first.bounding_box() if page.get_by_role("button", name="Close details").count() else None
         first_h3 = h3s[0] if h3s else ""
@@ -272,15 +272,10 @@ def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-pref
     page.keyboard.press("Escape"); page.wait_for_timeout(400)
     card_closed = page.locator(".clause[role=dialog]").count() == 0 and page.locator(".drawer").count() > 0
     check(f"{device}: thread to clause", opened and ("60%" in quote or "Type II" in quote) and "25" in capt and card_closed, f"opened={opened} quote={quote[:40]!r} capt={capt[:30]!r} card_closed={card_closed}")
-    if not mobile:
-        page.keyboard.press("Escape"); page.wait_for_timeout(400); drawer_gone()
-        after = page.evaluate("document.activeElement && document.activeElement.getAttribute('aria-label')")
-        check(f"{device}: escape closes drawer and returns focus", page.locator(".drawer").count() == 0 and (after or "").startswith("Root canal"), f"after={str(after)[:30]!r}")
-    else:
-        close_drawer()
-        page.wait_for_timeout(300)   # web-drawer mobile-2: closing the sheet returns focus to the island (it fell to <body>)
-        after = page.evaluate("document.activeElement && (document.activeElement.getAttribute('aria-label') || '')")
-        check(f"{device}: closing the sheet returns focus to the island", (after or "").startswith("Root canal"), f"after={str(after)[:30]!r}")
+    close_drawer()
+    page.wait_for_timeout(300)   # web-drawer mobile-2: closing the sheet returns focus to the island (it fell to <body>)
+    after = page.evaluate("document.activeElement && (document.activeElement.getAttribute('aria-label') || '')")
+    check(f"{device}: closing the sheet returns focus to the island", (after or "").startswith("Root canal"), f"after={str(after)[:30]!r}")
 
     # you pay per line: the crown's hero after the root canal's
     open_island("Crown", 900)
@@ -292,12 +287,11 @@ def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-pref
     shot("12-drawer")
     close_drawer()
 
-    # ---- arriving from a checkpoint (desktop: the phone passage lists checkpoints inside the drawer, not as route markers) ----
-    if not mobile:
-        page.locator("button[data-cp-of][aria-label^='Deductible']").first.click(); page.wait_for_timeout(900)
-        focused = page.evaluate("document.activeElement && [document.activeElement.tagName, document.activeElement.textContent]")
-        check(f"{device}: arrive from a checkpoint focuses its section", bool(focused) and focused[0] == "H3" and focused[1] == "Deductible", str(focused))
-        close_drawer()
+    # ---- arriving from a checkpoint: the phone passage's checkpoint row opens the sheet at its section ----
+    page.locator("#passage-islands .pv-cps button[aria-label^='Deductible']").first.click(); page.wait_for_timeout(1000)
+    focused = page.evaluate("document.activeElement && [document.activeElement.tagName, document.activeElement.textContent]")
+    check(f"{device}: arrive from a checkpoint focuses its section", bool(focused) and focused[0] == "H3" and focused[1] == "Deductible", str(focused))
+    close_drawer()
 
     # ---- START, Harbor Light, marginal, visited drawers ----
     open_island("Start ·", 900)
@@ -321,13 +315,12 @@ def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-pref
     close_drawer()
     page.keyboard.press("Escape"); page.wait_for_timeout(200)
 
-    # ---- care stages: on phones they live in the Care timeline segment (spec §2.3) ----
-    if mobile:
-        page.get_by_role("button", name="Care timeline").click(); page.wait_for_timeout(500)
+    # ---- care stages live in the Care timeline segment (spec §2.3) ----
+    page.get_by_role("button", name="Care timeline").click(); page.wait_for_timeout(500)
     # select the 'Before your visit' stage then its 'Appointment information recorded' checkpoint (confirmed by the dental team)
     page.locator("button[aria-label^='Before your visit']").first.click()
     page.wait_for_timeout(400)
-    if mobile:   # the phone stage detail is a modal sheet: it holds focus and must be closed before the timeline behind it is used
+    if True:   # the stage detail is a modal sheet: it holds focus and must be closed before the timeline behind it is used
         check(f"{device}: stage detail is a modal sheet", page.locator("[role=dialog][aria-modal=true] h2#detail-h").count() == 1)
         close_sheet()
     page.locator("button[aria-label^='Appointment information recorded']").first.click()
@@ -357,14 +350,15 @@ def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-pref
     page.get_by_role("button", name="Map view").click(); page.wait_for_timeout(300)
 
     # ---- My plan: selector, compass, landmarks (spec §12 "select plan", "answers from the compass", "depth dial", "benefit statement") ----
+    # orchestrator note 19a: a tab change opens the new view at the top and a tap on the dock focuses its heading
+    page.evaluate("window.scrollTo(0, document.documentElement.scrollHeight)"); page.wait_for_timeout(300)
+    deep = page.evaluate("scrollY")
     page.get_by_role("tab", name="My plan").click(); page.wait_for_timeout(800)
+    landed = page.evaluate("[scrollY, document.activeElement && document.activeElement.tagName, !!(document.activeElement && document.activeElement.closest('[data-view=plan]'))]")
+    check(f"{device}: tab change opens the view at the top and focuses its heading (19a)", deep > 200 and landed[0] == 0 and landed[1] in ("H1", "H2") and landed[2], f"from scrollY={deep} → {landed}")
     shot("05-plan")
-    if not mobile:
-        page.locator("select[aria-label='Carrier']").select_option(label="Metropolitan Life Insurance Company (MetLife)"); page.wait_for_timeout(300)
-        page.locator("select[aria-label='Plan name']").select_option(label="NCFlex Dental Plan (State of North Carolina), Classic Option"); page.wait_for_timeout(1200)
-        picked = page.locator("label.plan-pick select").first.input_value()
-        year_disabled = page.evaluate("document.querySelector(\"select[aria-label='Plan year']\").disabled")
-        check(f"{device}: plan selector cascades", picked == "ML26" and year_disabled, f"picked={picked} year disabled={year_disabled}")
+    # (mobile-only direction: the carrier → plan → year cascade is the desktop selector; phones keep the single grouped plan select)
+    check(f"{device}: plan select on ML26", page.locator("label.plan-pick select").first.input_value() == "ML26")
     radios = page.get_by_role("radio", name=re.compile("^(Preset plan|Your uploaded document)"))
     boxes = [radios.nth(i).bounding_box() for i in range(radios.count())]
     radios.filter(has_text="Your uploaded document").first.click(); page.wait_for_timeout(400)
@@ -400,7 +394,7 @@ def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-pref
     page.keyboard.press("3"); page.wait_for_timeout(200)
     exact_again = page.get_by_role("radio", name="Exact wording").first.get_attribute("aria-checked")
     dial_widths = [group.get_by_role("radio").nth(i).bounding_box()["width"] for i in range(group.get_by_role("radio").count())]
-    check(f"{device}: depth dial", group.get_by_role("radio").count() == 3 and bool(after_arrow) and "Your numbers" in str(after_arrow) and exact_again == "true" and (not mobile or all(w >= 100 for w in dial_widths)) and (not mobile or page.evaluate("document.documentElement.scrollWidth") == width),
+    check(f"{device}: depth dial", group.get_by_role("radio").count() == 3 and bool(after_arrow) and "Your numbers" in str(after_arrow) and exact_again == "true" and all(w >= 100 for w in dial_widths) and page.evaluate("document.documentElement.scrollWidth") == width,
           f"after_arrow={str(after_arrow)[:20]!r} exact={exact_again} widths={[round(w) for w in dial_widths]}")
     # web-correctness-6: a stitch chip in the landmark card survives the re-render its press causes, so closing the clause card returns
     # focus to that same chip (figures are no longer remounted on every render)
@@ -492,17 +486,11 @@ def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-pref
           f"container={grid_in_container} elig={head_elig} cells_without_badge_button={cells} unbadged={unbadged_cells} rail={rail_ok} unresolved_rail={unresolved_rail}")
     shot("09-compare")
     page.locator("table.grid tbody button[aria-expanded]").first.click(); page.wait_for_timeout(600)
-    if mobile:
-        pop = page.locator("[data-slot=drawer-content]")
-        ok = pop.count() > 0 and pop.locator("h2, h3").count() > 0 and pop.locator("blockquote").count() > 0 and pop.get_by_role("button", name="Close clause").count() > 0
-        shot("20-compare-clause")
-        if pop.get_by_role("button", name="Close clause").count(): pop.get_by_role("button", name="Close clause").first.click(); page.wait_for_timeout(400)
-        else: page.keyboard.press("Escape"); page.wait_for_timeout(400)
-    else:
-        pop = page.locator("[data-slot=popover-content]")
-        ok = pop.count() > 0 and pop.locator("h2, h3").count() > 0 and pop.locator("blockquote").count() > 0
-        shot("20-compare-clause")
-        page.keyboard.press("Escape"); page.wait_for_timeout(300)
+    pop = page.locator("[data-slot=drawer-content]")
+    ok = pop.count() > 0 and pop.locator("h2, h3").count() > 0 and pop.locator("blockquote").count() > 0 and pop.get_by_role("button", name="Close clause").count() > 0
+    shot("20-compare-clause")
+    if pop.get_by_role("button", name="Close clause").count(): pop.get_by_role("button", name="Close clause").first.click(); page.wait_for_timeout(400)
+    else: page.keyboard.press("Escape"); page.wait_for_timeout(400)
     check(f"{device}: compare cell opens its clause", ok)
     # web-correctness-13: picking fewer than two plans clears the grid (no stale columns under pickers that show fewer plans)
     pickers = page.locator(".compare-view .pickers select")
@@ -577,25 +565,17 @@ def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-pref
 
     # ---- keyboard (spec §9.2) ----
     page.get_by_role("tab", name="My journey").click(); page.wait_for_timeout(1500)
-    page.locator("h1").click()                 # the brand is the first thing after the skip link: Shift+Tab proves nothing focusable precedes it
-    page.keyboard.press("Shift+Tab")
-    first = page.evaluate("document.activeElement && document.activeElement.textContent")
+    # the route skip link is the second focusable element in document order (after "Skip to content"); WebKit does not Tab to links by
+    # default (Safari's setting), so the order is read from the DOM and the link is focused directly, then activated with Enter
+    first = page.evaluate("""(() => { const f = [...document.querySelectorAll('a[href], button:not([disabled]), select, input, textarea, [tabindex]:not([tabindex="-1"])')].filter(e => !e.closest('[inert],[hidden]'));
+        return f.length > 1 && f[0].textContent === 'Skip to content' ? f[1].textContent : (f[0] && f[0].textContent); })()""")
+    page.locator("a.skip-link[href='#passage-islands']").first.focus()
     page.keyboard.press("Enter"); page.wait_for_timeout(300)
     inside = page.evaluate("!!(document.activeElement && document.activeElement.closest('#passage-islands'))")
     check(f"{device}: skip link to route", (first or "").strip() == "Skip to the route" and inside, f"first={first!r} inside={inside}")
-    if not mobile:
-        page.locator("button[aria-label^='Root canal']").first.focus()
-        page.keyboard.press("ArrowRight"); page.wait_for_timeout(100)
-        second = page.evaluate("document.activeElement && document.activeElement.getAttribute('aria-label')")
-        page.keyboard.press("Enter"); page.wait_for_timeout(500)
-        selected = page.locator(".island-btn.is-selected[aria-label^='Crown']").count() > 0
-        page.keyboard.press("Escape"); page.wait_for_timeout(400)
-        after = page.evaluate("document.activeElement && document.activeElement.getAttribute('aria-label')")
-        cleared = page.locator(".island-btn.is-selected").count() == 0
-        check(f"{device}: arrow keys move between islands", (second or "").startswith("Crown") and selected and cleared and (after or "").startswith("Crown"), f"second={str(second)[:30]!r} selected={selected} cleared={cleared} after={str(after)[:30]!r}")
+    # (mobile-only direction: "arrow keys move between islands" tested the desktop chart's roving focus; the phone passage is a list)
     # Tab reaches the care stages; Enter activates (the heading named 'Starting point' comes from the DetailPanel)
-    if mobile:
-        page.get_by_role("button", name="Care timeline").click(); page.wait_for_timeout(400)
+    page.get_by_role("button", name="Care timeline").click(); page.wait_for_timeout(400)
     page.locator("h1").click()
     page.keyboard.press("Tab")
     focused = page.evaluate("document.activeElement && document.activeElement.textContent")
@@ -609,7 +589,7 @@ def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-pref
     close_sheet()
 
     # ---- AI treatment-plan reader (addendum D.5a): the stored fictional estimate reads into reviewed rows, nothing ticked; read-only (no confirm) ----
-    if not mobile:
+    if True:
       try:
         page.get_by_role("tab", name="My plan").click(); page.wait_for_timeout(800)
         det = page.locator("details", has_text="Add a procedure").first
@@ -627,12 +607,13 @@ def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-pref
         if det.count() and det.evaluate("d => d.open"): det.locator("summary").first.click(); page.wait_for_timeout(200)
       except Exception as e:  # noqa: BLE001
         check(f"{device}: treatment-plan reader reads the stored estimate", False, str(e).splitlines()[0][:160])
-      page.get_by_role("tab", name="My journey").click(); page.wait_for_timeout(2000)     # the next block counts islands on the map
+      page.get_by_role("tab", name="My journey").click(); page.wait_for_timeout(2000)     # the next block counts islands on the passage
 
-    # ---- add a procedure (spec §12 "add procedure draws island"); desktop only, reverted through the API so the phone pass sees Alex unchanged ----
-    if not mobile:
+    # ---- add a procedure (spec §12 "add procedure draws island"); reverted through the API so the next device sees Alex unchanged ----
+    if True:
+      ISLAND_CARDS = "#passage-islands .pv-card:not(.pv-frame)"
       try:
-        before = page.locator("#passage-islands .island-btn:not(.marginal-btn)").count()
+        before = page.locator(ISLAND_CARDS).count()
         page.get_by_role("tab", name="My plan").click(); page.wait_for_timeout(800)
         det = page.locator("details", has_text="Add a procedure").first
         if det.count() and not det.evaluate("d => d.open"): det.locator("summary").first.click(); page.wait_for_timeout(300)
@@ -649,8 +630,8 @@ def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-pref
         page.get_by_role("button", name="Add this procedure").click(); page.wait_for_timeout(2500)
         added_text = page.get_by_text("was added to your records. The estimate is recalculating.", exact=False).count() > 0
         page.get_by_role("tab", name="My journey").click(); page.wait_for_timeout(2500)
-        after_n = page.locator("#passage-islands .island-btn:not(.marginal-btn)").count()
-        new_btn = page.locator("#passage-islands .island-btn[aria-label^='Adult cleaning']").count()
+        after_n = page.locator(ISLAND_CARDS).count()
+        new_btn = page.locator("#passage-islands .pv-card[aria-label^='Adult cleaning']").count()
         shot("28-added-procedure")
         check(f"{device}: add procedure draws island", n_opts == 16 and tooth_for_crown and not tooth_for_cleaning and src_required and added_text and after_n == before + 1 and new_btn > 0,
               f"options={n_opts} tooth(crown/cleaning)={tooth_for_crown}/{tooth_for_cleaning} source_required={src_required} added={added_text} islands {before}→{after_n}")
@@ -662,8 +643,7 @@ def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-pref
                 api(f"/me/treatment-items/{it['id']}", "PATCH", {"status": "cancelled"})
       except Exception as e:  # noqa: BLE001
         print("WARN revert failed:", e)
-    if mobile:
-        check(f"{device}: no horizontal scroll", all(w == width for w in widths), f"widths={sorted(set(widths))}")
+    check(f"{device}: no horizontal scroll", all(w == width for w in widths), f"widths={sorted(set(widths))}")
     check(f"{device}: no page errors", not errors, "; ".join(errors)[:200])
     browser.close()
 
@@ -707,8 +687,8 @@ def upload_walk(page, device: str, shot):
     un_up = page.evaluate("[...document.querySelectorAll('.up-table .amt')].filter(a => !a.parentElement.querySelector('.badge')).length")
     check(f"{device}: every amount in the review table badged", un_up == 0, f"{un_up} unbadged")
     shot("15-upload-review")
-    # mobile-17: on phones the publish control and the undecided count stay in view while the rows scroll
-    if page.viewport_size["width"] < 768:
+    # mobile-17: the publish control and the undecided count stay in view while the rows scroll
+    if True:
         vis = page.evaluate("(() => { const b = document.querySelector('[role=dialog] .hb-root'); if (!b) return null; const r = b.getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight; })()")
         check(f"{device}: review publish control in view on phones", vis is True, str(vis))
     page.get_by_role("button", name="Confirm all verified quotes").click(); page.wait_for_timeout(1500)
@@ -767,20 +747,75 @@ def upload_walk(page, device: str, shot):
 
 
 
-def run_reduced_desktop(pw):
-    """Desktop with prefers-reduced-motion: every end state present and equal to the full-motion run; scenery loops off."""
-    browser = pw.chromium.launch()
-    ctx = dev_context(browser, viewport={"width": 1366, "height": 900}, device_scale_factor=1, reduced_motion="reduce")
+def run_reduced_phone(pw):
+    """Pixel 7 with prefers-reduced-motion: every end state present and equal to the full-motion run; scenery loops off."""
+    browser, ctx = phone_context(pw, "pixel7", reduced_motion="reduce")
     page = ctx.new_page()
     open_alex(page)
-    page.screenshot(path=OUT / "desktop-reduced-11-passage.png", full_page=True)
+    page.screenshot(path=OUT / "pixel7-reduced-11-passage.png", full_page=True)
     names = passage_names(page)
-    check("reduced motion: end-state DOM equals the full-motion end state", names == END_STATE.get("desktop"), f"{len(names)} controls")
+    check("reduced motion: end-state DOM equals the full-motion end state", names == END_STATE.get("pixel7"), f"{len(names)} controls")
     anim = page.evaluate("""() => ['.route', '.fog-drift', '.beam', '.ripples', '.ocean-seigaiha'].map(s => { const el = document.querySelector(s); return el ? [s, getComputedStyle(el).animationName] : [s, 'absent']; })""")
     check("reduced motion: no scenery animation", all(a in ("none", "absent") for _, a in anim), str(anim))
     drawn = page.evaluate("""() => [...document.querySelectorAll('.route-group path.route')].every(p => { const o = getComputedStyle(p).opacity; const pl = p.style.strokeDashoffset; return Number(o) >= 0.7 && (!pl || parseFloat(pl) <= 0.001); })""")
-    markers = page.locator("#passage-islands .cp-btn").count()
+    markers = page.locator("#passage-islands .cp-btn, #passage-islands .pv-cp").count()
     check("reduced motion: route drawn and markers present", drawn and markers >= 12, f"markers={markers}")
+    browser.close()
+
+
+COLUMN_JS = """(() => {
+  const r = (el) => { if (!el) return null; const b = el.getBoundingClientRect(); return { left: Math.round(b.left), right: Math.round(b.right), top: Math.round(b.top), bottom: Math.round(b.bottom), width: Math.round(b.width) }; };
+  const app = document.querySelector('.app'), cin = document.querySelector('.cinema'), dock = document.querySelector('.dock');
+  const cs = cin ? getComputedStyle(cin) : null, after = cin ? getComputedStyle(cin, '::after') : null;
+  return { vw: document.documentElement.clientWidth, vh: innerHeight, scrollW: document.documentElement.scrollWidth, app: r(app), dock: r(dock),
+    cinema: cs ? { display: cs.display, position: cs.position, image: cs.backgroundImage, size: cs.backgroundSize, filter: cs.filter + ' ' + (cs.backdropFilter || ''), scrim: after.backgroundImage + ' ' + after.backgroundColor, rect: r(cin) } : null,
+    appBg: app ? getComputedStyle(app).backgroundColor : '', appShadow: app ? getComputedStyle(app).boxShadow : '',
+    tabsInDock: [...document.querySelectorAll('[role=tab]')].every(t => !!t.closest('.dock')), tabCount: document.querySelectorAll('[role=tab]').length };
+})()"""
+
+
+def run_wide(pw):
+    """A 1440×900 window (mobile-only direction): the same phone app in a centred 480 px column, the painted journey backdrop full-bleed
+    behind it (fixed, cover, ink scrim + vignette, no blur), the dock and every sheet inside the column, no horizontal scroll."""
+    browser = pw.chromium.launch()
+    ctx = dev_context(browser, viewport={"width": 1440, "height": 900}, device_scale_factor=1)
+    page = ctx.new_page()
+    errors: list[str] = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+    open_alex(page)
+    page.screenshot(path=OUT / "wide-01-journey.png")
+    c = page.evaluate(COLUMN_JS)
+    app, dock, cin = c["app"], c["dock"], c["cinema"]
+    centred = bool(app) and app["width"] == 480 and abs((app["left"] + app["right"]) / 2 - c["vw"] / 2) <= 1
+    check("wide: the phone app renders in a centred 480 px column", centred and c["scrollW"] == c["vw"], str({"app": app, "vw": c["vw"], "scrollW": c["scrollW"]}))
+    cinema_ok = bool(cin) and cin["display"] == "block" and cin["position"] == "fixed" and "journey-backdrop" in cin["image"] and cin["size"].startswith("cover") \
+        and cin["rect"]["left"] == 0 and cin["rect"]["top"] == 0 and cin["rect"]["right"] >= c["vw"] and cin["rect"]["bottom"] >= c["vh"] and "blur" not in cin["filter"] and "rgba" in cin["scrim"]
+    check("wide: the painted cinema fills the window behind the column (fixed, cover, scrim, no blur)", cinema_ok, str(cin)[:220])
+    check("wide: the column is its own parchment with a shadow at its edges", c["appBg"] not in ("", "rgba(0, 0, 0, 0)") and c["appShadow"] not in ("", "none"), f"{c['appBg']} / {c['appShadow'][:60]}")
+    dock_ok = bool(dock) and abs(dock["left"] - app["left"]) <= 1 and abs(dock["right"] - app["right"]) <= 1 and dock["bottom"] == c["vh"]
+    check("wide: no desktop nav; the four tabs sit in the dock inside the column", c["tabsInDock"] and c["tabCount"] == 4 and dock_ok, str({"dock": dock, "tabsInDock": c["tabsInDock"]}))
+    # a bottom sheet opens inside the column (vaul content is portalled to <body>)
+    page.locator("#passage-islands button[aria-label^='Root canal']").first.click(); page.wait_for_timeout(1200)
+    sheet = page.evaluate("(() => { const d = document.querySelector('[data-vaul-drawer]'); if (!d) return null; const b = d.getBoundingClientRect(); return [Math.round(b.left), Math.round(b.right)]; })()")
+    check("wide: the procedure sheet opens inside the column", bool(sheet) and abs(sheet[0] - app["left"]) <= 1 and abs(sheet[1] - app["right"]) <= 1, f"sheet={sheet} column={app['left']}..{app['right']}")
+    page.screenshot(path=OUT / "wide-12-drawer.png")
+    if page.get_by_role("button", name="Close details").count():
+        page.get_by_role("button", name="Close details").first.click(); page.wait_for_timeout(400)
+    widths = []
+    for tab, name in (("My plan", "05-plan"), ("Compare", "09-compare"), ("Documents", "10-documents")):
+        page.get_by_role("tab", name=tab).click(); page.wait_for_timeout(1500)
+        page.screenshot(path=OUT / f"wide-{name}.png")
+        widths.append(page.evaluate("[document.documentElement.scrollWidth, Math.round(document.querySelector('.app').getBoundingClientRect().width)]"))
+    check("wide: every view stays in the column without horizontal scroll", all(w == [c["vw"], 480] for w in widths), str(widths))
+    # the upload dialog (a Radix dialog portalled to <body>) also stays in the column
+    try:
+        page.get_by_role("button", name="Add a plan document").first.click(); page.wait_for_timeout(700)
+        dlg = page.evaluate("(() => { const d = document.querySelector('[data-slot=dialog-content]'); if (!d) return null; const b = d.getBoundingClientRect(); return [Math.round(b.left), Math.round(b.right)]; })()")
+        check("wide: the upload dialog stays in the column", bool(dlg) and dlg[0] >= app["left"] - 1 and dlg[1] <= app["right"] + 1, f"dialog={dlg} column={app['left']}..{app['right']}")
+        page.keyboard.press("Escape"); page.wait_for_timeout(300)
+    except Exception as e:  # noqa: BLE001
+        check("wide: the upload dialog stays in the column", False, str(e).splitlines()[0][:160])
+    check("wide: no page errors", not errors, "; ".join(errors)[:200])
     browser.close()
 
 
@@ -803,10 +838,15 @@ def static_checks():
     check("lint: copy lints clean", r.returncode == 0, (r.stdout.strip().splitlines() or [""])[-1][:120])
 
 
+ONLY = [d for d in os.environ.get("ORALCOMPASS_WALK_DEVICES", "iphone13,pixel7,reduced,wide").split(",") if d]
 with sync_playwright() as pw:
-    run(pw, "desktop", 1366, 900)
-    run(pw, "mobile", 360, 780, reduced_motion="reduce")
-    run_reduced_desktop(pw)
+    for d in ("iphone13", "pixel7"):
+        if d in ONLY:
+            run(pw, d)
+    if "reduced" in ONLY:
+        run_reduced_phone(pw)
+    if "wide" in ONLY:
+        run_wide(pw)
 static_checks()
 (OUT / "checks.json").write_text(json.dumps(checks, indent=1))
 fails = [k for k, v in checks.items() if not v]

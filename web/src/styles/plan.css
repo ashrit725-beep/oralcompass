@@ -74,6 +74,8 @@
 .cmp-tick-glyph { color: var(--terracotta); }
 .cmp-figures { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: var(--s-1) var(--s-3); margin: 0; font-size: .95rem; align-items: baseline; }
 .cmp-figures dt { color: var(--ink-soft); } .cmp-figures dd { margin: 0; min-width: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-1) var(--s-2); }
+/* the "Calculated from the clauses cited" caption wraps inside the narrow figures column (it ran 18 px past a 390 px iPhone screen in WebKit) */
+.cmp-figures .fig-calc { white-space: normal; }
 .cmp-figures dd > span, .cmp-limit > span, .cmp-a > span, .cmp-strip-item > span { flex-wrap: wrap; }   /* <Money> is an inline-flex pair; let the badge drop to the next line at 360 px */
 /* the phone landmark rows opt out of the legacy pill-button rule (styles.css) through `.unstyled`; restore their own look */
 .landmark-list .landmark-row.unstyled { background: var(--paper); color: var(--ink); border: 1px solid var(--rule); border-radius: 10px; padding: .45rem .7rem; min-height: 44px; }
@@ -128,7 +130,7 @@
 .plan-add[open] > summary::after { transform: rotate(225deg); }
 .plan-add-title { font-family: var(--serif); font-weight: 600; font-size: 1.05rem; }
 .plan-add-sub { grid-column: 1; font-size: .85rem; color: var(--ink-soft); }
-.plan-add > summary:hover { background: var(--parchment); }
+@media (hover: hover) { .plan-add > summary:hover { background: var(--parchment); } }   /* no sticky hover tint after a tap on touch screens */
 .plan-add > summary:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 .plan-add[open] > summary { margin-bottom: var(--s-2); border-bottom: 1px solid var(--rule); border-radius: var(--r-4) var(--r-4) 0 0; }
 .plan-add > :not(summary) { padding: 0 var(--s-4) var(--s-4); }

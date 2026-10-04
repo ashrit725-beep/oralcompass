@@ -99,7 +99,7 @@
 .passage-controls .marginal-btn { border-style: dashed; }
 .passage-layout.is-dense .passage-controls .island-btn { width: 104px; max-width: 104px; min-height: 44px; }
 .passage-layout.is-dense .ctl-title { -webkit-line-clamp: 1; }
-.passage-controls .island-btn:hover, .passage-controls .frame-btn:hover, .passage-controls .visited-btn:hover { background: var(--parchment); }
+@media (hover: hover) { .passage-controls .island-btn:hover, .passage-controls .frame-btn:hover, .passage-controls .visited-btn:hover { background: var(--parchment); } }   /* no sticky hover tint after a tap on touch screens */
 .passage-controls .island-btn:active, .passage-controls .frame-btn:active { transform: translate(-50%, -50%) scale(.98); }
 .passage-controls .island-btn.is-selected, .passage-controls .frame-btn.is-selected, .passage-controls .visited-btn.is-selected { border-color: var(--select); box-shadow: 0 0 0 3px var(--select-ring), var(--shadow-1); }
 /* a non-selected island keeps full-contrast text (opacity .72 put its 11-12 px lines near 3.3:1); only its lift goes, the painted plate dims */
@@ -126,7 +126,7 @@
 /* ---- checkpoint buttons: 32 px visual inside a 44 × 44 hit box ---- */
 .passage-controls .cp-btn { width: 44px; height: 44px; padding: 0; background: transparent; border: 0; display: grid; place-items: center; cursor: pointer; border-radius: 50%; }
 .cp-visual { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: var(--paper); border: 1.6px solid var(--ink); color: var(--ink); box-shadow: var(--shadow-1); transition: box-shadow var(--dur-micro) var(--ease-standard), background-color var(--dur-micro) var(--ease-standard); }
-.cp-btn:hover .cp-visual { background: var(--parchment); }
+@media (hover: hover) { .cp-btn:hover .cp-visual { background: var(--parchment); } }   /* no sticky hover tint after a tap on touch screens */
 .cp-btn:active .cp-visual { transform: scale(.98); }
 .cp-btn.is-selected .cp-visual { box-shadow: 0 0 0 3px var(--select-ring), 0 0 0 1.5px var(--select); border-color: var(--select); }
 .cp-btn:focus-visible { outline: 3px solid var(--focus); outline-offset: 0; }
@@ -173,7 +173,7 @@
 .care-card { flex: 0 0 220px; min-width: 220px; background: var(--paper-deep); border: 1px solid var(--rule); border-radius: var(--r-3); padding: var(--s-3) var(--s-4); position: relative; display: flex; flex-direction: column; gap: 6px; scroll-snap-align: start; }
 .care-card.is-current { border-color: var(--gold); }
 .care-stage-btn { position: relative; display: grid; gap: 1px; width: 100%; text-align: left; background: transparent; border: 1px solid transparent; border-radius: var(--r-2); padding: 4px 6px 4px 6px; color: var(--ink); min-height: 44px; cursor: pointer; font: inherit; }
-.care-stage-btn:hover { background: var(--parchment); }
+@media (hover: hover) { .care-stage-btn:hover { background: var(--parchment); } }   /* no sticky hover tint after a tap on touch screens */
 .care-stage-btn.is-selected { border-color: var(--select); box-shadow: 0 0 0 3px var(--select-ring); }
 .care-stage-btn.is-current .care-title { padding-left: 20px; }
 .care-pin { position: absolute; left: 4px; top: 7px; display: inline-flex; }
@@ -182,7 +182,7 @@
 .care-progress { font-size: 13px; line-height: 18px; color: var(--ink-soft); }
 .care-cps { list-style: none; margin: 0; padding: 0; display: flex; gap: 0; flex-wrap: wrap; }
 .care-cp { width: 44px; height: 44px; display: grid; place-items: center; background: transparent; border: 0; padding: 0; cursor: pointer; border-radius: 50%; color: var(--ink); }
-.care-cp:hover .care-cp-glyph circle:first-child { stroke-width: 2.4; }
+@media (hover: hover) { .care-cp:hover .care-cp-glyph circle:first-child { stroke-width: 2.4; } }   /* no sticky hover tint after a tap on touch screens */
 .care-cp.is-selected { box-shadow: inset 0 0 0 3px var(--select-ring); }
 .care-cp:focus-visible { outline: 3px solid var(--focus); outline-offset: -2px; }
 .care-show-chart { font-size: 13px; align-self: flex-start; }

@@ -25,7 +25,7 @@
 .cp-strip .cp-chip::before { inset: 0; }
 .cp-chip { display: inline-flex; align-items: center; gap: 4px; min-height: 32px; padding: 4px 8px 4px 6px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--paper); color: var(--text); font-size: 12px; line-height: 16px; cursor: pointer; position: relative; transition: background-color var(--dur-micro) var(--ease-standard); }
 .cp-chip::before { content: ""; position: absolute; inset: -6px 0; }   /* 44 px hit area without widening the strip */
-.cp-chip:hover { background: var(--parchment); }
+@media (hover: hover) { .cp-chip:hover { background: var(--parchment); } }   /* no sticky hover tint after a tap on touch screens */
 .cp-chip.is-selected { border-color: var(--select); box-shadow: 0 0 0 3px var(--select-ring); }
 .cp-chip-total, .cp-chip-X, .cp-chip-W, .cp-chip-F { color: var(--you-pay); }
 .cp-chip .cp-chip-term { color: var(--text); }
