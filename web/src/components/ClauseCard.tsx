@@ -5,7 +5,7 @@ import { UI } from "../lib/copy";
 import { takeStitchAnchor } from "../lib/drawer";
 import { transitions } from "../lib/motion";
 import { money } from "../lib/stitches";
-import type { AssistScope, LedgerLine, Stitch } from "../lib/types";
+import type { AssistScope, LedgerLine, Step, Stitch } from "../lib/types";
 import { AskAboutStep } from "./assistant/AskAboutStep";
 import { DepthDial } from "./DepthDial";
 import { EvidenceBadge, StitchChip } from "./Primitives";
@@ -23,6 +23,13 @@ interface Props {
   returnFocus?: HTMLElement | null;
 }
 
+/** The engine steps this sentence decides: the step's stitch label names the same DOCUMENT and page, and the step's rule is one the
+ *  sentence states (web-correctness-35: a page number alone matched page 25 of a second document too). */
+export function stepsAffectedBy(stitch: Pick<Stitch, "doc" | "page" | "ruleCodes">, lines: { label: string; steps: Step[] }[]): { line: string; step: Step }[] {
+  const label = `${stitch.doc}#p${stitch.page}`;
+  return lines.flatMap((l) => l.steps.filter((s) => s.stitch === label && stitch.ruleCodes.includes(s.rule)).map((s) => ({ line: l.label, step: s })));
+}
+
 /**
  * Clause card: depth 1 plain sentence · depth 2 the user's numbers · depth 3 exact wording + arithmetic — one element, no new route.
  * `thread-pull`: a 1.5 px gold SVG thread draws from the pressed stitch chip to the card header in 300 ms, holds, and fades (omitted under
@@ -34,7 +41,7 @@ export function ClauseCard({ stitch, lines, onClose, onOpenOnPage, askSlot, askS
   const cardRef = useRef<HTMLElement>(null);
   const opener = useRef<HTMLElement | null>(null);
   const [thread, setThread] = useState<string | null>(null);
-  const affected = lines.flatMap((l) => l.steps.filter((s) => s.stitch?.endsWith(`#p${stitch.page}`) && stitch.ruleCodes.includes(s.rule)).map((s) => ({ line: l.label, step: s })));
+  const affected = stepsAffectedBy(stitch, lines);
 
   // On the phone the card is pressed from inside the modal bottom sheet (vaul over Radix Dialog): a card outside that dialog would sit under
   // its overlay, outside its focus trap and count as an "outside" press. Mount it inside the open sheet instead so it stacks above it.
