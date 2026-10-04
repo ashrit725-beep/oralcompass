@@ -114,7 +114,7 @@ export function AnswerCard({ answer: a, data, mode, loading, busy, simplifying, 
             <div id={detailsId} className="as-details" hidden={!open}>
               {open && (
                 <motion.div initial={reduce ? false : { opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.24, ease: EASE.standard }}>
-                  <AnswerBlocks blocks={details} data={data} scope={a.scope} onOpenStitch={onOpenStitch} onOpenStep={onOpenStep} onClarify={(patch) => onClarify?.(a.question, patch)} />
+                  <AnswerBlocks mark={false} blocks={details} data={data} scope={a.scope} onOpenStitch={onOpenStitch} onOpenStep={onOpenStep} onClarify={(patch) => onClarify?.(a.question, patch)} />
                 </motion.div>
               )}
             </div>

@@ -25,6 +25,9 @@ export interface AnswerBlocksProps {
   onOpenStitch?: (stitchId: string) => void;
   onOpenStep?: (lineIndex: number, stepIndex: number) => void;
   onClarify?: (patch: Partial<AssistScope>) => void;
+  /** The one Highlighter mark per answer (default true). Off under "Show the details": the plain-words lead above is the focus, and a
+   *  rough-notation SVG measured inside a scrolled bottom sheet lands in the wrong place. */
+  mark?: boolean;
 }
 
 export function Inline({ r, onOpenStitch }: { r: Resolved; onOpenStitch?: (id: string) => void }) {
@@ -54,8 +57,8 @@ const reveal = (i: number, extra = 0) => ({
   transition: { duration: 0.5, ease: EASE.land, delay: Math.min(i, 4) * 0.08 + extra },
 });
 
-export function AnswerBlocks({ blocks, data, scope, onOpenStitch, onOpenStep, onClarify }: AnswerBlocksProps) {
-  let marked = false;
+export function AnswerBlocks({ blocks, data, scope, onOpenStitch, onOpenStep, onClarify, mark = true }: AnswerBlocksProps) {
+  let marked = !mark;
   return (
     <div className="as-blocks">
       {blocks.map((b, i) => {

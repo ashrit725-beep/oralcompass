@@ -41,15 +41,20 @@ export function AnswerList({ ask, collapseEarlier = false, onOpenStitch, onOpenS
   const [live, setLive] = useState("");
   const spoken = useRef(new Set<string>());
 
-  // announce once per answer and once per plainer version (keys survive re-renders; a scope change empties the list and the set)
+  // announce once per answer and once per plainer version (keys survive re-renders; a scope change empties the list and the set).
+  // The figures resolve first so the announcement carries them; a payload fetch that stalls delays it by at most 1.5 s.
   useEffect(() => {
     if (!answers.length) { spoken.current.clear(); setLive(""); return; }
-    if (loading) return;                                   // the figures resolve first, so the announcement carries them
-    const latest = answers[answers.length - 1];
-    const keyA = `a${latest.id}`;
-    if (!spoken.current.has(keyA)) { spoken.current.add(keyA); setLive(announcementFor(latest, data, "answer")); return; }
-    const withSimpler = [...answers].reverse().find((a) => a.simpler && !spoken.current.has(`s${a.id}`));
-    if (withSimpler) { spoken.current.add(`s${withSimpler.id}`); setLive(announcementFor(withSimpler, data, "simpler")); }
+    const speak = () => {
+      const latest = answers[answers.length - 1];
+      const keyA = `a${latest.id}`;
+      if (!spoken.current.has(keyA)) { spoken.current.add(keyA); setLive(announcementFor(latest, data, "answer")); return; }
+      const withSimpler = [...answers].reverse().find((a) => a.simpler && !spoken.current.has(`s${a.id}`));
+      if (withSimpler) { spoken.current.add(`s${withSimpler.id}`); setLive(announcementFor(withSimpler, data, "simpler")); }
+    };
+    if (!loading) { speak(); return; }
+    const t = window.setTimeout(speak, 1500);
+    return () => window.clearTimeout(t);
   }, [answers, data, loading]);
 
   const busy = !!pending || simplerFor !== null || ask.paused;

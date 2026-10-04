@@ -73,10 +73,19 @@ function AskBoxBody({ ask, chips, layout, describedBy, inputRef, onOpenStitch }:
     </>
   );
   const answers = <AnswerList ask={ask} collapseEarlier onOpenStitch={onOpenStitch} nothingSurvived={ASSIST.boxNothingSurvived} />;
+  // the sheet: a new answer scrolls its top (the question and "In simple terms") into view inside the sheet, never the page
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const newest = ask.answers[ask.answers.length - 1]?.id;
+  useEffect(() => {
+    const box = scrollRef.current;
+    const li = box?.querySelector<HTMLElement>(".as-answers > .as-answer");
+    if (!box || !li || newest === undefined) return;
+    box.scrollTop = Math.max(0, li.getBoundingClientRect().top - box.getBoundingClientRect().top + box.scrollTop - 8);
+  }, [newest]);
   if (layout === "sheet") {
     return (
       <>
-        <div className="askbox-sheet-scroll">
+        <div className="askbox-sheet-scroll" ref={scrollRef}>
           <p id={describedBy} className="as-described">{ASSIST.boxDescribedBy}</p>
           {answers}
           {status}
