@@ -2,7 +2,7 @@ import { useCallback, useState, type KeyboardEvent, type MouseEvent } from "reac
 import { Money } from "@/components/Money";
 import { PASSAGE } from "@/lib/copy/passage";
 import { CHECKPOINT_TERM, type GlyphId } from "@/lib/islands";
-import { checkpointAria, chipTitle, islandAmountText, moneyText, type PassageLayout } from "@/lib/passage";
+import { checkpointAria, chipTitle, islandAmountText, lightWaitWord, moneyText, type PassageLayout } from "@/lib/passage";
 import type { InsuranceCheckpointVM, IslandVM, MapSelection, PassageVM } from "@/lib/types";
 import { Glyph, toneOf } from "./InsuranceCheckpoint";
 import { Soundings } from "./Soundings";
@@ -63,7 +63,7 @@ export function PassageControls({ vm, layout, selected, onSelect, planCode, grou
 
   const start = vm.start, light = vm.destination;
   const startName = PASSAGE.startLabel(planCode || "—", start.subtitle?.split(" · ")[1] ?? PASSAGE.networkNotProvided);
-  const lightName = PASSAGE.lightLabel(light.youPay != null ? `${PASSAGE.youPay} ${moneyText(light.youPay)} (${PASSAGE.calculatedAria})` : PASSAGE.waitingLower);
+  const lightName = PASSAGE.lightLabel(light.youPay != null ? `${PASSAGE.youPay} ${moneyText(light.youPay)} (${PASSAGE.calculatedAria})` : lightWaitWord(vm));
 
   return (
     <div className="passage-controls" id={groupId} role="group" aria-label={PASSAGE.islandsGroup} onKeyDown={onKeyDown} tabIndex={-1}>
@@ -116,7 +116,7 @@ export function PassageControls({ vm, layout, selected, onSelect, planCode, grou
               {...rove("destination")} data-island="destination" aria-pressed={isSel("destination")} aria-label={`${lightName}${light.planPays != null ? ` · ${PASSAGE.plan} ${moneyText(light.planPays)}${light.upperBound ? ` ${PASSAGE.upperBoundParen}` : ""}` : ""}`} onClick={pick("destination", undefined)}>
         <span className="ctl-title">{light.title}</span>
         <span className={`ctl-amt ${light.youPay != null ? "estimate" : "unresolved"}`}>
-          {light.youPay != null ? <>{PASSAGE.youPay} <Money cents={light.youPay} evidence="DOC" badge={false} calc /></> : PASSAGE.waitingLower}
+          {light.youPay != null ? <>{PASSAGE.youPay} <Money cents={light.youPay} evidence="DOC" badge={false} calc /></> : lightWaitWord(vm)}
         </span>
       </button>
 

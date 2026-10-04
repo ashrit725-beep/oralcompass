@@ -3,7 +3,7 @@ import { PASSAGE } from "../lib/copy/passage";
 import { attributionLabel, dateLabel, stageProgress, statusLabel } from "../lib/journey";
 import { itemFeeCents } from "../lib/drawer";
 import { DRAWER } from "../lib/copy";
-import { islandAmountText, moneyText } from "../lib/passage";
+import { islandAmountText, lightWaitWord, moneyText } from "../lib/passage";
 import type { InsuranceCheckpointVM, IslandVM, Journey, PassageVM, Stitch } from "../lib/types";
 import type { StageSelection as Selection } from "../lib/types";
 import { Money } from "./Money";
@@ -61,7 +61,7 @@ export function OverviewList({ journey, onSelect, vm, planTitle, onSelectIsland,
       {vm && (
         <section className="ov-route" aria-labelledby="ov-route-h">
           <h3 id="ov-route-h">{PASSAGE.routeTable}</h3>
-          <p id="ov-route-sum" className="muted small">{PASSAGE.routeTableSummary(vm.islands.length, planTitle ?? "—", vm.totals.youPay != null ? moneyText(vm.totals.youPay) : PASSAGE.waitingLower)}</p>
+          <p id="ov-route-sum" className="muted small">{PASSAGE.routeTableSummary(vm.islands.length, planTitle ?? "—", vm.totals.youPay != null ? moneyText(vm.totals.youPay) : lightWaitWord(vm))}</p>
           <p className="ov-scroll-hint muted small">{PASSAGE.tableScrolls}</p>
           <TableScroll label={PASSAGE.routeTable}>
           <table className="ov-table ov-islands" aria-describedby="ov-route-sum">
@@ -86,7 +86,7 @@ export function OverviewList({ journey, onSelect, vm, planTitle, onSelectIsland,
                   </tr>
                 );
               })}
-              <tr className="ov-frame"><th scope="row"><button type="button" className="linklike" onClick={pick("destination")}>{vm.destination.title}</button> <span className="muted">· {vm.destination.subtitle}</span></th><td colSpan={4}>{vm.destination.notices[0] ?? ""}</td><td>{vm.destination.youPay != null ? <Money cents={vm.destination.youPay} evidence="DOC" calc /> : <span className="muted">{PASSAGE.waitingLower}</span>}</td><td>{vm.destination.planPays != null ? <Money cents={vm.destination.planPays} evidence="DOC" calc /> : "—"}{vm.destination.upperBound ? ` ${PASSAGE.upperBoundParen}` : ""}</td><td colSpan={2} /><td>{sound(vm.destination)}</td></tr>
+              <tr className="ov-frame"><th scope="row"><button type="button" className="linklike" onClick={pick("destination")}>{vm.destination.title}</button> <span className="muted">· {vm.destination.subtitle}</span></th><td colSpan={4}>{vm.destination.notices[0] ?? ""}</td><td>{vm.destination.youPay != null ? <Money cents={vm.destination.youPay} evidence="DOC" calc /> : <span className="muted">{lightWaitWord(vm)}</span>}</td><td>{vm.destination.planPays != null ? <Money cents={vm.destination.planPays} evidence="DOC" calc /> : "—"}{vm.destination.upperBound ? ` ${PASSAGE.upperBoundParen}` : ""}</td><td colSpan={2} /><td>{sound(vm.destination)}</td></tr>
             </tbody>
           </table>
           </TableScroll>

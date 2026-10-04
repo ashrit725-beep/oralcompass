@@ -308,6 +308,12 @@ export function chipTitle(title: string): string {
   return short || title;
 }
 
+/** The Harbor Light's words when it has no total (numbers-5): "waiting for information" only when a planned procedure is actually waiting;
+ *  with no planned procedure on the route (Jordan, the empty journey) nothing is waiting, so it says no estimate was calculated. */
+export function lightWaitWord(vm: Pick<PassageVM, "islands" | "status">): string {
+  return vm.islands.length === 0 || vm.status === "empty" ? PASSAGE.noEstimateCalculated : PASSAGE.waitingLower;
+}
+
 /** The amount words on an island button (§3.2). */
 export function islandAmountText(isl: IslandVM): string {
   if (isl.kind === "visited") return isl.planPays == null ? PASSAGE.planPaidNotProvided : `${PASSAGE.planPaid} ${moneyText(isl.planPays)}`;

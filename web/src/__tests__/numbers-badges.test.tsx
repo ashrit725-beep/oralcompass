@@ -25,3 +25,14 @@ describe("coverage share dollars", () => {
     expect(html).toContain("You entered");
   });
 });
+
+import { lightWaitWord } from "@/lib/passage";
+import { PASSAGE } from "@/lib/copy/passage";
+
+/** numbers-5: the Harbor Light only says "waiting for information" when a planned procedure is waiting (Jordan has none planned). */
+describe("Harbor Light words without a total", () => {
+  it("says no estimate was calculated when nothing is planned, waiting only when a planned line waits", () => {
+    expect(lightWaitWord({ islands: [], status: "pending" })).toBe(PASSAGE.noEstimateCalculated);
+    expect(lightWaitWord({ islands: [{ id: "x" } as never], status: "unresolved" })).toBe(PASSAGE.waitingLower);
+  });
+});
