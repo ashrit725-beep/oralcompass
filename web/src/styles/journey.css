@@ -96,7 +96,7 @@
 }
 .passage-controls .frame-btn { width: 150px; max-width: 150px; }
 .passage-controls .light-btn { width: 170px; max-width: 170px; }
-.passage-controls .visited-btn { width: 112px; max-width: 112px; height: 52px; min-height: 52px; padding: 3px 8px; background: var(--paper-deep); overflow: hidden; }
+.passage-controls .visited-btn { width: 128px; max-width: 128px; height: 52px; min-height: 52px; padding: 3px 8px; background: var(--paper-deep); overflow: hidden; }
 .passage-controls .visited-btn.visited-more { height: 44px; min-height: 44px; }
 .passage-controls .visited-more { font-weight: 600; }
 .passage-controls .marginal-btn { border-style: dashed; }
@@ -120,9 +120,9 @@
 .ctl-amt.unresolved, .ctl-amt.pending, .ctl-amt.mentioned { color: var(--ink-soft); font-style: italic; }
 .ctl-pennant { font-size: 11px; line-height: 13px; color: var(--ink); background: var(--gold-soft); border: 1px solid var(--gold); border-radius: var(--r-1); padding: 0 4px; }
 .visited-mark { color: var(--forest); display: inline-flex; }
-.passage-controls .visited-btn { position: absolute; padding-left: 20px; align-items: flex-start; text-align: left; }
+.passage-controls .visited-btn { position: absolute; padding-left: 18px; padding-right: 6px; align-items: flex-start; text-align: left; }
 .passage-controls .visited-btn .visited-mark { position: absolute; left: 6px; top: 7px; }
-.visited-btn .ctl-title { font-size: 12px; line-height: 14px; }
+.visited-btn .ctl-title { font-size: 12px; line-height: 14px; overflow-wrap: break-word; }
 .visited-btn .ctl-sub { font-size: 11px; line-height: 13px; }
 .passage-controls .visited-btn.visited-more { padding-left: 8px; align-items: center; text-align: center; }
 

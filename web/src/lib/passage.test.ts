@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import alexJson from "../__fixtures__/passage/alex.json";
 import samJson from "../__fixtures__/passage/sam.json";
-import { BINDING_PX, TARGET_PX, VB_W, answerSegment, answersLog, buildPassage, planDisplayCode, checkpointAria, findCollisions, islandAmountText, layoutPassage, matchLine, moneyText, type PassageInputs } from "./passage";
+import { BINDING_PX, TARGET_PX, VB_W, answerSegment, chipTitle, answersLog, buildPassage, planDisplayCode, checkpointAria, findCollisions, islandAmountText, layoutPassage, matchLine, moneyText, type PassageInputs } from "./passage";
 import { stitchesFromClauses } from "./stitches";
 import type { Clause, CoverageRule, JourneyView, LedgerLine, PassageVM, PlanFixture, Procedure, SavedEstimate, TreatmentItem } from "./types";
 
@@ -286,5 +286,14 @@ describe("Answers-log jumps (finding web-correctness-1)", () => {
     expect(answerSegment("stage", false, "care")).toBe("care");
     expect(answerSegment("stage", false, "overview")).toBe("map");
     expect(answerSegment("documents", false, "map")).toBeNull();
+  });
+});
+
+describe("visited chip names (findings layout-18, demo-9)", () => {
+  it("drop the parenthetical and the clause after a comma so the chip shows whole words, never an ellipsis", () => {
+    expect(chipTitle("Adult cleaning (prophylaxis)")).toBe("Adult cleaning");
+    expect(chipTitle("Bitewing x-rays (set)")).toBe("Bitewing x-rays");
+    expect(chipTitle("Resin composite filling, two surfaces, posterior tooth")).toBe("Resin composite filling");
+    expect(chipTitle("Periodic oral evaluation")).toBe("Periodic oral evaluation");
   });
 });

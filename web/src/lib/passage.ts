@@ -302,6 +302,14 @@ export function answersLog(vm: PassageVM, view: JourneyView | null, plan: PlanFi
 export const moneyText = (c: number | null | undefined) => (c == null ? "—" : `$${(c / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
 export const signedText = (c: number | null | undefined) => (c == null ? "—" : c < 0 ? `−${moneyText(-c)}` : c === 0 ? "$0.00" : `+${moneyText(c)}`);
 
+/** The visible name on a small chart chip (visited islets): the procedure's own name without its parenthetical or the clause after a
+ *  comma ("Adult cleaning (prophylaxis)" → "Adult cleaning"; "Resin composite filling, two surfaces, posterior tooth" → "Resin composite
+ *  filling"), so it fits two lines instead of being cut. The full name stays in the accessible name and the title. */
+export function chipTitle(title: string): string {
+  const short = title.replace(/\s*\([^)]*\)\s*/g, " ").split(",")[0].replace(/\s+/g, " ").trim();
+  return short || title;
+}
+
 /** The amount words on an island button (§3.2). */
 export function islandAmountText(isl: IslandVM): string {
   if (isl.kind === "visited") return isl.planPays == null ? PASSAGE.planPaidNotProvided : `${PASSAGE.planPaid} ${moneyText(isl.planPays)}`;
@@ -467,8 +475,8 @@ export function layoutPassage(vm: PassageVM, mode: "desktop" | "phone", opts: La
   const destinationButton = rectAt(destination.x, destination.y + destinationR * 0.7 + u(36), u(170), btnH, "destination");
 
   // visited: a short column on the left shore above START (max 3, then "+k more"); marginal: lower margin right of centre (max 3, then +k)
-  // visited chips are 112 × 52 px so a two-line name fits ("Adult cleaning (prophylaxis)") instead of truncating to "Adult cleani…"
-  const visitedW = u(112), visitedH = u(52);
+  // visited chips are 128 × 52 px so a two-line short name fits ("Resin composite filling") instead of truncating
+  const visitedW = u(128), visitedH = u(52);
   const vTop = n === 3 ? 44 : 56, vPitch = visitedH + u(4), vCx = u(10) + visitedW / 2;
   const visited: SmallIslandLayout[] = vm.visited.slice(0, 3).map((v, j) => { const cx = vCx, cy = vTop + j * vPitch; return { id: v.id, cx, cy, r: 24, button: rectAt(cx, cy, visitedW, visitedH, v.id) }; });
   const visitedOverflow = Math.max(0, vm.visited.length - 3);

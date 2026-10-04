@@ -2,7 +2,7 @@ import { useCallback, useState, type KeyboardEvent, type MouseEvent } from "reac
 import { Money } from "@/components/Money";
 import { PASSAGE } from "@/lib/copy/passage";
 import { CHECKPOINT_TERM, type GlyphId } from "@/lib/islands";
-import { checkpointAria, islandAmountText, moneyText, type PassageLayout } from "@/lib/passage";
+import { checkpointAria, chipTitle, islandAmountText, moneyText, type PassageLayout } from "@/lib/passage";
 import type { InsuranceCheckpointVM, IslandVM, MapSelection, PassageVM } from "@/lib/types";
 import { Glyph, toneOf } from "./InsuranceCheckpoint";
 import { Soundings } from "./Soundings";
@@ -127,7 +127,7 @@ export function PassageControls({ vm, layout, selected, onSelect, planCode, grou
           <button key={v.id} type="button" className={`unstyled ctl visited-btn ${isSel(isl.id) ? "is-selected" : ""}`} style={pos(v.button.x + v.button.w / 2, v.button.y + v.button.h / 2)} {...rove(isl.id)} data-island={isl.id}
                   aria-pressed={isSel(isl.id)} aria-label={`${isl.title}${isl.subtitle ? ` · ${isl.subtitle}` : ""} · ${PASSAGE.legendVisited} · ${islandAmountText(isl)}`} onClick={pick(isl.id, undefined)}>
             <span className="visited-mark"><Glyph id="visited" size={12} /></span>
-            <span className="ctl-title">{isl.title}</span>
+            <span className="ctl-title" title={isl.title}>{chipTitle(isl.title)}</span>
             <span className="ctl-sub">{isl.claim?.date ?? isl.item?.appointment_date ?? PASSAGE.visitedStamp}</span>
           </button>
         );
