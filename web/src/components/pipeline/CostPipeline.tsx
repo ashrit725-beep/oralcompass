@@ -31,8 +31,8 @@ export interface CostPipelineProps {
   vertical?: boolean;
 }
 
-/** The existing warn sentence (kept verbatim from the lighthouse cost trail; the em dash is pre-existing copy). */
-export const RECONCILE_WARN = "Amounts do not reconcile in this view — the engine ledger is authoritative; see the receipt below.";
+/** The warn sentence shared with the lighthouse cost trail (lib/copy.ts `UI.reconcileWarn`; no em dash, R-02). */
+export const RECONCILE_WARN = UI.reconcileWarn;
 
 /**
  * CostPipeline (spec §4.5, component plan N2-A): a horizontal flow of nodes for one ledger line, built from `buildTrail(line).steps` through

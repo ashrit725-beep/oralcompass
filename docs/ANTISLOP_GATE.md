@@ -55,7 +55,7 @@ My plan atlas, which read as a cream-themed admin panel.
 
 | Rule | Result | Evidence |
 |---|---|---|
-| R-02 em dash | **FAIL** (slop-1, slop-2) | Ribbon "Sample journey — fictional person and records" and journey H2 (`desktop-01-journey.png`); Compare H1 (`desktop-09-compare.png`); "— no adjustment" (`desktop-13-pipeline.png`); "You pay —" (`desktop-25-fog-drawer.png`); "Deductible — individual" (`mobile-09-compare.png`) |
+| R-02 em dash | **PASS for the shell and server copy** (fix/web-shell, 2026-10-04: ribbon, banners, trail notes, CostTrail, DetailPanel, reconcile warning, comparison topics, missing-input labels; `tools/advice_lint.py` rule 5 now fails an em dash used as punctuation in a source string); was FAIL (slop-1, slop-2) | Ribbon "Sample journey — fictional person and records" and journey H2 (`desktop-01-journey.png`); Compare H1 (`desktop-09-compare.png`); "— no adjustment" (`desktop-13-pipeline.png`); "You pay —" (`desktop-25-fog-drawer.png`); "Deductible — individual" (`mobile-09-compare.png`) |
 | R-03 mobile | **FAIL** (slop-3, slop-4, slop-5, slop-20) | Clipped amounts and select (`mobile-01-journey.png`, `mobile-10-documents.png`; live: 12 nodes end at x = 363, documents select at x = 712, hidden by `.view { overflow-x: hidden }`); "(1)" escapes the plan-source segment (`mobile-05-plan.png`); 12 px gutter |
 | R-17 / R-36 / R-38 numbers and claims | **FAIL** (slop-14) | Computed totals badged "From the plan document" (`desktop-12-drawer.png` $510.00, `desktop-22-harbor-drawer.png` $902.00, `desktop-05-plan.png` $162.00 with only the ML26 stitch) |
 | R-18 testimonials, R-28 FAQ | PASS | None exist |

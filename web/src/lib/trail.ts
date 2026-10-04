@@ -53,11 +53,11 @@ export function buildTrail(line: LedgerLine): Trail {
   ];
   if (abBasis) steps.push({ key: "alternate", title: TRAIL.alternate, amountIn: allowed, change: abBasis.cents, amountOut: basis, owner: "basis", rule: "AB", stitch: abBasis.stitch, explanation: "The plan pays on the less costly alternative's allowance; the difference becomes your share below." });
   steps.push({ key: "deductible", title: TRAIL.deductible, amountIn: basis, change: -dedC, amountOut: after, owner: "patient", rule: "D", stitch: ded?.stitch ?? null,
-               explanation: dedC ? "Applied to your remaining deductible — your share." : "No deductible applied to this line (waived for this class, or already met per your records)." });
+               explanation: dedC ? "Applied to your remaining deductible: your share." : "No deductible applied to this line (waived for this class, or already met per your records)." });
   steps.push({ key: "share", title: TRAIL.share, amountIn: after, change: -patCo, amountOut: planPre, owner: "plan", rule: "CO", stitch: coPlan?.stitch ?? coPat?.stitch ?? null, split: { plan: planPre, patient: patCo, planPct },
                explanation: `The plan pays ${planPct}% of the amount after the deductible; your share is ${100 - planPct}%.` });
   steps.push({ key: "max", title: TRAIL.max, amountIn: planPre, change: -(beyond?.cents ?? 0), amountOut: planPay, owner: beyond ? "patient" : "plan", rule: "M", stitch: beyond?.stitch ?? null,
-               explanation: beyond ? "Part of the plan share exceeds the plan's remaining annual maximum — that part is your share." : "Within the plan's remaining annual maximum (or no maximum applies) — no adjustment." });
+               explanation: beyond ? "Part of the plan share exceeds the plan's remaining annual maximum; that part is your share." : "Within the plan's remaining annual maximum (or no maximum applies): no adjustment." });
   const extra = listed.reduce((a, s) => a + s.cents, 0);
   const youPay = dedC + patCo + (beyond?.cents ?? 0) + (abDiff?.cents ?? 0) + (netOwedByYou ? (net?.cents ?? 0) : 0) + extra;
   steps.push({ key: "you", title: TRAIL.you, amountIn: fee, change: null, amountOut: youPay, owner: "patient", rule: "total", stitch: null,

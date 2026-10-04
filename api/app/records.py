@@ -21,7 +21,7 @@ from .data import (CODES_BY_KEY, FEE_BENCHMARKS, PLANS, PLAN_META, PROC_BY_KEY, 
                    INGEST_REPORT, AUDIT_REPORT, clauses, documents_for_meta, documents_for_plan, evidence_rows, plan_summary)
 from .templates import BENCHMARK_NOTE
 from .store import NOT_FOUND, repo
-from .templates import FOOTER
+from .templates import FOOTER, PRESET_BANNER
 from .uploads import norm_ref, resolve_plan_ref
 
 router = APIRouter()
@@ -170,7 +170,7 @@ def list_plans(q: str = "", user: User = Depends(current_user)):
     items = [plan_summary(c) for c in PLANS]
     if q:
         items = [i for i in items if q.lower() in " ".join(str(v) for v in i.values()).lower()]
-    return {"items": items, "banner": "Listed here means the document is public — not that you are eligible to enroll."}
+    return {"items": items, "banner": PRESET_BANNER}
 
 
 @router.get("/plans/{code}")
@@ -357,9 +357,9 @@ def estimate_from_records(body: EstimateRequest, user: User = Depends(current_us
     for L in ledger.lines:
         for f in L.flags:
             if "allowed amount" in f and "not stated" in f:
-                missing_inputs.append({"input": f"allowed amount — {L.label}", "how": "The plan document prints no fee schedule. Enter the allowed amount from a pre-treatment estimate response or an EOB, with its source; without it the line stays unresolved.", "line": L.label})
+                missing_inputs.append({"input": f"allowed amount: {L.label}", "how": "The plan document prints no fee schedule. Enter the allowed amount from a pre-treatment estimate response or an EOB, with its source; without it the line stays unresolved.", "line": L.label})
             if "class of" in f and "not stated" in f:
-                missing_inputs.append({"input": f"coverage class — {L.label}", "how": "The pages read do not place this procedure in a class. The line stays unresolved until the plan document (or the plan) states it.", "line": L.label})
+                missing_inputs.append({"input": f"coverage class: {L.label}", "how": "The pages read do not place this procedure in a class. The line stays unresolved until the plan document (or the plan) states it.", "line": L.label})
     ledger_json = jsonable_encoder(ledger)
     # the engine keeps the listed order, so ledger line i is treatment item i: stamp the record ids on the serialized lines (engine untouched)
     for line_json, item in zip(ledger_json["lines"], items):

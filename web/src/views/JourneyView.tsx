@@ -107,7 +107,7 @@ export function JourneyView({ data, selection, mobile, onOpenLandmark, onOpenDoc
         <p>{UI.newUserBody}</p>
         <div className="start-actions">
           <button type="button" disabled={busy} onClick={() => startJourney("empty")}>Start my journey (no documents yet)</button>
-          {samples.map((s) => <button key={s.id} type="button" className="secondary" disabled={busy} onClick={() => startJourney(s.id)}>{UI.loadSample}: {s.label.replace("Sample journey — ", "")}</button>)}
+          {samples.map((s) => <button key={s.id} type="button" className="secondary" disabled={busy} onClick={() => startJourney(s.id)}>{UI.loadSample}: {s.label.replace(/^Sample journey\s*[—:]\s*/, "")}</button>)}
         </div>
         <p className="muted small">Plan presets: {plans.length} ({realCount} from public plan documents, {plans.length - realCount} fictional demonstration plans). {UI.availabilityBanner}</p>
       </section>

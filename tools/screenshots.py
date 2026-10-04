@@ -124,7 +124,7 @@ def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-pref
 
     open_alex(page)
     shot("01-journey")
-    check(f"{device}: sample ribbon labels fictional records", page.get_by_text("Sample journey — fictional person and records").count() > 0)
+    check(f"{device}: sample ribbon labels fictional records", page.get_by_text("Sample journey: fictional person and records").count() > 0)
     check(f"{device}: progress language", page.get_by_text("of", exact=False).filter(has_text="checkpoints completed").count() > 0)
 
     # ---- the Passage (spec §12 "view journey") ----

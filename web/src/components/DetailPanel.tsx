@@ -50,19 +50,19 @@ function StageDetail({ view, stage, onSelect, onOpenLandmark, onInstructions, bu
       {items.length > 0 && (
         <section className="block"><h3>Procedures on this island</h3>
           <ul className="plain-list">{items.map((t) => (
-            <li key={t.id}><strong>{t.procedure_name ?? t.procedure_key.replace(/_/g, " ")}</strong>{t.tooth ? ` (tooth ${t.tooth})` : ""} — {t.status.replace(/_/g, " ")} · dentist's fee {money(t.dentist_fee_cents)} · allowed amount {t.allowed_cents == null ? <><EvidenceBadge status="UNKNOWN" /></> : <>{money(t.allowed_cents)} <EvidenceBadge status="USER" /> <small className="note">{t.allowed_source ?? "entered by you"}</small></>}</li>
+            <li key={t.id}><strong>{t.procedure_name ?? t.procedure_key.replace(/_/g, " ")}</strong>{t.tooth ? ` (tooth ${t.tooth})` : ""}: {t.status.replace(/_/g, " ")} · dentist's fee {money(t.dentist_fee_cents)} · allowed amount {t.allowed_cents == null ? <><EvidenceBadge status="UNKNOWN" /></> : <>{money(t.allowed_cents)} <EvidenceBadge status="USER" /> <small className="note">{t.allowed_source ?? "entered by you"}</small></>}</li>
           ))}</ul>
           <p className="muted small">{UI.allowedNote}</p>
         </section>
       )}
       {stage.finance.kind !== "none" && view.links.latest_estimate && (
         <section className="block"><h3>Costs</h3>
-          <p>Latest estimate ({view.links.latest_estimate.plan_code}): you pay <strong className="num">{money(view.links.latest_estimate.user_estimated_payment_cents)}</strong> · plan pays <strong className="num">{money(view.links.latest_estimate.insurer_estimated_payment_cents)}</strong>{view.links.latest_estimate.status === "unresolved" ? " — unresolved (information missing)" : ""}</p>
+          <p>Latest estimate ({view.links.latest_estimate.plan_code}): you pay <strong className="num">{money(view.links.latest_estimate.user_estimated_payment_cents)}</strong> · plan pays <strong className="num">{money(view.links.latest_estimate.insurer_estimated_payment_cents)}</strong>{view.links.latest_estimate.status === "unresolved" ? " (unresolved: information missing)" : ""}</p>
           <button type="button" onClick={() => onOpenLandmark("lighthouse")}>Open the cost breakdown</button>
         </section>
       )}
       <section className="block"><h3>Dental team instructions</h3>
-        {stage.instructions ? (<><blockquote className="instructions">{stage.instructions.text}</blockquote><p className="src">{UI.instructionsAsWritten} — source: {stage.instructions.source}{stage.instructions.given_on ? ` (${stage.instructions.given_on})` : ""}</p></>)
+        {stage.instructions ? (<><blockquote className="instructions">{stage.instructions.text}</blockquote><p className="src">{UI.instructionsAsWritten}. Source: {stage.instructions.source}{stage.instructions.given_on ? ` (${stage.instructions.given_on})` : ""}</p></>)
           : (<><p className="muted">{UI.noInstructions}</p>
               <form className="inline-form" onSubmit={(e) => { e.preventDefault(); if (text && source) onInstructions(stage.id, text, source, given || undefined).then(() => { setText(""); setSource(""); setGiven(""); }); }}>
                 <label>Instructions, exactly as the dental team wrote them<textarea value={text} onChange={(e) => setText(e.target.value)} rows={3} /></label>
@@ -72,7 +72,7 @@ function StageDetail({ view, stage, onSelect, onOpenLandmark, onInstructions, bu
               </form></>)}
       </section>
       <section className="block"><h3>Checkpoints</h3>
-        <ol className="plain-list">{stage.checkpoints.map((c) => <li key={c.id}><button type="button" className="linklike" onClick={() => onSelect({ stageId: stage.id, cpId: c.id })}>{c.label}</button> — {statusLabel(c)}{attributionLabel(c) ? ` · ${attributionLabel(c)}` : ""}</li>)}</ol>
+        <ol className="plain-list">{stage.checkpoints.map((c) => <li key={c.id}><button type="button" className="linklike" onClick={() => onSelect({ stageId: stage.id, cpId: c.id })}>{c.label}</button>: {statusLabel(c)}{attributionLabel(c) ? ` · ${attributionLabel(c)}` : ""}</li>)}</ol>
       </section>
     </div>
   );

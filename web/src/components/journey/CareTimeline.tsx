@@ -10,7 +10,7 @@ import type { Checkpoint, Journey, Progress, Stage, StageSelection } from "@/lib
  * Phone: the second segment of the Map view · Care timeline · Overview list toggle, built on the Aceternity Timeline (restyled: paper,
  * forest→sea fill, <ol>/<li aria-current="step">; reduced motion fills 100 %), each entry holding the stage button and its checkpoint rows.
  * Accessible names start with the stage title (`Before your visit (Lantern Cove): 1 of 3 checkpoints completed`) and the checkpoint
- * label (`Appointment information recorded — Completed, confirmed by your dental team`) so tools/screenshots.py keeps working.
+ * label (`Appointment information recorded: Completed, confirmed by your dental team`) so tools/screenshots.py keeps working.
  * Clicking opens the existing DetailPanel with its forms.
  */
 export interface CareTimelineProps { journey: Journey; progress: Progress; selected: StageSelection | null; onSelect: (s: StageSelection, el?: HTMLElement | null) => void; currentStageId: string | null; mobile: boolean; linkedIsland?: (stage: Stage) => string | null; onShowOnChart?: (islandId: string) => void }
@@ -26,7 +26,7 @@ function CpGlyph({ status }: { status: Checkpoint["status"] }) {
     </svg>
   );
 }
-const cpName = (cp: Checkpoint) => `${cp.label} — ${statusLabel(cp)}${cp.status === "completed" && cp.completed_by === "dental_team" ? ", confirmed by your dental team" : cp.status === "completed" ? ", marked by you" : ""}`;
+const cpName = (cp: Checkpoint) => `${cp.label}: ${statusLabel(cp)}${cp.status === "completed" && cp.completed_by === "dental_team" ? ", confirmed by your dental team" : cp.status === "completed" ? ", marked by you" : ""}`;
 
 function StageButton({ stage, current, selected, onSelect }: { stage: Stage; current: boolean; selected: boolean; onSelect: CareTimelineProps["onSelect"] }) {
   const prog = stageProgress(stage);
