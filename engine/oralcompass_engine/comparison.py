@@ -13,6 +13,13 @@ TOPICS = [
 ]
 
 
+
+def _clock_words(clock: str) -> str:
+    """A frequency clock in plain words for a compare cell: underscores become spaces and a leading "per" is dropped, so
+    "per_tooth_months" reads "84 per tooth months", never "84 per per tooth months"."""
+    words = clock.replace("_", " ").strip()
+    return words[4:] if words.startswith("per ") else words
+
 def _cell(v: V, fmt):
     if v is None or v.status == Evidence.UNKNOWN or v.value is None:
         return {"text": "Not stated in this document", "badge": "UNKNOWN", "cite": None}
@@ -67,7 +74,7 @@ def grid(plans: list[PlanModel]) -> list[dict]:
                 if not p.frequency:
                     cells.append({"text": "Not stated in this document", "badge": "UNKNOWN", "cite": None})
                 else:
-                    cells.append({"text": "; ".join(f"{r.procedure_key}: {r.n} per {r.clock.replace('_', ' ')}" for r in p.frequency),
+                    cells.append({"text": "; ".join(f"{r.procedure_key.replace('_', ' ')}: {r.n} per {_clock_words(r.clock)}" for r in p.frequency),
                                   "badge": "DOC", "cite": p.frequency[0].cite.label() if p.frequency[0].cite else None})
             elif topic == "Alternate-benefit clause":
                 ab = p.alternate_benefit

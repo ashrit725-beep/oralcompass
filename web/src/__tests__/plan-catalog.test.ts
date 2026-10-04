@@ -96,8 +96,8 @@ describe("compact picker labels (layout-8, slop-20; orchestrator note 3)", () =>
   const fm26h = { title: "The MetLife Federal Dental Plan 2026 — High Option (FEDVIP, nationwide)", is_fictional: false, option: "High Option", plan_year: 2026 };
   const hb26 = { title: "Harborview Dental PPO 2026 — fictional demonstration plan", is_fictional: true, option: "Standard", plan_year: 2026 };
   it("keeps the name part, then the option and year (once), with the fictional word", () => {
-    expect(fastPathLabel(ml26)).toBe("MetLife NCFlex Dental · Classic Option 2026");
-    expect(fastPathLabel(fm26h)).toBe("The MetLife Federal Dental Plan 2026 · High Option");
+    expect(fastPathLabel(ml26)).toBe("MetLife NCFlex Dental · Classic 2026");
+    expect(fastPathLabel(fm26h)).toBe("The MetLife Federal Dental Plan 2026 · High");
     expect(fastPathLabel(hb26)).toBe("Harborview Dental PPO 2026 · Standard (fictional)");
     expect(fastPathLabel(ml26).length).toBeLessThan(ml26.title.length);
   });

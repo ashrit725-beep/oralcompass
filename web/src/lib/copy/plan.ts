@@ -207,6 +207,12 @@ export const PLAN = {
   docsDeleted: (what: string) => `Deleted: ${what}.`,
   docsNothingStored: "nothing stored",
   docsNeedsConfirmation: "needs your confirmation:",
+  /** Plain words for the stored-document type and extraction status slugs (no raw snake_case on screen); unknown slugs lose their underscores. */
+  docsSlug: (slug: string): string => ({
+    plan_document_public: "public plan document", plan_document_upload: "uploaded plan document", benefit_statement: "benefit statement",
+    treatment_plan: "treatment plan", pretreatment_estimate_response: "pre-treatment estimate response", upload: "upload",
+    typed_by_user: "typed by you", cited_facts_verified_in_text: "cited facts checked against the text", published: "published",
+  } as Record<string, string>)[slug] ?? slug.replace(/_/g, " "),
   docsRedactionRemoved: "Redaction preview removed:",
   docsNothing: "nothing",
   docsVersions: (labels: string) => `Published versions: ${labels}`,

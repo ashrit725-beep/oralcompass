@@ -26,13 +26,15 @@ export function planLabel(p: Pick<PlanSummary, "plan_name" | "option" | "title">
 /**
  * The option text of the plan pickers, compact enough for a closed native select (layout-8 / orchestrator note 3): the title's name part
  * (before " — "), then the option and plan year from the summary, with the fictional word so the list stays honest. The full title goes
- * in the option's `title` attribute (`fullPlanLabel`); option VALUES stay the plan codes. Without a " — " the title is used as written.
+ * in the option's `title` attribute (`fullPlanLabel`); option VALUES stay the plan codes. A trailing "Option" word is dropped from the option. Without a " — " the title is used as written.
  */
 export function fastPathLabel(p: Pick<PlanSummary, "title" | "is_fictional"> & Partial<Pick<PlanSummary, "option" | "plan_year">>): string {
   const [name, rest] = p.title.split(TITLE_SEP);
   let label = p.title;
   if (rest !== undefined) {
-    const option = text(p.option, "");
+    // the trailing word "Option" adds width, not meaning, in a closed select on a 375 px phone ("Classic Option" → "Classic"); the full
+    // title stays in the option's tooltip and in the visible "selected plan" line under the picker
+    const option = text(p.option, "").replace(/\s+Option$/i, "");
     const year = typeof p.plan_year === "number" && !name.includes(String(p.plan_year)) ? String(p.plan_year) : "";
     const tail = [option, year].filter(Boolean).join(" ");
     label = tail ? `${name} · ${tail}` : name;
