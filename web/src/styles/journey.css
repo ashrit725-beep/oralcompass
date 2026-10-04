@@ -239,6 +239,13 @@
 .pv-amt.is-yours .amt { color: var(--owner-patient); }
 .pv-amt.is-closed { color: var(--closed); }
 .pv-split, .pv-nochange, .pv-wait { font-size: 13px; color: var(--ink-soft); }
+/* phones: the figure outweighs its label (600 vs 400), and "not owed by you" sits on its own caption line instead of orphaning "· not" */
+@media (max-width: 767px) {
+  .pv-amt .amt, .pv-split .amt { font-weight: 600; color: var(--ink); }
+  .pv-amt.is-yours .amt { color: var(--owner-patient); }
+  .pv-owner { display: block; line-height: 16px; }
+  .pv-owner-sep { display: none; }
+}
 .pv-evidence { display: inline-flex; padding-right: 4px; }
 .pv-notices { margin: 6px 0 0; font-size: 12px; color: var(--ink-soft); }
 .pv-side { margin: var(--s-4) 0 0; }

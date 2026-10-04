@@ -88,6 +88,13 @@ details[open] > .dsec-summary .dsec-toggle { transform: rotate(-135deg); margin-
 .final-hero-unresolved .fig-hero .amt { color: var(--text-soft); }
 .final-sub { margin: 0 0 var(--s-3); font-size: 15px; line-height: 22px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 6px; }
 .final-sub .amt { font-weight: 600; color: var(--plan-pays); }
+/* phones: the benefit year drops to its own caption line without the orphaned "·" separator; the remaining strip reads label, then one figure per line */
+@media (max-width: 767px) {
+  .final-year { flex-basis: 100%; }
+  .final-year-sep { display: none; }
+  .drawer-remaining { row-gap: var(--s-1); }
+  .drawer-remaining-k, .drawer-remaining-item { flex-basis: 100%; }
+}
 @media (max-width: 760px) { .final-hero-amt .fig-hero .amt, .fig-hero .amt { font-size: 28px; line-height: 32px; } }
 
 /* coverage share bar (dataviz: 8 px, water for the plan, sand for you, 2 px surface gap, labels in ink) */
@@ -205,6 +212,11 @@ details[open] > .dsec-summary .dsec-toggle { transform: rotate(-135deg); margin-
 .drawer-sheet .harbor-table td { border: 0; padding: 0; min-width: 0; }
 .drawer-sheet .harbor-table td:last-child { grid-column: 1 / -1; color: var(--text-soft); font-size: 13px; }
 .drawer-sheet .harbor-table td::before { content: attr(data-label); display: block; font-size: 12px; line-height: 16px; color: var(--text-soft); }
+/* phone sheet: the island's tooth/status caption gets its own line (no orphaned "·"), and the status value outweighs its label, on one line */
+.drawer-sheet .harbor-table .harbor-sub { display: block; font-weight: 400; font-size: 13px; line-height: 18px; }
+.drawer-sheet .harbor-table .harbor-sub-sep { display: none; }
+.drawer-sheet .harbor-table td:last-child { color: var(--text); font-size: 14px; font-weight: 500; }
+.drawer-sheet .harbor-table td:last-child::before { display: inline; margin-right: 8px; font-weight: 400; }
 .clause-in-sheet { overflow-wrap: break-word; }
 /* The term ("coinsurance") keeps its word and takes a full row; the chip, badge and close wrap around it. `!important` because the base
    `.clause header h3 { flex: 1 }` in styles.css outranks this layered sheet (computed flex stayed `1 1 0%`, 43 px wide at 360). */

@@ -67,7 +67,7 @@ export function HarborSections({ island, vm, rules, benefits, estimate, stitches
                 const cellInputs = st ? [] : calcInputs(i.item, estimate, benefits);
                 return (
                   <tr key={i.id} role="row" className={`island-${i.state}`}>
-                    <th scope="row" role="rowheader">{i.title}{i.subtitle ? <span className="muted"> · {i.subtitle}</span> : null}</th>
+                    <th scope="row" role="rowheader">{i.title}{i.subtitle ? <span className="muted harbor-sub"><span className="harbor-sub-sep" aria-hidden="true"> · </span>{i.subtitle}</span> : null}</th>
                     {/* data-label: the column name shown above each figure when the phone stacks the row (drawer.css) */}
                     <td role="cell" data-label={DRAWER.youPay}><Figure cents={i.youPay} evidence={known ? "USER" : "UNKNOWN"} calc={known} inputs={cellInputs} calcLabel={null} stitch={st} onSelectStitch={onSelectStitch} waiting={false} className="fig-patient" /></td>
                     <td role="cell" data-label={DRAWER.planPaysRow}><Figure cents={i.planPays} evidence={known ? "USER" : "UNKNOWN"} calc={known} inputs={cellInputs} calcLabel={null} stitch={st} onSelectStitch={onSelectStitch} waiting={false} className="fig-plan" /></td>
