@@ -17,6 +17,7 @@ import logging
 import os
 import re
 import tempfile
+import threading
 import uuid
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -32,7 +33,8 @@ from .data import PLANS, PLAN_META, PROC_BY_KEY, clauses_from_meta, documents_fo
 
 from oralcompass_engine import PlanModel, load_plan  # noqa: E402
 from oralcompass_engine.rules import coverage_rules  # noqa: E402
-from .extraction import (REQUIRED_PATHS, FixtureExtractor, llm_mode, llm_model, new_status, normalize, page_count, read_text, run_extraction, verify_quote)
+from .extraction import (REQUIRED_PATHS, FixtureExtractor, _advance, llm_mode, llm_model, new_status, normalize, page_count, read_text, run_extraction,
+                         skeleton_fields, verify_quote)
 from .redaction import redact
 from .store import NOT_FOUND, repo
 from . import llm_guard
@@ -209,6 +211,28 @@ def put_redaction(doc_id: str, body: RedactionIn, user: User = Depends(current_u
 
 
 # ---------------------------------------------------------------- extraction
+STALE_EXTRACTION_S = 15 * 60            # longer than any live extraction budget: a status this old belongs to a task that is gone
+_PUBLISH_LOCKS: dict[str, threading.Lock] = {}
+_PUBLISH_LOCKS_GUARD = threading.Lock()
+
+
+def _publish_lock(sub: str) -> threading.Lock:
+    with _PUBLISH_LOCKS_GUARD:
+        return _PUBLISH_LOCKS.setdefault(sub, threading.Lock())
+
+
+def _stale(st: dict) -> bool:
+    """A non-terminal extraction whose last stage is older than STALE_EXTRACTION_S (or carries no stamp at all): the process that ran it
+    restarted or crashed, so a new extraction may start."""
+    ts = st.get("updated_at")
+    if not ts:
+        return True
+    try:
+        return (datetime.now(timezone.utc) - datetime.fromisoformat(ts)).total_seconds() > STALE_EXTRACTION_S
+    except ValueError:
+        return True
+
+
 class _DocumentGone(Exception):
     """The document was deleted while its extraction ran ('Delete all my data' or a document delete): the task stops quietly."""
 
@@ -220,6 +244,7 @@ def _run(sub: str, doc_id: str, mode: str, limit_reason: Optional[str] = None) -
 
     def set_status(st: dict) -> None:
         extraction = copy.deepcopy(st)
+        extraction["updated_at"] = _now()           # a non-terminal status older than STALE_EXTRACTION_S can be restarted (api-correctness-6)
         if limit_reason:
             extraction["limit_reached"] = limit_reason
         # merge only the extraction fields into the CURRENT record (never re-create a deleted one, never overwrite a newer redaction)
@@ -234,7 +259,11 @@ def _run(sub: str, doc_id: str, mode: str, limit_reason: Optional[str] = None) -
     except Exception as e:                      # never leak document content; the type name is enough for the operator
         log.warning("extraction id=%s failed type=%s", doc_id, type(e).__name__)
         st = new_status(mode)
-        st.update({"status": "failed", "reason": EXTRACTION_FAILED_MODEL if mode == "live" else EXTRACTION_FAILED_UNREADABLE, "stage_index": len(st["stages"]) - 1})
+        # the same hand-entry rows as the other failure paths, so the owner reviews every field before anything publishes (api-correctness-5)
+        st["fields"], st["structure"] = skeleton_fields()
+        st["counts"] = {k: sum(1 for f in st["fields"] if f["confidence"] == k) for k in ("confirmed", "likely", "needs_review", "not_found")}
+        st["reason"] = EXTRACTION_FAILED_MODEL if mode == "live" else EXTRACTION_FAILED_UNREADABLE
+        _advance(st, "failed")
         try:
             set_status(st)
         except _DocumentGone:
@@ -245,7 +274,7 @@ def _run(sub: str, doc_id: str, mode: str, limit_reason: Optional[str] = None) -
 def start_extraction(doc_id: str, background: BackgroundTasks, user: User = Depends(current_user)):
     doc = _owned_upload(user, doc_id)
     current = (doc.get("extraction") or {}).get("status")
-    if current and current not in ("ready", "failed", "demo_no_model"):
+    if current and current not in ("ready", "failed", "demo_no_model") and not _stale(doc.get("extraction") or {}):
         raise HTTPException(status_code=409, detail={"error": "extraction_in_progress", "status": current})
     mode = llm_mode()
     limit_reason = None
@@ -254,6 +283,7 @@ def start_extraction(doc_id: str, background: BackgroundTasks, user: User = Depe
         if not allowed:                         # per-visitor or daily limit: the demo path, with an honest ribbon
             mode = "demo"
     st = new_status(mode)
+    st["updated_at"] = _now()
     doc["extraction"], doc["extraction_status"] = st, "queued"
     repo.put(user.sub, "document", doc)
     if mode == "demo":                          # the fixture path (and the demo_no_model path) complete synchronously: no network
@@ -470,9 +500,18 @@ def publish(doc_id: str, user: User = Depends(current_user)):
     st = doc.get("extraction")
     if not st or st["status"] not in ("ready", "failed", "demo_no_model"):
         raise HTTPException(status_code=409, detail={"error": "extraction_not_finished"})
+    if not st.get("fields"):
+        raise HTTPException(status_code=409, detail={"error": "nothing_to_publish"})        # never a plan built from no reviewed rows
     undecided = undecided_required(st["fields"])
     if undecided:
         raise HTTPException(status_code=409, detail={"error": "undecided_fields", "fields": undecided})
+    with _publish_lock(user.sub):                 # one publish at a time per owner: UPn labels are unique (api-correctness-9)
+        return _publish_locked(user, doc_id)
+
+
+def _publish_locked(user: User, doc_id: str) -> dict:
+    doc = _owned_upload(user, doc_id)             # re-read inside the lock
+    st = doc["extraction"]
     n = len(repo.list_owned(user.sub, "plan_version")) + 1
     label = f"UP{n}"
     published_at = _now()

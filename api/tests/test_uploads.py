@@ -669,3 +669,68 @@ def test_not_in_document_can_be_undone_and_candidate_page_notes_follow_the_candi
              "candidates": [{"value": 5000, "quote": "The annual deductible is $50 per person", "page": 2}, {"value": 7500, "quote": "The annual deductible is $75 per family", "page": 4}]}
     apply_decision(stale, ReviewDecision(field_path="d", decision="candidate", candidate_index=0), [normalize(p) for p in pages], "t3")
     assert stale["page"] == 2 and stale["page_note"] is None
+
+
+def test_a_crashed_extraction_gives_hand_entry_rows_not_an_empty_publishable_record(monkeypatch):
+    """api-correctness-5: the crash path carries the skeleton rows, so publish needs the owner's decisions; a non-object model reply is
+    ModelUnavailable, not a crash."""
+    h = H("crash-path")
+    up = upload(h, make_pdf(["Deductible $50 per person"])).json()
+
+    def boom(*a, **k):
+        raise AttributeError("parse bug")
+
+    monkeypatch.setattr(uploads, "run_extraction", boom)
+    assert client.post(f"/me/documents/{up['id']}/extract", headers=h).json()["status"] == "failed"
+    st = client.get(f"/me/documents/{up['id']}/extraction", headers=h).json()
+    assert st["status"] == "failed" and len(st["fields"]) > 5 and all(f["confidence"] == "not_found" for f in st["fields"])
+    pub = client.post(f"/me/documents/{up['id']}/publish", headers=h)
+    assert pub.status_code == 409 and pub.json()["detail"]["error"] == "undecided_fields"
+    ex = extraction.OpenRouterExtractor.__new__(extraction.OpenRouterExtractor)
+    ex.api_key, ex.model, ex.spend_kind = "k", "m", "extraction"
+    ex.client = httpx.Client(transport=httpx.MockTransport(lambda r: httpx.Response(200, json={"choices": [{"message": {"content": "[1, 2]"}}]})))
+    with pytest.raises(extraction.ModelUnavailable):
+        ex._call([{"role": "user", "content": "x"}], "s", {"type": "object"}, 10)
+
+
+def test_the_grammar_fallback_does_not_use_up_the_retry():
+    """api-correctness-17: 400 (grammar refused), then 503, then 200 succeeds; the refused grammar is not sent again for that schema."""
+    seen = []
+    replies = iter([httpx.Response(400), httpx.Response(503), httpx.Response(200, json={"choices": [{"message": {"content": "{\"ok\": true}"}}]}),
+                    httpx.Response(200, json={"choices": [{"message": {"content": "{\"ok\": 2}"}}]})])
+
+    def handler(request):
+        seen.append(json.loads(request.content)["response_format"]["type"])
+        return next(replies)
+
+    ex = extraction.OpenRouterExtractor.__new__(extraction.OpenRouterExtractor)
+    ex.api_key, ex.model, ex.spend_kind = "k", "m", "extraction"
+    ex.client = httpx.Client(transport=httpx.MockTransport(handler))
+    assert ex._call([{"role": "user", "content": "x"}], "schema_a", {"type": "object"}, 10) == {"ok": True}
+    assert seen == ["json_schema", "json_object", "json_object"]
+    assert ex._call([{"role": "user", "content": "x"}], "schema_a", {"type": "object"}, 10) == {"ok": 2} and seen[-1] == "json_object"
+
+
+def test_a_stale_in_progress_extraction_can_be_restarted_and_publishes_get_unique_labels(monkeypatch):
+    """api-correctness-6 (a status left behind by a dead task) and api-correctness-9 (two concurrent publishes)."""
+    import threading
+    from app.store import repo
+    sub = "stale-and-race"
+    h = H(sub)
+    up = upload(h, HB26_PDF.read_bytes(), name="harborview_certificate.pdf").json()
+    fresh = extraction.new_status("live")
+    fresh["updated_at"] = uploads._now()
+    repo.patch_if_exists(sub, "document", up["id"], {"extraction": fresh, "extraction_status": "queued"})
+    assert client.post(f"/me/documents/{up['id']}/extract", headers=h).status_code == 409            # a live run in progress
+    old = dict(fresh, updated_at="2026-01-01T00:00:00+00:00")
+    repo.patch_if_exists(sub, "document", up["id"], {"extraction": old, "extraction_status": "queued"})
+    assert client.post(f"/me/documents/{up['id']}/extract", headers=h).status_code == 202            # the stale run is replaced
+    decide_all(h, up["id"])
+    real = uploads.plan_from_dict
+    monkeypatch.setattr(uploads, "plan_from_dict", lambda d: (__import__("time").sleep(0.3), real(d))[1])
+    labels = []
+    threads = [threading.Thread(target=lambda: labels.append(client.post(f"/me/documents/{up['id']}/publish", headers=h).json()["version_label"])) for _ in range(2)]
+    [t.start() for t in threads]
+    [t.join() for t in threads]
+    assert sorted(labels) == ["UP1", "UP2"]
+    assert sorted(repo.get_owned(sub, "document", up["id"])["published_versions"]) == ["UP1", "UP2"]

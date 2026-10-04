@@ -24,6 +24,8 @@ import pytest  # noqa: E402
 @pytest.fixture(autouse=True)
 def _fresh_llm_guard():
     """Live-AI cost guard counters start empty for every test (production keeps them in the store for the UTC day)."""
-    from app import llm_guard
+    from app import extraction, llm_guard
     llm_guard.guard.reset()
+    extraction._GRAMMAR_REFUSED.clear()          # each test starts as if the provider had never refused a grammar
+    extraction._RETRY_BACKOFF_S = 0.0            # no real pause before the retry in tests
     yield

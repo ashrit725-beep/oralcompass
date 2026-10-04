@@ -31,6 +31,7 @@ import difflib
 import json
 import os
 import re
+import time
 import unicodedata
 from pathlib import Path
 from typing import Callable, Optional
@@ -539,6 +540,10 @@ def _record_spend(r: httpx.Response, body: dict, kind: str = "extraction") -> No
         pass
 
 
+_GRAMMAR_REFUSED: dict[str, bool] = {}      # schema names the provider refused as a strict grammar (api-correctness-17)
+_RETRY_BACKOFF_S = 1.0                      # pause before the one retry after a timeout, 429 or 5xx
+
+
 class OpenRouterExtractor:
     """Two chat/completions calls with structured output. Returns the raw typed schema (document wording, pages, quotes); mapping
     to procedure keys happens afterwards in `match_rules`, never in the model."""
@@ -553,8 +558,9 @@ class OpenRouterExtractor:
     def _call(self, messages: list[dict], schema_name: str, schema: dict, max_tokens: int) -> dict:
         headers = {"Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json", "HTTP-Referer": "https://oralcompass.local", "X-OpenRouter-Title": "OralCompass"}
         last: Exception | None = None
-        grammar = True
-        for attempt in range(2):                                  # one retry
+        grammar = not _GRAMMAR_REFUSED.get(schema_name, False)   # a schema the provider refused once is not sent as a grammar again
+        attempts = 0
+        while attempts < 2:                                       # two real attempts (one retry); the grammar fallback does not use one
             if grammar:
                 body = {"model": self.model, "messages": messages, "max_tokens": max_tokens, "temperature": 0,
                         "response_format": {"type": "json_schema", "json_schema": {"name": schema_name, "strict": True, "schema": schema}}}
@@ -570,6 +576,7 @@ class OpenRouterExtractor:
                     _record_spend(r, body, self.spend_kind)
                 if r.status_code == 400 and grammar:
                     grammar = False
+                    _GRAMMAR_REFUSED[schema_name] = True
                     last = ModelUnavailable("http 400 (schema grammar refused)")
                     continue
                 if r.status_code >= 400:
@@ -580,9 +587,15 @@ class OpenRouterExtractor:
                 text = content.strip()
                 if text.startswith("```"):
                     text = re.sub(r"^```(?:json)?\s*|\s*```$", "", text)
-                return json.loads(text)
+                parsed = json.loads(text)
+                if not isinstance(parsed, dict):                  # a JSON array or scalar is not an answer (api-correctness-5)
+                    raise ModelUnavailable("not a JSON object")
+                return parsed
             except (httpx.HTTPError, ModelUnavailable, KeyError, IndexError, ValueError, TypeError) as e:
                 last = e
+                attempts += 1
+                if attempts < 2 and _RETRY_BACKOFF_S:
+                    time.sleep(_RETRY_BACKOFF_S)
         raise ModelUnavailable(str(type(last).__name__))
 
     def extract(self, redacted_pages: list[str]) -> dict:
