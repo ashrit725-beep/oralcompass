@@ -27,7 +27,7 @@ ART = ROOT / "web" / "public" / "art"
 WIDTHS = (480, 720, 960)
 WEBP_QUALITY = 72
 AVIF_QUALITY = 50
-VARIANT = re.compile(r"-\d+$")
+VARIANT = re.compile(r"-(?:" + "|".join(map(str, WIDTHS)) + r")$")   # a -480/-720/-960 variant (not fog-layer-1)
 
 
 def magick_avif() -> str | None:
@@ -49,7 +49,7 @@ def resize(im: Image.Image, w: int) -> Image.Image:
     return im.convert("RGB").resize((w, h), Image.LANCZOS)
 
 
-def build(art: Path, check: bool) -> int:
+def build(art: Path, check: bool, reuse: bool = False) -> int:
     magick = magick_avif()
     manifest: dict[str, dict] = {}
     problems: list[str] = []
@@ -62,14 +62,17 @@ def build(art: Path, check: bool) -> int:
                 for w in WIDTHS:
                     if w >= im.width:   # never upscale (a variant as wide as the original would only re-encode it)
                         continue
-                    small = resize(im, w)
+                    h = round(im.height * w / im.width)
                     webp = art / f"{name}-{w}.webp"
                     avif = art / f"{name}-{w}.avif"
                     if check:
                         if not webp.exists():
                             problems.append(f"missing {webp.name}")
                             continue
+                    elif reuse and webp.exists() and webp.stat().st_size > 0:
+                        pass   # --reuse: keep the encoded variant (and its AVIF, if any); only the manifest is rewritten
                     else:
+                        small = resize(im, w)
                         small.save(webp, "WEBP", quality=WEBP_QUALITY, method=6)
                         if magick:
                             png = Path(tmp) / f"{name}-{w}.png"
@@ -78,7 +81,7 @@ def build(art: Path, check: bool) -> int:
                                            check=True, capture_output=True)
                             if avif.stat().st_size >= webp.stat().st_size:
                                 avif.unlink()
-                    v = {"w": w, "h": small.height, "webp": f"/art/{webp.name}", "bytes": webp.stat().st_size}
+                    v = {"w": w, "h": h, "webp": f"/art/{webp.name}", "bytes": webp.stat().st_size}
                     if avif.exists():
                         v["avif"] = f"/art/{avif.name}"
                         v["avifBytes"] = avif.stat().st_size
@@ -103,8 +106,9 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--art", type=Path, default=ART)
     ap.add_argument("--check", action="store_true", help="verify the variants and sizes.json without writing")
+    ap.add_argument("--reuse", action="store_true", help="keep variants that already exist (encode only the missing ones)")
     a = ap.parse_args()
-    return build(a.art, a.check)
+    return build(a.art, a.check, a.reuse)
 
 
 if __name__ == "__main__":

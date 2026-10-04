@@ -18,7 +18,8 @@ describe("app-shell build step", () => {
     expect(list).toContain("/manifest.webmanifest");
     for (const f of ["/assets/index-AAA.js", "/assets/index-BBB.css", "/assets/motion-CCC.js", "/assets/PageView-FFF.js"]) expect(list).toContain(f);
     for (const a of SHELL_ART) expect(list).toContain(a);
-    expect(list).toContain("/art/journey-backdrop-phone.webp");
+    expect(list).toContain("/art/journey-passage-960.avif");
+    expect(list).not.toContain("/art/journey-passage.webp");   // phones take the variant, never the 1080 px original
     expect(list.filter((u) => /pdf/.test(u))).toEqual([]);
     expect(list.filter((u) => u.startsWith("/api"))).toEqual([]);
   });

@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { LANDMARKS, type LandmarkId } from "@/lib/copy";
+import { artSources } from "@/lib/art-srcset";
 import { hasDrawn, markDrawn } from "@/lib/drawRegistry";
 import { useReducedMotion } from "@/lib/motion";
 import type { RouteSegment } from "@/lib/passage";
@@ -77,9 +78,23 @@ export function planLayout(width: number): PlanLayout {
   return { w, h, stops, route };
 }
 
-const PLATE_SRC: Record<LandmarkId, string> = {
-  harbor: "", bridge: "/art/island-generic.webp", cove: "/art/island-generic.webp", lookout: "/art/island-major.webp", lighthouse: "/art/island-lighthouse.webp",
+const PLATE_ART: Record<LandmarkId, string> = {
+  harbor: "", bridge: "island-generic", cove: "island-generic", lookout: "island-major", lighthouse: "island-lighthouse",
 };
+
+/** A painted plate at its slot width: the phone variants (art-srcset) with the original as the fallback. */
+function PlatePicture({ name, sizePx, className, lazy, onError }: { name: string; sizePx: number; className: string; lazy?: boolean; onError?: (img: HTMLImageElement) => void }) {
+  const art = artSources(name);
+  const sizes = `${Math.max(1, Math.round(sizePx))}px`;
+  return (
+    <picture>
+      {art.avif && <source type="image/avif" srcSet={art.avif} sizes={sizes} />}
+      <source type="image/webp" srcSet={art.webp} sizes={sizes} />
+      <img src={art.src} alt="" decoding="async" loading={lazy ? "lazy" : undefined} className={className}
+           onError={onError ? (e) => onError(e.currentTarget) : undefined} />
+    </picture>
+  );
+}
 const ROUTE_KEY = "plan-route";
 const SEG_START = 0.25, SEG_GAP = 0.34;   // seconds: segment i starts at SEG_START + i × SEG_GAP and draws for 0.7 s (RouteLine)
 // measure before paint in the browser (no 390 px first frame on a 320 px phone); a plain effect where there is no layout (tests, SSR)
@@ -173,10 +188,10 @@ export function PlanAtlas({ selected, onSelect, stops, label = "Plan map" }: Pla
                 {s.id === "harbor" ? (
                   <svg className="pa-harbor" viewBox="-74 -50 148 80" preserveAspectRatio="xMidYMid meet" focusable="false"><StartHarbor x={0} y={0} /></svg>
                 ) : (
-                  <img src={PLATE_SRC[s.id]} alt="" decoding="async" className={`pa-plate-img plate-${s.id}`} onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
+                  <PlatePicture name={PLATE_ART[s.id]} sizePx={s.plate.w} className={`pa-plate-img plate-${s.id}`} onError={(img) => { img.style.visibility = "hidden"; }} />
                 )}
                 {s.id === "bridge" && <Bridge />}
-                {stop.state === "fog" && <img src="/art/fog-layer-1.webp" alt="" decoding="async" loading="lazy" className="pa-fog" />}
+                {stop.state === "fog" && <PlatePicture name="fog-layer-1" sizePx={s.plate.w * 1.44} lazy className="pa-fog" />}
               </span>
               <span className="pa-label" style={s.side === "left" ? { left: s.label.x, maxWidth: s.label.w } : { right: layout.w - s.label.x - s.label.w, maxWidth: s.label.w }}>
                 <span className="pa-term">{meta.term}</span>

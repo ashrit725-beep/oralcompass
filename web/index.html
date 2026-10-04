@@ -18,7 +18,9 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/art/icons/icon-180.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="preload" as="image" href="/art/journey-backdrop.webp" fetchpriority="high" media="(min-width: 761px)" />
-    <link rel="preload" as="image" href="/art/journey-passage.webp" fetchpriority="high" />
+    <!-- the My journey plate at the phone size: the same AVIF srcset/sizes the CinematicStage <picture> offers (lib/art-srcset), so the
+         preload is the file the page uses; no href, so a browser without imagesrcset or AVIF skips it rather than fetching the original -->
+    <link rel="preload" as="image" type="image/avif" imagesrcset="/art/journey-passage-480.avif 480w, /art/journey-passage-720.avif 720w, /art/journey-passage-960.avif 960w" imagesizes="min(100vw, 480px)" fetchpriority="high" />
   </head>
   <body>
     <div id="root"></div>

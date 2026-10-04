@@ -13,7 +13,8 @@ import type { Plugin } from "vite";
  * nothing the visitor uploaded is a build file, so personal data cannot enter the precache (docs/SECURITY.md, "Offline app shell").
  */
 export const SHELL_ART = [
-  "/art/journey-backdrop-phone.webp",
+  "/art/journey-passage-960.avif",   // the My journey plate as phones pick it (DPR 2-3, AVIF; lib/art-srcset)
+  "/art/journey-passage-720.avif",   // ... and on a 320-360 px DPR 2 screen
   "/art/favicon.ico",
   "/art/icons/icon-32.png",
   "/art/icons/icon-180.png",
