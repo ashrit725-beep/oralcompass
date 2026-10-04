@@ -7,6 +7,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import alexJson from "../__fixtures__/passage/alex.json";
 import { DetailPanel } from "@/components/DetailPanel";
 import { OverviewList } from "@/components/OverviewList";
+import { UI } from "@/lib/copy";
 import { labeledSamples } from "@/lib/journey";
 import { buildPassage, type PassageInputs } from "@/lib/passage";
 import { stitchesFromClauses } from "@/lib/stitches";
@@ -70,5 +71,13 @@ describe("DetailPanel costs (finding web-correctness-28)", () => {
     const cpHtml = renderToStaticMarkup(<DetailPanel {...props} selection={{ stageId: "before", cpId: "estimate-reviewed" }} />);
     expect(cpHtml).toContain("$902.00");
     expect(cpHtml).not.toContain("$678.90");
+  });
+});
+
+describe("completion disclaimer printed once (finding slop-29)", () => {
+  it("is not repeated in the stage panel or the overview list", () => {
+    const props = { view: f.view, estimate: f.estimate, onSelect: noop, onOpenLandmark: noop, onOpenDocuments: noop, onPatch: async () => {}, onInstructions: async () => {}, busy: false, mobile: false, onClose: noop };
+    expect(renderToStaticMarkup(<DetailPanel {...props} selection={{ stageId: "before" }} />)).not.toContain(UI.progressNote.slice(0, 40));
+    expect(renderToStaticMarkup(<OverviewList journey={f.view.journey} vm={vm} onSelect={noop} />)).not.toContain(UI.progressNote.slice(0, 40));
   });
 });

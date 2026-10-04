@@ -121,7 +121,6 @@ export function OverviewList({ journey, onSelect, vm, planTitle, onSelectIsland,
           )}
         </section>
       )}
-      <p className="muted small">{UI.progressNote}</p>
       <ol className="ov-stages">
         {journey.stages.map((s) => (
           <li key={s.id}>

@@ -74,7 +74,6 @@ function StageDetail({ view, stage, estimate, onSelect, onOpenLandmark, onInstru
       <h2 id="detail-h">{stage.title}</h2>
       <p className="status-line"><strong className="num">{prog.label}</strong></p>
       <p>{stage.purpose}</p>
-      <p className="muted small">{UI.progressNote}</p>
       {stage.dates && <section className="block"><h3>{stage.dates.label}</h3><ul className="plain-list">{stage.dates.values.map((v) => <li key={v}>{v}</li>)}</ul><p className="src">Source: {stage.dates.source}</p></section>}
       {items.length > 0 && (
         <section className="block"><h3>Procedures on this island</h3>

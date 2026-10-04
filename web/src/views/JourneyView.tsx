@@ -136,7 +136,8 @@ export function JourneyView({ data, selection, mobile, onOpenLandmark, onOpenDoc
           <h2>{headingLabel(view.journey.label)}</h2>
           <div className="progress-line">
             <strong className="num">{view.progress.label}</strong>
-            {view.progress.note && <details className="progress-note"><summary>{PASSAGE.whatCompletionMeans}</summary><p>{view.progress.note}</p></details>}
+            {/* the one place the completion disclaimer is printed on My journey (not repeated in the stage panel or the overview) */}
+            <details className="progress-note"><summary>{PASSAGE.whatCompletionMeans}</summary><p>{view.progress.note || UI.progressNote}</p></details>
           </div>
         </div>
         <AnswersLog vm={vm} view={view} plan={plan} estimate={estimate} recalculating={recalculating} onFocus={onAnswer} />
