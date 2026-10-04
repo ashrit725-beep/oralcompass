@@ -163,9 +163,19 @@ const INSTITUTIONAL_CONTEXT =
 const ROLE_EMAIL_LOCAL =
   /^(?:info|support|help|service|services|claims?|members?|memberservices|customerservice|customer|contact|noreply|no-reply|admin|benefits?|enroll(?:ment)?|appeals?|dental|care|questions?|privacy|compliance|hr|billing|office|frontdesk|appointments?)$/iu;
 
+/**
+ * The clause right before a value: the same line, back to the last field or sentence boundary (". ", ", ", "; ", "|", a tab or a run of
+ * spaces between columns), at most 60 characters. "Member Services 1-800-555-0199. Your phone: (910) 555-0142" gives "Your phone: ".
+ */
+function clauseBefore(page: string, start: number): string {
+  const line = lineBefore(page, start, 60);
+  let cut = 0;
+  for (const m of line.matchAll(/[.,;|•][ \t]+|\t|[ ]{2,}/gu)) cut = (m.index ?? 0) + m[0].length;
+  return line.slice(cut);
+}
+
 function institutionalBefore(page: string, start: number): boolean {
-  const before = page.slice(Math.max(0, start - 60), start);
-  return INSTITUTIONAL_CONTEXT.test(before);
+  return INSTITUTIONAL_CONTEXT.test(clauseBefore(page, start));
 }
 
 function phoneCheck(value: string, page: string, start: number) {
@@ -208,7 +218,7 @@ const NAME_STOP = new Set([
   "for", "to", "of", "plan", "plans", "eligible", "eligibility", "benefit", "benefits", "class", "network", "frequency", "limit", "limits",
   "waiting", "copay", "coinsurance", "annual", "lifetime", "orthodontic", "orthodontia", "preventive", "basic", "major", "exclusions",
   "exclusion", "contact", "questions", "call", "visit", "please", "note", "important", "yes", "true", "false", "male", "female",
-  "first", "last", "middle", "given", "surname", "legal",
+  "first", "last", "middle", "given", "surname", "legal", "teeth", "employer", "tier", "birthdate", "birthday",
 ]);
 
 /** Words that mark an organisation (a plan, carrier, employer, office); a name candidate that runs into one is not a person. */
@@ -218,13 +228,13 @@ const ORG_WORDS = new Set([
   "school", "hospital", "health", "healthcare", "care", "life", "mutual", "financial", "administrators", "administration", "ppo", "hmo",
   "dhmo", "epo", "pos", "delta", "metlife", "cigna", "aetna", "guardian", "humana", "unitedhealthcare", "anthem", "ameritas", "principal",
   "blue", "cross", "shield", "medicaid", "medicare", "fedvip", "opm", "federal", "government", "employees", "retirement",
-  "partners", "associates", "practice", "orthodontics", "smiles", "smile", "tooth", "teeth", "fictional", "demonstration",
+  "partners", "associates", "practice", "orthodontics", "smiles", "smile", "fictional", "demonstration",
 ]);
 
 const SUFFIX_WORDS = new Set(["jr", "sr", "ii", "iii", "iv"]);
 
 function nameCheck(minWords: number) {
-  return (value: string, _page: string, start: number): Checked | null => {
+  return (value: string, page: string, start: number): Checked | null => {
     const re = /[^\s,]+/gu;
     let m: RegExpExecArray | null;
     let kept = 0;
@@ -236,6 +246,8 @@ function nameCheck(minWords: number) {
       const key = raw.replace(/[.'’]+$/u, "").toLowerCase();
       if (!initial && ORG_WORDS.has(key)) return null;
       if (!initial && NAME_STOP.has(key)) break;
+      // A capitalised word directly followed by ":" is the next field's label ("Avery Rowan Employer: ..."), not part of the name.
+      if (kept > 0 && /^[ \t]{0,2}:/u.test(page.slice(start + m.index + raw.length, start + m.index + raw.length + 3))) break;
       // A comma is allowed once, right after the first word ("Rowan, Avery"); anywhere else it ends the name.
       if (kept > 1 && value.slice(prevEnd, m.index).includes(",")) break;
       prevEnd = m.index + raw.length;
@@ -327,7 +339,7 @@ const RULES: Rule[] = [
   { category: "phone", re: rx(`(?<![\\p{L}\\p{N}$.,/\\-])(${PHONE_SHAPED})(?![\\p{L}\\p{N}\\-])`), check: phoneCheck },
   {
     category: "group_number",
-    re: rx(`${WS}(?:${v("Group")}|${v("Grp")}\\.?)(?:${SP}{1,3}(?:${v("Policy")}|${v("Plan")}))?${SP}{0,3}${NUM_KW}${SEP}${ID_VALUE}`),
+    re: rx(`${WS}(?:${v("Group")}|${v("Grp")}\\.?)(?:(?:${SP}{1,3}(?:${v("Policy")}|${v("Plan")}))?${SP}{0,3}${NUM_KW}${SEP}|${SP}{0,3}:${SEP})${ID_VALUE}`),
     check: idCheck,
   },
   {
