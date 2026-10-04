@@ -303,9 +303,13 @@ export function applyScopeChoice(scope: AssistScope, choice: ScopeChoice): Assis
 export type RibbonTone = "demo" | "template" | "fallback" | "live";
 
 /** The answer card's label: the server's ribbon is authoritative; on a live server a template-only intent says "fixed template" (BUILD_FOLLOWUPS 3). */
+const FIXED_INTENTS: ReadonlySet<string> = new Set(["advice_request", "out_of_scope", "clarify", "define_term", "journey_total", "remaining_benefits", "line_by_name", "compare_terms", "document_overview"]);
+
 export function ribbonFor(resp: Pick<AssistResponseX, "mode" | "ribbon" | "intent" | "model">, serverMode: "demo" | "live" | null): { text: string; tone: RibbonTone } | null {
   if (resp.ribbon === ASSIST.liveFallback) return { text: resp.ribbon, tone: "fallback" };
-  const templateIntent = resp.intent === "advice_request" || resp.intent === "out_of_scope" || resp.intent === "clarify";
+  // fixed by design in every mode: the guards, and the journey-level answers composed from the engine's figures (api JOURNEY_INTENTS),
+  // so a live server labels them "Fixed template", never "Demo mode"
+  const templateIntent = FIXED_INTENTS.has(resp.intent ?? "");
   if (resp.ribbon) {
     if (templateIntent && serverMode === "live") return { text: ASSIST.fixedTemplate, tone: "template" };
     return { text: resp.ribbon, tone: "demo" };
