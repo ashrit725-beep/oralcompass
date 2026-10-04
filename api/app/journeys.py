@@ -11,11 +11,11 @@ from datetime import datetime, timezone
 from typing import Literal, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field
 
 from .auth import User, current_user
 from .data import EMPTY_JOURNEY, SAMPLE_JOURNEYS, SAMPLE_USERS
-from .records import item_in_journey, seed_user_records
+from .records import ISODate, item_in_journey, seed_user_records
 from .store import NOT_FOUND, repo
 from .templates import JOURNEY_NOTE, SAMPLE_JOURNEY_LABEL
 
@@ -26,20 +26,23 @@ STATUSES = ("completed", "current", "upcoming", "awaiting_info")
 class CheckpointPatch(BaseModel):
     status: Optional[Literal["completed", "current", "upcoming", "awaiting_info"]] = None
     completed_by: Optional[Literal["user", "dental_team"]] = None     # who recorded/confirmed it — never inferred
-    date: Optional[str] = None                                        # ISO date entered by the user
+    date: Optional[ISODate] = None                                    # ISO date entered by the user
     date_source: Optional[Literal["user", "dental_team", "document"]] = None
-    note: Optional[str] = None
+    note: Optional[str] = Field(None, max_length=2000)
 
 
 class InstructionsIn(BaseModel):
     """Dental-team instructions attached to a stage — stored verbatim with their source; OralCompass never generates instructions."""
-    text: str
-    source: str                                                       # e.g. "Post-op sheet from Northside Dental Group, 2026-11-20"
-    given_on: Optional[str] = None
+    text: str = Field(max_length=10_000)
+    source: str = Field(max_length=300)                               # e.g. "Post-op sheet from Northside Dental Group, 2026-11-20"
+    given_on: Optional[ISODate] = None
 
 
 class JourneyCreate(BaseModel):
-    source: Literal["sample-sam", "sample-jordan", "sample-alex", "empty"] = "empty"   # "from" in the request body maps here (alias below)
+    """POST /journeys body: {"from": "sample-alex"} (or "source"). Strings only, so an object or list is a 422, never a 500."""
+    model_config = ConfigDict(populate_by_name=True)
+    from_: Optional[str] = Field(None, alias="from", max_length=40)
+    source: Optional[str] = Field(None, max_length=40)
 
 
 def progress(journey: dict) -> dict:
@@ -102,8 +105,8 @@ def list_journeys(user: User = Depends(current_user)):
 
 
 @router.post("/journeys", status_code=201)
-def create_journey(body: dict, user: User = Depends(current_user)):
-    src = body.get("from") or body.get("source") or "empty"
+def create_journey(body: JourneyCreate, user: User = Depends(current_user)):
+    src = body.from_ or body.source or "empty"
     if src == "sample":
         src = "sample-sam"
     if src == "empty":

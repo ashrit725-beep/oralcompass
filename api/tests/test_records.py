@@ -194,3 +194,16 @@ def test_record_bodies_are_typed_so_a_bad_value_is_422_not_a_later_500():
         assert client.post("/me/estimates", json={"plan_code": "ML26", "hypotheticals": hyp}, headers=h).status_code == 422
     est = client.post("/me/estimates", json={"plan_code": "ML26", "hypotheticals": {"remaining_max_cents": 50000}}, headers=h)
     assert est.status_code == 201 and est.json()["inputs"]["hypotheticals"] == {"remaining_max_cents": 50000}
+
+
+def test_journey_bodies_are_typed():
+    """api-correctness-21: an object or list as 'from' is 422 (not 500); checkpoint and instruction dates are ISO dates."""
+    h = {"X-Dev-User": "journey-typed"}
+    for body in ({"from": ["x"]}, {"from": {"a": 1}}, {"source": ["x"]}):
+        assert client.post("/journeys", json=body, headers=h).status_code == 422
+    assert client.post("/journeys", json={"from": "nope"}, headers=h).json()["detail"]["error"] == "unknown_journey_source"
+    j = client.post("/journeys", json={"from": "sample-sam"}, headers=h).json()
+    assert client.post("/journeys", json={"source": "empty"}, headers=h).status_code == 201
+    assert client.patch(f"/journeys/{j['id']}/checkpoints/aftercare", json={"status": "completed", "date": "soon"}, headers=h).status_code == 422
+    sid = j["journey"]["stages"][0]["id"]
+    assert client.put(f"/journeys/{j['id']}/stages/{sid}/instructions", json={"text": "t", "source": "s", "given_on": "yesterday"}, headers=h).status_code == 422
