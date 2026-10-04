@@ -1,5 +1,6 @@
 import { Suspense, lazy, useEffect, useMemo, useState, type ReactNode } from "react";
 import { api } from "@/lib/api";
+import { failureReason, saveJson } from "@/lib/download";
 import { UI } from "@/lib/copy";
 import { PLAN } from "@/lib/copy/plan";
 import { ownedFileObjectUrl } from "@/lib/owned-file";
@@ -57,15 +58,18 @@ export function DocumentsView({ planCode, plans, onPlan, evidence, stitches, sel
   }, [ownedPath]);
 
   async function exportData() {
-    const data = await api.exportMe();
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "oralcompass-my-data.json"; a.click(); URL.revokeObjectURL(a.href);
-    setMsg(PLAN.docsExported);
+    try { saveJson(await api.exportMe(), "oralcompass-my-data.json"); setMsg(PLAN.docsExported); }
+    catch (e) { setMsg(UI.exportFailed(failureReason(e))); }
   }
   // The one irreversible action is a deliberate 1.6 s hold in the product's palette, with the consequence stated above it (delight pass
   // rb-04; it replaces the browser's grey confirm dialog). A tap only explains; releasing early undoes the fill.
   async function deleteData() {
-    const r = await api.deleteMe(); setMsg(PLAN.docsDeleted(Object.entries(r.deleted).map(([k, v]) => `${v} ${k}`).join(", ") || PLAN.docsNothingStored)); setMine([]); onRetry();
+    let r: Awaited<ReturnType<typeof api.deleteMe>>;
+    try { r = await api.deleteMe(); } catch (e) { setMsg(UI.deleteFailed(failureReason(e))); return; }
+    setMsg(PLAN.docsDeleted(Object.entries(r.deleted).map(([k, v]) => `${v} ${k}`).join(", ") || PLAN.docsNothingStored)); setMine([]); setUploads([]); setAudit(null); onRetry();
+  }
+  async function loadAudit() {
+    try { setAudit(await api.audit()); } catch (e) { setMsg(UI.auditFailed(failureReason(e))); }
   }
   const clauses = (evidence?.clauses ?? []).filter((c) => !filter || c.quote.toLowerCase().includes(filter.toLowerCase()) || c.field.toLowerCase().includes(filter.toLowerCase()));
   const pageUrl = primary?.has_stored_pdf && primary.stored_path ? (ownedPath ? ownedUrl : `/${primary.stored_path}`) : null;
@@ -170,7 +174,7 @@ export function DocumentsView({ planCode, plans, onPlan, evidence, stitches, sel
         <p>{UI.privacyBody}</p>
         <div className="actions">
           <button type="button" onClick={exportData}>{UI.exportData}</button>
-          <button type="button" className="secondary" onClick={() => api.audit().then(setAudit)}>{UI.auditTitle}</button>
+          <button type="button" className="secondary" onClick={loadAudit}>{UI.auditTitle}</button>
         </div>
         <div className="delete-hold">
           <p className="delete-hold-why">{UI.deleteConfirm}</p>
