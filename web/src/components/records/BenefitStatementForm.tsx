@@ -34,6 +34,14 @@ export function Field({ id, label, after, className, children }: { id: string; l
   return <div className={`bs-field ${className ?? ""}`}><label htmlFor={id}>{label}</label>{children}{after}</div>;
 }
 
+/** The stored figures that the form shows, as one string: equal for the server's echo of what was just saved. */
+export function benefitsRecordKey(b: Benefits | null): string {
+  if (!b) return "";
+  const ex = b as Benefits & BenefitsRecordExtras;
+  return JSON.stringify([b.plan_code, b.deductible_met_cents, b.benefits_used_cents, ex.deductible_met_out_cents ?? null, ex.benefits_used_out_cents ?? null,
+    b.coverage_start ?? null, netOf(ex.network_default), b.source?.label ?? null, b.source?.date ?? null]);
+}
+
 const dollars = (c: number | null | undefined) => (c == null ? "" : (c / 100).toFixed(2));
 const netOf = (n: BenefitsRecordExtras["network_default"]) => (typeof n === "string" ? n : n?.value ?? "");
 
@@ -54,7 +62,10 @@ export function BenefitStatementForm({ planRef, plan, benefits, onSaved, compact
   const [busy, setBusy] = useState(false);
   const [derived, setDerived] = useState<Benefits | null>(benefits);
 
-  // a different plan ref is a different record: nothing transfers between plans
+  // a different plan ref is a different record: nothing transfers between plans. The fields reset when the plan ref or the record's
+  // CONTENT changes, not its object identity: the parent hands back a new object after every save and records reload, which used to wipe
+  // the "Figures recorded" confirmation and any half-typed field (web-correctness-27).
+  const recordKey = benefitsRecordKey(benefits);
   useEffect(() => {
     const ex = (benefits ?? {}) as BenefitsRecordExtras;
     setDeductibleMet(dollars(benefits?.deductible_met_cents)); setBenefitsUsed(dollars(benefits?.benefits_used_cents));
@@ -62,7 +73,8 @@ export function BenefitStatementForm({ planRef, plan, benefits, onSaved, compact
     setCoverageStart(benefits?.coverage_start ?? ""); setNetwork(netOf(ex.network_default));
     setLabel(benefits?.source?.label ?? ""); setDate(benefits?.source?.date ?? "");
     setDerived(benefits); setErrors({}); setStatus(null);
-  }, [planRef, benefits]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [planRef, recordKey]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();

@@ -33,3 +33,20 @@ describe("form fields and errors", () => {
     expect(form).toMatch(/<label for="[^"]+">Dentist&#x27;s fee \(dollars\)<\/label>/);
   });
 });
+
+import { benefitsRecordKey } from "@/components/records/BenefitStatementForm";
+import type { Benefits } from "@/lib/types";
+
+describe("benefit statement form reset key (web-correctness-27)", () => {
+  const saved = { plan_code: "ML26", deductible_met_cents: 2500, benefits_used_cents: 24000, remaining_deductible_cents: 0, remaining_max_cents: 126000, derivation: {}, claims: [],
+    coverage_start: "2024-01-01", network_default: "in", source: { label: "MetLife benefit statement dated 2026-09-20", date: "2026-09-20" } } as Benefits;
+  it("is the same for a new object with the same stored figures (the save echo, a records reload)", () => {
+    expect(benefitsRecordKey({ ...saved, derivation: { remaining_max: "x" }, last_updated: "2026-09-20" })).toBe(benefitsRecordKey(saved));
+  });
+  it("changes when a figure, the statement or the plan changes", () => {
+    expect(benefitsRecordKey({ ...saved, benefits_used_cents: 30000 })).not.toBe(benefitsRecordKey(saved));
+    expect(benefitsRecordKey({ ...saved, source: { ...saved.source, date: "2026-10-01" } })).not.toBe(benefitsRecordKey(saved));
+    expect(benefitsRecordKey({ ...saved, plan_code: "DD24" })).not.toBe(benefitsRecordKey(saved));
+    expect(benefitsRecordKey(null)).toBe("");
+  });
+});
