@@ -1,6 +1,6 @@
 """Server-side user-facing strings and templates. Linted by tools/advice_lint.py (information only)."""
 FOOTER = "Information from your documents and your inputs. Not advice. Not the plan's determination."
-PRESET_BANNER = "Listed here means the document is public — not that you are eligible to enroll."
+PRESET_BANNER = "Listed here means the document is public, not that you are eligible to enroll."
 COMPARISON_BANNER = "Columns are in the order you selected. Inputs are entered for each plan separately; nothing is copied between plans."
 
 ADVICE_INTRO = "OralCompass provides information, not a choice. Here is what the supplied documents and inputs show."
@@ -42,7 +42,7 @@ BENCHMARK_NOTE = ("Published reference rates are shown with their payer, geograp
                   "and not a commercial price. An estimate uses them only if you enter one yourself as a hypothetical, and then labels it as such.")
 JOURNEY_NOTE = ("Completion describes recorded activity (documents added, information viewed, dates entered). It is not a statement about treatment or healing. "
                 "Items you mark are labeled as marked by you; items the dental team confirmed are labeled as confirmed, with the date they gave.")
-SAMPLE_JOURNEY_LABEL = "Sample journey — fictional person and records. Plan rules come from the cited documents."
+SAMPLE_JOURNEY_LABEL = "Sample journey: fictional person and records. Plan rules come from the cited documents."
 
 # ---------- uploads, extraction, review, publish (spec §7.3 to §7.6) ----------
 EXTRACTION_STAGE_LABELS = {
@@ -107,6 +107,8 @@ READER_DEMO_CANNOT_READ = ("Demo mode cannot read new documents. No model is con
 READER_LIMIT_NOTE = "The reading limit for this session or for today has been reached, so the model was not called."
 READER_MODEL_FAILED = "The model did not answer in time, so the document was not read."
 READER_SCANNED_PDF = "This PDF has no text layer."
+READER_IMAGE_NOTICE = ("This image is sent to the model as is; names, member IDs and dates on it are not removed. Pasting the text instead lets "
+                       "OralCompass remove them first. Photo metadata (camera, time, location) is removed before sending. Nothing is sent until you confirm.")
 READER_NO_LINES = "No procedure lines were found in this text."
 READER_CONFIRM_SOURCE = "treatment plan read by OralCompass, confirmed by you on {date}"
 READER_MATCH_CODE = "Matched by the code printed on the estimate ({code})."

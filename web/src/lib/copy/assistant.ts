@@ -28,7 +28,7 @@ export const ASSIST = {
   demoRibbon: "Demo mode: template answers assembled from the engine's fields, not a live model.",
   fixedTemplate: "Fixed template: assembled from the engine's fields, not a live model.",
   liveFallback: "The model did not answer in time; a template answer is shown.",
-  liveLabel: (model: string) => `Live model: ${model}. Every sentence was checked against the estimate and the plan clauses.`,
+  liveLabel: (model: string) => `Live model: ${model}. Each sentence cites a figure from your records; sentences that state their own amounts are removed.`,
   demoEnvironment: "Demo environment: template answers until a model is configured.",
   guardRemoved: (n: number) => `${n} sentence${n === 1 ? "" : "s"} were removed by the information-only check.`,
   groundingRemoved: (n: number) => `${n} sentence${n === 1 ? "" : "s"} named a figure the records do not hold and were not shown.`,

@@ -58,7 +58,7 @@ def test_subscriptions_are_validated_and_owner_scoped():
     assert client.delete(f"/me/push/subscriptions/{sid}", headers=N).status_code == 404
 
 
-def test_reminders_for_alex_state_facts_with_cites_and_pass_the_linter(alex):
+def test_reminders_for_alex_state_facts_with_cites_and_pass_the_linter(alex, monkeypatch):
     assert alex["remaining_max_cents"] == 126000
     r = client.get("/me/reminders?as_of=2026-10-03", headers=N)
     assert r.status_code == 200
@@ -84,8 +84,12 @@ def test_reminders_for_alex_state_facts_with_cites_and_pass_the_linter(alex):
     # no reminders for a user with no records; a bad date is a 422, not a guess
     assert client.get("/me/reminders", headers={"X-Dev-User": "notif-nobody"}).json()["items"] == []
     assert client.get("/me/reminders?as_of=yesterday", headers=N).status_code == 422
-    # a document awaiting a decision is listed by id only
-    doc = client.post("/documents", json={"filename": "plan.pdf", "sha256": "nomatch", "pages": 3, "text_preview": ""}, headers=N).json()
+    # a document awaiting a decision is listed by id only; a legacy record nothing was extracted from is not "awaiting decisions"
+    client.post("/documents", json={"filename": "plan.pdf", "sha256": "nomatch", "pages": 3, "text_preview": ""}, headers=N)
+    import test_uploads as tu
+    monkeypatch.setenv("ORALCOMPASS_LLM_PROVIDER", "none")
+    doc = tu.upload(N, tu.make_pdf(["Section 4. The deductible is $25 per covered person."])).json()
+    client.post(f"/me/documents/{doc['id']}/extract", headers=N)
     waiting = [i for i in client.get("/me/reminders?as_of=2026-10-03", headers=N).json()["items"] if i["kind"] == "document_awaiting_decision"]
     assert len(waiting) == 1 and waiting[0]["document_id"] == doc["id"] and waiting[0]["date"] is None and lint_text(waiting[0]["text"]) == []
 
@@ -141,3 +145,35 @@ def test_push_test_sends_the_fixed_generic_payload_through_mocked_webpush(monkey
     assert client.post("/me/push/test", headers=H).status_code == 503
     monkeypatch.setattr(notifications, "_dev_mode", lambda: False)
     assert client.post("/me/push/test", headers=H).status_code == 404
+
+
+def test_reminders_cover_uploaded_plans_and_only_documents_really_awaiting_decisions(monkeypatch):
+    """api-correctness-3 (benefits on an upload ref get reminders) and api-correctness-27 (an un-extracted upload is not 'awaiting decisions')."""
+    from urllib.parse import quote
+    import test_uploads as tu
+    monkeypatch.setenv("ORALCOMPASS_LLM_PROVIDER", "none")          # demo mode: no model call from a test
+    sub = "rem-upload"
+    h = {"X-Dev-User": sub}
+    doc_id, _ = tu.hb26_published(sub)
+    ref = f"upload:{doc_id}"
+    assert client.put(f"/me/benefits/{quote(ref, safe='')}", json=tu.SAM_BENEFITS, headers=h).status_code == 200
+    items = client.get("/me/reminders?as_of=2026-10-03", headers=h).json()["items"]
+    assert any(i["kind"] == "benefit_year_end" and i["plan_code"] == ref for i in items)
+    assert not any(i["kind"] == "document_awaiting_decision" for i in items)                     # published: nothing awaits
+    h2 = {"X-Dev-User": "rem-unextracted"}
+    up = tu.upload(h2, tu.HB26_PDF.read_bytes(), name="harborview_certificate.pdf").json()
+    assert not any(i["kind"] == "document_awaiting_decision" for i in client.get("/me/reminders", headers=h2).json()["items"])
+    client.post(f"/me/documents/{up['id']}/extract", headers=h2)
+    assert any(i["kind"] == "document_awaiting_decision" for i in client.get("/me/reminders", headers=h2).json()["items"])
+    assert client.get("/me/documents", headers=h2).json()[0]["fields_needing_confirmation"]
+
+
+def test_copy_linter_reads_strings_not_comments(tmp_path):
+    """info-only-13: `npm run lint:copy` covers src/lib, src/components and src/views; comments are not copy, string literals still are."""
+    import advice_lint
+    f = tmp_path / "probe.tsx"
+    f.write_text('const a = "You should book now"; // the best we can do\nconst u = "https://x.org/a"; /* don\'t "best" */\n')
+    found = {v["match"].lower() for v in advice_lint.lint_file(f)}
+    assert "you should" in found and "best" not in found
+    pkg = json.loads((Path(__file__).resolve().parents[2] / "web" / "package.json").read_text())
+    assert pkg["scripts"]["lint:copy"].endswith("src/lib src/components src/views")

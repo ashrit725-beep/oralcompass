@@ -39,6 +39,9 @@ describe("placeholders and the amount guard (mirrors api/app/assistant.py)", () 
   it("rejects a digit adjacent to $ or % or the words dollars/percent, outside placeholders", () => {
     for (const bad of ["It costs $5.", "Costs $ 12 today", "Pays 60% of it", "Pays 60 % of it", "About 5 dollars", "Pays 60 percent", "dollars 5"]) expect(hasBareMoney(bad)).toBe(true);
     for (const ok of ["This line applied {{ref:0}} to your deductible.", "The plan's share is {{ref:0}} of the amount.", "Page 25 of the certificate.", "No amount here."]) expect(hasBareMoney(ok)).toBe(false);
+    // info-only-2: the widened mirror of the server check
+    for (const bad of ["The annual maximum is 1,500 {{ref:0}}.", "The plan pays fifty percent of {{ref:0}}.", "You pay USD 392 {{ref:0}}.", "You owe 392.00 {{ref:0}}.", "You owe 392 {{ref:0}}."]) expect(hasBareMoney(bad)).toBe(true);
+    expect(hasBareMoney("Tooth 19, statement dated 2026-09-20: your share is {{ref:0}}.")).toBe(false);
   });
   it("splits a sentence into text and ref segments and lists the refs that were not inlined", () => {
     const refs = [{ kind: "step" as const, line_index: 0, step_index: 1, label: "Deductible applied" }, { kind: "clause" as const, stitch: "ML26#p25", rule: "D" }];

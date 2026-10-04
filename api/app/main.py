@@ -9,12 +9,13 @@ import os
 import sys
 from datetime import date
 from pathlib import Path
-from typing import Any, Optional
+from typing import Annotated, Any, Literal, Optional
 
 from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel, Field
+from starlette.middleware.gzip import GZipMiddleware
 
 # api/.env (gitignored; values are never logged) is the local development file. Production takes its settings from the platform's
 # environment only: a developer's api/.env (which can carry ORALCOMPASS_DEV_AUTH=1 and a live key) must never switch a production run
@@ -25,8 +26,7 @@ if os.getenv("ORALCOMPASS_ENV") != "production":
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "engine"))
 
-from oralcompass_engine import (Evidence, EstimateLine, MemberState, V, compare, compute_ledger, load_plan, range_and_movers)  # noqa: E402
-from oralcompass_engine.loader import FIXTURES  # noqa: E402
+from oralcompass_engine import (Evidence, EstimateLine, MemberState, V, compare, compute_ledger, range_and_movers)  # noqa: E402
 
 from .auth import User, current_user  # noqa: E402
 from .extraction import FixtureExtractor  # noqa: E402
@@ -39,10 +39,11 @@ from .security import SecurityMiddleware  # noqa: E402
 _PROD = os.getenv("ORALCOMPASS_ENV") == "production"     # production: no interactive docs (they load CDN scripts the CSP blocks)
 app = FastAPI(title="OralCompass API", version="0.1.0", docs_url=None if _PROD else "/docs", redoc_url=None if _PROD else "/redoc",
               openapi_url=None if _PROD else "/openapi.json")
+app.add_middleware(GZipMiddleware, minimum_size=1024)    # innermost: responses over 1 KB are compressed (an outer copy skips them)
 app.add_middleware(SessionMiddleware)      # production: per-visitor signed-cookie sessions (inactive under ORALCOMPASS_DEV_AUTH=1 or Cognito)
 app.add_middleware(SecurityMiddleware)     # outermost: CSP and security headers, body size limits, ids-only request logs (security.py)
 extractor = FixtureExtractor()
-PRESETS = {p.stem.upper(): load_plan(p) for p in sorted((FIXTURES / "plans").glob("*.json"))}
+from .data import PLANS as PRESETS, PROC_BY_KEY  # noqa: E402  (one load of the plan fixtures for the whole API)
 PRESET_META = {code: extractor.by_code[code] for code in PRESETS}
 
 from .templates import FOOTER, COMPARISON_BANNER, PRESET_BANNER  # noqa: E402
@@ -59,10 +60,13 @@ app.include_router(explain.router)
 
 
 # ---------- schemas ----------
+from .records import ISODate  # noqa: E402  (ISO dates are validated on the way in: a bad date is 422, never a 500 in the engine)
+
+
 class VIn(BaseModel):
     value: Any = None
-    status: str = "USER"     # USER | ASSUMED | UNKNOWN
-    note: str = ""
+    status: Literal["USER", "ASSUMED", "UNKNOWN"] = "USER"
+    note: str = Field("", max_length=300)
 
 
 class StateIn(BaseModel):
@@ -70,7 +74,7 @@ class StateIn(BaseModel):
     remaining_max: VIn = VIn(status="UNKNOWN")
     network: VIn = VIn(status="UNKNOWN")
     enrolled_months: VIn = VIn(status="UNKNOWN")
-    history: dict[str, list[str]] = {}
+    history: dict[str, list[ISODate]] = {}
     allowed_overrides: dict[str, VIn] = {}
     tooth_overrides: dict[str, str] = {}
 
@@ -81,19 +85,26 @@ class StateIn(BaseModel):
                            {k: V(x.value, Evidence(x.status)) for k, x in self.allowed_overrides.items()}, self.tooth_overrides)
 
 
+class ListedFee(BaseModel):
+    label: str = Field(min_length=1, max_length=200)
+    cents: int = Field(ge=0, le=100_000_000, strict=True)
+
+
 class LineIn(BaseModel):
     key: str
-    label: str
-    tooth: Optional[str] = None
-    charge_cents: int = Field(ge=0)
-    completion: Optional[str] = None
-    prep: Optional[str] = None
-    listed_fees: list[dict] = []
+    label: str = Field(max_length=200)
+    tooth: Optional[str] = Field(None, max_length=20)
+    charge_cents: int = Field(ge=0, le=100_000_000)
+    completion: Optional[ISODate] = None
+    prep: Optional[ISODate] = None
+    listed_fees: list[ListedFee] = []
 
     def to_line(self) -> EstimateLine:
+        if self.key not in PROC_BY_KEY:
+            raise HTTPException(status_code=422, detail={"error": "unknown_procedure_key", "key": self.key})
         return EstimateLine(self.key, self.label, self.tooth, self.charge_cents,
                             date.fromisoformat(self.completion) if self.completion else None,
-                            date.fromisoformat(self.prep) if self.prep else None, self.listed_fees)
+                            date.fromisoformat(self.prep) if self.prep else None, [f.model_dump() for f in self.listed_fees])
 
 
 class EstimateIn(BaseModel):
@@ -111,30 +122,23 @@ class ComparisonIn(BaseModel):
 
 
 class DocumentIn(BaseModel):
-    filename: str
-    sha256: str
+    filename: str = Field(max_length=255)
+    sha256: str = Field(max_length=64)
     pages: int = Field(ge=1, le=100)
-    text_preview: str = ""              # client-extracted text layer for the redaction preview (demo); production uses server-side PyMuPDF
+    text_preview: str = Field("", max_length=200_000)   # client-extracted text layer for the redaction preview (demo); production uses server-side PyMuPDF
 
 
 def resolve_plan(user: User, ref: str):
-    if ref in PRESETS:
-        return PRESETS[ref]
+    """The shared resolver (uploads.resolve_plan_ref: presets in any case, published uploads, cached, no temp files left behind). A legacy
+    POST /documents record (a cached fixture model, never published) still resolves through the same loader."""
+    ref = uploads.norm_ref(ref)
     if ref.startswith("upload:"):
         doc = repo.get_owned(user.sub, "document", ref.split(":", 1)[1])
-        model = doc.get("plan_model")
-        if not model:
-            raise HTTPException(status_code=409, detail={"error": "document_not_extracted"})
-        return load_plan_from_dict(model)
-    raise HTTPException(status_code=404, detail=NOT_FOUND)
-
-
-def load_plan_from_dict(d: dict):
-    import json, tempfile
-    with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as f:
-        json.dump(d, f)
-        name = f.name
-    return load_plan(Path(name))
+        if not doc.get("latest_version_id"):
+            if not doc.get("plan_model"):
+                raise HTTPException(status_code=409, detail={"error": "document_not_extracted"})
+            return uploads.plan_from_dict(doc["plan_model"])
+    return uploads.resolve_plan_ref(user, ref).plan
 
 
 # ---------- presets (read-only) ----------
@@ -198,7 +202,7 @@ def create_estimate(body: EstimateIn, user: User = Depends(current_user)):
     lines = [l.to_line() for l in body.lines]
     state = body.state.to_state()
     ledger = compute_ledger(plan, lines, state, body.dos_rule, body.order)
-    movers = range_and_movers(plan, lines, state, body.dos_rule) if ledger.status == "unresolved" or True else None
+    movers = range_and_movers(plan, lines, state, body.dos_rule)
     item = repo.put(user.sub, "estimate", {"plan_ref": body.plan_ref, "ledger": jsonable_encoder(ledger), "movers": jsonable_encoder(movers), "footer": FOOTER})
     return item
 
@@ -212,12 +216,13 @@ def get_estimate(est_id: str, user: User = Depends(current_user)):
 @app.post("/comparisons", status_code=201)
 def create_comparison(body: ComparisonIn, user: User = Depends(current_user)):
     plans = [resolve_plan(user, r) for r in body.plan_refs]
+    by_ref = {uploads.norm_ref(r): p for r, p in zip(body.plan_refs, plans)}
     lines = [l.to_line() for l in body.lines]
-    states = {ref: s.to_state() for ref, s in body.states.items()}
-    # engine keys states by plan_code; map refs -> codes
+    # engine keys states by plan_code; map refs -> codes (each ref resolved once)
     code_states = {}
-    for ref, st in states.items():
-        code_states[resolve_plan(user, ref).plan_code] = st
+    for ref, s in body.states.items():
+        plan = by_ref.get(uploads.norm_ref(ref)) or resolve_plan(user, ref)
+        code_states[plan.plan_code] = s.to_state()
     out = compare(plans, lines, code_states)
     for row in out["grid"]:
         row["differences"] = guard(row["differences"])["text"]      # runtime advice guard on generated sentences
@@ -234,7 +239,11 @@ def get_comparison(cmp_id: str, user: User = Depends(current_user)):
 # ---------- account ----------
 @app.get("/me/export")
 def export_me(user: User = Depends(current_user)):
-    return {rtype: repo.list_owned(user.sub, rtype) for rtype in ("document", "estimate", "comparison", "benefits", "treatment_item", "saved_estimate", "journey")}
+    """Every record type the API stores for the caller (api-correctness-4: push subscriptions and published plan versions included)."""
+    return {rtype: repo.list_owned(user.sub, rtype) for rtype in EXPORT_TYPES}
+
+
+EXPORT_TYPES = ("document", "plan_version", "estimate", "comparison", "benefits", "treatment_item", "saved_estimate", "journey", "push_subscription")
 
 
 def _delete_owner_files(sub: str) -> int:

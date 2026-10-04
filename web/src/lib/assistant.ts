@@ -31,13 +31,18 @@ export interface AssistData {
 }
 export const EMPTY_DATA: AssistData = { estimate: null, plan: null, benefits: null, rules: [], items: [], stitches: [] };
 
-/** Identical to api/app/assistant.py MONEY_IN_TEXT / PLACEHOLDER. */
-export const MONEY_IN_TEXT = /\$\s?\d|\d\s?%|\d\s*(?:dollars|percent)\b|\b(?:dollars|percent)\s*\d/i;
+/** Identical to api/app/assistant.py MONEY_IN_TEXT / ISO_DATE / PLACEHOLDER: currency signs and codes, percent, comma thousands, decimals,
+ *  any 3+ digit number and spelled-out numbers next to dollars/percent/cents; ISO dates are removed first. */
+const SPELLED = "(?:zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|fifteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand)";
+export const MONEY_IN_TEXT = new RegExp(
+  "\\$\\s?\\d|\\d\\s?%|\\d\\s*(?:dollars|percent|cents)\\b|\\b(?:dollars|percent|cents)\\s*\\d|\\b(?:USD|US\\$|EUR|GBP)\\s?\\d" +
+  "|\\d{1,3}(?:,\\d{3})+|\\b\\d+\\.\\d{1,2}\\b|\\b\\d{3,}\\b|\\b" + SPELLED + "[\\s-]+(?:dollars|percent|cents)\\b", "i");
+export const ISO_DATE = /\b\d{4}-\d{2}-\d{2}\b/g;
 export const PLACEHOLDER = /\{\{ref:(\d+)\}\}/g;
 
 /** True when the sentence states an amount outside a placeholder (the server drops such sentences; the client never renders one). */
 export function hasBareMoney(text: string): boolean {
-  return MONEY_IN_TEXT.test(text.replace(PLACEHOLDER, " "));
+  return MONEY_IN_TEXT.test(text.replace(PLACEHOLDER, " ").replace(ISO_DATE, " "));
 }
 
 export type Segment = { type: "text"; text: string } | { type: "ref"; index: number; ref: AssistRef | null };

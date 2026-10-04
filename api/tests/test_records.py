@@ -144,3 +144,76 @@ def test_ledger_lines_carry_record_ids_and_benefits_are_keyed_by_plan_ref():
     # preset benefits stay keyed by the preset code; listing derives each record against its own plan
     assert [b["plan_code"] for b in client.get("/me/benefits", headers=h).json()] == ["ML26"]
     assert client.get("/me/benefits/ml26", headers=h).json()["plan_code"] == "ML26"
+
+
+def test_second_sample_journey_does_not_mix_into_the_first():
+    """demo-1: opening Alex, then Sam and Jordan, keeps each journey's estimate on its own sample's records ($902 / $640)."""
+    h = {"X-Dev-User": "demo-three-samples"}
+    alex = client.post("/journeys", json={"from": "sample-alex"}, headers=h).json()
+    sam = client.post("/journeys", json={"from": "sample-sam"}, headers=h).json()
+    client.post("/journeys", json={"from": "sample-jordan"}, headers=h)
+    est_a = client.post("/me/estimates", json={"plan_code": "ML26", "journey_id": alex["id"]}, headers=h).json()
+    assert est_a["user_estimated_payment_cents"] == 90200 and est_a["insurer_estimated_payment_cents"] == 109800 and len(est_a["ledger"]["lines"]) == 2
+    est_s = client.post("/me/estimates", json={"plan_code": "HB26", "journey_id": sam["id"]}, headers=h).json()
+    assert est_s["user_estimated_payment_cents"] == 64000 and est_s["insurer_estimated_payment_cents"] == 56000
+    # each journey's links show only its own sample's records and its own plan's latest estimate
+    view_a = client.get(f"/journeys/{alex['id']}", headers=h).json()
+    assert all(k.startswith("ti-a-") for k in view_a["links"]["treatment_items"]) and view_a["links"]["latest_estimate"]["plan_code"] == "ML26"
+    view_s = client.get(f"/journeys/{sam['id']}", headers=h).json()
+    assert not any(k.startswith("ti-a-") or k.startswith("ti-j-") for k in view_s["links"]["treatment_items"]) and view_s["links"]["latest_estimate"]["plan_code"] == "HB26"
+    # another owner's journey id is a constant 404
+    assert client.post("/me/estimates", json={"plan_code": "ML26", "journey_id": alex["id"]}, headers=B).status_code == 404
+
+
+def test_amounts_are_non_negative_and_remainders_never_go_below_zero():
+    """api-correctness-20: negative cents and zero quantities are 422; a statement above the plan's limits gives $0 remaining with a note."""
+    h = {"X-Dev-User": "neg-amounts"}
+    assert client.put("/me/benefits/HB26", json={"deductible_met_cents": -5000}, headers=h).status_code == 422
+    assert client.put("/me/benefits/HB26", json={"claims": [{"date": "2026-01-02", "procedure_key": "exam", "plan_paid_cents": -1, "source": "x"}]}, headers=h).status_code == 422
+    b = client.put("/me/benefits/HB26", json={"deductible_met_cents": 10_000_000, "benefits_used_cents": 100_000_000}, headers=h).json()
+    assert b["remaining_deductible_cents"] == 0 and b["remaining_max_cents"] == 0 and len(b["over_limit"]) == 2
+    assert "-" not in b["derivation"]["remaining_deductible"].split("=")[-1]
+    for bad in ({"dentist_fee_cents": -5000}, {"dentist_fee_cents": 5000, "quantity": 0}, {"dentist_fee_cents": 5000, "allowed_cents": -1}):
+        assert client.post("/me/treatment-items", json={"procedure_key": "crown", **bad}, headers=h).status_code == 422
+
+
+def test_record_bodies_are_typed_so_a_bad_value_is_422_not_a_later_500():
+    """api-correctness-18 and security-5: dates, statuses, networks, hypotheticals and PATCH fields are validated on the way in."""
+    h = {"X-Dev-User": "typed-bodies"}
+    item = client.post("/me/treatment-items", json={"procedure_key": "crown", "dentist_fee_cents": 120000}, headers=h).json()
+    for body in ({"coverage_start": "nope"}, {"network_default": "sideways"}, {"claims": [{"date": "garbage", "procedure_key": "exam", "plan_paid_cents": 1, "source": "x"}]}):
+        assert client.put("/me/benefits/ML26", json=body, headers=h).status_code == 422
+    for body in ({"planned_completion": "soon"}, {"status": "maybe"}, {"network": "sideways"}):
+        assert client.post("/me/treatment-items", json={"procedure_key": "crown", "dentist_fee_cents": 1, **body}, headers=h).status_code == 422
+    for body in ({"dentist_fee_cents": "ab", "quantity": 5_000_000}, {"planned_completion": "not-a-date"}, {"dentist_fee_cents": -999999999},
+                 {"quantity": -3}, {"status": {"x": 1}}, {"network": 12345}, {"owner": "someone-else"}):
+        assert client.patch(f"/me/treatment-items/{item['id']}", json=body, headers=h).status_code == 422, body
+    ok = client.patch(f"/me/treatment-items/{item['id']}", json={"allowed_cents": 98000, "allowed_source": "pre-treatment estimate", "allowed_status": "USER"}, headers=h)
+    assert ok.status_code == 200 and ok.json()["allowed_source"] == "pre-treatment estimate"
+    for hyp in ({"remaining_max_cents": "abc"}, {"network": "sideways"}, {"enrolled_months": "abc"}, {"bogus": 1}):
+        assert client.post("/me/estimates", json={"plan_code": "ML26", "hypotheticals": hyp}, headers=h).status_code == 422
+    est = client.post("/me/estimates", json={"plan_code": "ML26", "hypotheticals": {"remaining_max_cents": 50000}}, headers=h)
+    assert est.status_code == 201 and est.json()["inputs"]["hypotheticals"] == {"remaining_max_cents": 50000}
+
+
+def test_journey_bodies_are_typed():
+    """api-correctness-21: an object or list as 'from' is 422 (not 500); checkpoint and instruction dates are ISO dates."""
+    h = {"X-Dev-User": "journey-typed"}
+    for body in ({"from": ["x"]}, {"from": {"a": 1}}, {"source": ["x"]}):
+        assert client.post("/journeys", json=body, headers=h).status_code == 422
+    assert client.post("/journeys", json={"from": "nope"}, headers=h).json()["detail"]["error"] == "unknown_journey_source"
+    j = client.post("/journeys", json={"from": "sample-sam"}, headers=h).json()
+    assert client.post("/journeys", json={"source": "empty"}, headers=h).status_code == 201
+    assert client.patch(f"/journeys/{j['id']}/checkpoints/aftercare", json={"status": "completed", "date": "soon"}, headers=h).status_code == 422
+    sid = j["journey"]["stages"][0]["id"]
+    assert client.put(f"/journeys/{j['id']}/stages/{sid}/instructions", json={"text": "t", "source": "s", "given_on": "yesterday"}, headers=h).status_code == 422
+
+
+def test_authored_labels_carry_no_em_dash():
+    """slop-2: authored journey labels, banners and comparison topics use colons and commas (real document titles stay verbatim)."""
+    h = {"X-Dev-User": "labels"}
+    samples = client.get("/journeys/samples", headers=h).json()
+    assert all("—" not in s["label"] for s in samples["items"]) and "—" not in samples["note"]
+    assert "—" not in client.get("/plans", headers=h).json()["banner"]
+    from oralcompass_engine.comparison import TOPICS
+    assert all("—" not in t for t in TOPICS)

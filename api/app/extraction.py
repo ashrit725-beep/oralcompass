@@ -31,6 +31,7 @@ import difflib
 import json
 import os
 import re
+import time
 import unicodedata
 from pathlib import Path
 from typing import Callable, Optional
@@ -101,8 +102,14 @@ def llm_model() -> str:
 
 
 # ---------------------------------------------------------------- text
+_INVISIBLE = re.compile("[\u00ad\u200b\u200c\u200d\u2060\ufeff]")      # soft hyphen, zero-width characters, BOM
+_HYPHEN_BREAK = re.compile(r"(\w)-[ \t]*\n[ \t]*([a-z])")                   # "pro-\nvided" → "provided" (a lower-case continuation only)
+
+
 def normalize(s: str) -> str:
     s = unicodedata.normalize("NFKC", s or "")
+    s = _INVISIBLE.sub("", s)
+    s = _HYPHEN_BREAK.sub(r"\1\2", s)
     s = s.replace("’", "'").replace("‘", "'").replace("“", '"').replace("”", '"').replace("–", "-").replace("—", "-")
     return re.sub(r"\s+", " ", s).strip().casefold()
 
@@ -370,16 +377,26 @@ def _best_similarity(quote_n: str, page_n: str) -> float:
     return best
 
 
+MIN_CONFIRMED_CHARS, MIN_CONFIRMED_WORDS = 20, 3
+
+
+def _long_enough(qn: str) -> bool:
+    return len(qn) >= MIN_CONFIRMED_CHARS or len(qn.split()) >= MIN_CONFIRMED_WORDS
+
+
 def verify_quote(quote: Optional[str], page: Optional[int], pages_n: list[str]) -> dict:
     """{result: confirmed|likely|not_found, page, page_note, similarity}"""
     if not quote or not page or page < 1 or page > len(pages_n):
         return {"result": "not_found", "page": page, "page_note": None, "similarity": 0.0}
     qn = normalize(quote)
-    if qn in pages_n[page - 1]:
+    exact = re.compile(r"(?<![\w$%])" + re.escape(qn) + r"(?![\w%])")      # whole words: '50%' is not inside '150%', '$5' not inside '$500'
+    if exact.search(pages_n[page - 1]):
+        if not _long_enough(qn):            # a fragment can match by accident: it needs the owner's click, never automatic DOC
+            return {"result": "likely", "page": page, "page_note": "short quote: check it on the page", "similarity": 1.0}
         return {"result": "confirmed", "page": page, "page_note": None, "similarity": 1.0}
     for delta in (1, -1, 2, -2):
         p = page + delta
-        if 1 <= p <= len(pages_n) and qn in pages_n[p - 1]:
+        if 1 <= p <= len(pages_n) and exact.search(pages_n[p - 1]):
             return {"result": "likely", "page": p, "page_note": f"quote found on page {p}; the extraction cited page {page}", "similarity": 1.0}
     best, best_page = 0.0, page
     for p in range(max(1, page - PAGE_TOLERANCE), min(len(pages_n), page + PAGE_TOLERANCE) + 1):
@@ -408,7 +425,7 @@ def apply_verification(fields: list[dict], pages: list[str], on_progress: Option
                 v = verify_quote(c.get("quote"), c.get("page"), pages_n)
                 if v["result"] != "not_found":
                     verified += 1
-                    kept.append({**c, "page": v["page"], "verified": v["result"]})
+                    kept.append({**c, "page": v["page"], "verified": v["result"], "page_note": v.get("page_note")})
             f["candidates"] = kept
             if on_progress:
                 on_progress(done, total)
@@ -432,7 +449,7 @@ def apply_verification(fields: list[dict], pages: list[str], on_progress: Option
             f.update({"confidence": "needs_review", "evidence_status": "AMBIGUOUS", "review_status": None, "proposed_value": None, "quote": None, "quote_verified": False})
         elif len(f.get("candidates") or []) == 1 and f.get("proposed_value") is None and not f.get("quote"):
             c = f["candidates"][0]
-            f.update({"proposed_value": c.get("value"), "quote": c.get("quote"), "page": c.get("page"), "candidates": [],
+            f.update({"proposed_value": c.get("value"), "quote": c.get("quote"), "page": c.get("page"), "page_note": c.get("page_note"), "candidates": [],
                       "quote_verified": c.get("verified") == "confirmed", "confidence": "confirmed" if c.get("verified") == "confirmed" else "likely",
                       "evidence_status": "DOC", "review_status": "quote_verified_in_text" if c.get("verified") == "confirmed" else "needs_review"})
         if on_progress:
@@ -539,6 +556,10 @@ def _record_spend(r: httpx.Response, body: dict, kind: str = "extraction") -> No
         pass
 
 
+_GRAMMAR_REFUSED: dict[str, bool] = {}      # schema names the provider refused as a strict grammar (api-correctness-17)
+_RETRY_BACKOFF_S = 1.0                      # pause before the one retry after a timeout, 429 or 5xx
+
+
 class OpenRouterExtractor:
     """Two chat/completions calls with structured output. Returns the raw typed schema (document wording, pages, quotes); mapping
     to procedure keys happens afterwards in `match_rules`, never in the model."""
@@ -553,8 +574,9 @@ class OpenRouterExtractor:
     def _call(self, messages: list[dict], schema_name: str, schema: dict, max_tokens: int) -> dict:
         headers = {"Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json", "HTTP-Referer": "https://oralcompass.local", "X-OpenRouter-Title": "OralCompass"}
         last: Exception | None = None
-        grammar = True
-        for attempt in range(2):                                  # one retry
+        grammar = not _GRAMMAR_REFUSED.get(schema_name, False)   # a schema the provider refused once is not sent as a grammar again
+        attempts = 0
+        while attempts < 2:                                       # two real attempts (one retry); the grammar fallback does not use one
             if grammar:
                 body = {"model": self.model, "messages": messages, "max_tokens": max_tokens, "temperature": 0,
                         "response_format": {"type": "json_schema", "json_schema": {"name": schema_name, "strict": True, "schema": schema}}}
@@ -570,6 +592,7 @@ class OpenRouterExtractor:
                     _record_spend(r, body, self.spend_kind)
                 if r.status_code == 400 and grammar:
                     grammar = False
+                    _GRAMMAR_REFUSED[schema_name] = True
                     last = ModelUnavailable("http 400 (schema grammar refused)")
                     continue
                 if r.status_code >= 400:
@@ -580,9 +603,15 @@ class OpenRouterExtractor:
                 text = content.strip()
                 if text.startswith("```"):
                     text = re.sub(r"^```(?:json)?\s*|\s*```$", "", text)
-                return json.loads(text)
+                parsed = json.loads(text)
+                if not isinstance(parsed, dict):                  # a JSON array or scalar is not an answer (api-correctness-5)
+                    raise ModelUnavailable("not a JSON object")
+                return parsed
             except (httpx.HTTPError, ModelUnavailable, KeyError, IndexError, ValueError, TypeError) as e:
                 last = e
+                attempts += 1
+                if attempts < 2 and _RETRY_BACKOFF_S:
+                    time.sleep(_RETRY_BACKOFF_S)
         raise ModelUnavailable(str(type(last).__name__))
 
     def extract(self, redacted_pages: list[str]) -> dict:

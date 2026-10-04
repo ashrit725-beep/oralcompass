@@ -38,7 +38,9 @@ export function ReviewRow({ docId, field: f, classNames, busy, error, onDecide }
   const [pageOpen, setPageOpen] = useState(false);
   const ids = { value: useId(), source: useId(), cands: useId(), err: useId() };
   const kind = f.decision?.kind;
-  const canConfirm = (f.confidence === "confirmed" || f.confidence === "likely") && f.proposed_value !== null && f.proposed_value !== undefined;
+  // after 'Not in document' the API keeps the row's verification aside (decision.prior), so 'Looks right' can undo a mistaken click
+  const conf = f.decision?.kind === "not_in_document" ? (f.decision.prior?.confidence ?? f.confidence) : f.confidence;
+  const canConfirm = (conf === "confirmed" || conf === "likely") && f.proposed_value !== null && f.proposed_value !== undefined;
   const shownValue = kind === "edited" ? f.decision?.value : f.proposed_value;
   const isClass = f.field_path.startsWith("class_of.");
 

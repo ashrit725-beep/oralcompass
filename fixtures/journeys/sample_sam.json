@@ -1,6 +1,6 @@
 {
   "id": "sample-sam",
-  "label": "Sample journey \u2014 Sam Rivera (fictional)",
+  "label": "Sample journey: Sam Rivera (fictional)",
   "is_sample": true,
   "plan_ref": "HB26",
   "estimate_ref": "sam_estimate",

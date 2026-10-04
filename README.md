@@ -14,7 +14,9 @@ ORALCOMPASS_DEV_AUTH=1 uvicorn app.main:app --reload --port 8000           # API
 cd ../web && npm install && cp ../fixtures/plans/*.json public/fixtures/plans/ && cp ../fixtures/documents/*.pdf public/fixtures/documents/ && npm run dev
 # open http://localhost:5173 → "Open a labeled sample journey: Alex Chen" (real public plan rules) or Sam Rivera (fictional plan with a stored PDF)
 ```
-Verification walk (desktop + phone screenshots, 44 checks): `cd web && npm run build && npx vite preview --port 4173 &` then `python3 tools/screenshots.py shots/`.
+Verification walk (desktop + phone screenshots, 44 checks): `cd web && npm run build && npx vite preview --port 4173 --host 127.0.0.1 &` then `python3 tools/screenshots.py shots/` (the walk sends the dev header itself).
+Presenting from a production build: `cd web && npm run build && cd ../api && ORALCOMPASS_DEV_AUTH=0 ORALCOMPASS_LLM_PROVIDER=none python3 -m uvicorn app.server:app --port 8000`
+and open http://127.0.0.1:8000 (one server, cookie sessions). A production bundle in `vite preview` against a dev-auth API gets 401 unless it was built with `VITE_DEV_AUTH=1`.
 
 ## In Claude Code
 Start with `/run-checks`, then `/ui-cinematic` (beauty pass with before/after screenshots) and `/art-assets` once you have generated the paintings from

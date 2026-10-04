@@ -17,13 +17,15 @@ import logging
 import os
 import re
 import tempfile
+import threading
 import uuid
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Literal, Optional
 
-from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, Response, UploadFile
+from starlette.concurrency import run_in_threadpool
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, Request, Response, UploadFile
 from pydantic import BaseModel, Field
 
 from .auth import User, current_user
@@ -31,7 +33,8 @@ from .data import PLANS, PLAN_META, PROC_BY_KEY, clauses_from_meta, documents_fo
 
 from oralcompass_engine import PlanModel, load_plan  # noqa: E402
 from oralcompass_engine.rules import coverage_rules  # noqa: E402
-from .extraction import (REQUIRED_PATHS, FixtureExtractor, llm_mode, llm_model, new_status, normalize, page_count, read_text, run_extraction, verify_quote)
+from .extraction import (REQUIRED_PATHS, FixtureExtractor, _advance, llm_mode, llm_model, new_status, normalize, page_count, read_text, run_extraction,
+                         skeleton_fields, verify_quote)
 from .redaction import redact
 from .store import NOT_FOUND, repo
 from . import llm_guard
@@ -44,6 +47,9 @@ log = logging.getLogger("oralcompass.uploads")
 MAX_BYTES = 32 * 1024 * 1024
 MAX_PAGES = 100
 MAX_PREVIEW_IN = 400_000
+MAX_UPLOADS_PER_OWNER = 10                       # stored plan PDFs per visitor (security-6)
+MAX_OWNER_BYTES = 160 * 1024 * 1024              # their total size
+UPLOAD_RATE_N, UPLOAD_RATE_WINDOW_S = 20, 3600   # uploads per visitor per hour (and 3x that per network address outside dev auth)
 PREVIEW_CHARS = 4000
 DEFAULT_DATA_DIR = Path(__file__).resolve().parents[1] / ".data"          # api/.data (gitignored); production: S3 users/<sub>/docs/
 fixtures = FixtureExtractor()
@@ -53,6 +59,20 @@ _PLAN_CACHE: dict[str, PlanModel] = {}      # plan_version id → PlanModel (ver
 # ---------------------------------------------------------------- helpers
 def data_dir() -> Path:
     return Path(os.getenv("ORALCOMPASS_DATA_DIR") or DEFAULT_DATA_DIR)
+
+
+def max_data_bytes() -> int:
+    """Total bytes every visitor's stored files may take under data_dir (ORALCOMPASS_DATA_MAX_BYTES; default 768 MB of a 1 GB volume), so
+    uploads stop with an honest 507 before the volume (and with it the database) is full."""
+    try:
+        return int(os.getenv("ORALCOMPASS_DATA_MAX_BYTES") or 768 * 1024 * 1024)
+    except ValueError:
+        return 768 * 1024 * 1024
+
+
+def _stored_bytes() -> int:
+    base = data_dir()
+    return sum(p.stat().st_size for p in base.rglob("*.pdf") if p.is_file()) if base.is_dir() else 0
 
 
 def doc_path(sub: str, doc_id: str) -> Path:
@@ -142,8 +162,13 @@ class ReviewIn(BaseModel):
 
 # ---------------------------------------------------------------- upload + redaction
 @router.post("/me/documents/upload", status_code=201)
-async def upload_document(file: UploadFile = File(...), sha256: str = Form(...), pages: int = Form(...), text_preview: str = Form(""),
+async def upload_document(request: Request, file: UploadFile = File(...), sha256: str = Form(...), pages: int = Form(...), text_preview: str = Form(""),
                           user: User = Depends(current_user)):
+    from .ai_support import local_rate_limit
+    local_rate_limit(user.sub, "upload", UPLOAD_RATE_N, UPLOAD_RATE_WINDOW_S, request)
+    owned = [d for d in repo.list_owned(user.sub, "document") if d.get("kind") == "upload"]
+    if len(owned) >= MAX_UPLOADS_PER_OWNER:
+        raise HTTPException(status_code=429, detail={"error": "upload_quota", "max_uploads": MAX_UPLOADS_PER_OWNER})
     chunks, size = [], 0
     while True:
         chunk = await file.read(1024 * 1024)
@@ -160,16 +185,21 @@ async def upload_document(file: UploadFile = File(...), sha256: str = Form(...),
         raise HTTPException(status_code=422, detail={"error": "too_many_pages", "max_pages": MAX_PAGES})
     if len(text_preview) > MAX_PREVIEW_IN:
         raise HTTPException(status_code=422, detail={"error": "text_preview_too_large", "max_chars": MAX_PREVIEW_IN})
-    digest = hashlib.sha256(data).hexdigest()
+    digest = await run_in_threadpool(lambda: hashlib.sha256(data).hexdigest())     # hashing and PDF parsing stay off the event loop
     if digest != sha256.strip().lower():
         raise HTTPException(status_code=422, detail={"error": "sha256_mismatch"})
     try:
-        n_pages = page_count(data)
+        n_pages = await run_in_threadpool(page_count, data)
     except Exception:
         raise HTTPException(status_code=415, detail={"error": "unreadable_pdf"})
     if n_pages > MAX_PAGES:
         raise HTTPException(status_code=422, detail={"error": "too_many_pages", "max_pages": MAX_PAGES})
 
+    if sum(int(d.get("size_bytes") or 0) for d in owned) + size > MAX_OWNER_BYTES:
+        raise HTTPException(status_code=429, detail={"error": "upload_quota", "max_bytes": MAX_OWNER_BYTES})
+    if await run_in_threadpool(_stored_bytes) + size > max_data_bytes():
+        log.warning("upload refused: storage cap reached")
+        raise HTTPException(status_code=507, detail={"error": "storage_full"})
     doc_id = uuid.uuid4().hex
     path = doc_path(user.sub, doc_id)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -178,11 +208,12 @@ async def upload_document(file: UploadFile = File(...), sha256: str = Form(...),
         os.chmod(path, 0o600)
     except OSError:
         pass
-    page_texts, _ = read_text(path)
+    page_texts, _ = await run_in_threadpool(read_text, path)
+    preview = await run_in_threadpool(_preview, page_texts, [], text_preview)
     filename = _safe_name(file.filename)
     item = repo.put(user.sub, "document", {
         "id": doc_id, "kind": "upload", "type": "plan_document_upload", "filename": filename, "label": filename, "sha256": digest, "pages": n_pages,
-        "size_bytes": size, "uploaded_at": _now(), "extraction_status": "uploaded", "redaction_preview": _preview(page_texts, [], text_preview),
+        "size_bytes": size, "uploaded_at": _now(), "extraction_status": "uploaded", "redaction_preview": preview,
         "extra_terms": [], "demo_fixture_match": fixtures.extract(digest) is not None, "extraction": None, "plan_model": None,
         "published_versions": [], "latest_version_id": None, "fields_needing_confirmation": [],
     })
@@ -194,6 +225,10 @@ async def upload_document(file: UploadFile = File(...), sha256: str = Form(...),
 @router.put("/me/documents/{doc_id}/redaction")
 def put_redaction(doc_id: str, body: RedactionIn, user: User = Depends(current_user)):
     doc = _owned_upload(user, doc_id)
+    current = (doc.get("extraction") or {}).get("status")
+    if current and current not in ("ready", "failed", "demo_no_model"):
+        # the running extraction already redacted with the earlier terms; changing them now would not match what was sent (api-correctness-8)
+        raise HTTPException(status_code=409, detail={"error": "extraction_in_progress", "status": current})
     terms = body.clean()
     page_texts, _ = read_text(doc_path(user.sub, doc_id))
     doc["extra_terms"] = terms
@@ -203,31 +238,73 @@ def put_redaction(doc_id: str, body: RedactionIn, user: User = Depends(current_u
 
 
 # ---------------------------------------------------------------- extraction
+STALE_EXTRACTION_S = 15 * 60            # longer than any live extraction budget: a status this old belongs to a task that is gone
+_PUBLISH_LOCKS: dict[str, threading.Lock] = {}
+_PUBLISH_LOCKS_GUARD = threading.Lock()
+
+
+def _publish_lock(sub: str) -> threading.Lock:
+    with _PUBLISH_LOCKS_GUARD:
+        return _PUBLISH_LOCKS.setdefault(sub, threading.Lock())
+
+
+def _stale(st: dict) -> bool:
+    """A non-terminal extraction whose last stage is older than STALE_EXTRACTION_S (or carries no stamp at all): the process that ran it
+    restarted or crashed, so a new extraction may start."""
+    ts = st.get("updated_at")
+    if not ts:
+        return True
+    try:
+        return (datetime.now(timezone.utc) - datetime.fromisoformat(ts)).total_seconds() > STALE_EXTRACTION_S
+    except ValueError:
+        return True
+
+
+class _DocumentGone(Exception):
+    """The document was deleted while its extraction ran ('Delete all my data' or a document delete): the task stops quietly."""
+
+
 def _run(sub: str, doc_id: str, mode: str, limit_reason: Optional[str] = None) -> None:
-    doc = repo.get_owned(sub, "document", doc_id)
+    doc = repo.find_owned(sub, "document", doc_id)
+    if doc is None:                             # deleted before the task started: nothing to do, nothing to re-create
+        return
 
     def set_status(st: dict) -> None:
-        doc["extraction"] = copy.deepcopy(st)
+        extraction = copy.deepcopy(st)
+        extraction["updated_at"] = _now()           # a non-terminal status older than STALE_EXTRACTION_S can be restarted (api-correctness-6)
         if limit_reason:
-            doc["extraction"]["limit_reached"] = limit_reason
-        doc["extraction_status"] = st["status"]
-        repo.put(sub, "document", doc)
+            extraction["limit_reached"] = limit_reason
+        # merge only the extraction fields into the CURRENT record (never re-create a deleted one, never overwrite a newer redaction)
+        fields = {"extraction": extraction, "extraction_status": st["status"]}
+        if st["status"] in ("ready", "failed", "demo_no_model"):
+            fields["fields_needing_confirmation"] = undecided_required(st.get("fields") or [])   # the Documents list shows them from the start
+        if repo.patch_if_exists(sub, "document", doc_id, fields) is None:
+            raise _DocumentGone()
         log.info("extraction id=%s stage=%s", doc_id, st["status"])
 
     try:
         run_extraction(doc_path(sub, doc_id), doc["sha256"], doc.get("extra_terms") or [], set_status, mode=mode, fixtures=fixtures)
+    except _DocumentGone:
+        log.info("extraction id=%s stopped: document deleted", doc_id)
     except Exception as e:                      # never leak document content; the type name is enough for the operator
         log.warning("extraction id=%s failed type=%s", doc_id, type(e).__name__)
         st = new_status(mode)
-        st.update({"status": "failed", "reason": EXTRACTION_FAILED_MODEL if mode == "live" else EXTRACTION_FAILED_UNREADABLE, "stage_index": len(st["stages"]) - 1})
-        set_status(st)
+        # the same hand-entry rows as the other failure paths, so the owner reviews every field before anything publishes (api-correctness-5)
+        st["fields"], st["structure"] = skeleton_fields()
+        st["counts"] = {k: sum(1 for f in st["fields"] if f["confidence"] == k) for k in ("confirmed", "likely", "needs_review", "not_found")}
+        st["reason"] = EXTRACTION_FAILED_MODEL if mode == "live" else EXTRACTION_FAILED_UNREADABLE
+        _advance(st, "failed")
+        try:
+            set_status(st)
+        except _DocumentGone:
+            pass
 
 
 @router.post("/me/documents/{doc_id}/extract", status_code=202)
 def start_extraction(doc_id: str, background: BackgroundTasks, user: User = Depends(current_user)):
     doc = _owned_upload(user, doc_id)
     current = (doc.get("extraction") or {}).get("status")
-    if current and current not in ("ready", "failed", "demo_no_model"):
+    if current and current not in ("ready", "failed", "demo_no_model") and not _stale(doc.get("extraction") or {}):
         raise HTTPException(status_code=409, detail={"error": "extraction_in_progress", "status": current})
     mode = llm_mode()
     limit_reason = None
@@ -236,6 +313,7 @@ def start_extraction(doc_id: str, background: BackgroundTasks, user: User = Depe
         if not allowed:                         # per-visitor or daily limit: the demo path, with an honest ribbon
             mode = "demo"
     st = new_status(mode)
+    st["updated_at"] = _now()
     doc["extraction"], doc["extraction_status"] = st, "queued"
     repo.put(user.sub, "document", doc)
     if mode == "demo":                          # the fixture path (and the demo_no_model path) complete synchronously: no network
@@ -251,19 +329,42 @@ def get_extraction(doc_id: str, user: User = Depends(current_user)):
 
 
 # ---------------------------------------------------------------- review
+_INT = lambda v: isinstance(v, int) and not isinstance(v, bool)          # noqa: E731
+_CLOCKS = ("calendar_count", "interval_months", "rolling12_count", "per_tooth_months", "lifetime")
+
+
+def _valid_list_value(path: str, v: Any) -> bool:
+    """Structural checks for the 'list' unit rows, so an edit can only publish a shape the engine reads (api-correctness-11)."""
+    if path == "waiting_months":
+        return isinstance(v, dict) and all(isinstance(k, str) and k.strip() and _INT(n) and 0 <= n <= 120 for k, n in v.items())
+    if path.startswith("frequency["):
+        return (isinstance(v, dict) and v.get("procedure_key") in PROC_BY_KEY and v.get("clock") in _CLOCKS
+                and (v.get("n") is None or (_INT(v.get("n")) and 1 <= v["n"] <= 120)))
+    if path == "alternate_benefit":
+        return isinstance(v, list) and all(isinstance(c, dict) and c.get("procedure_key") in PROC_BY_KEY and (c.get("basis_key") is None or c.get("basis_key") in PROC_BY_KEY)
+                                           and isinstance(c.get("condition", "any"), str) for c in v)
+    return isinstance(v, (list, dict))
+
+
 _UNIT_CHECK = {
     "cents": lambda v: isinstance(v, int) and not isinstance(v, bool) and v >= 0,
     "bp": lambda v: isinstance(v, int) and not isinstance(v, bool) and 0 <= v <= 10000,
     "months": lambda v: isinstance(v, int) and not isinstance(v, bool) and v >= 0,
     "month_index": lambda v: isinstance(v, int) and not isinstance(v, bool) and 1 <= v <= 12,
-    "text": lambda v: isinstance(v, (str, dict)) and bool(v),
+    "text": lambda v: (isinstance(v, str) and bool(v.strip())) or (isinstance(v, dict) and bool(v) and all(isinstance(x, str) for x in v.values())),
     "bool": lambda v: isinstance(v, bool),
     "list": lambda v: isinstance(v, (list, dict)),
 }
 
 
-def apply_decision(f: dict, d: ReviewDecision, pages_n: list[str], at: str) -> None:
+_VERIFICATION_KEYS = ("confidence", "evidence_status", "review_status", "quote_verified")
+
+
+def apply_decision(f: dict, d: ReviewDecision, pages_n: list[str], at: str, class_names: Optional[list[dict]] = None) -> None:
     kind = d.decision
+    prior = (f.get("decision") or {}).get("prior")
+    if prior and kind != "not_in_document":
+        f.update(prior)                                      # a later decision starts from the verification state 'Not in document' set aside
     if kind == "confirmed":
         if f["confidence"] not in ("confirmed", "likely") or f.get("proposed_value") is None:
             raise HTTPException(status_code=422, detail={"error": "nothing_to_confirm", "field_path": f["field_path"]})
@@ -274,22 +375,30 @@ def apply_decision(f: dict, d: ReviewDecision, pages_n: list[str], at: str) -> N
     elif kind == "edited":
         if not (d.source or "").strip():
             raise HTTPException(status_code=422, detail={"error": "source_required", "field_path": f["field_path"]})
-        if not _UNIT_CHECK[f["unit"]](d.value):
-            raise HTTPException(status_code=422, detail={"error": "invalid_value", "field_path": f["field_path"], "unit": f["unit"]})
-        if f["field_path"].startswith("class_of.") and d.value not in {c.get("name") for c in (f.get("_class_names") or [])} and f.get("_class_names") is not None:
-            raise HTTPException(status_code=422, detail={"error": "unknown_class", "field_path": f["field_path"]})
+        unit = f.get("unit")
+        check = _UNIT_CHECK.get(unit)
+        if check is None or not check(d.value) or (unit == "list" and not _valid_list_value(f["field_path"], d.value)):
+            raise HTTPException(status_code=422, detail={"error": "invalid_value", "field_path": f["field_path"], "unit": unit})
+        if f["field_path"].startswith("class_of."):
+            if not isinstance(d.value, str):
+                raise HTTPException(status_code=422, detail={"error": "invalid_value", "field_path": f["field_path"], "unit": unit})
+            if class_names is not None and d.value not in {c.get("name") for c in class_names}:
+                raise HTTPException(status_code=422, detail={"error": "unknown_class", "field_path": f["field_path"]})
         f["evidence_status"], f["review_status"] = "USER", None
         f["decision"] = {"kind": "edited", "value": d.value, "source": d.source.strip(), "at": at}
     elif kind == "not_in_document":
+        # the verification state is set aside, not destroyed, so 'Looks right' or a candidate can follow a mistaken click (api-correctness-14)
+        keep = prior or {k: f.get(k) for k in _VERIFICATION_KEYS}
         f.update({"confidence": "not_found", "evidence_status": "UNKNOWN", "review_status": None, "quote_verified": False})
-        f["decision"] = {"kind": "not_in_document", "at": at}
+        f["decision"] = {"kind": "not_in_document", "at": at, "prior": keep}
     elif kind == "candidate":
         cands = f.get("candidates") or []
         if d.candidate_index is None or not (0 <= d.candidate_index < len(cands)):
             raise HTTPException(status_code=422, detail={"error": "candidate_index_out_of_range", "field_path": f["field_path"]})
         c = cands[d.candidate_index]
         v = verify_quote(c.get("quote"), c.get("page"), pages_n)
-        f.update({"proposed_value": c.get("value"), "quote": c.get("quote"), "page": v["page"] if v["result"] != "not_found" else c.get("page")})
+        f.update({"proposed_value": c.get("value"), "quote": c.get("quote"), "page": v["page"] if v["result"] != "not_found" else c.get("page"),
+                  "page_note": c.get("page_note") or v.get("page_note")})       # None clears another candidate's stale note (api-correctness-15)
         if v["result"] == "confirmed":                       # an exactly verified candidate quote is DOC
             f.update({"quote_verified": True, "confidence": "confirmed", "evidence_status": "DOC", "review_status": "quote_verified_in_text"})
         else:
@@ -313,9 +422,7 @@ def put_review(doc_id: str, body: ReviewIn, user: User = Depends(current_user)):
             raise HTTPException(status_code=422, detail={"error": "unknown_field", "field_path": d.field_path})
         if d.decision == "candidate" and pages_n is None:
             pages_n = [normalize(p) for p in read_text(doc_path(user.sub, doc_id))[0]]
-        f["_class_names"] = class_names
-        apply_decision(f, d, pages_n or [], at)
-        f.pop("_class_names", None)
+        apply_decision(f, d, pages_n or [], at, class_names)
     st["counts"] = {k: sum(1 for f in st["fields"] if f["confidence"] == k) for k in ("confirmed", "likely", "needs_review", "not_found")}
     doc["fields_needing_confirmation"] = undecided_required(st["fields"])
     repo.put(user.sub, "document", doc)
@@ -372,7 +479,8 @@ def build_plan_dict(doc: dict, st: dict, version_label: str, published_at: str) 
     am = plan.get("annual_max")
     if am and am.get("status") in ("DOC", "USER", "AMBIGUOUS"):
         plan["annual_max_exempt_classes"] = list(structure.get("annual_max_exempt_classes") or [])
-        if am.get("value") == "unlimited" or structure.get("annual_max_unlimited"):
+        # the extraction's "unlimited" flag only stands while the row keeps the document's value; an owner's edit wins (api-correctness-10)
+        if am.get("value") == "unlimited" or (structure.get("annual_max_unlimited") and am.get("status") in ("DOC", "AMBIGUOUS") and am.get("value") is None):
             am["value"], am["unlimited"] = None, True
     for i, c in enumerate(structure.get("classes") or []):
         share_in = v(f"classes[{i}].plan_share_bp_in") or {"value": None, "status": "UNKNOWN"}
@@ -422,9 +530,18 @@ def publish(doc_id: str, user: User = Depends(current_user)):
     st = doc.get("extraction")
     if not st or st["status"] not in ("ready", "failed", "demo_no_model"):
         raise HTTPException(status_code=409, detail={"error": "extraction_not_finished"})
+    if not st.get("fields"):
+        raise HTTPException(status_code=409, detail={"error": "nothing_to_publish"})        # never a plan built from no reviewed rows
     undecided = undecided_required(st["fields"])
     if undecided:
         raise HTTPException(status_code=409, detail={"error": "undecided_fields", "fields": undecided})
+    with _publish_lock(user.sub):                 # one publish at a time per owner: UPn labels are unique (api-correctness-9)
+        return _publish_locked(user, doc_id)
+
+
+def _publish_locked(user: User, doc_id: str) -> dict:
+    doc = _owned_upload(user, doc_id)             # re-read inside the lock
+    st = doc["extraction"]
     n = len(repo.list_owned(user.sub, "plan_version")) + 1
     label = f"UP{n}"
     published_at = _now()

@@ -39,7 +39,7 @@ log = logging.getLogger("oralcompass.notifications")
 router = APIRouter()
 
 PUSH_TEST_PAYLOAD = {"title": "OralCompass", "body": PUSH_TEST_BODY}
-DOCUMENT_AWAITING_STATUSES = {"pending_extraction", "uploaded", "ready", "demo_no_model"}
+EXTRACTION_FINISHED = {"ready", "failed", "demo_no_model"}     # a document whose extraction finished and still has required rows undecided
 
 
 # ---------- schemas ----------
@@ -122,11 +122,13 @@ def next_covered_date(last: date, n_months: int) -> date:
     return date(last.year + m // 12, m % 12 + 1, min(last.day, 28))
 
 
-def reminders_for_plan(code: str, b_raw: dict, as_of: date) -> list[dict]:
-    plan = PLANS[code]
+def reminders_for_plan(code: str, b_raw: dict, as_of: date, plan=None, meta: Optional[dict] = None) -> list[dict]:
+    """Reminders for one plan reference: a preset code, or an upload ref with its resolved plan and plan dict (api-correctness-3)."""
+    plan = plan if plan is not None else PLANS[code]
+    meta = meta if meta is not None else PLAN_META[code]
     b = derived_benefits(plan, b_raw, code)
     src = b.get("source") or {}
-    src_words = f"plan document {PLAN_META[code]['source_document'].get('version_label', code)}" + (f"; benefit statement dated {src['date']}" if src.get("date") else "; your records")
+    src_words = f"plan document {meta['source_document'].get('version_label', code)}" + (f"; benefit statement dated {src['date']}" if src.get("date") else "; your records")
     out: list[dict] = []
 
     # 1. benefit-year end, cited to the plan's benefit-year definition
@@ -179,11 +181,17 @@ def list_reminders(as_of: Optional[str] = None, user: User = Depends(current_use
     except ValueError:
         raise HTTPException(status_code=422, detail={"error": "as_of must be an ISO date"})
     items: list[dict] = []
+    from .uploads import resolve_plan_ref, undecided_required
     for b in repo.list_owned(user.sub, "benefits"):
-        if b.get("plan_code") in PLANS:
-            items.extend(reminders_for_plan(b["plan_code"], b, today))
+        try:
+            res = resolve_plan_ref(user, b.get("plan_code") or "")
+        except HTTPException:
+            continue                      # a plan that can no longer be resolved gives no reminders (as in GET /me/benefits)
+        items.extend(reminders_for_plan(res.ref, b, today, res.plan, res.meta))
     for d in repo.list_owned(user.sub, "document"):
-        if d.get("extraction_status") in DOCUMENT_AWAITING_STATUSES:
+        st = d.get("extraction") or {}
+        # only a finished extraction whose required rows are still undecided is "waiting for your decisions" (api-correctness-27)
+        if st.get("status") in EXTRACTION_FINISHED and d.get("extraction_status") != "published" and undecided_required(st.get("fields") or []):
             items.append({"kind": "document_awaiting_decision", "document_id": d["id"], "date": None, "text": REMINDER_DOCUMENT_AWAITING.format(label=d.get("filename") or d.get("label") or "document"),
                           "cite": None, "source": "your documents"})
     items.sort(key=lambda r: (r["date"] is None, r["date"] or ""))

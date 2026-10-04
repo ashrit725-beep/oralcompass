@@ -65,3 +65,40 @@ def test_delete_me_removes_everything():
     out = client.delete("/me", headers={"X-Dev-User": "user-c"}).json()
     assert out["deleted"].get("estimate", 0) >= 1
     assert all(v == [] for v in client.get("/me/export", headers={"X-Dev-User": "user-c"}).json().values())
+
+
+def test_legacy_estimates_validate_bodies_and_leave_no_temp_files(tmp_path, monkeypatch):
+    """api-correctness-19 (422 not 500), security-8 / api-correctness-22 (no temp copy of a private plan left behind), -28 (one resolver)."""
+    import tempfile
+    from app.main import app as _app
+    from fastapi.testclient import TestClient as _TC
+    from app.main import extractor
+    c = _TC(_app, raise_server_exceptions=False)
+    h = {"X-Dev-User": "legacy-body"}
+    line = {"key": "crown", "label": "Crown", "charge_cents": 120000}
+    assert c.post("/estimates", json={"plan_ref": "hb26", "lines": [line]}, headers=h).status_code == 201         # presets in any case
+    bad = [{"plan_ref": "HB26", "lines": [{**line, "completion": "notadate"}]},
+           {"plan_ref": "HB26", "lines": [line], "state": {"network": {"value": "in", "status": "FOO"}}},
+           {"plan_ref": "HB26", "lines": [line], "state": {"history": {"crown": ["13/45/2020"]}}},
+           {"plan_ref": "HB26", "lines": [{**line, "listed_fees": [{"a": 1}]}]},
+           {"plan_ref": "HB26", "lines": [{**line, "key": "zzz"}]}]
+    for body in bad:
+        assert c.post("/estimates", json=body, headers=h).status_code == 422, body
+        assert c.post("/comparisons", json={"plan_refs": ["HB26", "ML26"], "lines": body["lines"], "states": {"HB26": body.get("state", {})}}, headers=h).status_code == 422
+    monkeypatch.setattr(tempfile, "tempdir", str(tmp_path))
+    sha = next(iter(extractor.by_sha))
+    doc = c.post("/documents", json={"filename": "p.pdf", "sha256": sha, "pages": 1}, headers=h).json()
+    for _ in range(3):
+        assert c.post("/estimates", json={"plan_ref": f"upload:{doc['id']}", "lines": [line]}, headers=h).status_code == 201
+    assert c.post("/comparisons", json={"plan_refs": [f"upload:{doc['id']}", "HB26"], "lines": [line], "states": {f"upload:{doc['id']}": {}}}, headers=h).status_code == 201
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_export_lists_every_stored_record_type():
+    """api-correctness-4: push subscriptions and published plan versions are part of 'Download my data'."""
+    import re
+    from pathlib import Path
+    from app.main import EXPORT_TYPES
+    src = "".join(p.read_text() for p in (Path(__file__).resolve().parents[1] / "app").glob("*.py"))
+    stored = set(re.findall(r'repo\.(?:put|patch_if_exists)\([^,]+, "([a-z_]+)"', src))
+    assert stored and stored <= set(EXPORT_TYPES), stored - set(EXPORT_TYPES)

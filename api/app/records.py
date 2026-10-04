@@ -7,11 +7,11 @@ and an upload (or between two uploads)."""
 from __future__ import annotations
 
 from datetime import date, datetime, timezone
-from typing import Optional
+from typing import Annotated, Literal, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.encoders import jsonable_encoder
-from pydantic import BaseModel, Field
+from pydantic import AfterValidator, BaseModel, ConfigDict, Field
 
 from oralcompass_engine import Evidence, EstimateLine, MemberState, PlanModel, V, compute_ledger, range_and_movers
 from oralcompass_engine.rules import coverage_rules
@@ -19,7 +19,7 @@ from oralcompass_engine.rules import coverage_rules
 from .auth import User, current_user
 from .data import (CODES_BY_KEY, FEE_BENCHMARKS, PLANS, PLAN_META, PROC_BY_KEY, PROCEDURES, PROCEDURE_CODES, SAMPLE_USERS, SOURCE_BY_ID, SOURCES,
                    INGEST_REPORT, AUDIT_REPORT, clauses, documents_for_meta, documents_for_plan, evidence_rows, plan_summary)
-from .templates import BENCHMARK_NOTE
+from .templates import BENCHMARK_NOTE, PRESET_BANNER
 from .store import NOT_FOUND, repo
 from .templates import FOOTER
 from .uploads import norm_ref, resolve_plan_ref
@@ -28,28 +28,42 @@ router = APIRouter()
 
 
 # ---------- schemas ----------
+def _iso_date(v: str) -> str:
+    """An ISO date (YYYY-MM-DD), kept as the string the records store; anything else is 422 here, never a 500 at estimate time."""
+    try:
+        return date.fromisoformat(v).isoformat()
+    except (TypeError, ValueError):
+        raise ValueError("expected an ISO date (YYYY-MM-DD)")
+
+
+ISODate = Annotated[str, AfterValidator(_iso_date)]
+Cents = Annotated[int, Field(ge=0, le=100_000_000, strict=True)]
+Network = Literal["in", "out"]
+ItemStatus = Literal["planned", "scheduled", "completed", "cancelled", "consultation_mentioned"]
+
+
 class ClaimIn(BaseModel):
-    id: Optional[str] = None
-    date: str
+    id: Optional[str] = Field(None, max_length=80)
+    date: ISODate
     procedure_key: str
     tooth: Optional[str] = None
-    dentist_fee_cents: Optional[int] = None
-    allowed_cents: Optional[int] = None
-    plan_paid_cents: int
-    patient_paid_cents: Optional[int] = None
-    deductible_applied_cents: int = 0
+    dentist_fee_cents: Optional[int] = Field(None, ge=0)
+    allowed_cents: Optional[int] = Field(None, ge=0)
+    plan_paid_cents: int = Field(ge=0)
+    patient_paid_cents: Optional[int] = Field(None, ge=0)
+    deductible_applied_cents: int = Field(0, ge=0)
     source: str
 
 
 class BenefitsIn(BaseModel):
     """What the user (or a parsed statement) tells us about usage. Remaining amounts are derived, never entered."""
-    coverage_start: Optional[str] = None
-    coverage_end: Optional[str] = None
-    network_default: Optional[str] = None            # in | out
-    deductible_met_cents: Optional[int] = None       # None = not provided
-    benefits_used_cents: Optional[int] = None        # insurer payments so far this benefit year; None = not provided
-    deductible_met_out_cents: Optional[int] = None   # only for plans whose out-of-network deductible is tracked separately
-    benefits_used_out_cents: Optional[int] = None    # only for plans whose out-of-network maximum is tracked separately
+    coverage_start: Optional[ISODate] = None
+    coverage_end: Optional[ISODate] = None
+    network_default: Optional[Network] = None        # in | out
+    deductible_met_cents: Optional[int] = Field(None, ge=0)       # None = not provided
+    benefits_used_cents: Optional[int] = Field(None, ge=0)        # insurer payments so far this benefit year; None = not provided
+    deductible_met_out_cents: Optional[int] = Field(None, ge=0)   # only for plans whose out-of-network deductible is tracked separately
+    benefits_used_out_cents: Optional[int] = Field(None, ge=0)    # only for plans whose out-of-network maximum is tracked separately
     source: dict = Field(default_factory=dict)       # {type, label, date, entered_by}
     last_updated: Optional[str] = None
     claims: list[ClaimIn] = []
@@ -58,36 +72,74 @@ class BenefitsIn(BaseModel):
 class TreatmentItemIn(BaseModel):
     id: Optional[str] = None
     procedure_key: str
-    procedure_name: Optional[str] = None             # as written on the estimate; defaults to the catalog name
-    tooth: Optional[str] = None
-    quantity: int = 1
-    dentist_fee_cents: int                           # what the dentist charges — never mixed with the allowed amount
-    allowed_cents: Optional[int] = None              # the plan's allowed amount if the user knows it (pre-treatment estimate, EOB); else UNKNOWN
-    allowed_source: Optional[str] = None             # where the allowed amount came from, e.g. "pre-treatment estimate response 2026-09-30"
-    code_as_written: Optional[str] = None            # procedure code printed on the user's own estimate/claim (USER) — never inferred
-    network: Optional[str] = None                    # in | out | None (falls back to benefits.network_default, else UNKNOWN)
-    appointment_date: Optional[str] = None
-    planned_prep: Optional[str] = None
-    planned_completion: Optional[str] = None
-    status: str = "planned"                          # planned | scheduled | completed | cancelled | consultation_mentioned
-    source: str = "typed"
+    procedure_name: Optional[str] = Field(None, max_length=200)   # as written on the estimate; defaults to the catalog name
+    tooth: Optional[str] = Field(None, max_length=20)
+    quantity: int = Field(1, ge=1, le=32)
+    dentist_fee_cents: int = Field(ge=0)             # what the dentist charges — never mixed with the allowed amount
+    allowed_cents: Optional[int] = Field(None, ge=0)             # the plan's allowed amount if the user knows it (pre-treatment estimate, EOB); else UNKNOWN
+    allowed_source: Optional[str] = Field(None, max_length=300)   # where the allowed amount came from, e.g. "pre-treatment estimate response 2026-09-30"
+    code_as_written: Optional[str] = Field(None, max_length=20)   # procedure code printed on the user's own estimate/claim (USER) — never inferred
+    network: Optional[Network] = None                # in | out | None (falls back to benefits.network_default, else UNKNOWN)
+    appointment_date: Optional[ISODate] = None
+    planned_prep: Optional[ISODate] = None
+    planned_completion: Optional[ISODate] = None
+    status: ItemStatus = "planned"
+    source: str = Field("typed", max_length=300)
+
+
+class TreatmentItemPatch(BaseModel):
+    """PATCH /me/treatment-items/{id}: the editable fields only, each typed and bounded (security-5); unknown keys are 422."""
+    model_config = ConfigDict(extra="forbid")
+    tooth: Optional[str] = Field(None, max_length=20)
+    quantity: Optional[int] = Field(None, ge=1, le=32, strict=True)
+    dentist_fee_cents: Optional[Cents] = None
+    allowed_cents: Optional[Cents] = None
+    allowed_source: Optional[str] = Field(None, max_length=300)
+    allowed_status: Optional[Literal["USER", "UNKNOWN"]] = None
+    network: Optional[Network] = None
+    appointment_date: Optional[ISODate] = None
+    planned_prep: Optional[ISODate] = None
+    planned_completion: Optional[ISODate] = None
+    status: Optional[ItemStatus] = None
+    source: Optional[str] = Field(None, max_length=300)
+    procedure_name: Optional[str] = Field(None, max_length=200)
+
+
+class Hypotheticals(BaseModel):
+    """What-if inputs the user typed (labeled ASSUMED); typed so a string never reaches engine arithmetic."""
+    model_config = ConfigDict(extra="forbid")
+    remaining_deductible_cents: Optional[Cents] = None
+    remaining_max_cents: Optional[Cents] = None
+    remaining_deductible_out_cents: Optional[Cents] = None
+    remaining_max_out_cents: Optional[Cents] = None
+    network: Optional[Network] = None
+    enrolled_months: Optional[int] = Field(None, ge=0, le=600, strict=True)
 
 
 class EstimateRequest(BaseModel):
     plan_code: str                                   # a plan reference: preset code or "upload:<document_id>"
     treatment_item_ids: list[str] = []               # defaults to all items with status planned/scheduled
+    journey_id: Optional[str] = None                 # scope the default to one journey's items (a sample's records never mix into another journey)
     dos_rule: Optional[str] = None                   # defaults to the plan's stated rule (or completion)
-    hypotheticals: dict = {}                         # {remaining_deductible_cents, remaining_max_cents, network, enrolled_months} — labeled ASSUMED
+    hypotheticals: Hypotheticals = Field(default_factory=Hypotheticals)   # labeled ASSUMED
 
 
 # ---------- helpers ----------
+def _remaining(limit: int, used: int, what: str, notes: list[str]) -> int:
+    """limit − used, never below zero: a statement figure above the plan's stated limit is noted, not turned into a negative remainder."""
+    if used > limit:
+        notes.append(f"the {what} on your statement (${used/100:,.2f}) is above the plan's stated limit (${limit/100:,.2f}); the remaining figure is shown as $0.00")
+    return max(0, limit - used)
+
+
 def derived_benefits(plan: PlanModel, b: dict, plan_ref: str) -> dict:
     out = {**b, "plan_code": plan_ref}
     ded = plan.deductible_individual
     mx = plan.annual_max
     src_label = (b.get("source") or {}).get("label", "not provided")
-    out["remaining_deductible_cents"] = (ded.value - b["deductible_met_cents"]) if (ded.known and b.get("deductible_met_cents") is not None) else None
-    out["remaining_max_cents"] = (mx.value - b["benefits_used_cents"]) if (mx.known and b.get("benefits_used_cents") is not None) else None
+    over: list[str] = []
+    out["remaining_deductible_cents"] = _remaining(ded.value, b["deductible_met_cents"], "deductible met", over) if (ded.known and b.get("deductible_met_cents") is not None) else None
+    out["remaining_max_cents"] = _remaining(mx.value, b["benefits_used_cents"], "plan paid so far", over) if (mx.known and b.get("benefits_used_cents") is not None) else None
     out["annual_max_unlimited"] = plan.annual_max_unlimited
     out["derivation"] = {
         "remaining_deductible": (f"plan deductible ${ded.value/100:,.2f} (document) − met ${b.get('deductible_met_cents', 0)/100:,.2f} ({src_label}) = ${out['remaining_deductible_cents']/100:,.2f}"
@@ -98,13 +150,15 @@ def derived_benefits(plan: PlanModel, b: dict, plan_ref: str) -> dict:
     }
     # separate out-of-network figures, only when the document states separate out-of-network limits
     if plan.deductible_individual_out.known:
-        out["remaining_deductible_out_cents"] = (plan.deductible_individual_out.value - b["deductible_met_out_cents"]) if b.get("deductible_met_out_cents") is not None else None
+        out["remaining_deductible_out_cents"] = _remaining(plan.deductible_individual_out.value, b["deductible_met_out_cents"], "out-of-network deductible met", over) if b.get("deductible_met_out_cents") is not None else None
         out["derivation"]["remaining_deductible_out"] = (f"out-of-network deductible ${plan.deductible_individual_out.value/100:,.2f} (document) − met ${b.get('deductible_met_out_cents', 0)/100:,.2f} ({src_label})"
                                                          if out["remaining_deductible_out_cents"] is not None else "out-of-network deductible met: not provided")
     if plan.annual_max_out.known:
-        out["remaining_max_out_cents"] = (plan.annual_max_out.value - b["benefits_used_out_cents"]) if b.get("benefits_used_out_cents") is not None else None
+        out["remaining_max_out_cents"] = _remaining(plan.annual_max_out.value, b["benefits_used_out_cents"], "out-of-network plan paid so far", over) if b.get("benefits_used_out_cents") is not None else None
         out["derivation"]["remaining_max_out"] = (f"out-of-network maximum ${plan.annual_max_out.value/100:,.2f} (document) − plan paid ${b.get('benefits_used_out_cents', 0)/100:,.2f} ({src_label})"
                                                   if out["remaining_max_out_cents"] is not None else "out-of-network benefits used: not provided")
+    if over:
+        out["over_limit"] = over
     itemized = sum(c.get("plan_paid_cents", 0) for c in b.get("claims", []))
     if b.get("claims") and b.get("benefits_used_cents") is not None and itemized != b["benefits_used_cents"]:
         out["conflict"] = {"status": "CONFLICT", "note": f"itemized claims total {itemized/100:.2f} but the stated 'benefits used' is {b['benefits_used_cents']/100:.2f}; both are shown, neither is chosen"}
@@ -160,6 +214,12 @@ def lines_from_items(items: list[dict]) -> list[EstimateLine]:
     return out
 
 
+def item_in_journey(item: dict, journey: Optional[dict]) -> bool:
+    """A record seeded from a sample belongs only to that sample's journeys; the user's own records belong to every journey of theirs."""
+    seeded = item.get("seeded_from_sample")
+    return not seeded or (journey is not None and seeded == journey.get("user_ref"))
+
+
 def _benefits_record(sub: str, plan_ref: str) -> Optional[dict]:
     return next((x for x in repo.list_owned(sub, "benefits") if x["plan_code"] == plan_ref), None)
 
@@ -170,7 +230,7 @@ def list_plans(q: str = "", user: User = Depends(current_user)):
     items = [plan_summary(c) for c in PLANS]
     if q:
         items = [i for i in items if q.lower() in " ".join(str(v) for v in i.values()).lower()]
-    return {"items": items, "banner": "Listed here means the document is public — not that you are eligible to enroll."}
+    return {"items": items, "banner": PRESET_BANNER}
 
 
 @router.get("/plans/{code}")
@@ -302,7 +362,6 @@ def put_benefits(plan_ref: str, body: BenefitsIn, user: User = Depends(current_u
     existing = _benefits_record(user.sub, res.ref)
     rec = {**(existing or {}), "plan_code": res.ref, **body.model_dump(), "plan_version_sha256": res.sha256, "plan_version_label": res.version_label,
            "updated_at": datetime.now(timezone.utc).isoformat()}
-    rec["claims"] = [c if isinstance(c, dict) else c.model_dump() for c in rec["claims"]]
     item = repo.put(user.sub, "benefits", rec)
     return derived_benefits(res.plan, item, res.ref)
 
@@ -321,10 +380,9 @@ def add_item(body: TreatmentItemIn, user: User = Depends(current_user)):
 
 
 @router.patch("/me/treatment-items/{tid}")
-def patch_item(tid: str, body: dict, user: User = Depends(current_user)):
+def patch_item(tid: str, body: TreatmentItemPatch, user: User = Depends(current_user)):
     item = repo.get_owned(user.sub, "treatment_item", tid)
-    allowed = {"tooth", "quantity", "dentist_fee_cents", "allowed_cents", "network", "appointment_date", "planned_prep", "planned_completion", "status", "source", "procedure_name"}
-    item.update({k: v for k, v in body.items() if k in allowed})
+    item.update(body.model_dump(exclude_unset=True))
     return repo.put(user.sub, "treatment_item", item)
 
 
@@ -334,6 +392,9 @@ def estimate_from_records(body: EstimateRequest, user: User = Depends(current_us
     res = resolve_plan_ref(user, body.plan_code)
     plan, ref = res.plan, res.ref
     items = repo.list_owned(user.sub, "treatment_item")
+    if body.journey_id:
+        journey = repo.get_owned(user.sub, "journey", body.journey_id)["journey"]
+        items = [i for i in items if item_in_journey(i, journey)]
     if body.treatment_item_ids:
         items = [i for i in items if i["id"] in body.treatment_item_ids]
     else:
@@ -343,7 +404,8 @@ def estimate_from_records(body: EstimateRequest, user: User = Depends(current_us
     b_raw = _benefits_record(user.sub, ref)
     b = derived_benefits(plan, b_raw, ref) if b_raw else None
     as_of = date.today()
-    state, assumptions = member_state(ref, b, items, body.hypotheticals, as_of)
+    hypo = body.hypotheticals.model_dump(exclude_none=True)
+    state, assumptions = member_state(ref, b, items, hypo, as_of)
     dos = body.dos_rule or (plan.dos_rule.value if plan.dos_rule.known else "completion")
     lines = lines_from_items(items)
     ledger = compute_ledger(plan, lines, state, dos)
@@ -357,9 +419,9 @@ def estimate_from_records(body: EstimateRequest, user: User = Depends(current_us
     for L in ledger.lines:
         for f in L.flags:
             if "allowed amount" in f and "not stated" in f:
-                missing_inputs.append({"input": f"allowed amount — {L.label}", "how": "The plan document prints no fee schedule. Enter the allowed amount from a pre-treatment estimate response or an EOB, with its source; without it the line stays unresolved.", "line": L.label})
+                missing_inputs.append({"input": f"allowed amount: {L.label}", "how": "The plan document prints no fee schedule. Enter the allowed amount from a pre-treatment estimate response or an EOB, with its source; without it the line stays unresolved.", "line": L.label})
             if "class of" in f and "not stated" in f:
-                missing_inputs.append({"input": f"coverage class — {L.label}", "how": "The pages read do not place this procedure in a class. The line stays unresolved until the plan document (or the plan) states it.", "line": L.label})
+                missing_inputs.append({"input": f"coverage class: {L.label}", "how": "The pages read do not place this procedure in a class. The line stays unresolved until the plan document (or the plan) states it.", "line": L.label})
     ledger_json = jsonable_encoder(ledger)
     # the engine keeps the listed order, so ledger line i is treatment item i: stamp the record ids on the serialized lines (engine untouched)
     for line_json, item in zip(ledger_json["lines"], items):
@@ -367,7 +429,7 @@ def estimate_from_records(body: EstimateRequest, user: User = Depends(current_us
         line_json["procedure_key"] = item["procedure_key"]
     rec = {
         "plan_code": ref, "plan_ref": ref, "plan_version_label": res.version_label, "plan_version_sha256": res.sha256, "calculated_at": datetime.now(timezone.utc).isoformat(),
-        "inputs": {"treatment_item_ids": [i["id"] for i in items], "benefits_snapshot": b, "hypotheticals": body.hypotheticals, "dos_rule": dos,
+        "inputs": {"treatment_item_ids": [i["id"] for i in items], "benefits_snapshot": b, "hypotheticals": hypo, "dos_rule": dos,
                    "network": state.network.value, "network_status": state.network.status.value},
         "ledger": ledger_json, "movers": jsonable_encoder(movers),
         "insurer_estimated_payment_cents": ledger.plan_total_cents, "user_estimated_payment_cents": ledger.patient_total_cents,

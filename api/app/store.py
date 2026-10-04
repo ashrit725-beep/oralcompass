@@ -10,6 +10,7 @@ hashed session id, a kind and a UTC day, never content.
 """
 from __future__ import annotations
 
+import copy
 import os
 import threading
 import time
@@ -22,6 +23,9 @@ NOT_FOUND = {"error": "not_found"}      # constant body — never varies by reas
 
 
 class InMemoryRepo:
+    """Records are stored and returned as deep copies, the same value semantics as SqliteRepo (which deserialises on every read): a caller
+    that mutates what it read changes nothing until it calls put, so a request that fails half-way leaves the record as it was."""
+
     def __init__(self) -> None:
         self._items: dict[tuple[str, str, str], dict] = {}
         self.audit: list[dict] = []
@@ -34,10 +38,24 @@ class InMemoryRepo:
 
     def put(self, sub: str, rtype: str, item: dict) -> dict:
         rid = item.get("id") or uuid.uuid4().hex
-        item = {**item, "id": rid, "owner": sub}
-        self._items[(sub, rtype, rid)] = item
-        self._log(sub, "create", rtype, rid, "ok")
-        return item
+        item = copy.deepcopy({**item, "id": rid, "owner": sub})
+        with self._lock:
+            self._items[(sub, rtype, rid)] = item
+            self._log(sub, "create", rtype, rid, "ok")
+        return copy.deepcopy(item)
+
+    def patch_if_exists(self, sub: str, rtype: str, rid: str, fields: dict) -> Optional[dict]:
+        """Atomically merge `fields` into an existing owned record; None (and nothing written) when the record is gone. Background work
+        uses this instead of put, so a record deleted meanwhile ('Delete all my data') is never re-created, and fields another request
+        changed meanwhile are not overwritten by a stale copy."""
+        with self._lock:
+            cur = self._items.get((sub, rtype, rid))
+            if cur is None:
+                return None
+            item = copy.deepcopy({**cur, **fields, "id": rid, "owner": sub})
+            self._items[(sub, rtype, rid)] = item
+            self._log(sub, "update", rtype, rid, "ok")
+            return copy.deepcopy(item)
 
     def get_owned(self, sub: str, rtype: str, rid: str) -> dict:
         item = self._items.get((sub, rtype, rid))
@@ -45,7 +63,7 @@ class InMemoryRepo:
             self._log(sub, "read", rtype, rid, "denied")
             raise HTTPException(status_code=404, detail=NOT_FOUND)
         self._log(sub, "read", rtype, rid, "ok")
-        return item
+        return copy.deepcopy(item)
 
     def delete_owned(self, sub: str, rtype: str, rid: str) -> None:
         """Delete one owned record; a record that is not the caller's gets the same constant 404 as a nonexistent id."""
@@ -56,18 +74,21 @@ class InMemoryRepo:
         self._log(sub, "delete", rtype, rid, "ok")
 
     def list_owned(self, sub: str, rtype: str) -> list[dict]:
-        return [v for (s, t, _), v in self._items.items() if s == sub and t == rtype]
+        with self._lock:
+            return [copy.deepcopy(v) for (s, t, _), v in self._items.items() if s == sub and t == rtype]
 
     def find_owned(self, sub: str, rtype: str, rid: str) -> Optional[dict]:
         """Keyed lookup for server-side caches: the record or None, no audit entry (a cache miss is not a denied read)."""
-        return self._items.get((sub, rtype, str(rid)))
+        item = self._items.get((sub, rtype, str(rid)))
+        return copy.deepcopy(item) if item is not None else None
 
     def delete_all(self, sub: str) -> dict[str, int]:
         counts: dict[str, int] = {}
-        for key in [k for k in self._items if k[0] == sub]:
-            counts[key[1]] = counts.get(key[1], 0) + 1
-            del self._items[key]
-        self._log(sub, "delete_all", "*", "*", "ok")
+        with self._lock:
+            for key in [k for k in self._items if k[0] == sub]:
+                counts[key[1]] = counts.get(key[1], 0) + 1
+                del self._items[key]
+            self._log(sub, "delete_all", "*", "*", "ok")
         return counts
 
     def audit_for(self, sub: str) -> list[dict]:

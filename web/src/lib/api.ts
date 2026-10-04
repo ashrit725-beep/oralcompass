@@ -111,7 +111,8 @@ export const api = {
   ask: (body: { message: string; scope: AssistScope }) => post<AssistResponse>("/me/assistant", body),
   // AI treatment-plan reader and clause explainer (addendum D.5; api/app/treatment_reader.py, api/app/explain.py)
   readTreatmentPlanText: (text: string) => post<ReadResponse>("/me/treatment-plans/read", { text }),
-  readTreatmentPlanFile: (file: File) => multipart<ReadResponse>("/me/treatment-plans/read", { file }),
+  /** `imageConsent` is sent only after the visitor confirmed `image_notice` (a photo or scan cannot be redacted; docs/SECURITY.md). */
+  readTreatmentPlanFile: (file: File, imageConsent = false) => multipart<ReadResponse>("/me/treatment-plans/read", imageConsent ? { file, image_consent: "1" } : { file }),
   treatmentPlanSamples: () => req<{ items: ReadSample[] }>("/me/treatment-plans/samples"),
   confirmTreatmentPlan: (items: ConfirmItem[]) => post<{ created: TreatmentItem[]; source: string }>("/me/treatment-plans/confirm", { items }),
   explain: (body: ExplainRequest) => post<ExplainResponse>("/me/explain", body),

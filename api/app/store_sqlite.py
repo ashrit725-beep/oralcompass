@@ -93,6 +93,25 @@ class SqliteRepo:
                 raise
         return json.loads(payload)
 
+    def patch_if_exists(self, sub: str, rtype: str, rid: str, fields: dict) -> Optional[dict]:
+        """Atomically merge `fields` into an existing owned record; None (and nothing written) when the record is gone (see InMemoryRepo)."""
+        with self._lock:
+            self._db.execute("BEGIN IMMEDIATE")
+            try:
+                row = self._db.execute("SELECT payload FROM items WHERE sub = ? AND type = ? AND id = ?", (sub, rtype, str(rid))).fetchone()
+                if row is None:
+                    self._db.execute("ROLLBACK")
+                    return None
+                item = {**self._load(row[0]), **fields, "id": str(rid), "owner": sub}
+                payload = json.dumps(item, separators=(",", ":"), default=str)
+                self._db.execute("UPDATE items SET payload = ?, updated_at = ? WHERE sub = ? AND type = ? AND id = ?", (payload, time.time(), sub, rtype, str(rid)))
+                self._log(sub, "update", rtype, str(rid), "ok")
+                self._db.execute("COMMIT")
+            except BaseException:
+                self._db.execute("ROLLBACK")
+                raise
+        return json.loads(payload)
+
     def get_owned(self, sub: str, rtype: str, rid: str) -> dict:
         with self._lock:
             row = self._db.execute("SELECT payload FROM items WHERE sub = ? AND type = ? AND id = ?", (sub, rtype, str(rid))).fetchone()

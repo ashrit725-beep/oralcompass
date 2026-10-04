@@ -572,3 +572,191 @@ def test_live_mode_against_openrouter_once(monkeypatch):
     if fields["annual_max"]["confidence"] in ("confirmed", "likely"):
         assert fields["annual_max"]["proposed_value"] == 150000
     assert all(not extraction.looks_like_injection(n) for n in st["notes"])
+
+
+def test_edited_annual_max_wins_over_an_unlimited_extraction():
+    """api-correctness-10: the owner's edit of the annual maximum is published as entered, not replaced by the 'unlimited' flag."""
+    from app.uploads import build_plan_dict
+    doc = {"id": "d1", "filename": "p.pdf", "sha256": "0" * 64, "pages": 2, "uploaded_at": "2026-10-01T00:00:00+00:00"}
+    row = {"field_path": "annual_max", "proposed_value": "unlimited", "page": 1, "quote": "q", "evidence_status": "VERIFIED"}
+    edited = build_plan_dict(doc, {"fields": [{**row, "decision": {"kind": "edited", "value": 150000, "source": "my statement"}}], "structure": {"annual_max_unlimited": True}},
+                             "UP1", "2026-10-01T00:00:00+00:00")["annual_max"]
+    assert edited["value"] == 150000 and edited["status"] == "USER" and not edited.get("unlimited")
+    confirmed = build_plan_dict(doc, {"fields": [{**row, "decision": {"kind": "confirmed"}}], "structure": {"annual_max_unlimited": True}},
+                                "UP1", "2026-10-01T00:00:00+00:00")["annual_max"]
+    assert confirmed["value"] is None and confirmed["unlimited"] is True and confirmed["status"] == "DOC"
+
+
+def test_background_extraction_never_recreates_a_deleted_document_or_reverts_newer_fields(monkeypatch):
+    """api-correctness-7 / security-7 / api-correctness-8: the task merges only its extraction fields into the CURRENT record and stops
+    when the record is gone, so 'Delete all my data' mid-run stays deleted and a newer field is not overwritten by a stale copy."""
+    from app.store import repo
+    sub = "del-mid-run"
+    h = H(sub)
+    up = upload(h, make_pdf(["Deductible $50 per person", "Annual maximum $1,000"])).json()
+
+    def fake_run(path, sha, terms, set_status, mode=None, fixtures=None):
+        st = extraction.new_status("live")
+        st["status"] = "reading_text"
+        set_status(st)
+        repo.patch_if_exists(sub, "document", up["id"], {"label": "renamed meanwhile"})        # another request changes the record
+        assert repo.get_owned(sub, "document", up["id"])["label"] == "renamed meanwhile"
+        st2 = dict(st, status="identifying_fields")
+        set_status(st2)
+        assert repo.get_owned(sub, "document", up["id"])["label"] == "renamed meanwhile"          # not reverted by the task's stale copy
+        assert client.delete("/me", headers=h).status_code == 200
+        set_status(dict(st, status="ready", fields=[{"quote": "patient John Doe"}]))
+        raise AssertionError("the task must stop once the document is gone")
+
+    monkeypatch.setattr(uploads, "run_extraction", fake_run)
+    uploads._run(sub, up["id"], "live")
+    assert repo.find_owned(sub, "document", up["id"]) is None and repo.list_owned(sub, "document") == []
+    uploads._run(sub, up["id"], "live")                     # a task that starts after the delete ends quietly
+    assert repo.list_owned(sub, "document") == []
+
+
+def test_redaction_terms_cannot_change_while_an_extraction_runs():
+    from app.store import repo
+    h = H("redact-mid-run")
+    up = upload(h, make_pdf(["Deductible $50 per person"])).json()
+    repo.patch_if_exists("redact-mid-run", "document", up["id"], {"extraction": extraction.new_status("live"), "extraction_status": "queued"})
+    r = client.put(f"/me/documents/{up['id']}/redaction", json={"extra_terms": ["Harborview"]}, headers=h)
+    assert r.status_code == 409 and r.json()["detail"]["error"] == "extraction_in_progress"
+
+
+def _review(h, doc_id, decisions):
+    return client.put(f"/me/documents/{doc_id}/review", json={"decisions": decisions}, headers=h)
+
+
+def test_review_values_are_validated_and_a_failed_batch_changes_nothing():
+    """api-correctness-11 (shapes; unhashable class value is 422 not 500), -12 (no class list leaks into the record) and -13 (atomic batch)."""
+    h = H("review-validate")
+    up = upload(h, HB26_PDF.read_bytes(), name="harborview_certificate.pdf").json()
+    client.post(f"/me/documents/{up['id']}/extract", headers=h)
+    bad = [("class_of.exam", {"a": 1}), ("waiting_months", {"Major": "twelve"}), ("frequency[0]", {"clock": "calendar_count", "n": 2}),
+           ("frequency[0]", {"procedure_key": "cleaning", "clock": "weekly", "n": 2}), ("alternate_benefit", [{"procedure_key": "nope"}])]
+    for path, value in bad:
+        r = _review(h, up["id"], [{"field_path": path, "decision": "edited", "value": value, "source": "x"}])
+        assert r.status_code == 422 and r.json()["detail"]["error"] == "invalid_value", (path, r.text)
+    assert _review(h, up["id"], [{"field_path": "class_of.exam", "decision": "edited", "value": "Nope", "source": "x"}]).json()["detail"]["error"] == "unknown_class"
+    ok = _review(h, up["id"], [{"field_path": "waiting_months", "decision": "edited", "value": {"Major": 12}, "source": "x"}])
+    assert ok.status_code == 200
+    # a batch whose second decision fails leaves the first one unapplied, on the default (in-memory) backend too
+    r = _review(h, up["id"], [{"field_path": "deductible_individual", "decision": "edited", "value": 12345, "source": "probe"}, {"field_path": "nope", "decision": "confirmed"}])
+    assert r.status_code == 422
+    st = client.get(f"/me/documents/{up['id']}/extraction", headers=h).json()
+    ded = next(f for f in st["fields"] if f["field_path"] == "deductible_individual")
+    assert (ded.get("decision") or {}).get("value") != 12345 and ded["evidence_status"] != "USER"
+    assert not any("_class_names" in f for f in st["fields"])
+
+
+def test_not_in_document_can_be_undone_and_candidate_page_notes_follow_the_candidate():
+    """api-correctness-14 and -15."""
+    from app.uploads import ReviewDecision, apply_decision
+    row = {"field_path": "x", "unit": "cents", "confidence": "confirmed", "evidence_status": "DOC", "review_status": "quote_verified_in_text", "quote_verified": True,
+           "proposed_value": 3, "quote": "q", "page": 1}
+    apply_decision(row, ReviewDecision(field_path="x", decision="not_in_document"), [], "t1")
+    assert row["confidence"] == "not_found" and row["evidence_status"] == "UNKNOWN"
+    apply_decision(row, ReviewDecision(field_path="x", decision="confirmed"), [], "t2")
+    assert row["confidence"] == "confirmed" and row["evidence_status"] == "DOC" and row["review_status"] == "quote_verified_in_text" and row["decision"]["kind"] == "confirmed"
+    pages = ["intro", "The annual deductible is $50 per person", "other", "The annual deductible is $75 per family"]
+    from app.extraction import apply_verification, normalize
+    f = {"field_path": "deductible_individual", "unit": "cents", "proposed_value": None, "quote": None, "page": None,
+         "candidates": [{"value": 5000, "quote": "The annual deductible is $50 per person", "page": 3}]}
+    apply_verification([f], pages)
+    assert f["page"] == 2 and f["page_note"] and "page 2" in f["page_note"]
+    stale = {"field_path": "d", "unit": "cents", "confidence": "needs_review", "evidence_status": "AMBIGUOUS", "page_note": "quote found on page 4; the extraction cited page 3",
+             "candidates": [{"value": 5000, "quote": "The annual deductible is $50 per person", "page": 2}, {"value": 7500, "quote": "The annual deductible is $75 per family", "page": 4}]}
+    apply_decision(stale, ReviewDecision(field_path="d", decision="candidate", candidate_index=0), [normalize(p) for p in pages], "t3")
+    assert stale["page"] == 2 and stale["page_note"] is None
+
+
+def test_a_crashed_extraction_gives_hand_entry_rows_not_an_empty_publishable_record(monkeypatch):
+    """api-correctness-5: the crash path carries the skeleton rows, so publish needs the owner's decisions; a non-object model reply is
+    ModelUnavailable, not a crash."""
+    h = H("crash-path")
+    up = upload(h, make_pdf(["Deductible $50 per person"])).json()
+
+    def boom(*a, **k):
+        raise AttributeError("parse bug")
+
+    monkeypatch.setattr(uploads, "run_extraction", boom)
+    assert client.post(f"/me/documents/{up['id']}/extract", headers=h).json()["status"] == "failed"
+    st = client.get(f"/me/documents/{up['id']}/extraction", headers=h).json()
+    assert st["status"] == "failed" and len(st["fields"]) > 5 and all(f["confidence"] == "not_found" for f in st["fields"])
+    pub = client.post(f"/me/documents/{up['id']}/publish", headers=h)
+    assert pub.status_code == 409 and pub.json()["detail"]["error"] == "undecided_fields"
+    ex = extraction.OpenRouterExtractor.__new__(extraction.OpenRouterExtractor)
+    ex.api_key, ex.model, ex.spend_kind = "k", "m", "extraction"
+    ex.client = httpx.Client(transport=httpx.MockTransport(lambda r: httpx.Response(200, json={"choices": [{"message": {"content": "[1, 2]"}}]})))
+    with pytest.raises(extraction.ModelUnavailable):
+        ex._call([{"role": "user", "content": "x"}], "s", {"type": "object"}, 10)
+
+
+def test_the_grammar_fallback_does_not_use_up_the_retry():
+    """api-correctness-17: 400 (grammar refused), then 503, then 200 succeeds; the refused grammar is not sent again for that schema."""
+    seen = []
+    replies = iter([httpx.Response(400), httpx.Response(503), httpx.Response(200, json={"choices": [{"message": {"content": "{\"ok\": true}"}}]}),
+                    httpx.Response(200, json={"choices": [{"message": {"content": "{\"ok\": 2}"}}]})])
+
+    def handler(request):
+        seen.append(json.loads(request.content)["response_format"]["type"])
+        return next(replies)
+
+    ex = extraction.OpenRouterExtractor.__new__(extraction.OpenRouterExtractor)
+    ex.api_key, ex.model, ex.spend_kind = "k", "m", "extraction"
+    ex.client = httpx.Client(transport=httpx.MockTransport(handler))
+    assert ex._call([{"role": "user", "content": "x"}], "schema_a", {"type": "object"}, 10) == {"ok": True}
+    assert seen == ["json_schema", "json_object", "json_object"]
+    assert ex._call([{"role": "user", "content": "x"}], "schema_a", {"type": "object"}, 10) == {"ok": 2} and seen[-1] == "json_object"
+
+
+def test_a_stale_in_progress_extraction_can_be_restarted_and_publishes_get_unique_labels(monkeypatch):
+    """api-correctness-6 (a status left behind by a dead task) and api-correctness-9 (two concurrent publishes)."""
+    import threading
+    from app.store import repo
+    sub = "stale-and-race"
+    h = H(sub)
+    up = upload(h, HB26_PDF.read_bytes(), name="harborview_certificate.pdf").json()
+    fresh = extraction.new_status("live")
+    fresh["updated_at"] = uploads._now()
+    repo.patch_if_exists(sub, "document", up["id"], {"extraction": fresh, "extraction_status": "queued"})
+    assert client.post(f"/me/documents/{up['id']}/extract", headers=h).status_code == 409            # a live run in progress
+    old = dict(fresh, updated_at="2026-01-01T00:00:00+00:00")
+    repo.patch_if_exists(sub, "document", up["id"], {"extraction": old, "extraction_status": "queued"})
+    assert client.post(f"/me/documents/{up['id']}/extract", headers=h).status_code == 202            # the stale run is replaced
+    decide_all(h, up["id"])
+    real = uploads.plan_from_dict
+    monkeypatch.setattr(uploads, "plan_from_dict", lambda d: (__import__("time").sleep(0.3), real(d))[1])
+    labels = []
+    threads = [threading.Thread(target=lambda: labels.append(client.post(f"/me/documents/{up['id']}/publish", headers=h).json()["version_label"])) for _ in range(2)]
+    [t.start() for t in threads]
+    [t.join() for t in threads]
+    assert sorted(labels) == ["UP1", "UP2"]
+    assert sorted(repo.get_owned(sub, "document", up["id"])["published_versions"]) == ["UP1", "UP2"]
+
+
+def test_upload_quotas_per_owner_and_for_the_whole_volume(monkeypatch):
+    """security-6: a visitor's stored uploads are capped, and uploads stop with 507 before the data volume fills."""
+    h = H("quota-owner")
+    monkeypatch.setattr(uploads, "MAX_UPLOADS_PER_OWNER", 2)
+    for i in range(2):
+        assert upload(h, make_pdf([f"page {i}"])).status_code == 201
+    r = upload(h, make_pdf(["page 3"]))
+    assert r.status_code == 429 and r.json()["detail"]["error"] == "upload_quota"
+    monkeypatch.setenv("ORALCOMPASS_DATA_MAX_BYTES", "1")
+    r = upload(H("quota-volume"), make_pdf(["page"]))
+    assert r.status_code == 507 and r.json()["detail"]["error"] == "storage_full"
+
+
+def test_quote_verification_needs_whole_words_and_survives_pdf_hyphenation():
+    """api-correctness-16: a fragment inside a longer number is never 'confirmed'; soft hyphens, zero-width characters and hyphenated line
+    breaks in the page text do not stop a verbatim quote from confirming."""
+    from app.extraction import normalize, verify_quote
+    P = lambda xs: [normalize(x) for x in xs]          # noqa: E731
+    assert verify_quote("50%", 1, P(["coinsurance is 150% of the fee"]))["result"] != "confirmed"
+    assert verify_quote("$5", 1, P(["maximum $500 per year"]))["result"] != "confirmed"
+    assert verify_quote("60%", 1, P(["The plan pays 60% after the deductible"]))["result"] == "likely"        # short: needs a click
+    q = "covered services provided by dentists"
+    for page in ("covered services pro-\nvided by dentists", "covered services pro­vided by dentists", "covered services provided​ by dentists"):
+        assert verify_quote(q, 1, P([page]))["result"] == "confirmed", page

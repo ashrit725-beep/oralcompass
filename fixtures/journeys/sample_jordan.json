@@ -1,6 +1,6 @@
 {
   "id": "sample-jordan",
-  "label": "Sample journey \u2014 Jordan Lee (fictional): extraction and recovery",
+  "label": "Sample journey: Jordan Lee (fictional), extraction and recovery",
   "is_sample": true,
   "user_ref": "jordan",
   "plan_ref": "SM26",
@@ -157,7 +157,7 @@
         "ti-j-ext-19"
       ],
       "instructions": {
-        "text": "Sample aftercare sheet (fictional) \u2014 shown as written by the dental team: Rest for the remainder of the day. Soft foods for 24 hours. Contact the office with any questions or if anything seems unusual. A follow-up check is scheduled for October 5.",
+        "text": "Sample aftercare sheet (fictional), shown as written by the dental team: Rest for the remainder of the day. Soft foods for 24 hours. Contact the office with any questions or if anything seems unusual. A follow-up check is scheduled for October 5.",
         "source": "Northside Dental Group aftercare sheet (fictional), 2026-09-28",
         "supplied_by": "dental_team"
       },

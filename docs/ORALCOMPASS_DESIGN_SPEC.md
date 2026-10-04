@@ -986,7 +986,14 @@ table (style preamble and integration notes kept).
 
 ## 11. Demo script (under five minutes; numbers from `CLAUDE.md` rule 8, all engine-generated)
 
-Setup: API on :8000 with `ORALCOMPASS_DEV_AUTH=1`, no model key (demo mode), web preview on :4173, desktop 1366×900.
+Setup (demo mode, no model call, desktop 1366×900), one of:
+- **Single server (what a presenter uses):** `cd web && npm run build && cd ../api && ORALCOMPASS_DEV_AUTH=0 ORALCOMPASS_LLM_PROVIDER=none
+  python3 -m uvicorn app.server:app --host 127.0.0.1 --port 8000`, then open http://127.0.0.1:8000. Sessions are cookies; the shell values
+  override `api/.env` (which turns on dev auth for the test suite).
+- **Dev server:** API with `ORALCOMPASS_DEV_AUTH=1 ORALCOMPASS_LLM_PROVIDER=none` on :8000 and `cd web && npm run dev` (a dev build sends
+  the `X-Dev-User` header).
+- A production bundle (`npm run build` + `vite preview`) sends no `X-Dev-User` header, so against a dev-auth API it gets 401; build it with
+  `VITE_DEV_AUTH=1 npm run build` for that pairing (`tools/screenshots.py` injects the header itself).
 
 | t | Screen | What is said / shown |
 |---|---|---|

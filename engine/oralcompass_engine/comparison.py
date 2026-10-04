@@ -7,8 +7,8 @@ from .ledger import compute_ledger
 from .models import Evidence, EstimateLine, MemberState, PlanModel, V
 
 TOPICS = [
-    "Premium (employee only, monthly)", "Deductible — individual", "Deductible waived for", "Annual maximum",
-    "Preventive — plan pays / you pay", "Basic — plan pays / you pay", "Major — plan pays / you pay",
+    "Premium (employee only, monthly)", "Deductible (individual)", "Deductible waived for", "Annual maximum",
+    "Preventive: plan pays / you pay", "Basic: plan pays / you pay", "Major: plan pays / you pay",
     "Waiting periods", "Frequency limits", "Alternate-benefit clause", "In-network payment rule", "Out-of-network payment rule",
 ]
 
@@ -42,7 +42,7 @@ def grid(plans: list[PlanModel]) -> list[dict]:
         for p in plans:
             if topic.startswith("Premium"):
                 cells.append(_cell(p.premium_monthly.get("employee_only"), _money))
-            elif topic == "Deductible — individual":
+            elif topic == "Deductible (individual)":
                 cells.append(_cell(p.deductible_individual, _money))
             elif topic == "Deductible waived for":
                 cells.append({"text": ", ".join(p.deductible_waived_classes) or "Not stated in this document",

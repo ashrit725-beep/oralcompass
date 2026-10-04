@@ -1,6 +1,6 @@
 {
   "id": "sample-alex",
-  "label": "Sample journey — Alex Chen (fictional) on the NCFlex Dental Classic Option 2026 (real public plan document)",
+  "label": "Sample journey: Alex Chen (fictional) on the NCFlex Dental Classic Option 2026 (real public plan document)",
   "is_sample": true,
   "plan_ref": "ML26",
   "user_ref": "alex",
@@ -12,7 +12,7 @@
       "finance": {"kind": "plan_details"},
       "checkpoints": [
         {"id": "plan-doc", "label": "Plan document selected", "kind": "document", "status": "completed", "completed_by": "user", "date": {"value": "2026-10-01", "source": "user"},
-         "detail": "NCFlex Dental Plan — Classic Option, plan year 2026, selected from the preset catalog. Rules are read from the public 2026 Plan Details (pages 24–26) with page citations; the certificate governs where they differ.",
+         "detail": "NCFlex Dental Plan, Classic Option, plan year 2026, selected from the preset catalog. Rules are read from the public 2026 Plan Details (pages 24–26) with page citations; the certificate governs where they differ.",
          "source": {"label": "2026 NCFlex Dental Plan Details, pp.24–26 (NC OSHR)", "doc": "ML26", "page": 24}, "action": {"type": "open_landmark", "target": "harbor"},
          "due_date": null, "completed_at": "2026-10-01", "links": {"document": "doc-ml26", "landmark": "harbor"}},
         {"id": "treatment-plan", "label": "Treatment plan added", "kind": "document", "status": "completed", "completed_by": "user", "date": {"value": "2026-09-24", "source": "document"},

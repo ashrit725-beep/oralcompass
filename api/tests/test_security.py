@@ -87,3 +87,21 @@ def test_request_logs_carry_ids_and_outcomes_only(caplog):
     assert lines[-1]["path"] == "/journeys" and lines[-1]["status"] == 200
     text = " ".join(r.getMessage() for r in caplog.records)
     assert "Sam" not in text and "secret_query" not in text and "oc_session" not in text and "security-user" not in text
+
+
+def test_redaction_is_linear_and_does_not_eat_plan_prose():
+    """security-1 (ReDoS) and api-correctness-24 (over-matching, case-sensitive user terms)."""
+    import time
+    from app.redaction import redact
+    for hostile in ("1 " * 50_000, "a" * 200_000, "id " * 50_000, "a." * 100_000):
+        t = time.perf_counter()
+        redact(hostile)
+        assert time.perf_counter() - t < 1.0
+    prose = "The policy period begins January 1. Identification of eligible dependents. Contact member services. The policy provisions apply."
+    assert redact(prose) == (prose, [])
+    long_line = "Deductible is 50 per person. The plan pays 80 percent of the allowed amount for services at our office on Main St"
+    assert redact(long_line) == (long_line, [])
+    out, removed = redact("Smith SMITH smith John", ["Smith"])
+    assert out == "[removed] [removed] [removed] John" and removed == ["user:Smi…"]
+    out, removed = redact("Member ID: ABC123456\nSSN 123-45-6789\nCall (919) 555-1234\nmail a.b@example.org\nPatient: John Doe\nLives at 123 Oak Hill Road")
+    assert set(removed) == {"member_id", "ssn", "phone", "email", "name_line", "address"} and "John" not in out and "123456" not in out
