@@ -1,4 +1,4 @@
-import { Fragment, Suspense, lazy, useState } from "react";
+import { Fragment, Suspense, lazy, useId, useState } from "react";
 import { UI } from "@/lib/copy";
 import { PLAN } from "@/lib/copy/plan";
 import { ledgerEvidence } from "@/lib/compass-model";
@@ -107,6 +107,7 @@ function eligibilityOnly(text?: string | null): string {
 function ClauseCell({ cell, topic, planTitle }: { cell: GridCell; topic: string; planTitle: string }) {
   const mobile = useMobile();
   const [open, setOpen] = useState(false);
+  const descId = useId();
   const isAmount = cell.text.includes("$");
   const face = (
     <span className="cmp-cell-face">
@@ -116,8 +117,11 @@ function ClauseCell({ cell, topic, planTitle }: { cell: GridCell; topic: string;
     </span>
   );
   const trigger = (
-    <Button variant="ghost" size="touch" className="cmp-cell h-auto w-full justify-start px-2 py-1.5 text-left font-normal whitespace-normal" aria-label={PLAN.cmpOpenClause(topic, planTitle)} aria-expanded={open}>
+    <Button variant="ghost" size="touch" className="cmp-cell h-auto w-full justify-start px-2 py-1.5 text-left font-normal whitespace-normal" aria-describedby={descId} aria-expanded={open}>
       {face}
+      {/* the visible value + badge + cite name the button (SC 2.5.3 label in name); the topic, plan and action are its description.
+          `hidden` keeps the sentence out of the name computed from content while aria-describedby still reads it. */}
+      <span id={descId} hidden>{PLAN.cmpOpenClause(topic, planTitle)}</span>
     </Button>
   );
   const card = (
