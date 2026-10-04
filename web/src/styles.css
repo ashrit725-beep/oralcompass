@@ -466,3 +466,6 @@ table.grid tbody tr:not(.differences):hover, table.grid tbody tr:not(.difference
 @media (max-width: 760px), (pointer: coarse) {
   .doc-sources .sources a[href] { display: inline-block; min-height: 44px; padding-block: .6rem; overflow-wrap: anywhere; }
 }
+/* fin/mobile-plan: below 760 px (phones, including iPhone landscape at 664 px) the Compare plan pickers stack one per row, so the closed
+   select shows the whole option text instead of three 190 px slivers ("MetLife NCFlex Dental · Cla…"). */
+@media (max-width: 760px) { .pickers { grid-template-columns: minmax(0, 1fr); } }
