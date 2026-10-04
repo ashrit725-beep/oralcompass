@@ -329,3 +329,7 @@ details[open] > summary > .ds-chev { transform: rotate(90deg); }
 .docs .doc-wording { margin-top: 0; }
 @media (prefers-reduced-motion: reduce) { .ds-chev { transition: none; } }
 
+/* bottom sheets opened from Compare / Documents belong to the 480 px app column on a wide screen (mobile-only direction): centred over the
+   phone app, the dimmed overlay still covering the stage; on a phone this is the full width */
+.oc-col-sheet { max-width: 480px; margin-inline: auto; }
+

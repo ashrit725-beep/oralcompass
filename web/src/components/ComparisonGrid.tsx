@@ -133,7 +133,7 @@ export function ComparisonGrid({ data, plans, enteredFor = [], labels = {} }: Pr
         })}
       </div>
       <Sheet open={clauseOpen} onOpenChange={setClauseOpen} title={clause?.topic ?? PLAN.cmpTitle} description={clause?.planTitle}
-             closeLabel={PLAN.cmpClose} returnFocus={clause?.from ?? null}>
+             closeLabel={PLAN.cmpClose} returnFocus={clause?.from ?? null} className="oc-col-sheet">
         {clause && <ClauseCard cell={clause.cell} />}
       </Sheet>
     </section>

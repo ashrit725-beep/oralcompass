@@ -208,7 +208,7 @@ export function DocumentsView({ planCode, plans, onPlan, evidence, stitches, sel
             <ChevronRight aria-hidden="true" className="ds-chev" />
           </button>
         </div>
-        <Sheet open={remindersOpen} onOpenChange={setRemindersOpen} title={REMINDERS.title} closeLabel={PLAN.docsRemindersClose} returnFocus={remindersBtn.current}>
+        <Sheet open={remindersOpen} onOpenChange={setRemindersOpen} title={REMINDERS.title} closeLabel={PLAN.docsRemindersClose} returnFocus={remindersBtn.current} className="oc-col-sheet">
           <RemindersPanel refreshKey={planCode} className="rm-in-sheet" />
         </Sheet>
         {mine === null ? <p className="muted">{UI.processing}</p> : mine.length === 0 ? <p className="ds-empty">{PLAN.docsNoPrivate}</p> : (

@@ -89,7 +89,7 @@ export function CompareView({ plans, items, benefits, initial }: Props) {
           <button type="button" className="cmp-empty-btn unstyled" onClick={() => setChoosing(true)}>{PLAN.cmpChoose}</button>
         </div>
       )}
-      <Sheet open={choosing} onOpenChange={setChoosing} title={PLAN.cmpChoose} closeLabel={PLAN.cmpChooseClose} returnFocus={chooseBtn.current}>
+      <Sheet open={choosing} onOpenChange={setChoosing} title={PLAN.cmpChoose} closeLabel={PLAN.cmpChooseClose} returnFocus={chooseBtn.current} className="oc-col-sheet">
         <p className="cmp-sheet-note">{PLAN.cmpOrderNote}</p>
         <div className="cmp-pickers">
           {[0, 1, 2].map((i) => (

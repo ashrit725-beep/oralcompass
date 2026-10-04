@@ -60,7 +60,7 @@ export function UploadWizard({ planRef, onPublished, onUsePlan, open, onOpenChan
         handleLabel={UPLOAD.close}
         aria-modal="true"
         data-step={step}
-        className="up-dialog up-sheet"
+        className="up-dialog up-sheet oc-col-sheet"
         onOpenAutoFocus={(e) => { e.preventDefault(); (e.currentTarget as HTMLElement | null)?.querySelector<HTMLElement>(".up-title")?.focus({ preventScroll: true }); }}
       >
         <div className="up-sheet-bar">
