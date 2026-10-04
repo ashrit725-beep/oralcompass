@@ -130,12 +130,12 @@ export function ProcedureDrawer(props: ProcedureDrawerProps) {
     if (island.kind === "visited") return [<VisitedSection key="visited" {...sectionProps} />];
     if (island.kind === "marginal") return [<MarginalSection key="marginal" {...sectionProps} />, <ClauseEvidenceSection key="evidence" {...sectionProps} />];
     const core = [
-      <ProcedureSection key="procedure" {...sectionProps} />, <AllowanceSection key="allowance" {...sectionProps} />, <DeductibleSection key="deductible" {...sectionProps} />,
+      <ProcedureSection key="procedure" {...sectionProps} />, <AllowanceSection key={`allowance-${item?.id ?? island.id}`} {...sectionProps} />, <DeductibleSection key="deductible" {...sectionProps} />,
       <CoverageShareSection key="share" {...sectionProps} />, <AnnualMaximumSection key="annualMax" {...sectionProps} />, <FrequencySection key="frequency" {...sectionProps} />,
       <WaitingSection key="waiting" {...sectionProps} />, <AlternateBenefitSection key="alternate" {...sectionProps} />, <ExclusionsSection key="exclusions" {...sectionProps} />,
     ];
     const finalCost = <FinalCostSection key="finalCost" {...sectionProps} estimateId={estimate?.id} first={mobile} />;
-    const tail = [<CalculationSection key="calculation" {...sectionProps} />, <ClauseEvidenceSection key="evidence" {...sectionProps} />, <AskSection key="ask" scope={scope} onOpenStitch={openStitch} />];
+    const tail = [<CalculationSection key="calculation" {...sectionProps} />, <ClauseEvidenceSection key="evidence" {...sectionProps} />, <AskSection key={`ask-${island.id}`} scope={scope} onOpenStitch={openStitch} />];
     return mobile ? [finalCost, ...core, ...tail] : [...core, finalCost, ...tail];
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [island, vm, plan, rules, benefits, estimate, stitches, mobile, arrivedAt, selectedCp?.key, stageProgress]);

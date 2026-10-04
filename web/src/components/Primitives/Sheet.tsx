@@ -26,10 +26,17 @@ export interface SheetProps {
 
 export function Sheet({ open, onOpenChange, title, description, originRect, returnFocus, children, className, closeLabel = "Close details" }: SheetProps) {
   const wasOpen = useRef(open);
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  const returnRef = useRef(returnFocus);
+  returnRef.current = returnFocus;
+  // Focus return is deferred one task: while the sheet is mounted Radix's FocusScope traps focus, so a synchronous focus() on the island
+  // behind it is pulled straight back (mobile-2). Runs on close (`open` → false) and on unmount, the way the ProcedureDrawer closes.
+  const restore = () => { const el = returnRef.current; window.setTimeout(() => { if (el && el.isConnected) el.focus({ preventScroll: true }); }, 0); };
   useEffect(() => {
-    if (wasOpen.current && !open && returnFocus && document.contains(returnFocus)) returnFocus.focus();
+    if (wasOpen.current && !open) restore();
     wasOpen.current = open;
-  }, [open, returnFocus]);
+  }, [open]);
+  useEffect(() => () => { if (wasOpen.current) restore(); }, []);
   const origin = originRect ? `${originRect.left + originRect.width / 2}px ${Math.max(0, originRect.top)}px` : undefined;
   return (
     <Drawer open={open} onOpenChange={onOpenChange} direction="bottom">
@@ -37,15 +44,20 @@ export function Sheet({ open, onOpenChange, title, description, originRect, retu
         handleLabel={closeLabel}
         className={cn("max-h-[72vh] supports-[height:1dvh]:max-h-[85dvh] rounded-t-[18px] shadow-3", className)}
         style={origin ? ({ transformOrigin: origin } as React.CSSProperties) : undefined}
+        // vaul suppresses Radix's open auto-focus; without it focus stayed on the island card behind the aria-modal sheet and Tab walked the
+        // page (mobile-2). Focus the sheet's title instead (a heading, so nothing activates by accident).
+        onOpenAutoFocus={(e) => { e.preventDefault(); titleRef.current?.focus({ preventScroll: true }); }}
       >
         <div className="sticky top-0 z-10 flex min-h-12 items-center justify-between gap-2 border-b border-rule bg-paper-deep px-4">
-          <DrawerTitle className="truncate">{title}</DrawerTitle>
+          {/* two lines at most, balanced, instead of an ellipsis that cut the procedure name (layout-11) */}
+          <DrawerTitle ref={titleRef} tabIndex={-1} className="min-w-0 py-2 line-clamp-2 [text-wrap:balance] outline-none focus-visible:outline-3 focus-visible:outline-ring">{title}</DrawerTitle>
           <DrawerClose asChild>
             <Button variant="ghost" size="icon-touch" aria-label={closeLabel} className="-mr-2 shrink-0"><X aria-hidden="true" /></Button>
           </DrawerClose>
         </div>
         {description ? <DrawerDescription className="px-4 pt-2">{description}</DrawerDescription> : <DrawerDescription className="sr-only">{typeof title === "string" ? title : "Details"}</DrawerDescription>}
-        <div className="min-w-0 overflow-y-auto px-4 pb-6 pt-2 [overflow-wrap:anywhere]">{children}</div>
+        {/* safe-area padding keeps the last line above the home indicator; contain stops the page scrolling behind at the ends (mobile-12) */}
+        <div className="min-w-0 overflow-y-auto overscroll-contain px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-2 [overflow-wrap:anywhere]">{children}</div>
       </DrawerContent>
     </Drawer>
   );

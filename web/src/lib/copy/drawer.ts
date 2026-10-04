@@ -82,6 +82,7 @@ export const DRAWER = {
   allowedRecorded: "Recorded. The estimate is recalculated from your records.",
   allowedFailed: "The allowed amount could not be recorded.",
   allowedSourceRequired: "A source is required with the figure.",
+  allowedInvalid: "The allowed amount is a dollar figure above zero, such as 812.50.",
 
   // 3 Deductible
   planDeductible: "Plan deductible",

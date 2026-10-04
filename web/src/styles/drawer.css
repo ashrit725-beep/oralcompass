@@ -209,6 +209,8 @@ details[open] > .dsec-summary .dsec-toggle { transform: rotate(-135deg); margin-
 .drawer-lede .fig .amt { font-size: 18px; line-height: 24px; font-weight: 600; }
 .drawer-lede .drawer-lede-amt .amt { color: var(--you-pay); }
 .clause-in-sheet { position: absolute; left: 0; right: 0; bottom: 0; width: auto; max-height: 70%; overflow-y: auto; border-radius: 18px 18px 0 0; z-index: 45; box-shadow: var(--shadow-3); }
+.clause-close { flex-shrink: 0; margin: -6px -8px -6px 0; }                 /* 44 × 44 close (was the legacy 32 px `.close`, mobile-20) */
+.clause h3:focus { outline: none; } .clause h3:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 2px; }
 .thread-pull-in-sheet { position: absolute; z-index: 44; }
 .fig-calc { font-size: 12px; line-height: 18px; color: var(--ink-soft); white-space: nowrap; }
 
@@ -226,3 +228,7 @@ details[open] > .dsec-summary .dsec-toggle { transform: rotate(-135deg); margin-
 .pipeline-vertical .node-total { border-color: var(--you-pay); background: var(--paper); }
 .pipeline-vertical .node-total .node-term { font-weight: 600; }
 .pipeline-vertical .node-change { justify-self: start; }
+
+/* allowance form: the inline error under the amount field (a11y-10) and the persistent status line (empty until something is recorded) */
+.drawer .field-error { margin: 2px 0 0; font-size: 13px; line-height: 18px; color: var(--danger); }
+.drawer .note[role="status"]:empty { margin: 0; }

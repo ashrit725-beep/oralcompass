@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useId, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { EvidenceBadge } from "@/components/Primitives";
 import { api } from "@/lib/api";
 import { UI } from "@/lib/copy";
 import { DRAWER } from "@/lib/copy/drawer";
-import { itemFeeCents, missingForLine, networkWord } from "@/lib/drawer";
+import { itemFeeCents, missingForLine, networkWord, parseAllowedCents } from "@/lib/drawer";
 import { stitchForCite } from "@/lib/stitches";
 import type { Evidence } from "@/lib/types";
 import { docOf, Fact, Figure, Row, Section, type SectionProps } from "./shared";
@@ -24,17 +24,26 @@ export function AllowanceSection({ item, line, trail, rule, plan, estimate, stit
   const oon = stitchForCite(plan.oon_rule?.cite, stitches, doc);
   const allowedStep = trail?.steps.find((s) => s.key === "allowed");
   const missing = missingForLine(estimate?.missing_inputs ?? [], line);
+  // The drawer keys this section by item (ProcedureDrawer), so a figure typed for one island never carries over to the next (web-correctness-8).
   const [dollars, setDollars] = useState(""); const [source, setSource] = useState(""); const [msg, setMsg] = useState<string | null>(null); const [busy, setBusy] = useState(false);
+  const [invalid, setInvalid] = useState(false);
+  const errId = useId();
+  const amountRef = useRef<HTMLInputElement>(null);
+  const statusRef = useRef<HTMLParagraphElement>(null);
 
   async function record() {
     if (!item) return;
-    const cents = Math.round(Number(dollars.replace(/[^0-9.]/g, "")) * 100);
-    if (!Number.isFinite(cents) || cents <= 0) return;
+    // the strict parser the benefit statement and the reader use: "1,5", "1O0" or "12abc" are refused, not misread (web-correctness-9)
+    const cents = parseAllowedCents(dollars);
+    if (cents == null) { setInvalid(true); setMsg(null); amountRef.current?.focus(); return; }
+    setInvalid(false);
     if (!source.trim()) { setMsg(DRAWER.allowedSourceRequired); return; }
     setBusy(true); setMsg(null);
     try {
       await api.patchItem(item.id, { allowed_cents: cents, allowed_source: source.trim(), allowed_status: "USER" });
       setMsg(DRAWER.allowedRecorded); onRecordsChanged?.(); window.dispatchEvent(new CustomEvent("oralcompass:records-changed"));
+      // the form unmounts once the re-estimate knows the amount: move focus to the section heading so it is not dropped on <body> (a11y-10)
+      statusRef.current?.closest<HTMLElement>("[data-section]")?.querySelector<HTMLElement>("h3")?.focus({ preventScroll: true });
     } catch { setMsg(DRAWER.allowedFailed); } finally { setBusy(false); }
   }
 
@@ -59,14 +68,16 @@ export function AllowanceSection({ item, line, trail, rule, plan, estimate, stit
           <ul>{missing.map((m, i) => <li key={i}><strong>{m.input}</strong> <span className="muted">{m.how}</span></li>)}</ul>
           {!allowedKnown && (
             <form className="inline-form" onSubmit={(e) => { e.preventDefault(); record(); }}>
-              <label>{DRAWER.allowedInputLabel}<input inputMode="decimal" value={dollars} onChange={(e) => setDollars(e.target.value)} placeholder="0.00" required /></label>
+              <label>{DRAWER.allowedInputLabel}<input ref={amountRef} inputMode="decimal" value={dollars} onChange={(e) => { setDollars(e.target.value); if (invalid) setInvalid(false); }} placeholder="0.00" required aria-invalid={invalid || undefined} aria-describedby={invalid ? errId : undefined} /></label>
+              {invalid && <p id={errId} className="field-error" role="alert">{DRAWER.allowedInvalid}</p>}
               <label>{DRAWER.allowedSourceLabel}<input value={source} onChange={(e) => setSource(e.target.value)} required /></label>
               <Button type="submit" size="touch" variant="outline" disabled={busy}>{DRAWER.allowedRecord}</Button>
-              {msg && <p className="note" role="status">{msg}</p>}
             </form>
           )}
         </div>
       )}
+      {/* persistent live region outside the form, so "Recorded" survives the form unmounting and is announced */}
+      <p ref={statusRef} className="note" role="status" aria-live="polite">{msg}</p>
       <p className="muted small">{UI.allowedNote}</p>
     </Section>
   );

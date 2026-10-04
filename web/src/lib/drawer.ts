@@ -6,6 +6,7 @@
 import { UI } from "./copy";
 import { DRAWER } from "./copy/drawer";
 import { money, signed, stitchForCite, stitchForStep } from "./stitches";
+import { dollarsToCents } from "./plan-catalog";
 import { buildTrail, type Trail, type TrailStep } from "./trail";
 import type { Benefits, CheckpointRule, Cite, CoverageRule, Evidence, InsuranceCheckpointVM, LedgerLine, MissingInput, Movers, PlanFixture, SavedEstimate, Stitch, TreatmentItem } from "./types";
 
@@ -189,6 +190,16 @@ export function rangeWords(range: [number, number], movers: Movers["movers"]): s
   const measured = movers.filter((m) => m.impact_cents).map((m) => m.unknown);
   const names = measured.length ? measured : [...new Set(movers.map((m) => m.unknown).filter((u) => !!u && u.trim()))];
   return names.length ? UI.rangeBecause(money(range[0]), money(range[1]), names.join(" and ")) : DRAWER.rangeOnly(money(range[0]), money(range[1]));
+}
+
+/**
+ * The drawer's allowed-amount parser (web-correctness-9): the shared strict `dollarsToCents`, plus commas only as thousands separators
+ * ("1,5" is refused rather than read as $15.00). Returns cents above zero, or undefined for anything else (the form then says so).
+ */
+export function parseAllowedCents(input: string): number | undefined {
+  if (/,(?!\d{3}(?!\d))/.test(input)) return undefined;
+  const cents = dollarsToCents(input);
+  return cents != null && cents > 0 ? cents : undefined;
 }
 
 /** Missing inputs that name this line (or none) — spec §3.3 "Unresolved". */

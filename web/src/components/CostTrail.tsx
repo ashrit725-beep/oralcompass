@@ -46,9 +46,10 @@ export function CostTrail({ estimate, stitches, selected, onSelect, prominentSco
       )}
       {!one && estimate.status === "unresolved" && <MissingInputs estimate={estimate} compact />}
       {!one && lines.length > 1 && (
-        <div className="line-tabs" role="tablist" aria-label="Procedures on this estimate">
+        // a group of toggle buttons (aria-pressed), not a tablist: there is no tabpanel and no roving focus to honour the tab pattern (a11y-19)
+        <div className="line-tabs" role="group" aria-label="Procedures on this estimate">
           {lines.map((l, i) => (
-            <button key={i} role="tab" type="button" aria-selected={i === idx} className={i === idx ? "is-on" : ""} onClick={() => setIdx(i)}>
+            <button key={i} type="button" aria-pressed={i === idx} className={i === idx ? "is-on" : ""} onClick={() => setIdx(i)}>
               {l.label} <small>{l.status === "estimate" ? money(l.patient_cents) : l.status === "not_covered" ? "not covered" : "unresolved"}</small>
             </button>
           ))}
