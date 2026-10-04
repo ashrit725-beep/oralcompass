@@ -205,3 +205,11 @@ def test_sample_upload_review_and_publish_in_demo_mode():
     rules = client.get(f"/me/plans/{up['id']}/rules", headers=h)
     assert rules.status_code == 200 and rules.json()["version_label"] == "UP1"
     assert not [v for v in VALUES if flat(v) in flat(json.dumps(pub))]
+
+
+def test_production_server_serves_the_sample_where_the_upload_step_fetches_it(tmp_path, monkeypatch):
+    from app import server
+    (tmp_path / "index.html").write_text("<!doctype html><title>OralCompass</title><div id=root></div>")
+    monkeypatch.setattr(server, "WEB_DIST", tmp_path.resolve())
+    r = TestClient(server.app).get(f"/fixtures/documents/{PDF.name}")
+    assert r.status_code == 200 and r.headers["content-type"] == "application/pdf" and hashlib.sha256(r.content).hexdigest() == SHA
