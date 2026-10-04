@@ -50,8 +50,25 @@ export function ClauseCard({ stitch, lines, onClose, onOpenOnPage, askSlot, askS
   // its overlay, outside its focus trap and count as an "outside" press. Mount it inside the open sheet instead so it stacks above it.
   const [host] = useState<HTMLElement | null>(() => (typeof document === "undefined" ? null : document.querySelector<HTMLElement>('[data-vaul-drawer][data-state="open"]')));
 
+  // Desktop (layout-13): the card is a true modal so it never sits over live drawer/Documents controls. It mounts in its own layer on
+  // <body> with a flat ink scrim; every other body child is `inert` while it is open (no pointer, no Tab, hidden from AT), and the
+  // inert flag is lifted before focus returns to the opener. The phone keeps the in-sheet mount (vaul already traps focus there).
+  const [layer] = useState<HTMLElement | null>(() => {
+    if (host || typeof document === "undefined") return null;
+    const el = document.createElement("div"); el.className = "clause-layer"; return el;
+  });
+  const inerted = useRef<HTMLElement[]>([]);
   useLayoutEffect(() => {
-    opener.current = (document.activeElement as HTMLElement | null) ?? null;
+    if (!layer) return;
+    opener.current = (document.activeElement as HTMLElement | null) ?? null;   // before `inert` blurs it
+    document.body.appendChild(layer);
+    inerted.current = Array.from(document.body.children).filter((c): c is HTMLElement => c !== layer && c instanceof HTMLElement && !c.inert && c.tagName !== "SCRIPT");
+    inerted.current.forEach((c) => { c.inert = true; });
+    return () => { inerted.current.forEach((c) => { c.inert = false; }); inerted.current = []; layer.remove(); };
+  }, [layer]);
+
+  useLayoutEffect(() => {
+    if (!opener.current) opener.current = (document.activeElement as HTMLElement | null) ?? null;
     const a = anchorRect ?? takeStitchAnchor();
     const h = cardRef.current?.querySelector(".clause-head")?.getBoundingClientRect();
     if (!a || !h || reduce) { setThread(null); return; }
@@ -74,16 +91,18 @@ export function ClauseCard({ stitch, lines, onClose, onOpenOnPage, askSlot, askS
     return () => window.removeEventListener("keydown", onKey, true);
   }, []);
   useEffect(() => () => {
+    inerted.current.forEach((c) => { c.inert = false; }); inerted.current = [];
     const el = returnRef.current ?? opener.current;
     if (el && document.contains(el)) el.focus();
   }, []);
-  // A non-modal dialog takes focus when it opens (APG): the heading, so keyboard and screen-reader users land in the card instead of
+  // The dialog takes focus when it opens (APG): the heading, so keyboard and screen-reader users land in the card instead of
   // tabbing through the page after the chip to reach it (a11y-5). Re-runs when another clause replaces the open card.
   const headingRef = useRef<HTMLHeadingElement>(null);
   useEffect(() => { headingRef.current?.focus({ preventScroll: true }); }, [stitch.id]);
 
   const card = (
     <>
+      {layer && <div className="clause-scrim" aria-hidden="true" onClick={onClose} />}
       {thread && (
         <svg className={`thread-pull ${host ? "thread-pull-in-sheet" : ""}`} aria-hidden="true" focusable="false">
           {/* inside the phone sheet the card lands over the thread's path: fade it as soon as it has landed (≈ 300 ms draw + 200 ms fade)
@@ -93,7 +112,7 @@ export function ClauseCard({ stitch, lines, onClose, onOpenOnPage, askSlot, askS
                        transition={{ pathLength: transitions.threadPull, opacity: host ? { duration: 0.5, times: [0, 0.6, 1] } : { duration: 1.4, times: [0, 0.7, 1] } }} onAnimationComplete={() => setThread(null)} />
         </svg>
       )}
-      <div ref={cardRef} className={`clause ${host ? "clause-in-sheet" : ""}`} role="dialog" aria-labelledby="clause-h" aria-modal="false">
+      <div ref={cardRef} className={`clause ${host ? "clause-in-sheet" : ""}`} role="dialog" aria-labelledby="clause-h" aria-modal={host ? "false" : "true"}>
         <div className="clause-head">
           <StitchChip stitch={stitch} selected prominent />
           <h3 id="clause-h" ref={headingRef} tabIndex={-1}>{stitch.topic.replace(/[_:]/g, " ")}</h3>
@@ -125,5 +144,5 @@ export function ClauseCard({ stitch, lines, onClose, onOpenOnPage, askSlot, askS
       </div>
     </>
   );
-  return host ? createPortal(card, host) : card;
+  return host ? createPortal(card, host) : layer ? createPortal(card, layer) : card;
 }

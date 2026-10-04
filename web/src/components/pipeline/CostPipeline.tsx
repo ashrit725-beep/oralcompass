@@ -84,7 +84,7 @@ export function CostPipeline({ line, item, rule, plan, stitches, benefits = null
   const nodes: React.ReactNode[] = [];
   if (unresolved && item) {
     const i = idx++;
-    nodes.push(<PipelineNode key="fee" ref={(el) => { nodeEls.current[i] = el; }} rule="fee" term={DRAWER.dentistFee} amountOut={itemFeeCents(item)} owner="info" evidence="USER" onSelectStitch={onSelectStitch} revealIndex={reveal ? i : null} />);
+    nodes.push(<PipelineNode key="fee" ref={(el) => { nodeEls.current[i] = el; }} rule="fee" term={DRAWER.dentistFee} amountOut={itemFeeCents(item)} owner="info" evidence="USER" onSelectStitch={onSelectStitch} revealIndex={reveal ? i : null} stageIndex={i} />);
   }
   for (const cp of cps) {
     const i = idx++;
@@ -92,7 +92,7 @@ export function CostPipeline({ line, item, rule, plan, stitches, benefits = null
     nodes.push(
       <PipelineNode key={cp.key} ref={(el) => { nodeEls.current[i] = el; }} rule={cp.rule} term={cp.term} amountOut={cp.amountOut} change={cp.rule === "fee" || isTotal ? undefined : cp.change}
                     owner={cp.owner} split={cp.split} stitch={cp.stitch} stitches={isTotal ? lineStitches : undefined} evidence={cp.badge} onSelectStitch={onSelectStitch}
-                    showArrow={i > 0 && !vertical} isTotal={isTotal} isClosed={cp.rule === "X" || cp.rule === "W" || cp.rule === "F"} revealIndex={reveal ? i : null}>
+                    showArrow={i > 0 && !vertical} isTotal={isTotal} isClosed={cp.rule === "X" || cp.rule === "W" || cp.rule === "F"} revealIndex={reveal ? i : null} stageIndex={i}>
         {cp.rule === "missing" && (
           <ul className="node-missing">
             {lineMissing.map((m, k) => <li key={k}><strong>{m.input}</strong> <span className="muted">{m.how}</span></li>)}

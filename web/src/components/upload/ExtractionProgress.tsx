@@ -3,7 +3,7 @@ import { StageLoader } from "@/components/StageLoader";
 import StatusMark, { type StatusMarkStatus } from "@/components/ui/StatusMark";
 import { Button } from "@/components/ui/button";
 import { UPLOAD } from "@/lib/copy/upload";
-import { transitions, useReducedMotion } from "@/lib/motion";
+import { EASE, transitions, useReducedMotion } from "@/lib/motion";
 import { isTerminal, stageCopy, stageProgress, type ExtractionStatusFull } from "@/lib/upload";
 import { PaneHeading } from "./PaneHeading";
 
@@ -78,9 +78,11 @@ export function ExtractionProgress({ status, starting, pollError, onReview }: Ex
           {status.stages.map((s, i) => {
             const rs = rowStatus(status, i);
             return (
-              <li key={s.key} className="up-stage-row" data-status={rs} aria-current={i === status.stage_index && !terminal ? "step" : undefined}>
+              <motion.li key={s.key} className="up-stage-row" data-status={rs} aria-current={i === status.stage_index && !terminal ? "step" : undefined}
+                         initial={reduce ? false : { opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
+                         transition={{ duration: 0.6, ease: EASE.land, delay: Math.min(i, 5) * 0.12 }}>
                 <StatusMark status={rs} progress={rs === "running" && progress !== null ? progress : undefined} spinDuration={2400} label={s.label} size={20} fontSize={15} />
-              </li>
+              </motion.li>
             );
           })}
         </ol>

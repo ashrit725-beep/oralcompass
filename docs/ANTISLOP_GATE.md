@@ -190,3 +190,30 @@ with Compass / Anchor / custom two-column glyph / FileText and a visible 12.5 px
 scale 0.97 over 120 ms (no overshoot; off under reduced motion), magnification only on fine pointers (≤ 1.15×, transform only), hidden while
 the procedure sheet or the stage sheet is open. Desktop keeps the top nav. DOM order is unchanged, so keyboard order and the walk's tab
 names are the same on every width.
+
+## 8. Motion: techniques adapted from motionsites.ai prompts (fin/transitions, 2026-10-04)
+
+Each technique below is adapted from a motionsites.ai prompt (the owner viewed three prompts: a dental-clinic landing page, a price
+calculator and an interactive discovery page). No text, brand names or imagery were copied; only the motion idea, re-expressed with the
+OralCompass tokens in `web/src/lib/motion.ts` and `styles.css` (`--dur-*`, `--ease-*`). Transform and opacity only (colour transitions on
+form controls), no blur entrances, bounce, glow or sparkle. Reduced motion keeps every end state (MotionConfig `reducedMotion="user"`
+drops the rises; NumberFlow snaps; CSS transitions are removed under `prefers-reduced-motion`).
+
+| # | Technique (motionsites) | Where it landed | Parameters |
+|---|---|---|---|
+| 1 | One-time staggered reveal in real processing order | Upload extraction stage rows (`ExtractionProgress`) | 600 ms, `--ease-land` cubic-bezier(.16,1,.3,1), 120 ms stagger capped at 5 steps, 4 px rise |
+| 2 | Answer + citation reveal | Assistant answer blocks and their citation chips (`AnswerBlocks`) | 500 ms, land ease, 80 ms stagger capped at 4, chips +120 ms |
+| 7 | Numbers re-measure; stages update left to right | Every `Money` roll 500 ms on the land ease; pipeline nodes roll 80 ms apart in stage order (`PipelineNode` `stageIndex`) | tabular-nums kept |
+| 8 | Custom radio / checkbox | All native radios (ink ring, terracotta dot) and checkboxes (ink-filled square, paper tick) | 150 ms colour only, no scale pop |
+| 9 | Press feedback with colour inversion | Phone dock tabs and Compare header controls invert to ink/paper on press; press scale .97 / 120 ms | no overshoot |
+| 11 | Reduced motion keeps end states | All of the above | see above |
+
+Rejected: technique 3 (blur-to-sharp on selection: blur entrances are banned on islands, addendum B, and cost frames on phones).
+Already covered: technique 4 (camera settle) is the spec's focus-island; techniques 5 (drawer panel easing) and 6 (loading crossfade)
+were not changed in this pass because the existing vaul spring and StageLoader already meet the calm/focus requirements; technique 10
+(masked cards sharing one texture) was not attempted.
+
+Also in this pass: the desktop clause card became a true modal (layout-13: body-level layer, flat ink scrim at 20 %, the rest of the page
+`inert`, Escape or close returns focus to the opener), and the evidence badge became a quiet caption (slop-15: 12 px glyph + word, no
+border, ink-soft, nowrap, on the caption line under figures in table cells; soundings 15 px; phone figures 16 px; all six statuses keep
+their own glyph and word).

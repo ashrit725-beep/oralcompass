@@ -34,6 +34,8 @@ export interface PipelineNodeProps {
   isClosed?: boolean;
   /** Vertical ledger reveal: the row's place in processing order, or null for no entrance (already shown / reduced motion). */
   revealIndex?: number | null;
+  /** The node's place in the pipeline: a new estimate re-measures the amounts left to right, 80 ms apart (motionsites technique 7). */
+  stageIndex?: number;
 }
 
 /**
@@ -43,7 +45,7 @@ export interface PipelineNodeProps {
  * the beam anchors (right edge out, left edge in). The `.node` class is the container the trust check inspects for a badge or stitch.
  */
 export const PipelineNode = forwardRef<HTMLLIElement, PipelineNodeProps>(function PipelineNode(
-  { rule, term, amountOut, change, owner, split, stitch, stitches, evidence, onSelectStitch, children, showArrow, isTotal, isClosed, revealIndex = null }, ref,
+  { rule, term, amountOut, change, owner, split, stitch, stitches, evidence, onSelectStitch, children, showArrow, isTotal, isClosed, revealIndex = null, stageIndex = 0 }, ref,
 ) {
   const ownerWord = owner === "patient" ? DRAWER.ownerPatient : owner === "plan" ? DRAWER.ownerPlan : owner === "nobody" ? DRAWER.ownerNobody : owner === "basis" ? DRAWER.ownerBasis : null;
   const chips = stitches && stitches.length ? stitches : stitch ? [stitch] : [];
@@ -61,12 +63,12 @@ export const PipelineNode = forwardRef<HTMLLIElement, PipelineNodeProps>(functio
       <p className="node-term"><RuleGlyph rule={rule} size={16} /> {term}</p>
       {split ? (
         <div className="node-amounts">
-          <span className="node-split"><span className="node-split-word">{DRAWER.ownerPlan}</span> <RollingAmount cents={split.plan} evidence={evidence} badge={false} /></span>
-          <span className="node-split node-split-you"><span className="node-split-word">{DRAWER.ownerPatient}</span> <RollingAmount cents={split.patient} evidence={evidence} badge={false} /></span>
+          <span className="node-split"><span className="node-split-word">{DRAWER.ownerPlan}</span> <RollingAmount cents={split.plan} evidence={evidence} badge={false} rollDelay={stageIndex * 80} /></span>
+          <span className="node-split node-split-you"><span className="node-split-word">{DRAWER.ownerPatient}</span> <RollingAmount cents={split.patient} evidence={evidence} badge={false} rollDelay={stageIndex * 80} /></span>
         </div>
       ) : (
         <div className="node-amounts">
-          <RollingAmount cents={amountOut} evidence={evidence} badge={false} size={isTotal ? "lg" : "md"} />
+          <RollingAmount cents={amountOut} evidence={evidence} badge={false} size={isTotal ? "lg" : "md"} rollDelay={stageIndex * 80} />
           {amountOut == null && rule !== "missing" && <span className="node-waiting">{DRAWER.waitingInfo}</span>}
         </div>
       )}

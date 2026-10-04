@@ -251,3 +251,25 @@ details[open] > .dsec-summary .dsec-toggle { transform: rotate(-135deg); margin-
 .eq-row > * { min-width: 0; max-width: 100%; }
 .cp-strip .cp-chip-term { overflow-wrap: normal; word-break: normal; }   /* "Deductible" keeps its word (the drawer's overflow-wrap: anywhere split it) */
 .harbor-table td .fig .amt { font-size: 14px; line-height: 20px; }   /* cell figures share the row's baseline with the island name */
+
+/* layout-13: the desktop clause card is modal; a flat ink scrim (no blur) marks everything beneath it as unavailable, and a press on it closes the card. */
+.clause-scrim { position: fixed; inset: 0; z-index: 19; background: color-mix(in srgb, var(--ink) 20%, transparent); animation: clause-scrim-in var(--dur-standard, 240ms) ease-out both; }
+@keyframes clause-scrim-in { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .clause-scrim { animation: none; } }
+
+/* slop-15: in table cells the badge sits on the caption line UNDER its figure (one badge per figure), so it never stacks beside the
+   number or wraps into a three-line pill; figures read first. Phone rows lift the figure to 16 px. */
+td .fig .badge, td .fact .badge, .dsec-dl dd .fig .badge { order: 3; flex-basis: 100%; white-space: nowrap; }
+.drawer td .fig .badge { white-space: nowrap; }
+@media (max-width: 640px) { .fig .amt { font-size: 16px; line-height: 22px; } }
+
+/* Drawer sections reveal once per open in reading order (motionsites technique 1, adapted): 360 ms on --ease-land, a 4 px rise, 40 ms
+   apart and capped at 160 ms so the drawer still feels instant. Opacity/transform only; reduced motion shows the sections at once. */
+@keyframes dsec-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: no-preference) {
+  .drawer-sections > .dsec { animation: dsec-in 360ms var(--ease-land) both; }
+  .drawer-sections > .dsec:nth-child(2) { animation-delay: 40ms; }
+  .drawer-sections > .dsec:nth-child(3) { animation-delay: 80ms; }
+  .drawer-sections > .dsec:nth-child(4) { animation-delay: 120ms; }
+  .drawer-sections > .dsec:nth-child(n+5) { animation-delay: 160ms; }
+}
