@@ -6,7 +6,7 @@ import { UI } from "../lib/copy";
 import { DRAWER } from "../lib/copy/drawer";
 import { takeStitchAnchor } from "../lib/drawer";
 import { transitions } from "../lib/motion";
-import { money } from "../lib/stitches";
+import { money, plainNote } from "../lib/stitches";
 import type { AssistScope, LedgerLine, Step, Stitch } from "../lib/types";
 import { AskAboutStep } from "./assistant/AskAboutStep";
 import { DepthDial } from "./DepthDial";
@@ -114,7 +114,7 @@ export function ClauseCard({ stitch, lines, onClose, onOpenOnPage, askSlot, askS
             <blockquote>“{stitch.quote}”</blockquote>
             <figcaption>{stitch.doc}, page {stitch.page}</figcaption>
             {/* a table row quoted alone does not say which column applies (demo-13): name the row and the plan option's column */}
-            {stitch.section ? <p className="wording-context">{DRAWER.clauseSection(stitch.section)}</p> : null}
+            {stitch.section ? <p className="wording-context">{DRAWER.clauseSection(plainNote(stitch.section))}</p> : null}
             {stitch.option && /%/.test(stitch.quote) ? <p className="wording-context">{DRAWER.clauseOption(stitch.option)}</p> : null}
           </figure>
         )}

@@ -141,7 +141,7 @@ export function DocumentsView({ planCode, plans, onPlan, evidence, stitches, sel
                     <li key={r.key} className={isSel ? "is-selected" : ""}>
                       <button type="button" className="clause-btn" onClick={() => st && onSelect(st)} aria-pressed={isSel}>
                         <span className="scope">{c.doc}</span> <span className="num">{st ? circled(st.n) : ""}</span> <q>{c.quote}</q>
-                        <span className="where">{docMetaLine([c.page_note ?? (c.page != null ? `p.${c.page}` : null), c.section, r.labels.join(", "), r.all.some((x) => x.review_status === "needs_review") && PLAN.docsPageReview])}</span>
+                        <span className="where">{docMetaLine([c.page_note ?? (c.page != null ? `p.${c.page}` : null), c.section ? plainNote(c.section) : c.section, r.labels.join(", "), r.all.some((x) => x.review_status === "needs_review") && PLAN.docsPageReview])}</span>
                       </button>
                     </li>
                   );
