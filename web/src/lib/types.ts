@@ -43,6 +43,7 @@ export interface Step { label: string; cents: number; owner: string; rule: strin
 export interface LedgerLine {
   label: string; status: "estimate" | "unresolved" | "not_covered"; steps: Step[]; patient_cents: number | null; plan_cents: number | null;
   plan_is_upper_bound: boolean; flags: string[]; remaining_after: { deductible_cents?: number | null; annual_max_cents?: number | null }; benefit_year: number | null;
+  treatment_item_id?: string; procedure_key?: string;     // added by the API (records.py) on saved estimates; optional on the client
 }
 export interface Ledger {
   status: "estimate" | "unresolved"; lines: LedgerLine[]; patient_total_cents: number | null; plan_total_cents: number | null;
@@ -115,3 +116,33 @@ export interface CoverageRule {
 export interface Procedure { key: string; name: string; category_hint: string; dentist_fee_cents: number; fee_source: string; tooth_or_area_relevant: boolean; external_codes?: { primary_code: string | null; review_required: boolean; review_reason?: string | null; distinct_codes_seen: string[]; candidates: number } }
 export interface SourceItem { source_id: string; version_label: string | null; title: string; publisher: string; url: string; document_type: string; document_date: string | null; effective_period: any; scope: any; retrieved_at: string; retrieval_method: string; pages_total: number | null; reuse_terms: string | null; access_limits: string[]; counts: { facts: number; by_status: Record<string, number>; procedure_mappings: number; conflicts: number; gaps: number }; supports_plan_codes: string[]; gaps_count?: number }
 export interface PrivateDocument { id: string; seed_id?: string; type: string; label: string; location?: string; extraction_status?: string; fields_needing_confirmation?: string[]; filename?: string; pages?: number; redaction_preview?: { text: string; removed: string[] } }
+
+// ---------- day-1 frozen contracts (design spec §13.2; written by the foundation agent, built against by the map and upload/assistant agents) ----------
+export type PlanRef = string;                                   // "ML26" | "upload:<document_id>"
+export const isUpload = (r: PlanRef) => r.startsWith("upload:");
+export const uploadId = (r: PlanRef) => (isUpload(r) ? r.slice("upload:".length) : r);
+export interface UploadedPlanSummary extends PlanSummary { document_id: string; version_label: string; published_at: string }
+export type ProcedureCategory = "preventive" | "basic" | "varies" | "major" | "major_excluded";
+export type IslandKind = "start" | "procedure" | "visited" | "marginal" | "destination";
+export type IslandState = "estimate" | "unresolved" | "not_covered" | "pending" | "visited" | "mentioned" | "frame";
+export type CheckpointRule = "fee" | "N" | "AB" | "D" | "CO" | "M" | "L" | "total" | "X" | "W" | "F" | "missing";
+export interface InsuranceCheckpointVM { key: string; rule: CheckpointRule; term: string; place: string; glyph: string; amountIn: number | null; change: number | null; amountOut: number | null;
+  owner: "patient" | "plan" | "nobody" | "basis" | "info"; explanation: string; stitchLabel: string | null; stitch?: Stitch; badge: Evidence; stepIndexes: number[]; flags: string[]; split?: { plan: number; patient: number; planPct: number } }
+export interface IslandVM { id: string; kind: IslandKind; state: IslandState; order: number; place: string; title: string; subtitle: string | null; category: ProcedureCategory | null;
+  itemId?: string; item?: TreatmentItem; line?: LedgerLine; lineIndex?: number; checkpoints: InsuranceCheckpointVM[]; youPay: number | null; planPays: number | null; upperBound: boolean;
+  missing: MissingInput[]; notices: string[]; soundingsAfter: { deductible: number | null; annualMax: number | null; unlimited: boolean } | null; claim?: Claim; stageIds: string[] }
+export interface Claim { id: string; date: string; procedure_key: string; tooth?: string | null; dentist_fee_cents?: number | null; allowed_cents?: number | null; plan_paid_cents: number; patient_paid_cents?: number | null; deductible_applied_cents?: number; source: string }
+export interface PassageVM { status: "empty" | "pending" | "estimate" | "unresolved"; start: IslandVM; islands: IslandVM[]; visited: IslandVM[]; marginal: IslandVM[]; destination: IslandVM;
+  totals: { youPay: number | null; planPays: number | null; upperBound: boolean; range: [number, number] | null }; stepsCited: number; rulesNotStated: number }
+export interface MapSelection { islandId: string; checkpointKey?: string }
+/** Care-stage selection: the same shape as `Selection` in components/atlas/JourneyMap.tsx. */
+export interface StageSelection { stageId: string; cpId?: string }
+export interface JourneySelection { stage?: StageSelection; island?: MapSelection }
+export interface AssistScope { plan_ref: PlanRef; estimate_id?: string; treatment_item_id?: string; line_index?: number; step_key?: string; checkpoint_key?: string; stitch?: string; journey_id?: string }
+export type AssistRef = { kind: "step"; line_index: number; step_index: number; label: string } | { kind: "line_total"; line_index: number; which: "patient" | "plan" } | { kind: "field"; path: string } | { kind: "clause"; stitch: string; rule?: string };
+export type AssistBlock = { type: "sentence"; text: string; refs: AssistRef[] } | { type: "clarify"; options: { label: string; scope_patch: Partial<AssistScope> }[] } | { type: "template"; key: "advice_question"; text: string };
+export interface AssistResponse { mode: "demo" | "live"; model?: string; intent: string; blocks: AssistBlock[]; suggested: string[]; guard: { dropped: number; grounding_failures: number }; tools_used: string[] }
+export interface UploadResponse { id: string; sha256: string; pages: number; filename: string; extraction_status: string; redaction_preview: { text: string; removed: string[] }; demo_fixture_match: boolean }
+/** One row of `PUT /me/documents/{id}/review` (spec §7.3). */
+export interface ReviewDecision { field_path: string; decision: "confirmed" | "edited" | "not_in_document" | "candidate"; value?: unknown; source?: string; candidate_index?: number }
+export type { ExtractedField, ExtractionStatus } from "./upload-types";    // the §7.5 definitions live in web/src/lib/upload-types.ts

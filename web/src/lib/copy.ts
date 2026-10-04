@@ -100,6 +100,7 @@ export const UI = {
   outdated: "Possibly outdated for this plan year",
   reviewCode: "code mapping shown with alternatives",
   codesNote: "Codes appear only as printed in the cited documents; a code on your own estimate takes precedence.",
+  renderingDocument: "Rendering the plan document pages…",
 };
 
 /** Cost-trail step titles, in the fixed order of the trail. */
@@ -108,3 +109,9 @@ export const TRAIL = {
   excluded: "Not covered by this plan", waiting: "Waiting period", frequency: "Frequency limit", alternate: "Alternate benefit", network: "Network",
   listed: "Listed on your estimate",
 };
+
+/** Day-1 copy namespaces (spec §13.2): each lives in its own file under lib/copy/ with a header naming its owner agent. */
+export { PASSAGE, DRAWER, COMPASS } from "./copy/passage";
+export { PLAN } from "./copy/plan";
+export { UPLOAD } from "./copy/upload";
+export { ASSIST } from "./copy/assistant";

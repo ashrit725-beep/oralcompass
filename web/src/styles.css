@@ -1,6 +1,11 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+/* Per-view stylesheets (spec §13.1), layered as components so Tailwind utilities on the same element still win. */
+@import "./styles/journey.css" layer(components);
+@import "./styles/plan.css" layer(components);
+@import "./styles/upload.css" layer(components);
+@import "./styles/assistant.css" layer(components);
 
 /* OralCompass — hand-painted atlas theme. Tokens first; components below. Painted scenery is decorative; controls are real HTML.
    The :root block below is the single colour source (docs/ORALCOMPASS_DESIGN_SPEC.md §5). Nothing else may define colours. */
@@ -88,8 +93,7 @@ label { display: flex; flex-direction: column; gap: .25rem; font-size: .9rem; co
 .appbar { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem 1.25rem; padding: .9rem 1rem .6rem; border-bottom: 1px solid var(--rule); background: linear-gradient(180deg, rgba(255, 255, 255, .5), transparent); }
 .brand h1 { margin: 0; } .tagline { margin: 0; font-family: var(--serif); font-style: italic; color: var(--ink-soft); font-size: .95rem; }
 .topnav { display: flex; gap: .25rem; margin-left: auto; flex-wrap: wrap; }
-.topnav button { background: transparent !important; color: var(--ink) !important; border: 1px solid transparent !important; border-radius: 999px !important; padding: .45rem .9rem !important; }
-.topnav button[aria-current="page"] { background: var(--parchment) !important; border-color: var(--gold) !important; font-weight: 600; }
+/* The nav is shadcn Tabs (line variant, 44 px, gold underline) styled with utilities in App.tsx; the active tab also carries aria-current="page". */
 .ribbon { display: inline-block; font-size: .75rem; font-weight: 600; padding: .15rem .55rem; border-radius: 6px; background: var(--gold-soft); color: var(--ink); border: 1px solid var(--gold); margin-left: .4rem; vertical-align: middle; }
 .ribbon.real { background: var(--sage-light); border-color: var(--forest); }
 .footer { padding: 1rem; font-size: .85rem; color: var(--ink-soft); border-top: 1px solid var(--rule); text-align: center; }
@@ -136,8 +140,7 @@ label { display: flex; flex-direction: column; gap: .25rem; font-size: .9rem; co
 @keyframes drift { to { transform: translateX(-90px); } }
 .clouds { animation: clouds 90s linear infinite; }
 @keyframes clouds { to { transform: translateX(60px); } }
-/* cinematic entrance: a wash that lifts off the paper when a view opens */
-.view > * { animation: rise .5s cubic-bezier(.2, .7, .2, 1) both; }
+/* view entrance (`wash-in`) is the ViewSwitch TransitionPanel in App.tsx, one per view; `rise` remains for the detail panel */
 @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 .map { animation: washin 1.1s ease-out both; }
 @keyframes washin { from { opacity: 0; filter: saturate(.6) blur(6px); } to { opacity: 1; filter: none; } }
@@ -291,7 +294,6 @@ label { display: flex; flex-direction: column; gap: .25rem; font-size: .9rem; co
   .total { font-size: 1.8rem; }
   .clause { bottom: 0; right: 0; width: 100vw; border-radius: 18px 18px 0 0; }
   .topnav { width: 100%; justify-content: space-between; margin-left: 0; }
-  .topnav button { padding: .4rem .6rem !important; font-size: .9rem; }
   .appbar .ribbon { order: 5; }
 }
 

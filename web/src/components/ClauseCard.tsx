@@ -1,13 +1,17 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { PLAIN, UI } from "../lib/copy";
 import { money } from "../lib/stitches";
 import type { LedgerLine, Stitch } from "../lib/types";
 import { DepthDial, EvidenceBadge, StitchChip } from "./Primitives";
 
-interface Props { stitch: Stitch; lines: LedgerLine[]; onClose: () => void; onOpenOnPage: (s: Stitch) => void }
+interface Props {
+  stitch: Stitch; lines: LedgerLine[]; onClose: () => void; onOpenOnPage: (s: Stitch) => void;
+  /** Hook point for the assistant agent (spec §13.2): rendered in the footer, before the "Open in Documents" button. */
+  askSlot?: ReactNode;
+}
 
 /** Clause card: depth 1 plain sentence · depth 2 the user's numbers · depth 3 exact wording + arithmetic — one element, no new route. */
-export function ClauseCard({ stitch, lines, onClose, onOpenOnPage }: Props) {
+export function ClauseCard({ stitch, lines, onClose, onOpenOnPage, askSlot }: Props) {
   const [depth, setDepth] = useState<1 | 2 | 3>(1);
   const topicKey = stitch.topic.startsWith("class:") ? "coinsurance" : stitch.topic;
   const plain = PLAIN[topicKey] ?? "This sentence states a rule of your plan.";
@@ -36,6 +40,7 @@ export function ClauseCard({ stitch, lines, onClose, onOpenOnPage }: Props) {
         </figure>
       )}
       <footer>
+        {askSlot}
         <button type="button" onClick={() => onOpenOnPage(stitch)}>{UI.showInDocuments}</button>
       </footer>
     </aside>
