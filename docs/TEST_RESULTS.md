@@ -16,3 +16,22 @@ Gate run on build/journey-v2 after merging feat/mobile-cinematic (2026-10-04, 06
 
 Not run in this pass: `tools/screenshots.py` (the phone walk timed out waiting for the old journey copy after the merge and needs updating),
 `tools/layout_audit.py`, `tools/error_sweep.py`.
+
+
+## Follow-up merge (fu/redaction, fu/ask, fu/labels, fu/walk), 2026-10-04 07:20
+
+Merged with --no-ff onto build/journey-v2 (516bc60, 674e077, ff956e1, 9656e8b). No conflicts.
+
+| Check | Result |
+|---|---|
+| `npm run build` | built in 16.67s; main index 465.69 kB (140.13 kB gzip) |
+| `npm test` | 46 files, 537 tests passed |
+| `npm run check:engines` | OK-one-engine |
+| `npm run check:bundle` | OK-bundle main=136.8KB |
+| `npm run lint:copy` | 0 violation(s) |
+| `advice_lint.py web/src/lib api/app/templates.py api/app/assistant_templates.py` | 0 violation(s) |
+| `advice_lint.py api/app/assistant_glossary.py` | 0 violation(s) |
+| engine `pytest -q` | 22 passed |
+| `ingest_sources.py --check` | validation_errors: [] |
+| API `pytest -q tests` | 2 failed, 384 passed, 106 skipped. Both failures are `test_explain.py::test_live_once_for_real_when_the_stored_key_and_network_allow` (directly and inside the SqliteRepo re-run in `test_store_backends.py`). That test calls the live provider with the stored key and network; api/ is unchanged by these branches. |
+| `tools/screenshots.py` walk | Not run at merge (deadline). fu/walk reported 240 of 242 checks against the merged app: open fails are the Pixel 7 review-count position (y=447 of 839) and the wide upload dialog not found. |
