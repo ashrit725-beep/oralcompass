@@ -137,6 +137,13 @@ def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-pref
     check(f"{device}: route has start and light", page.locator("button[aria-label^='Start ·']").count() > 0 and page.locator("button[aria-label^='Harbor Light ·']").count() > 0)
     # NumberFlow renders digits in a shadow root: the lozenge's aria-label and the custom element's data attribute carry the figures
     check(f"{device}: soundings printed", page.locator(".sounding[aria-label*='maximum left $672.00']").count() > 0 and page.locator(".sounding number-flow-react[data*='$672.00']").count() > 0)
+    if not mobile:   # findings layout-1 / slop-7: each lozenge holds its figures and covers no control on the chart
+        sd = page.evaluate("""(() => { const ctl = [...document.querySelectorAll('#passage-islands button')].map(b => b.getBoundingClientRect());
+          return [...document.querySelectorAll('#passage-islands .sounding')].map(s => { const r = s.getBoundingClientRect();
+            const spill = [...s.querySelectorAll('.amt')].some(a => a.getBoundingClientRect().right > r.right + 0.5);
+            const hit = ctl.some(c => c.left < r.right - 2 && r.left < c.right - 2 && c.top < r.bottom - 2 && r.top < c.bottom - 2);
+            return spill || hit; }).filter(Boolean).length; })()""")
+        check(f"{device}: soundings hold their figures and cover no control", sd == 0, f"bad={sd}")
     check(f"{device}: closed channel on marginal", page.locator("button[aria-label*='Occlusal night guard'][aria-label*='not covered']").count() > 0)
     END_STATE[device] = passage_names(page)
     shot("11-passage")
