@@ -212,6 +212,11 @@ details[open] > .dsec-summary .dsec-toggle { transform: rotate(-135deg); margin-
 .drawer-sheet .harbor-table td { border: 0; padding: 0; min-width: 0; }
 .drawer-sheet .harbor-table td:last-child { grid-column: 1 / -1; color: var(--text-soft); font-size: 13px; }
 .drawer-sheet .harbor-table td::before { content: attr(data-label); display: block; font-size: 12px; line-height: 16px; color: var(--text-soft); }
+/* phone sheet: the island's tooth/status caption gets its own line (no orphaned "·"), and the status value outweighs its label, on one line */
+.drawer-sheet .harbor-table .harbor-sub { display: block; font-weight: 400; font-size: 13px; line-height: 18px; }
+.drawer-sheet .harbor-table .harbor-sub-sep { display: none; }
+.drawer-sheet .harbor-table td:last-child { color: var(--text); font-size: 14px; font-weight: 500; }
+.drawer-sheet .harbor-table td:last-child::before { display: inline; margin-right: 8px; font-weight: 400; }
 .clause-in-sheet { overflow-wrap: break-word; }
 /* The term ("coinsurance") keeps its word and takes a full row; the chip, badge and close wrap around it. `!important` because the base
    `.clause header h3 { flex: 1 }` in styles.css outranks this layered sheet (computed flex stayed `1 1 0%`, 43 px wide at 360). */
