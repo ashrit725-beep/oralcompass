@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent }
 import { AnimatePresence, motion } from "motion/react";
 import { PASSAGE } from "@/lib/copy/passage";
 import { UI, type LandmarkId } from "@/lib/copy";
-import { currentStageId, labeledSamples } from "@/lib/journey";
+import { currentStageId, labeledSamples, shortJourneyLabel } from "@/lib/journey";
 import { transitions, useReducedMotion } from "@/lib/motion";
 import { answerSegment, buildPassage, denseFrom, itemRef, planDisplayCode, type AnswerTarget, type JourneySegment } from "@/lib/passage";
 import type { MapSelection, Stage, Stitch } from "@/lib/types";
@@ -128,6 +128,13 @@ export function JourneyView({ data, selection, mobile, onOpenLandmark, onOpenDoc
   ) : null;
   const stagePanel = stage ? <DetailPanel view={view} selection={stage} onSelect={(s) => selection.selectStage(s)} onOpenLandmark={onOpenLandmark} onOpenDocuments={onOpenDocuments} onPatch={patch} onInstructions={instructions} busy={busy} mobile={mobile} estimate={estimate} onClose={() => selection.clear()} returnFocus={selection.returnFocusRef.current} /> : null;
   const dense = denseFrom(vm.islands.length);
+  const pickers = (
+    <div className="journey-pickers">
+      {journeys && journeys.length > 0 && samples.length > 0 && <select aria-label="Journey" title={headingLabel(view.journey.label)} value={view.id} onChange={(e) => { const v = journeys.find((j) => j.id === e.target.value); if (v) setView(v); }}>
+        {journeys.map((j) => <option key={j.id} value={j.id} title={headingLabel(j.journey.label)}>{shortJourneyLabel(j.journey.label)}</option>)}</select>}
+      <select className="add-journey" aria-label="Add a journey" value="" onChange={(e) => e.target.value && startJourney(e.target.value)}><option value="">Add another journey…</option><option value="empty">Empty (no documents yet)</option>{labeledSamples(samples).map((s) => <option key={s.id} value={s.id}>{headingLabel(s.label)}</option>)}</select>
+    </div>
+  );
 
   return (
     <div ref={rootRef} className={`passage-layout ${hasDetail && !mobile ? "has-detail" : ""} ${mobile ? "is-mobile" : ""}`} onKeyDown={onKeyDown}>
@@ -152,11 +159,9 @@ export function JourneyView({ data, selection, mobile, onOpenLandmark, onOpenDoc
               </button>
             ))}
           </div>
-          <div className="journey-pickers">
-            {journeys && journeys.length > 0 && samples.length > 0 && <select aria-label="Journey" title={headingLabel(view.journey.label)} value={view.id} onChange={(e) => { const v = journeys.find((j) => j.id === e.target.value); if (v) setView(v); }}>
-              {journeys.map((j) => <option key={j.id} value={j.id}>{headingLabel(j.journey.label)}</option>)}</select>}
-            <select className="add-journey" aria-label="Add a journey" value="" onChange={(e) => e.target.value && startJourney(e.target.value)}><option value="">Add another journey…</option><option value="empty">Empty (no documents yet)</option>{labeledSamples(samples).map((s) => <option key={s.id} value={s.id}>{headingLabel(s.label)}</option>)}</select>
-          </div>
+          {/* phones: the journey picker and "Add another journey" sit in a closed disclosure so the passage starts higher (orchestrator
+              note 5); the accessible names "Journey" and "Add a journey" are unchanged */}
+          {mobile ? <details className="journey-switch"><summary>{PASSAGE.journeysSummary(journeys?.length ?? 0)}</summary>{pickers}</details> : pickers}
         </div>
         {!plan && <p className="hint">{PASSAGE.noPlanSelected}</p>}
         {segment === "overview" && <OverviewList journey={view.journey} vm={vm} planTitle={plan?.title} onSelect={(s) => { selection.selectStage(s); setSegment("map"); }} onSelectIsland={(id, cp) => { selectIsland(id, cp, null, true); }} onSelectStitch={onSelectStitch} />}

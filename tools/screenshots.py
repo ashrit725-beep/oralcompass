@@ -63,6 +63,8 @@ def open_alex(page):
         page.wait_for_timeout(1200)
     else:
         sel = page.get_by_label("Journey", exact=True)
+        if sel.count() and not sel.first.is_visible() and page.locator("details.journey-switch > summary").count():
+            page.locator("details.journey-switch > summary").first.click(); page.wait_for_timeout(200)   # phones keep the pickers in a disclosure
         if sel.count():
             opts = sel.locator("option").all_inner_texts()
             tgt = next((o for o in opts if "Alex" in o), None)

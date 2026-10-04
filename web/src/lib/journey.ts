@@ -73,3 +73,12 @@ export function currentStageId(journey: Journey): string | null {
 export function labeledSamples<T extends { id: string }>(samples: T[]): T[] {
   return samples.filter((s) => s.id !== "empty");
 }
+
+/** A journey's name for the closed Journey select, short enough for a 334 px phone control: "Sample journey — Alex Chen (fictional) on
+ *  the NCFlex Dental Classic Option 2026 (real public plan document)" → "Alex Chen (fictional) · sample". The page heading and the
+ *  select's title keep the full label. */
+export function shortJourneyLabel(label: string): string {
+  const m = /^Sample journey\s+[—-]\s+(.*)$/.exec(label.trim());
+  const name = (m ? m[1] : label).split(/\s+on the\s+/)[0].trim();
+  return m ? `${name} · sample` : name;
+}

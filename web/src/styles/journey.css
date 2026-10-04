@@ -320,3 +320,13 @@
   .ov-table .linklike, .ov-stages h3 .linklike { min-height: 44px; }
   .ov-table .stitch::after { height: 44px; }
 }
+
+/* phone journey header (findings slop-3, layout-20, layout-9, demo-10; orchestrator note 5): a smaller balanced heading, the Answers log
+   as label | value rows, and the journey pickers inside a 44 px disclosure, so the passage starts about 200 px higher */
+.journey-switch > summary { display: flex; align-items: center; min-height: 44px; cursor: pointer; color: var(--ink); font-weight: 600; text-decoration: underline; text-decoration-color: var(--gold); text-underline-offset: 3px; }
+.journey-switch[open] > summary { margin-bottom: var(--s-2); }
+@media (max-width: 760px) {
+  .journey-head h2 { font-size: 1.2rem; line-height: 1.35; }
+  .log-row { grid-template-columns: 6.5rem minmax(0, 1fr); gap: var(--s-2); align-items: start; padding: 2px 0; }
+  .log dt { font-size: 12px; line-height: 16px; padding-top: 12px; }
+}

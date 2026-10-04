@@ -10,7 +10,7 @@ import { AnswersLog } from "@/components/journey/AnswersLog";
 import { Money } from "@/components/Money";
 import { OverviewList } from "@/components/OverviewList";
 import { UI } from "@/lib/copy";
-import { labeledSamples } from "@/lib/journey";
+import { labeledSamples, shortJourneyLabel } from "@/lib/journey";
 import { answersLog, buildPassage, type PassageInputs } from "@/lib/passage";
 import { stitchesFromClauses } from "@/lib/stitches";
 import type { Clause, CoverageRule, JourneyView, PlanFixture, Procedure, SavedEstimate, TreatmentItem } from "@/lib/types";
@@ -113,5 +113,13 @@ describe("overview figures (finding web-correctness-26)", () => {
       expect(cells[6]).toContain("Calculated from the clauses cited"); // Plan pays
       expect(cells[5]).not.toContain("You entered");
     }
+  });
+});
+
+describe("journey picker labels (finding layout-9)", () => {
+  it("keeps the closed Journey select short enough for a phone", () => {
+    expect(shortJourneyLabel("Sample journey — Alex Chen (fictional) on the NCFlex Dental Classic Option 2026 (real public plan document)")).toBe("Alex Chen (fictional) · sample");
+    expect(shortJourneyLabel("Sample journey — Sam Rivera (fictional)")).toBe("Sam Rivera (fictional) · sample");
+    expect(shortJourneyLabel("Your journey")).toBe("Your journey");
   });
 });
