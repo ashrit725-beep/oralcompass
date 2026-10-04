@@ -27,3 +27,18 @@ describe("compass meters", () => {
     expect(css).toMatch(/\.cmp-meter\.is-empty:not\(\.is-unknown\)\s*\{[^}]*border:\s*1px dashed/);
   });
 });
+
+import { BenefitsCompass } from "@/components/compass/BenefitsCompass";
+import type { Benefits, PlanFixture, SavedEstimate } from "@/lib/types";
+
+describe("compass headline evidence (orchestrator note 1)", () => {
+  const alex = JSON.parse(readFileSync(join(__dirname, "../__fixtures__/passage/alex.json"), "utf8"));
+  const ml26: PlanFixture = JSON.parse(readFileSync(join(__dirname, "../../../fixtures/plans/ml26.json"), "utf8"));
+  it("calls the remaining-after figure calculated instead of wearing a lone document badge", () => {
+    const html = renderToStaticMarkup(<BenefitsCompass plan={ml26} benefits={alex.benefits[0] as Benefits} estimate={alex.estimate as SavedEstimate} stitches={[]} onOpenLandmark={() => undefined} onSelectStitch={() => undefined} />);
+    const answer = /<p class="cmp-a">(.*?)<\/p>/.exec(html)?.[1] ?? "";
+    expect(answer).toContain("$162.00");
+    expect(answer).toContain("Calculated:");
+    expect(answer).not.toMatch(/class="badge badge-doc"/);
+  });
+});

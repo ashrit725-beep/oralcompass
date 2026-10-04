@@ -67,7 +67,9 @@ export function BenefitsCompass({ plan, benefits, estimate, stitches, compact = 
             )}
           </h3>
           <p className="cmp-a">
-            {h.kind === "after" && <><Money cents={h.answerCents} evidence={vm.annualMax.limitStatus} badge={!maxStitch} className="cmp-a-amt" />{maxStitch && <StitchChip stitch={maxStitch} selected={selectedStitch?.id === maxStitch.id} onSelect={onSelectStitch} />}</>}
+            {/* a calculated figure (the document's limit, your statement, the planned work): the limit's clause stitch plus the word
+                "calculated", never a lone "From the plan document" badge (orchestrator note 1) */}
+            {h.kind === "after" && <><Money cents={h.answerCents} evidence={vm.annualMax.limitStatus} badge={false} className="cmp-a-amt" />{maxStitch && <StitchChip stitch={maxStitch} selected={selectedStitch?.id === maxStitch.id} onSelect={onSelectStitch} />}<small className="calc-note cmp-calc">{COMPASS.afterCalculated}</small></>}
             {h.kind === "remaining" && <Money cents={h.answerCents} evidence="USER" className="cmp-a-amt" />}
             {h.kind === "no_usage" && <><span className="cmp-word">{COMPASS.notProvided}</span> <EvidenceBadge status="UNKNOWN" /></>}
             {h.kind === "unresolved" && <EvidenceBadge status="UNKNOWN" />}

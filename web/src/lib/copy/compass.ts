@@ -9,6 +9,7 @@ export const COMPASS = {
   // headline question parts (the figure sits between `qBefore` and the chosen tail)
   qBefore: "How much of the",
   qAfterPlanned: "maximum remains after the planned work?",
+  afterCalculated: "Calculated: the document's limit, minus what your statement reports, minus the planned work.",
   qRemaining: "maximum remains?",
   qUnlimited: "Is there a dollar maximum? The document states none.",
   qUnknownMax: "What is the annual maximum? Not stated in this document.",
