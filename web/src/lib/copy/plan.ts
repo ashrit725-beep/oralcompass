@@ -5,6 +5,9 @@
  */
 export const PLAN = {
   viewTitle: "My plan",
+  // engine totals: arithmetic over steps that each carry their own stitch or badge (CLAUDE.md rule 2; orchestrator note 1)
+  calculatedFromSteps: "Calculated from the steps below; each step shows its clause or source.",
+  calculatedShort: "calculated",
   // ---- plan selector (spec §7.2; addendum B1/B2: a single `label.plan-pick select` of plan codes stays as the fast path) ----
   sourceLabel: "Plan source",
   modePreset: "Preset plan",

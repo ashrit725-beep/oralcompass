@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { UI } from "../lib/copy";
+import { PLAN } from "../lib/copy/plan";
 import { money, signed, stitchForLabel, stitchForStep } from "../lib/stitches";
 import { buildTrail } from "../lib/trail";
 import type { LedgerLine, SavedEstimate, Stitch } from "../lib/types";
@@ -35,6 +36,9 @@ export function CostTrail({ estimate, stitches, selected, onSelect, prominentSco
         <p className="hero" aria-live="polite">
           <span className="total">{money(estimate.user_estimated_payment_cents)}</span>
           <span className="sub">{UI.planPays}: {money(estimate.insurer_estimated_payment_cents)}{estimate.plan_payment_is_upper_bound ? " (upper bound)" : ""}</span>
+          {/* engine totals are arithmetic over the steps below, each of which carries its clause stitch or source badge (CLAUDE.md rule 2;
+              orchestrator note 1: say "calculated" rather than dress the total in one document badge) */}
+          <small className="calc-note">{PLAN.calculatedFromSteps}</small>
         </p>
       )}
       {!one && estimate.status === "unresolved" && <MissingInputs estimate={estimate} compact />}
@@ -42,7 +46,7 @@ export function CostTrail({ estimate, stitches, selected, onSelect, prominentSco
         <div className="line-tabs" role="tablist" aria-label="Procedures on this estimate">
           {lines.map((l, i) => (
             <button key={i} role="tab" type="button" aria-selected={i === idx} className={i === idx ? "is-on" : ""} onClick={() => setIdx(i)}>
-              {l.label} <small>{l.status === "estimate" ? money(l.patient_cents) : l.status === "not_covered" ? "not covered" : "unresolved"}</small>
+              {l.label} <small>{l.status === "estimate" ? `${money(l.patient_cents)} · ${PLAN.calculatedShort}` : l.status === "not_covered" ? "not covered" : "unresolved"}</small>
             </button>
           ))}
         </div>
@@ -50,7 +54,8 @@ export function CostTrail({ estimate, stitches, selected, onSelect, prominentSco
       <ol className="trail-steps" aria-label={`Cost trail for ${line.label}`}>
         {trail.steps.map((s, i) => {
           const st = stitchForLabel(s.stitch, s.rule, stitches);
-          const mark = st ? <StitchChip stitch={st} selected={selected?.id === st.id} prominent={prominentScope} onSelect={onSelect} /> : s.rule === "fee" ? <EvidenceBadge status="USER" /> : one ? <EvidenceBadge status={s.rule === "total" ? "DOC" : "USER"} /> : null;
+          // every step's amounts carry a mark in both modes: the clause stitch, else the source badge (the drawer's rule, web-correctness-5)
+          const mark = st ? <StitchChip stitch={st} selected={selected?.id === st.id} prominent={prominentScope} onSelect={onSelect} /> : <EvidenceBadge status={s.rule === "fee" ? "USER" : s.rule === "total" ? "DOC" : "USER"} />;
           return (
             <li key={s.key} className={`trail-step owner-${s.owner} ${s.key === "you" ? "is-total" : ""}`}>
               <div className="ts-head">
@@ -87,22 +92,21 @@ export function CostTrail({ estimate, stitches, selected, onSelect, prominentSco
       {trail.upperBound && <p className="flag">{UI.upperBound}</p>}
       {!one && line.flags.map((f, i) => <p key={i} className="flag">{f}</p>)}
       {line.remaining_after?.deductible_cents != null && (
-        <p className="note">Remaining after this line — deductible {money(line.remaining_after.deductible_cents)} · annual maximum {line.remaining_after.annual_max_cents == null ? "no maximum applies" : money(line.remaining_after.annual_max_cents)}</p>
+        <p className="note">Remaining after this line — deductible {money(line.remaining_after.deductible_cents)} · annual maximum {line.remaining_after.annual_max_cents == null ? "no maximum applies" : money(line.remaining_after.annual_max_cents)} <span className="calc-note">({PLAN.calculatedShort})</span></p>
       )}
       <details className="receipt-details" open={trail.reconciles === false || undefined}>
         <summary>Engine receipt (every step, as computed)</summary>
         <table className="receipt"><tbody>
           {line.steps.map((s, i) => {
-            const st = one ? stitchForStep(s, stitches) : undefined;
+            const st = stitchForStep(s, stitches);
             return (
               <tr key={i} className={`owner-${s.owner}`}>
                 <th scope="row">{s.label}</th>
-                <td className="amt">{s.cents < 0 ? `−${money(-s.cents)}` : money(s.cents)}{one ? <> {st ? <StitchChip stitch={st} onSelect={onSelect} /> : <EvidenceBadge status="USER" />}</> : null}</td>
-                {!one && <td className="st">{s.stitch ?? ""}</td>}
+                <td className="amt">{s.cents < 0 ? `−${money(-s.cents)}` : money(s.cents)} {st ? <StitchChip stitch={st} onSelect={onSelect} /> : <EvidenceBadge status="USER" />}</td>
               </tr>
             );
           })}
-          <tr className="line-total"><th scope="row">Line: you pay · plan pays</th><td className="amt">{money(line.patient_cents)} · {money(line.plan_cents)}{one ? <> <EvidenceBadge status="DOC" /></> : null}</td>{!one && <td />}</tr>
+          <tr className="line-total"><th scope="row">Line: you pay · plan pays</th><td className="amt">{money(line.patient_cents)} · {money(line.plan_cents)} <span className="calc-note">{PLAN.calculatedShort}</span></td></tr>
         </tbody></table>
       </details>
       {!one && estimate.ledger.order_note && <p className="note">{estimate.ledger.order_note}</p>}
@@ -121,7 +125,7 @@ export function MissingInputs({ estimate, compact }: { estimate: SavedEstimate; 
         {estimate.missing_inputs.map((m, i) => <li key={i}><strong>{m.input}</strong> — {m.how}</li>)}
         {estimate.missing_inputs.length === 0 && estimate.ledger.flags.map((f, i) => <li key={i}>{f}</li>)}
       </ul>
-      {estimate.movers?.range && <p className="range">{UI.rangeBecause(money(estimate.movers.range[0]), money(estimate.movers.range[1]), estimate.movers.movers.filter((m) => m.impact_cents).map((m) => m.unknown).join(" and "))}</p>}
+      {estimate.movers?.range && <p className="range"><EvidenceBadge status="UNKNOWN" /> {UI.rangeBecause(money(estimate.movers.range[0]), money(estimate.movers.range[1]), estimate.movers.movers.filter((m) => m.impact_cents).map((m) => m.unknown).join(" and "))}</p>}
     </section>
   );
 }

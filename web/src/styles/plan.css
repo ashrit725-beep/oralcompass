@@ -162,6 +162,10 @@
 .amt-cell { text-align: right; white-space: nowrap; }
 @media (max-width: 760px) { .rail-total .amt { font-size: 1.8rem; } }
 
+/* ---- cost trail: the "calculated" note beside engine totals ---- */
+.calc-note { display: block; font-size: .78rem; font-style: italic; color: var(--ink-soft); font-family: var(--sans); font-weight: 400; }
+td .calc-note, .note .calc-note, .line-tabs .calc-note { display: inline; }
+
 /* ---- documents additions ---- */
 /* stitch outlines on the pdf.js page are positioned boxes (PageView): selection restyles them without redrawing the canvas */
 .pdf-outline { position: absolute; border: 1.5px solid var(--ink); border-radius: 2px; pointer-events: none; }
