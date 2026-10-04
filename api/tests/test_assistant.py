@@ -45,8 +45,27 @@ def alex():
             "benefits": client.get("/me/benefits/ML26", headers=A).json(), "evidence": client.get("/plans/ML26/evidence", headers=A).json()}
 
 
+class _Answer:
+    """Every answer leads with exactly one plain-words block (kind "simple"); the detail assertions below read the blocks after it."""
+    def __init__(self, r):
+        self._r = r
+
+    def __getattr__(self, name):
+        return getattr(self._r, name)
+
+    def json(self):
+        j = self._r.json()
+        if isinstance(j, dict) and j.get("blocks"):
+            simple = [b for b in j["blocks"] if b.get("kind") == "simple"]
+            assert len(simple) == 1 and j["blocks"][0] is simple[0], j["blocks"]
+            assert not assistant.MONEY_IN_TEXT.search(assistant.ISO_DATE.sub(" ", assistant.PLACEHOLDER.sub(" ", simple[0]["text"])))
+            j["simple"] = simple[0]
+            j["blocks"] = j["blocks"][1:]
+        return j
+
+
 def ask(message, headers=A, **scope):
-    return client.post("/me/assistant", json={"message": message, "scope": {"plan_ref": "ML26", **scope}}, headers=headers)
+    return _Answer(client.post("/me/assistant", json={"message": message, "scope": {"plan_ref": "ML26", **scope}}, headers=headers))
 
 
 def _walk(payload, path):
