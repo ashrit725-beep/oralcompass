@@ -548,6 +548,11 @@ def upload_walk(page, device: str, shot):
         let a = b.parentElement; while (a && !/hidden|clip/.test(getComputedStyle(a).overflow)) a = a.parentElement; if (!a) return 0;
         const r = b.getBoundingClientRect(), c = a.getBoundingClientRect(); return Math.round(Math.max(0, r.bottom - c.bottom, c.top - r.top)); })()""")
     check(f"{device}: upload choose button not clipped", cut == 0, f"cut={cut}px")
+    # layout-7: the stepper pane re-measures when its content grows (the type alert), so the mode line below it stays visible
+    page.wait_for_timeout(500)
+    hidden = page.evaluate("""(() => { const c = document.querySelector('[role=dialog] .up-stepper-content'); const m = c && c.querySelector('.up-mode-line'); if (!c || !m) return -1;
+        return Math.round(Math.max(0, m.getBoundingClientRect().bottom - c.getBoundingClientRect().bottom)); })()""")
+    check(f"{device}: upload pane grows with its content", hidden == 0, f"hidden={hidden}px")
     page.locator("input[type=file]").first.set_input_files(str(ROOT / "fixtures/documents/harborview_certificate.pdf"))
     page.wait_for_selector("text=Removed before any model call", timeout=30000); page.wait_for_timeout(300)
     page.get_by_role("button", name="Continue with these redactions").click()
