@@ -13,7 +13,7 @@ export interface ViewportInset {
  * the bottom of the layout viewport and the visible height, so a bottom sheet can lift its composer above the keyboard. Updates on the
  * viewport's resize and scroll events (one state update per event, no polling); 0 everywhere without the API.
  */
-export function useKeyboardInset(active: boolean): ViewportInset {
+export function useAskKeyboardInset(active: boolean): ViewportInset {
   const [state, setState] = useState<ViewportInset>({ inset: 0, height: null });
   useEffect(() => {
     const vv = typeof window !== "undefined" ? window.visualViewport : null;

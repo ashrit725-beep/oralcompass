@@ -86,14 +86,14 @@
 .askbox .as-error { max-width: 52rem; }
 
 /* ---- the phone field above the dock and its bottom sheet ---- */
-.askfield-bar { position: fixed; left: 0; right: 0; bottom: var(--dock-h, 68px); z-index: 14; padding: var(--s-2) max(12px, env(safe-area-inset-right)) var(--s-1) max(12px, env(safe-area-inset-left)); background: var(--paper-deep); border-top: 1px solid var(--rule); box-shadow: var(--shadow-1); }
+.askfield-bar { position: fixed; left: max(0px, calc((100% - 480px) / 2)); right: max(0px, calc((100% - 480px) / 2)); bottom: var(--dock-h, 68px); z-index: 14; padding: var(--s-2) max(12px, env(safe-area-inset-right)) var(--s-1) max(12px, env(safe-area-inset-left)); background: var(--paper-deep); border-top: 1px solid var(--rule); box-shadow: var(--shadow-1); }
 .askfield-bar[data-open="true"] { visibility: hidden; }
 .askfield { display: flex; align-items: center; justify-content: space-between; gap: var(--s-2); width: 100%; min-height: 44px; padding: 0 var(--s-3) 0 var(--s-4); background: var(--paper); border: 1px solid var(--rule); border-radius: var(--r-3); font-family: var(--serif); font-size: 16px; line-height: 22px; color: var(--ink-soft); text-align: left; cursor: text; }
 .askfield:focus-visible { outline: 3px solid var(--terracotta); outline-offset: 1px; }
 .askfield-glyph { width: 20px; height: 20px; flex: none; color: var(--ink-soft); }
-.ask-scrim { position: fixed; left: 0; right: 0; top: 0; bottom: var(--dock-h, 0px); z-index: 39; background: rgba(35, 48, 61, .2); touch-action: none; animation: ask-scrim-in var(--dur-standard) var(--ease-standard); }
+.ask-scrim { position: fixed; left: max(0px, calc((100% - 480px) / 2)); right: max(0px, calc((100% - 480px) / 2)); top: 0; bottom: var(--dock-h, 0px); z-index: 39; background: rgba(35, 48, 61, .2); touch-action: none; animation: ask-scrim-in var(--dur-standard) var(--ease-standard); }
 @keyframes ask-scrim-in { from { opacity: 0; } to { opacity: 1; } }
-.ask-sheet { position: fixed; left: 0; right: 0; bottom: var(--dock-h, 0px); z-index: 40; display: flex; flex-direction: column; max-height: calc(85vh - var(--dock-h, 0px)); background: var(--paper-deep); color: var(--ink); border-top: 1px solid var(--rule); border-radius: var(--r-sheet); box-shadow: var(--shadow-3); outline: none; }
+.ask-sheet { position: fixed; left: max(0px, calc((100% - 480px) / 2)); right: max(0px, calc((100% - 480px) / 2)); bottom: var(--dock-h, 0px); z-index: 40; display: flex; flex-direction: column; max-height: calc(85vh - var(--dock-h, 0px)); background: var(--paper-deep); color: var(--ink); border-top: 1px solid var(--rule); border-radius: var(--r-sheet); box-shadow: var(--shadow-3); outline: none; }
 @supports (height: 1dvh) { .ask-sheet { max-height: calc(85dvh - var(--dock-h, 0px)); } }
 .ask-sheet-handle { display: flex; align-items: center; justify-content: center; height: 44px; width: 96px; margin: 0 auto -8px; flex: none; cursor: grab; background: transparent; border: 0; }
 .ask-sheet-handle > span { display: block; width: 44px; height: 4px; border-radius: 999px; background: var(--sand); }

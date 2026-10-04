@@ -1,5 +1,5 @@
 import { Compass, X } from "lucide-react";
-import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { Drawer as DrawerPrimitive } from "vaul";
 import AI_Prompt from "@/components/kokonutui/ai-prompt";
 import ThoughtLine from "@/components/ui/ThoughtLine";
@@ -9,20 +9,17 @@ import { boxSuggestions, type AskTab } from "@/lib/assistant";
 import { cn } from "@/lib/utils";
 import type { AssistScope } from "@/lib/types";
 import { useAsk, type AskApi } from "@/hooks/useAsk";
-import { useKeyboardInset, useMeasuredVar } from "@/hooks/useKeyboardInset";
+import { useAskKeyboardInset, useMeasuredVar } from "@/hooks/useAskKeyboardInset";
 import { AnswerList } from "./AnswerList";
 
 /**
  * AskBox ("Ask in plain words", the owner's prompt box): a question box that is reachable on every tab and answers in simple terms first.
  * Scope = the selected plan + the journey's estimate + the journey (no line). The question/answer logic is the shared `useAsk` hook and the
  * answers are the shared `AnswerList` / `AnswerCard` (the drawer's and the ClauseCard's composers use the same pieces).
- *  - Desktop (`AskBoxCard`): an inline parchment card at the top of the tab's main column: title, one-line composer with the send button
- *    beside it, four everyday chips for the tab, then the newest answer (earlier ones behind a disclosure). On My journey it sits under
- *    the summary and above the map, compact enough that the map still starts in the first viewport at 1366 × 900.
- *  - Phone (`AskDock`, < 760 px): a one-line "Ask in plain words" field directly above the dock (thumb zone). Activating it (tap, Enter
+ *  - `AskDock` (every width, inside the 480 px column): a one-line "Ask in plain words" field directly above the dock (thumb zone). Activating it (tap, Enter
  *    or Space; never on focus alone, WCAG 3.2.1) opens a bottom sheet in the procedure sheet's style with the chips and answers in a
  *    scroll area and the composer pinned at its foot. The sheet is non-modal and stops at the dock's top edge, so the dock stays
- *    reachable (a tab change closes the sheet); a flat ink scrim covers the page above it and closes it on tap. `visualViewport` keeps
+ *    reachable (a tab change closes the sheet); a flat ink scrim covers the page above it and closes it on tap. `visualViewport` (useAskKeyboardInset) keeps
  *    the composer above the on-screen keyboard. Closing returns focus to the field. No chat bubbles, no right-hand column, no AI
  *    iconography (the Compass is the app's own send glyph).
  * States: idle · sending (ThoughtLine) · answered · nothing survived · rate limited · offline · live unavailable (useAsk errors).
@@ -158,7 +155,7 @@ function AskSheet({ tab, scope, open, onOpenChange, returnFocus, onOpenStitch }:
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);
   const { ask, chips } = useAskBox(tab, scope);
-  const kb = useKeyboardInset(open);
+  const kb = useAskKeyboardInset(open);
   const wasOpen = useRef(open);
 
   // focus returns to the field on close, deferred one task (vaul unmounts the content first); not when focus already moved elsewhere
@@ -186,6 +183,7 @@ function AskSheet({ tab, scope, open, onOpenChange, returnFocus, onOpenStitch }:
           ref={contentRef}
           aria-labelledby={titleId}
           aria-describedby={descId}
+          data-slot="drawer-content"
           className="ask-sheet drawer-sheet-style"
           style={style}
           onOpenAutoFocus={(e) => { e.preventDefault(); inputRef.current?.focus({ preventScroll: true }); }}
@@ -207,9 +205,4 @@ function AskSheet({ tab, scope, open, onOpenChange, returnFocus, onOpenStitch }:
   );
 }
 
-/** A tab's slot: the desktop card, nothing on phones (the AskDock serves them). */
-export function AskBoxSlot({ mobile, ...props }: AskBoxProps & { mobile: boolean }): ReactNode {
-  return mobile ? null : <AskBoxCard {...props} />;
-}
-
-export default AskBoxCard;
+export default AskDock;

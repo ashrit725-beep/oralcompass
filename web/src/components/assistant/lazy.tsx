@@ -21,14 +21,12 @@ function preloadable<P extends object>(factory: () => Promise<{ default: Compone
 }
 
 const step = preloadable<AskAboutStepProps>(() => import("./AskAboutStep").then((m) => ({ default: m.AskAboutStep })));
-const card = preloadable<AskBoxProps & { mobile: boolean }>(() => import("./AskBox").then((m) => ({ default: m.AskBoxSlot as ComponentType<AskBoxProps & { mobile: boolean }> })));
 const dock = preloadable<AskBoxProps>(() => import("./AskBox").then((m) => ({ default: m.AskDock })));
 
 export const AskAboutStepLazy = step.Component;
-export const AskBoxSlotLazy = card.Component;
 export const AskDockLazy = dock.Component;
 
 /** Fetch the composer chunks now (App calls it once at start); failures are retried on first render. */
 export function preloadAssistant() {
-  for (const p of [step, card, dock]) p.load().catch(() => undefined);
+  for (const p of [step, dock]) p.load().catch(() => undefined);
 }

@@ -9,9 +9,9 @@ import { useMobile } from "@/hooks/useMobile";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dock, DockIcon } from "@/components/eldoraui/dock";
 import { AssistDataProvider } from "@/components/assistant/AssistData";
-import { AskBoxSlotLazy as AskBoxSlot, AskDockLazy as AskDock, preloadAssistant } from "@/components/assistant/lazy";
+import { AskDockLazy as AskDock, preloadAssistant } from "@/components/assistant/lazy";
 import { askBoxScope } from "@/lib/assistant";
-import { useMeasuredVar } from "@/hooks/useKeyboardInset";
+import { useMeasuredVar } from "@/hooks/useAskKeyboardInset";
 import { ClauseCard } from "@/components/ClauseCard";
 import { CompareView } from "@/components/CompareView";
 import { DocumentsView } from "@/components/DocumentsView";
@@ -56,7 +56,6 @@ export default function App() {
   // "Ask in plain words" on every tab: the journey-level scope (plan + the journey's estimate + the journey, no line)
   const askScope = useMemo(() => askBoxScope(planRef, estimate, data.view?.id), [planRef, estimate, data.view?.id]);
   const openStitchById = useCallback((id: string) => { const s = stitches.find((x) => x.id === id); if (s) setStitch(s); }, [stitches]);
-  const askSlot = (t: Tab) => <AskBoxSlot mobile={mobile} tab={t} scope={askScope} onOpenStitch={openStitchById} fallback={mobile || !askScope ? null : <div className="askbox-pending" aria-hidden="true" />} />;
 
   const list = (
     <TabsList variant="line" className={mobile ? "dock-list grid! h-auto! w-full grid-cols-4 gap-1" : "h-11 w-full justify-between gap-0 md:w-auto md:justify-start md:gap-1"}>
@@ -98,24 +97,24 @@ export default function App() {
         <TabsContent value={tab} forceMount tabIndex={-1} className="view-panel">
           <ViewSwitch index={TABS.indexOf(tab)}>
             <ErrorBoundary label={NAV.journey} resetKey={tab}>
-              <JourneyView data={data} selection={selection} mobile={mobile} onOpenLandmark={openLandmark} onOpenDocuments={openDocuments} onSelectStitch={setStitch} askSlot={askSlot("journey")} />
+              <JourneyView data={data} selection={selection} mobile={mobile} onOpenLandmark={openLandmark} onOpenDocuments={openDocuments} onSelectStitch={setStitch} />
             </ErrorBoundary>
             <ErrorBoundary label={NAV.plan} resetKey={tab}>
-              <PlanView data={data} mobile={mobile} landmark={landmark} onLandmark={setLandmark} stitch={stitch} onStitch={setStitch} onOpenDocuments={openDocuments} askSlot={askSlot("plan")} />
+              <PlanView data={data} mobile={mobile} landmark={landmark} onLandmark={setLandmark} stitch={stitch} onStitch={setStitch} onOpenDocuments={openDocuments} />
             </ErrorBoundary>
             <ErrorBoundary label={NAV.compare} resetKey={tab}>
-              <CompareView plans={plans} items={items} benefits={benefits} initial={defaultCompareColumns(planRef, plans)} askSlot={askSlot("compare")} />
+              <CompareView plans={plans} items={items} benefits={benefits} initial={defaultCompareColumns(planRef, plans)} />
             </ErrorBoundary>
             <ErrorBoundary label={NAV.documents} resetKey={tab}>
               <DocumentsView planCode={planRef} plans={plans} onPlan={selectPlan} evidence={evidence} stitches={stitches} selected={stitch} onSelect={setStitch}
-                             onRetry={() => { void resetPrivate(); }} askSlot={askSlot("documents")} />
+                             onRetry={() => { void resetPrivate(); }} />
             </ErrorBoundary>
           </ViewSwitch>
         </TabsContent>
       </main>
 
       {stitch && <ClauseCard stitch={stitch} lines={estimate?.ledger.lines ?? []} askScope={{ plan_ref: planRef, stitch: `${stitch.doc}#p${stitch.page}`, estimate_id: estimate?.id }} onClose={closeStitch} onOpenOnPage={openOnPage} />}
-      {mobile && <AskDock tab={tab} scope={askScope} onOpenStitch={openStitchById} />}
+      <AskDock tab={tab} scope={askScope} onOpenStitch={openStitchById} />
       <footer className="footer">{FOOTER}</footer>
     </Tabs>
     </AssistDataProvider>
