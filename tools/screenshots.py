@@ -657,6 +657,10 @@ def static_checks():
             if pat.search(line) and not re.search(r"bounce:\s*0|no-bounce|no bounce", line):
                 hits.append(f"{f.relative_to(ROOT)}:{i}")
     check("anti-slop: no forbidden motion keywords", not hits, "; ".join(hits)[:200])
+    # motion-10: no sub-2 s loop under reduced motion in StatusMark; motion-11: the highlighter never redraws on page-height changes
+    sm = (ROOT / "web/src/components/ui/StatusMark.tsx").read_text(encoding="utf-8")
+    hl = (ROOT / "web/src/components/magicui/highlighter.tsx").read_text(encoding="utf-8")
+    check("motion: no reduced-motion loop, no body-resize redraw", "sm-breathe" not in sm and "observe(document.body)" not in hl and ".animate = false" in hl)
     r = subprocess.run([sys.executable, str(ROOT / "tools/advice_lint.py"), str(ROOT / "web/src/lib"), str(ROOT / "api/app/templates.py"), str(ROOT / "api/app/assistant_templates.py")], capture_output=True, text=True)
     check("lint: copy lints clean", r.returncode == 0, (r.stdout.strip().splitlines() or [""])[-1][:120])
 
