@@ -32,7 +32,7 @@ function CheckpointRow({ cp, islandId, selected, onSelect, onSelectStitch }: { c
     <li className="pv-cp-item">
       <button type="button" className={`unstyled pv-cp tone-${tone} ${pass ? "is-passed" : ""} ${selected ? "is-selected" : ""}`} aria-pressed={selected} aria-label={checkpointAria(cp)} onClick={(e) => onSelect(islandId, cp.key, e.currentTarget, e.detail === 0)}>
         <span className="cp-visual"><Glyph id={(pass ? "passed" : cp.glyph) as GlyphId} size={14} /></span>
-        <span className="pv-term">{cp.term}{cp.owner === "nobody" && cp.change ? <small className="pv-owner"> · {PASSAGE.notOwedByYou}</small> : null}</span>
+        <span className="pv-term">{cp.term}{cp.owner === "nobody" && cp.change ? <small className="pv-owner"><span className="pv-owner-sep" aria-hidden="true"> · </span>{PASSAGE.notOwedByYou}</small> : null}</span>
         <span className={`pv-amt ${cp.change != null && cp.change < 0 && cp.owner === "patient" ? "is-yours" : ""}`}>{amount}</span>
       </button>
       {(cp.stitch || cp.badge) && (
