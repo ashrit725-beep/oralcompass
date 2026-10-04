@@ -59,7 +59,7 @@ def open_alex(page):
     page.goto(BASE, wait_until="networkidle")
     page.wait_for_timeout(600)
     # fresh user → start screen (the demo user may already have journeys from earlier runs; handle both)
-    if page.get_by_role("heading", name="Starting point").count():
+    if page.locator("#start-h").count():   # the start screen (the care timeline's stage titles also read "Starting point")
         page.screenshot(path=OUT / "start.png", full_page=True)
         page.locator("button", has_text="Alex Chen").first.click()
         page.wait_for_timeout(1200)
@@ -150,12 +150,30 @@ def run(pw, device: str, reduced_motion: str = "no-preference"):
     check(f"{device}: progress language", page.get_by_text("of", exact=False).filter(has_text="checkpoints completed").count() > 0)
 
     # ---- the Passage (spec §12 "view journey") ----
+    # mobile-only app (owner direction "its fully a mobile app"): the title card over the painting carries ONE facts line; the Answers log
+    # and the journey pickers live in the "Journey details" disclosure below the map
+    facts = page.locator(".cin-fact-line").first.inner_text() if page.locator(".cin-fact-line").count() else ""
+    check(f"{device}: compact journey header (one facts line over the painting)", "checkpoints completed" in facts and "$902.00" in facts and "$1,098.00" in facts
+          and page.locator(".cin-calc", has_text="Calculated from the clauses cited").count() == 1, facts[:90])
+    stage_top = page.evaluate("(() => { const s = document.querySelector('.cin-stage'); const p = document.querySelector('.passage-vertical-wrap'); return s && p ? [Math.round(s.getBoundingClientRect().top), Math.round(p.getBoundingClientRect().top), innerHeight] : null; })()")
+    check(f"{device}: the painted map starts inside the first viewport", bool(stage_top) and stage_top[0] < 200 and stage_top[1] < stage_top[2] - 120, str(stage_top))
+    box = page.evaluate("(() => { const s = getComputedStyle(document.querySelector('.cin-stage')); return [s.borderTopWidth, s.borderRadius, s.boxShadow]; })()")
+    check(f"{device}: the map is not in a box (no border, radius or shadow on the stage)", box == ["0px", "0px", "none"], str(box))
+    details = page.locator("details.journey-details")
+    if details.count() and not details.evaluate("d => d.open"):
+        details.locator("summary").first.click(); page.wait_for_timeout(200)
     log = page.locator("dl.log")
     check(f"{device}: answers log present", log.count() == 1 and log.locator("dt").count() == 5 and "$902.00" in log.locator(".log-cost").inner_text(), log.locator(".log-cost").inner_text()[:60] if log.count() else "")
     check(f"{device}: route has start and light", page.locator("button[aria-label^='Start ·']").count() > 0 and page.locator("button[aria-label^='Harbor Light ·']").count() > 0)
     # NumberFlow renders digits in a shadow root: the lozenge's aria-label and the custom element's data attribute carry the figures
     check(f"{device}: soundings printed", page.locator(".sounding[aria-label*='maximum left $672.00']").count() > 0 and page.locator(".sounding number-flow-react[data*='$672.00']").count() > 0)
-    # (mobile-only direction: the desktop chart's "soundings cover no control" check was removed; phone soundings are inline lines)
+    if True:   # findings layout-1 / slop-7: each lozenge holds its figures and covers no control on the chart (every device: one layout)
+        sd = page.evaluate("""(() => { const ctl = [...document.querySelectorAll('#passage-islands button')].map(b => b.getBoundingClientRect());
+          return [...document.querySelectorAll('#passage-islands .sounding')].map(s => { const r = s.getBoundingClientRect();
+            const spill = [...s.querySelectorAll('.amt')].some(a => a.getBoundingClientRect().right > r.right + 0.5);
+            const hit = ctl.some(c => c.left < r.right - 2 && r.left < c.right - 2 && c.top < r.bottom - 2 && r.top < c.bottom - 2);
+            return spill || hit; }).filter(Boolean).length; })()""")
+        check(f"{device}: soundings hold their figures and cover no control", sd == 0, f"bad={sd}")
     check(f"{device}: closed channel on marginal", page.locator("button[aria-label*='Occlusal night guard'][aria-label*='not covered']").count() > 0)
     END_STATE[device] = passage_names(page)
     shot("11-passage")
@@ -182,7 +200,8 @@ def run(pw, device: str, reduced_motion: str = "no-preference"):
     add_btn = page.locator(".add-journey-form button[type=submit]")
     check(f"{device}: choosing a journey creates nothing until Add (a11y-16)", before == after and add_btn.count() == 1 and add_btn.is_enabled(), f"options {before}->{after}")
     add.select_option(""); page.wait_for_timeout(200)
-    # (mobile-only direction: "drawer pinned to the viewport after scrolling" was a desktop-column check; the sheet is fixed by design)
+    # (the desktop "drawer pinned to the viewport after scrolling" check was removed: superseded by the mobile-only direction, where the
+    # procedure details are always the bottom sheet)
 
     # ---- open the root canal island → ProcedureDrawer (spec §12 "open island", "view calculation", "trust") ----
     open_island("Root canal", 1200)
@@ -191,9 +210,12 @@ def run(pw, device: str, reduced_motion: str = "no-preference"):
         check(f"{device}: sheet takes focus on open", in_dlg, page.evaluate("document.activeElement && document.activeElement.tagName"))
     h3s = drawer_h3s()
     check(f"{device}: drawer opens with sections", page.locator(".drawer").count() > 0 and all(any(h.startswith(n) for h in h3s) for n in DRAWER_H3), "; ".join(h3s)[:200])
-    # the sheet's crumbs name the island and its place (was the desktop "labelled region with crumbs" check; mobile-only direction)
-    crumbs = page.locator(".drawer .crumbs").first.inner_text() if page.locator(".drawer .crumbs").count() else ""
-    check(f"{device}: drawer crumbs name the island", "Island 1 of 2" in crumbs and "Narrow Strait" in crumbs, crumbs[:80])
+    # the camera dollies the selected island into the strip above the sheet (transform only; the island stays the selection)
+    cam = page.evaluate("(() => { const c = document.querySelector('.cin-camera'); const i = document.querySelector('[data-stage-focus=true]'); return [c ? getComputedStyle(c).transform : null, i ? (i.getAttribute('aria-label') || '').slice(0, 20) : null]; })()")
+    check(f"{device}: the stage camera follows the selected island", bool(cam[0]) and cam[0] != "none" and (cam[1] or "").startswith("Root canal"), str(cam))
+    other_opacity = page.evaluate("[...document.querySelectorAll('.pv-island-card:not(.is-selected) .pv-label')].every(b => getComputedStyle(b).opacity === '1')")
+    crumbs = page.locator(".drawer .crumbs, .drawer [class*='crumb']").first.inner_text() if page.locator(".drawer .crumbs, .drawer [class*='crumb']").count() else ""
+    check(f"{device}: other island labels keep full contrast; the sheet names the island with crumbs", other_opacity and "Island 1 of 2" in crumbs and "Narrow Strait" in crumbs, crumbs[:80])
     hero1 = hero_text()
     nodes = page.locator(".drawer .pipeline .node")
     rules = page.evaluate("[...document.querySelectorAll('.drawer .pipeline .node')].map(n => n.getAttribute('data-rule'))")
@@ -287,8 +309,8 @@ def run(pw, device: str, reduced_motion: str = "no-preference"):
     shot("12-drawer")
     close_drawer()
 
-    # ---- arriving from a checkpoint: the phone passage's checkpoint row opens the sheet at its section ----
-    page.locator("#passage-islands .pv-cps button[aria-label^='Deductible']").first.click(); page.wait_for_timeout(1000)
+    # ---- arriving from a checkpoint (the checkpoints are markers on the painted route) ----
+    page.locator("button[data-cp-of][aria-label^='Deductible']").first.click(); page.wait_for_timeout(900)
     focused = page.evaluate("document.activeElement && [document.activeElement.tagName, document.activeElement.textContent]")
     check(f"{device}: arrive from a checkpoint focuses its section", bool(focused) and focused[0] == "H3" and focused[1] == "Deductible", str(focused))
     close_drawer()
@@ -315,8 +337,8 @@ def run(pw, device: str, reduced_motion: str = "no-preference"):
     close_drawer()
     page.keyboard.press("Escape"); page.wait_for_timeout(200)
 
-    # ---- care stages live in the Care timeline segment (spec §2.3) ----
-    page.get_by_role("button", name="Care timeline").click(); page.wait_for_timeout(500)
+    # ---- care stages: the Care timeline is a list section below the map (spec §2.3) ----
+    page.locator("#care-timeline").scroll_into_view_if_needed(); page.wait_for_timeout(300)
     # select the 'Before your visit' stage then its 'Appointment information recorded' checkpoint (confirmed by the dental team)
     page.locator("button[aria-label^='Before your visit']").first.click()
     page.wait_for_timeout(400)
@@ -342,12 +364,12 @@ def run(pw, device: str, reduced_motion: str = "no-preference"):
     close_sheet()
 
     # overview list (accessible equivalent): the route table first, then the stage tables
-    page.get_by_role("button", name="Overview list").click(); page.wait_for_timeout(300)
+    page.locator("details.journey-overview > summary").click(); page.wait_for_timeout(300)
     check(f"{device}: overview table present", page.locator("table.ov-table").count() >= 3)
     check(f"{device}: skip link target exists in the overview segment", page.evaluate("(() => { const a = document.querySelector('a.skip-link'); return !!a && !!document.querySelector(a.getAttribute('href')); })()"))
     check(f"{device}: overview route table lists the islands", page.locator("table.ov-islands tr.ov-island").count() == 2 and page.locator("table.ov-islands number-flow-react[data*='$392.00']").count() > 0)
     shot("04-overview")
-    page.get_by_role("button", name="Map view").click(); page.wait_for_timeout(300)
+    page.locator("details.journey-overview > summary").click(); page.wait_for_timeout(300)   # close the overview again
 
     # ---- My plan: selector, compass, landmarks (spec §12 "select plan", "answers from the compass", "depth dial", "benefit statement") ----
     # orchestrator note 19a: a tab change opens the new view at the top and a tap on the dock focuses its heading
@@ -573,9 +595,9 @@ def run(pw, device: str, reduced_motion: str = "no-preference"):
     page.keyboard.press("Enter"); page.wait_for_timeout(300)
     inside = page.evaluate("!!(document.activeElement && document.activeElement.closest('#passage-islands'))")
     check(f"{device}: skip link to route", (first or "").strip() == "Skip to the route" and inside, f"first={first!r} inside={inside}")
-    # (mobile-only direction: "arrow keys move between islands" tested the desktop chart's roving focus; the phone passage is a list)
-    # Tab reaches the care stages; Enter activates (the heading named 'Starting point' comes from the DetailPanel)
-    page.get_by_role("button", name="Care timeline").click(); page.wait_for_timeout(400)
+    # (the desktop chart's arrow-key roving between islands was removed with the desktop layout: on the phone passage every stop is a
+    # button in reading order, so Tab walks START, each island, its checkpoints and the Harbor Light)
+    # Tab reaches the care stages; Enter activates (the heading named 'Starting point' comes from the DetailPanel sheet)
     page.locator("h1").click()
     page.keyboard.press("Tab")
     focused = page.evaluate("document.activeElement && document.activeElement.textContent")
@@ -585,7 +607,7 @@ def run(pw, device: str, reduced_motion: str = "no-preference"):
         if tag and str(tag).startswith("Starting point"):
             page.keyboard.press("Enter"); page.wait_for_timeout(300)
             break
-    check(f"{device}: keyboard activates an island", page.get_by_role("heading", name="Starting point").count() > 0, str(focused)[:40])
+    check(f"{device}: keyboard activates an island", page.locator("[role=dialog] h2#detail-h", has_text="Starting point").count() > 0, str(focused)[:40])
     close_sheet()
 
     # ---- AI treatment-plan reader (addendum D.5a): the stored fictional estimate reads into reviewed rows, nothing ticked; read-only (no confirm) ----
@@ -613,7 +635,7 @@ def run(pw, device: str, reduced_motion: str = "no-preference"):
     if True:
       ISLAND_CARDS = "#passage-islands .pv-card:not(.pv-frame)"
       try:
-        before = page.locator(ISLAND_CARDS).count()
+        before = page.locator("#passage-islands .pv-island-card").count()
         page.get_by_role("tab", name="My plan").click(); page.wait_for_timeout(800)
         det = page.locator("details", has_text="Add a procedure").first
         if det.count() and not det.evaluate("d => d.open"): det.locator("summary").first.click(); page.wait_for_timeout(300)
@@ -630,8 +652,8 @@ def run(pw, device: str, reduced_motion: str = "no-preference"):
         page.get_by_role("button", name="Add this procedure").click(); page.wait_for_timeout(2500)
         added_text = page.get_by_text("was added to your records. The estimate is recalculating.", exact=False).count() > 0
         page.get_by_role("tab", name="My journey").click(); page.wait_for_timeout(2500)
-        after_n = page.locator(ISLAND_CARDS).count()
-        new_btn = page.locator("#passage-islands .pv-card[aria-label^='Adult cleaning']").count()
+        after_n = page.locator("#passage-islands .pv-island-card").count()
+        new_btn = page.locator("#passage-islands .pv-island-card[aria-label^='Adult cleaning']").count()
         shot("28-added-procedure")
         check(f"{device}: add procedure draws island", n_opts == 16 and tooth_for_crown and not tooth_for_cleaning and src_required and added_text and after_n == before + 1 and new_btn > 0,
               f"options={n_opts} tooth(crown/cleaning)={tooth_for_crown}/{tooth_for_cleaning} source_required={src_required} added={added_text} islands {before}→{after_n}")
@@ -754,11 +776,11 @@ def run_reduced_phone(pw):
     open_alex(page)
     page.screenshot(path=OUT / "pixel7-reduced-11-passage.png", full_page=True)
     names = passage_names(page)
-    check("reduced motion: end-state DOM equals the full-motion end state", names == END_STATE.get("pixel7"), f"{len(names)} controls")
-    anim = page.evaluate("""() => ['.route', '.fog-drift', '.beam', '.ripples', '.ocean-seigaiha'].map(s => { const el = document.querySelector(s); return el ? [s, getComputedStyle(el).animationName] : [s, 'absent']; })""")
+    check("reduced motion: end-state DOM equals the full-motion end state", names == END_STATE.get("desktop"), f"{len(names)} controls")
+    anim = page.evaluate("""() => ['.route', '.fog-drift', '.beam', '.ripples', '.cin-drift', '.cin-settle'].map(s => { const el = document.querySelector(s); return el ? [s, getComputedStyle(el).animationName] : [s, 'absent']; })""")
     check("reduced motion: no scenery animation", all(a in ("none", "absent") for _, a in anim), str(anim))
     drawn = page.evaluate("""() => [...document.querySelectorAll('.route-group path.route')].every(p => { const o = getComputedStyle(p).opacity; const pl = p.style.strokeDashoffset; return Number(o) >= 0.7 && (!pl || parseFloat(pl) <= 0.001); })""")
-    markers = page.locator("#passage-islands .cp-btn, #passage-islands .pv-cp").count()
+    markers = page.locator("#passage-islands .pv-cp").count()
     check("reduced motion: route drawn and markers present", drawn and markers >= 12, f"markers={markers}")
     browser.close()
 

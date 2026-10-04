@@ -7,10 +7,8 @@
  * only), fog (unresolved lines, named missing inputs), closed channels (not-covered lines) and soundings (`remaining_after`).
  * The UI never computes an amount: the only arithmetic is the display sums `buildTrail` already reconciles against the engine.
  *
- * `layoutPassage(vm, mode, opts)` places everything in the 1000 × 600 viewBox (§3.8) inside the backdrop's open-water region (addendum
- * §C.1), routes the checkpoints along an arc over each island, and asserts that no two 44 px control rectangles intersect at the
- * binding 854 px plate width (addendum B1/B2/B3): arcs widen, zero-change markers collapse into one hollow "passed" marker, and dense
- * routes degrade to a compound marker per island, in that order. `collisions` is returned (and tested to be empty) rather than thrown.
+ * `smoothRoute(points)` draws the phone passage's inked route through stops measured from the HTML (mobile-only app: the 1000 × 600
+ * desktop chart layout and its collision solver were removed with the desktop layout).
  */
 import { checkpointEvidence } from "./checkpoints";
 import { stitchForCheckpoint } from "./drawer";
@@ -259,15 +257,6 @@ function stitchForCiteLike(cite: { page: number; quote: string; doc?: string } |
 // ---------------------------------------------------------------------------------------------------------------------------------
 
 export type AnswerTarget = "stage" | "island" | "light" | "checkpoint" | "documents";
-export type JourneySegment = "map" | "care" | "overview";
-
-/** Which segment of My journey shows the thing an Answers-log row names (null: it lives on another tab). Stages live in the Care
- *  timeline segment on phones and in the map segment's care rail (or the care segment) on desktop; everything else is on the map. */
-export function answerSegment(target: AnswerTarget, mobile: boolean, current: JourneySegment): JourneySegment | null {
-  if (target === "documents") return null;
-  if (target === "stage") return mobile ? "care" : current === "overview" ? "map" : current;
-  return "map";
-}
 /** `calc`: the row prints engine totals, so it carries the "Calculated from the clauses cited" mark beside it (finding info-only-5). */
 export interface AnswerRow { key: string; dt: string; dd: string; title?: string; target: AnswerTarget; calc?: boolean }
 
@@ -338,262 +327,36 @@ export function checkpointAria(cp: InsuranceCheckpointVM): string {
 
 
 // ---------------------------------------------------------------------------------------------------------------------------------
-// layoutPassage
+// Phone route (the cinematic passage): the stops are HTML, the line is measured from them
 // ---------------------------------------------------------------------------------------------------------------------------------
 
-export const VB_W = 1000;
-export const VB_H = 600;
-/** The binding plate width (desktop with the drawer open) used for the 44 px assertion. */
-export const BINDING_PX = 854;
-export const TARGET_PX = 44;
-
-export interface Pt { x: number; y: number }
-export interface Rect { x: number; y: number; w: number; h: number; id: string }
-export interface CheckpointLayout { key: string; x: number; y: number; r: number; passThrough: boolean; collapsedKeys?: string[] }
+/** One painted plate in its own box (ProcedureIsland): centre, radius, the plate rectangle and the optional compound count badge. */
 export interface IslandLayout {
-  id: string; cx: number; cy: number; r: number; arcR: number; arcStart: Pt; arcEnd: Pt; sweepStart: number; sweepEnd: number; flip: boolean;
-  /** Arc markers (HTML controls) when expanded; empty when compound. */
-  checkpoints: CheckpointLayout[];
-  /** Compound: one SVG count badge at `badge` (not a control); the island button carries "{k} checkpoints". */
-  compound: boolean; badge: Pt;
-  button: Rect; plate: { x: number; y: number; w: number; h: number; slot: string; scale: number };
+  id: string; cx: number; cy: number; r: number;
+  compound: boolean; badge: { x: number; y: number };
+  plate: { x: number; y: number; w: number; h: number; slot: string; scale: number };
 }
 export interface RouteSegment { d: string; closed: boolean; from: string; to: string }
-export interface SoundingLayout { islandId: string; x: number; y: number }
-export interface SmallIslandLayout { id: string; cx: number; cy: number; r: number; button: Rect }
-export interface PassageLayout {
-  w: number; h: number; mode: "desktop" | "phone"; dense: boolean; collapsed: boolean; plain: boolean;
-  start: Pt; destination: Pt; startButton: Rect; destinationButton: Rect; destinationR: number;
-  islands: IslandLayout[]; visited: SmallIslandLayout[]; visitedOverflow: number; visitedMore: Rect | null; marginal: SmallIslandLayout[]; marginalOverflow: number;
-  /** "+k more mentioned": the marginal islands past the ones drawn (null when none are hidden, or no clear spot on the lower margin). */
-  marginalMore: Rect | null;
-  route: RouteSegment[]; soundings: SoundingLayout[]; controls: Rect[]; collisions: [string, string][];
-}
-export interface LayoutOptions { selected?: string | null; widthPx?: number }
+/** A route stop measured from the page: `closed` marks a stop that belongs to a not-covered island (the channel leaving it is closed). */
+export interface RoutePoint { id: string; x: number; y: number; closed: boolean }
 
-const PLATE_ASPECT = 1106 / 1422;
-const px2u = (px: number, widthPx: number) => (px * VB_W) / widthPx;
-const rectAt = (cx: number, cy: number, w: number, h: number, id: string): Rect => ({ x: cx - w / 2, y: cy - h / 2, w, h, id });
-export const rectsIntersect = (a: Rect, b: Rect) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
-export function findCollisions(rects: Rect[]): [string, string][] {
-  const out: [string, string][] = [];
-  for (let i = 0; i < rects.length; i++) for (let j = i + 1; j < rects.length; j++) if (rectsIntersect(rects[i], rects[j])) out.push([rects[i].id, rects[j].id]);
-  return out;
-}
-
-/** Island radius per count (§3.8). */
-export const radiusFor = (n: number) => (n === 1 ? 96 : n <= 3 ? 84 : n <= 4 ? 74 : n <= 6 ? 62 : 54);
-/** Expanded arcs for every island up to three; from four the route is dense (compound badges, the selected island expands). */
+/** From four islands on, the route is dense (spec §3.8). */
 export const denseFrom = (n: number) => n >= 4;
 
-/** Island centres per count, inside the open-water region of the painted backdrop (x ≈ 180–830, y ≈ 100–500; addendum §C.1). */
-export function islandCentres(n: number): Pt[] {
-  if (n === 0) return [];
-  if (n === 1) return [{ x: 500, y: 340 }];
-  if (n <= 6) {
-    const [x0, span] = n === 2 ? [290, 310] : n === 3 ? [230, 560] : [280, 500];
-    const amp = n >= 4 ? 28 : 70;                                   // dense routes flatten so a neighbour's button never meets an arc end
-    return Array.from({ length: n }, (_, i) => { const t = i / (n - 1); return { x: x0 + t * span, y: 350 + Math.sin(t * Math.PI * 1.4 + 0.3) * amp }; });
-  }
-  const perRow = 4, out: Pt[] = [];
-  for (let i = 0; i < Math.min(n, 8); i++) {
-    const row = Math.floor(i / perRow), k = i % perRow;
-    out.push({ x: 250 + (row === 0 ? k : perRow - 1 - k) * (500 / (perRow - 1)), y: row === 0 ? 270 : 470 });
+/**
+ * The route through the measured stops, one segment per leg (so the pen can draw leg by leg). The coast runs downward, so each leg is a
+ * cubic with vertical tangents at both stops: straight along a run of checkpoint markers, an S-curve between the lane and an island's
+ * shore, and never an overshoot past the column edge. A leg leaving a stop of a not-covered island is the closed channel.
+ */
+export function smoothRoute(points: RoutePoint[]): RouteSegment[] {
+  const out: RouteSegment[] = [];
+  for (let i = 1; i < points.length; i++) {
+    const a = points[i - 1], b = points[i];
+    const dy = Math.max(12, Math.abs(b.y - a.y)) * 0.5;
+    const f = (n: number) => n.toFixed(1);
+    const d = a.x === b.x ? `M ${f(a.x)} ${f(a.y)} L ${f(b.x)} ${f(b.y)}`
+      : `M ${f(a.x)} ${f(a.y)} C ${f(a.x)} ${f(a.y + dy)}, ${f(b.x)} ${f(b.y - dy)}, ${f(b.x)} ${f(b.y)}`;
+    out.push({ d, closed: a.closed, from: a.id, to: b.id });
   }
   return out;
-}
-/** START and the Harbor Light per count: the harbor on the left shore, the Light at the right-hand cove. */
-export function framePoints(n: number): { start: Pt; destination: Pt; destinationR: number } {
-  if (n === 0) return { start: { x: 180, y: 380 }, destination: { x: 820, y: 380 }, destinationR: 58 };
-  if (n === 1) return { start: { x: 150, y: 390 }, destination: { x: 840, y: 400 }, destinationR: 58 };
-  if (n === 2) return { start: { x: 118, y: 400 }, destination: { x: 820, y: 410 }, destinationR: 58 };
-  if (n === 3) return { start: { x: 150, y: 518 }, destination: { x: 850, y: 460 }, destinationR: 56 };
-  if (n >= 7) return { start: { x: 110, y: 370 }, destination: { x: 870, y: 380 }, destinationR: 50 };
-  return { start: { x: 120, y: 400 }, destination: { x: 860, y: 430 }, destinationR: 56 };
-}
-
-const ARC_CONFIGS = [{ k: 1.35, span: 160 }, { k: 1.5, span: 180 }, { k: 1.7, span: 200 }, { k: 1.9, span: 210 }];
-/** Dense routes keep the arc over the top half so its ends stay clear of the neighbours' buttons. */
-const DENSE_ARC_CONFIGS = [{ k: 1.5, span: 140 }, { k: 1.7, span: 140 }, { k: 1.9, span: 150 }, { k: 2.1, span: 150 }];
-const deg = (d: number) => (d * Math.PI) / 180;
-
-/** Points along an arc over (or, flipped, under) the island: left end → apex → right end. */
-function arcPoints(cx: number, cy: number, R: number, span: number, m: number, flip: boolean): { pts: Pt[]; a0: number; a1: number } {
-  const a0 = deg(180 + (180 - span) / 2), a1 = deg(360 - (180 - span) / 2);
-  const pts = Array.from({ length: m }, (_, j) => {
-    const a = m === 1 ? (a0 + a1) / 2 : a0 + ((a1 - a0) * j) / (m - 1);
-    const y = cy + Math.sin(a) * R;
-    return { x: cx + Math.cos(a) * R, y: flip ? cy - (y - cy) : y };
-  });
-  return { pts, a0, a1 };
-}
-const endPt = (cx: number, cy: number, R: number, a: number, flip: boolean): Pt => { const y = cy + Math.sin(a) * R; return { x: cx + Math.cos(a) * R, y: flip ? cy - (y - cy) : y }; };
-
-type Slot = { key: string; passThrough: boolean; collapsedKeys?: string[] };
-const isPassThrough = (cp: InsuranceCheckpointVM) => cp.change === 0 && cp.stepIndexes.length === 0 && cp.rule !== "fee" && cp.rule !== "total";
-
-/** Try the arc configurations (then the pass-through collapse) until the island's markers clear `others` and each other. */
-function placeArc(isl: IslandVM, cx: number, cy: number, r: number, hit: number, flip: boolean, others: Rect[], configs = ARC_CONFIGS) {
-  const attempt = (list: Slot[]) => {
-    for (const cfg of configs) {
-      const R = cfg.k * r;
-      const { pts, a0, a1 } = arcPoints(cx, cy, R, cfg.span, list.length, flip);
-      const rects = pts.map((p, j) => rectAt(p.x, p.y, hit, hit, list[j].key));
-      const clear = !findCollisions(rects).length && !rects.some((nr) => others.some((o) => rectsIntersect(o, nr)));
-      if (clear) return { cps: list.map((c, j) => ({ ...c, x: pts[j].x, y: pts[j].y, r: 0 })), R, a0, a1, rects };
-    }
-    return null;
-  };
-  const full: Slot[] = isl.checkpoints.map((cp) => ({ key: cp.key, passThrough: isPassThrough(cp) }));
-  let res = attempt(full), collapsed = false;
-  if (!res) {
-    const pt = isl.checkpoints.filter(isPassThrough);
-    if (pt.length >= 2) {
-      const list: Slot[] = []; let placed = false;
-      for (const cp of isl.checkpoints) {
-        if (isPassThrough(cp)) { if (!placed) { list.push({ key: `${isl.id}:passed`, passThrough: true, collapsedKeys: pt.map((c) => c.key) }); placed = true; } continue; }
-        list.push({ key: cp.key, passThrough: false });
-      }
-      res = attempt(list); collapsed = !!res;
-    }
-  }
-  return res ? { ...res, collapsed, ok: true as const } : { ok: false as const };
-}
-
-function cubic(a: Pt, b: Pt): string {
-  const mx = (a.x + b.x) / 2;
-  return `C ${mx.toFixed(1)} ${a.y.toFixed(1)}, ${mx.toFixed(1)} ${b.y.toFixed(1)}, ${b.x.toFixed(1)} ${b.y.toFixed(1)}`;
-}
-
-export function layoutPassage(vm: PassageVM, mode: "desktop" | "phone", opts: LayoutOptions = {}): PassageLayout {
-  const widthPx = opts.widthPx ?? BINDING_PX;
-  const u = (px: number) => px2u(px, widthPx);
-  const hit = u(TARGET_PX);                                  // 44 px in viewBox units
-  const n = vm.islands.length;
-  const centres = islandCentres(n);
-  const r = radiusFor(n);
-  const { start, destination, destinationR } = framePoints(n);
-  const selected = opts.selected ?? null;
-  const dense = denseFrom(n);
-  // island buttons: 152 px so "Crown, porcelain/ceramic" breaks into two whole lines; 72 px tall is the real two-line title + sub + amount
-  const btnW = u(dense ? 104 : 152), btnH = hit, islH = u(dense ? 44 : 72);
-  const startButton = rectAt(start.x, start.y + u(46), u(150), btnH, "start");
-  const destinationButton = rectAt(destination.x, destination.y + destinationR * 0.7 + u(36), u(170), btnH, "destination");
-
-  // visited: a short column on the left shore above START (max 3, then "+k more"); marginal: lower margin right of centre (max 3, then +k)
-  // visited chips are 128 × 52 px so a two-line short name fits ("Resin composite filling") instead of truncating
-  const visitedW = u(128), visitedH = u(52);
-  const vTop = n === 3 ? 44 : 56, vPitch = visitedH + u(4), vCx = u(10) + visitedW / 2;
-  const visited: SmallIslandLayout[] = vm.visited.slice(0, 3).map((v, j) => { const cx = vCx, cy = vTop + j * vPitch; return { id: v.id, cx, cy, r: 24, button: rectAt(cx, cy, visitedW, visitedH, v.id) }; });
-  const visitedOverflow = Math.max(0, vm.visited.length - 3);
-  const visitedMore = visitedOverflow ? rectAt(vCx, vTop + 3 * vPitch - (visitedH - btnH) / 2, visitedW, btnH, "visited:more") : null;
-  const maxMarginal = n >= 7 ? 2 : 3;
-  // marginal buttons step by their own width (+4 px): a fixed 150/118 pitch let the 152 px buttons overlap once two or three were drawn
-  const mPitch = btnW + u(4);
-  const marginal: SmallIslandLayout[] = vm.marginal.slice(0, maxMarginal).map((m, j) => { const cx = n >= 7 ? 930 - j * mPitch : 640 - j * mPitch, cy = n >= 7 ? 500 : 512; return { id: m.id, cx, cy, r: 36, button: rectAt(cx, cy + 28 + u(26), btnW, btnH, m.id) }; });
-  const marginalOverflow = Math.max(0, vm.marginal.length - maxMarginal);
-
-  // island plates and buttons (fixed), then arcs placed against everything already on the chart
-  const fixed: Rect[] = [startButton, destinationButton, ...visited.map((v) => v.button), ...(visitedMore ? [visitedMore] : []), ...marginal.map((m) => m.button)];
-  const placedButtons: Rect[] = [];
-  const bases = vm.islands.map((isl, i) => {
-    const { x: cx, y: cy } = centres[i] ?? { x: 500, y: 350 };
-    const major = isl.category === "major" || isl.category === "major_excluded";
-    const scale = major ? 3.4 : 3;
-    const plate = { x: cx - (scale * r) / 2, y: cy - (scale * r * PLATE_ASPECT) / 2, w: scale * r, h: scale * r * PLATE_ASPECT, slot: major ? "island-major" : "island-generic", scale };
-    let button = rectAt(cx, cy + r * 0.75 + u(36) + (islH - btnH) / 2, btnW, islH, isl.id);
-    // dense: a button that would touch its neighbour's drops to a second row (or rises above the plate near the bottom edge)
-    const prev = i > 0 ? placedButtons[i - 1] : null;
-    if (prev && rectsIntersect(prev, button)) {
-      const down = prev.y + prev.h + 4 + islH / 2;
-      button = down + islH / 2 <= VB_H - 4 ? rectAt(cx, down, btnW, islH, isl.id) : rectAt(cx, cy - r * 0.75 - u(36), btnW, islH, isl.id);
-    }
-    // the wider (152 px) island buttons slide sideways off the START / Harbor Light buttons instead of touching them
-    for (const f of [startButton, destinationButton]) {
-      if (!rectsIntersect(f, button)) continue;
-      const right = f.x + f.w + u(4) - button.x, left = button.x + button.w - (f.x - u(4));
-      button = { ...button, x: button.x + (f.x + f.w / 2 < button.x + button.w / 2 ? right : -left) };
-    }
-    placedButtons.push(button);
-    return { isl, cx, cy, plate, button };
-  });
-  fixed.push(...bases.map((b) => b.button));
-  // a marginal ("mentioned") button that meets an island button slides right along the lower margin (or left at the edge)
-  for (const m of marginal) {
-    for (const b of bases) {
-      if (!rectsIntersect(m.button, b.button)) continue;
-      const blockers = fixed.filter((f) => f !== m.button);
-      const xs = [b.button.x + b.button.w + u(4), b.button.x - u(4) - m.button.w].filter((x) => x >= 4 && x + m.button.w <= VB_W - 4);
-      const x = xs.find((xx) => !blockers.some((f) => rectsIntersect(f, { ...m.button, x: xx })));
-      if (x != null) m.button.x = x;
-    }
-  }
-  // marginal islands past the 2–3 drawn get one "+k more" control on the lower margin (they were computed and silently dropped)
-  let marginalMore: Rect | null = null;
-  if (marginalOverflow > 0) {
-    const w = u(112), y = marginal.length ? marginal[marginal.length - 1].button.y : VB_H - btnH - 8;
-    for (let x = VB_W - 4 - w; x >= 4 && !marginalMore; x -= u(16)) {
-      const rc = { x, y, w, h: btnH, id: "marginal:more" };
-      if (!fixed.some((f) => rectsIntersect(f, rc))) marginalMore = rc;
-    }
-    if (marginalMore) fixed.push(marginalMore);
-  }
-  let collapsed = false, plain = false;
-  const placedRects: Rect[] = [];
-  const islands: IslandLayout[] = bases.map(({ isl, cx, cy, plate, button }, i) => {
-    const flip = false;
-    const expanded = isl.checkpoints.length > 0 && (!dense || isl.id === selected);
-    const markerR = n <= 4 ? 9 : 7;
-    let cps: CheckpointLayout[] = [], R = 1.35 * r, a0 = deg(190), a1 = deg(350), compound = isl.checkpoints.length > 0;
-    if (expanded) {
-      const res = placeArc(isl, cx, cy, r, hit, flip, [...fixed, ...placedRects], dense ? DENSE_ARC_CONFIGS : ARC_CONFIGS);
-      if (res.ok) { cps = res.cps.map((c) => ({ ...c, r: markerR })); R = res.R; a0 = res.a0; a1 = res.a1; collapsed ||= res.collapsed; compound = false; placedRects.push(...res.rects); }
-      else plain = true;                                                      // honest degrade: markers leave the map for this island
-    }
-    const badge = endPt(cx, cy, R, (a0 + a1) / 2, flip);
-    return { id: isl.id, cx, cy, r, arcR: R, arcStart: endPt(cx, cy, R, a0, flip), arcEnd: endPt(cx, cy, R, a1, flip), sweepStart: a0, sweepEnd: a1, flip, checkpoints: cps, compound, badge, button, plate };
-  });
-  const controls = [...fixed, ...placedRects];
-
-  // route: START → arc(island 1) → … → Light; the segment leaving a not-covered island is the closed channel
-  const route: RouteSegment[] = [];
-  if (n === 0) route.push({ d: `M ${start.x} ${start.y} L ${destination.x} ${destination.y}`, closed: false, from: "start", to: "destination" });
-  else {
-    let prev: Pt = start, prevId = "start", prevClosed = false;
-    islands.forEach((isl, i) => {
-      route.push({ d: `M ${prev.x.toFixed(1)} ${prev.y.toFixed(1)} ${cubic(prev, isl.arcStart)}`, closed: prevClosed, from: prevId, to: isl.id });
-      const large = isl.sweepEnd - isl.sweepStart > Math.PI ? 1 : 0;
-      route.push({ d: `M ${isl.arcStart.x.toFixed(1)} ${isl.arcStart.y.toFixed(1)} A ${isl.arcR.toFixed(1)} ${isl.arcR.toFixed(1)} 0 ${large} ${isl.flip ? 0 : 1} ${isl.arcEnd.x.toFixed(1)} ${isl.arcEnd.y.toFixed(1)}`, closed: false, from: isl.id, to: isl.id });
-      prev = isl.arcEnd; prevId = isl.id; prevClosed = vm.islands[i].state === "not_covered";
-    });
-    route.push({ d: `M ${prev.x.toFixed(1)} ${prev.y.toFixed(1)} ${cubic(prev, { x: destination.x - destinationR * 0.95, y: destination.y + 6 })}`, closed: prevClosed, from: prevId, to: "destination" });
-  }
-
-  // soundings (two-line lozenge, 120 × 44 px) midway along each leg, probed against the controls; never printed on a control
-  // The rect is the lozenge as rendered (160 × 60 px: two figure rows and the badge row) plus a 6 px gap, probed against every control,
-  // every island's arc ring (markers) and the soundings already placed; candidates fan out from the leg midpoint toward open water.
-  const soundW = u(172), soundH = u(66);
-  const soundings: SoundingLayout[] = [];
-  const taken: Rect[] = [...controls];
-  islands.forEach((isl, i) => {
-    if (!vm.islands[i].soundingsAfter) return;
-    const next: Pt = islands[i + 1] ? islands[i + 1].arcStart : { x: destination.x - destinationR, y: destination.y };
-    const mx = (isl.arcEnd.x + next.x) / 2, yLeg = (isl.arcEnd.y + next.y) / 2;
-    const dys = [u(56), u(96), -u(56), u(136), -u(96), u(176)];
-    const dxs = [0, -u(36), u(36), -u(72), u(72)];
-    let best: Pt | null = null;
-    for (const dy of dys) {
-      for (const dx of dxs) {
-        const x = Math.min(Math.max(mx + dx, soundW / 2 + 4), VB_W - soundW / 2 - 4), y = Math.min(Math.max(yLeg + dy, soundH / 2 + 4), VB_H - soundH / 2 - 4);
-        const rc = rectAt(x, y, soundW, soundH, `sounding:${isl.id}`);
-        if (!taken.some((t) => rectsIntersect(t, rc))) { best = { x, y }; break; }
-      }
-      if (best) break;
-    }
-    if (!best) return;                                    // honest degrade: no water left, the figures stay in the drawer and the overview
-    taken.push(rectAt(best.x, best.y, soundW, soundH, `sounding:${isl.id}`));
-    soundings.push({ islandId: isl.id, x: best.x, y: best.y });
-  });
-
-  return { w: VB_W, h: VB_H, mode, dense, collapsed, plain, start, destination, startButton, destinationButton, destinationR, islands, visited, visitedOverflow, visitedMore, marginal, marginalOverflow, marginalMore, route, soundings, controls, collisions: findCollisions(controls) };
 }

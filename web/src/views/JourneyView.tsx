@@ -1,56 +1,84 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
-import { motion } from "motion/react";
 import { PASSAGE } from "@/lib/copy/passage";
-import { UI, type LandmarkId } from "@/lib/copy";
+import { DRAWER, UI, type LandmarkId } from "@/lib/copy";
 import { currentStageId, labeledSamples, shortJourneyLabel } from "@/lib/journey";
-import { useReducedMotion } from "@/lib/motion";
-import { answerSegment, buildPassage, denseFrom, itemRef, planDisplayCode, type AnswerTarget, type JourneySegment } from "@/lib/passage";
-import type { MapSelection, Stage, Stitch } from "@/lib/types";
+import { buildPassage, itemRef, planDisplayCode, type AnswerTarget } from "@/lib/passage";
+import type { JourneyView as JourneyViewModel, MapSelection, SavedEstimate, Stage, Stitch } from "@/lib/types";
 import type { AppData } from "@/hooks/useAppData";
 import type { JourneySelectionApi } from "@/hooks/useJourneySelection";
-import { PassageVertical } from "@/components/atlas/PassageVertical";
+import { CinematicStage } from "@/components/atlas/CinematicStage";
+import { PassageSides, PassageVertical } from "@/components/atlas/PassageVertical";
 import { DetailPanel } from "@/components/DetailPanel";
+import { Money } from "@/components/Money";
 import { ProcedureDrawer } from "@/components/drawer/ProcedureDrawer";
 import { AnswersLog } from "@/components/journey/AnswersLog";
 import { CareTimeline } from "@/components/journey/CareTimeline";
-import { IslandStrip } from "@/components/journey/IslandStrip";
 import { OverviewList } from "@/components/OverviewList";
 
 export interface JourneyViewProps {
   data: AppData;
   selection: JourneySelectionApi;
+  /** Ignored: OralCompass is a mobile app and the phone layout is the only layout (owner direction "its fully a mobile app"). */
+  mobile?: boolean;
   onOpenLandmark: (id: LandmarkId) => void;
   onOpenDocuments: () => void;
   /** Opens the ClauseCard for a stitch pressed on the passage or in the drawer (wired by App). */
   onSelectStitch?: (s: Stitch) => void;
 }
 
-type Segment = JourneySegment;
-
 /**
- * My journey (spec §2, §4.1, §4.3, §6 `JourneyView`): the start screen for a new user, or the journey head (label, progress line),
- * the Answers log, the three-segment toggle "Map view · Care timeline · Overview list" (exact button names; screenshots.py clicks
- * them), then the Passage (PassageVertical) / the Care timeline / the Overview list, and the detail surface: the ProcedureDrawer
- * bottom sheet for islands and checkpoints, the DetailPanel sheet for care stages. Mobile-only (owner direction 2026-10-04): the
- * phone layout is the only layout (the desktop PassageMap plate, care rail and detail column were removed from this view).
- * One aria-live region per surface: "Recalculating…" while a new estimate runs, "Estimate updated" when it lands.
- * Keyboard: Escape closes the top-most surface (the ClauseCard first, then the drawer) and returns focus to its opener.
+ * My journey (mobile-only app; spec §2, §4.3): the start screen for a new user, or
+ *  1. the CinematicStage: a compact title card over the painted sky (the journey's short name and ONE facts line, "5 of 13 checkpoints
+ *     completed · you pay $902.00 · plan $1,098.00" with its calculated label), then the Passage painted full-bleed down the coast;
+ *  2. below the map, native list sections: "Journey details" (the full title, the Answers log, what completion means, the journey picker
+ *     and "Add a journey"), the islets completed on the statement and the islands mentioned at the consultation, the Care timeline, and
+ *     the Overview list (the same route as tables) in a disclosure.
+ * Tapping an island opens the ProcedureDrawer bottom sheet (the stage camera dollies the island above it); a care stage opens the
+ * DetailPanel sheet. One aria-live region: "Recalculating…" while a new estimate runs, "Estimate updated" when it lands.
+ * Keyboard: Escape closes the top-most surface (the ClauseCard first, then the sheet) and returns focus to its opener.
  */
 /** Journey labels arrive with an em dash ("Sample journey — Alex Chen …"); the heading reads it as a label and a colon (copy rule R-02). */
 const headingLabel = (label: string) => label.replace(/\s+—\s+/, ": ").replace(/\s+—\s+/g, ", ");
+/** The title card's name: the person (or the journey's own label), without the "sample" tag the ribbon already carries. */
+const stageTitle = (label: string) => shortJourneyLabel(label.replace(/^Sample journey\s*[:—-]\s*/, "Sample journey — ")).replace(/\s+·\s+sample$/, "");
+
+/** The facts line's cost half: the engine totals with their calculated label, or the honest waiting / missing state. */
+function CostFact({ estimate, recalculating }: { estimate: SavedEstimate | null; recalculating: boolean }) {
+  if (recalculating) return <span className="cin-fact">{PASSAGE.recalculating}</span>;
+  if (!estimate) return <span className="cin-fact">{PASSAGE.noEstimate}</span>;
+  if (estimate.status !== "estimate" || estimate.user_estimated_payment_cents == null) return <span className="cin-fact">{PASSAGE.waitingInputs(estimate.missing_inputs.length)}</span>;
+  const hypo = Object.keys(estimate.inputs?.hypotheticals ?? {}).length > 0;
+  return (
+    <span className="cin-fact cin-fact-cost">
+      {PASSAGE.youPay} <Money cents={estimate.user_estimated_payment_cents} evidence="DOC" badge={false} calc />
+      <span className="cin-sep" aria-hidden="true"> · </span>
+      {PASSAGE.plan} <Money cents={estimate.insurer_estimated_payment_cents} evidence="DOC" badge={false} calc />
+      {estimate.plan_payment_is_upper_bound ? ` ${PASSAGE.upperBoundParen}` : ""}{hypo ? ` ${PASSAGE.withHypothetical}` : ""}
+    </span>
+  );
+}
+
+function Facts({ view, estimate, recalculating }: { view: JourneyViewModel; estimate: SavedEstimate | null; recalculating: boolean }) {
+  const calc = !recalculating && !!estimate && estimate.status === "estimate" && estimate.user_estimated_payment_cents != null;
+  return (
+    <>
+      <p className="cin-fact-line num">
+        <span className="cin-fact">{view.progress.label}</span>
+        <span className="cin-sep" aria-hidden="true"> · </span>
+        <CostFact estimate={estimate} recalculating={recalculating} />
+      </p>
+      {calc && <span className="fig-calc cin-calc" aria-hidden="true">{DRAWER.calculatedCited}</span>}
+    </>
+  );
+}
 
 export function JourneyView({ data, selection, onOpenLandmark, onOpenDocuments, onSelectStitch }: JourneyViewProps) {
   const { view, journeys, samples, plans, busy, startJourney, setView, patch, instructions, items, estimate, benefits, rules, plan, procedures, stitches, planRef, loading, loadRecords, reestimate, hypotheticals, setHypotheticals } = data;
   /** The drawer's Allowance input and the Benefit statement form change private records: reload them and re-run the estimate. */
   const onRecordsChanged = () => { loadRecords(); reestimate(); };
-  const reduce = useReducedMotion();
-  const [segment, setSegment] = useState<Segment>("map");
   const [announce, setAnnounce] = useState("");
   const [addFrom, setAddFrom] = useState("");
-  /** An Answers-log jump waiting for its segment to render (focus moves in an effect after the commit, never through a stale closure). */
-  const [pendingFocus, setPendingFocus] = useState<AnswerTarget | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
-  const segPointer = useRef(false);
   const lastEstimateId = useRef<string | null>(null);
   const realCount = plans.filter((p) => !p.is_fictional).length;
   const newUser = journeys !== null && journeys.length === 0 && !view;
@@ -60,6 +88,7 @@ export function JourneyView({ data, selection, onOpenLandmark, onOpenDocuments, 
   const vm = useMemo(() => buildPassage({ items, estimate, benefits: benefitsFor, journey: view, rules, plan, procedures, stitches, planRef }), [items, estimate, benefitsFor, view, rules, plan, procedures, stitches, planRef]);
   const recalculating = !!loading && loading === UI.processing && !!estimate;
   const planCode = planDisplayCode(planRef, plan);
+  const drawKey = `${planRef}:${vm.islands.map((i) => i.id).join(",")}`;
   const allIslands = useMemo(() => [vm.start, ...vm.islands, vm.destination, ...vm.visited, ...vm.marginal], [vm]);
   const selectedIsland = islandSel ? allIslands.find((i) => i.id === islandSel.islandId) ?? null : null;
 
@@ -82,25 +111,14 @@ export function JourneyView({ data, selection, onOpenLandmark, onOpenDocuments, 
   };
 
   const focusIn = (sel: string) => { const el = rootRef.current?.querySelector<HTMLElement>(sel); el?.focus(); return !!el; };
-  /** Move focus to what an Answers-log row names; the segment that shows it is already rendered. */
-  const focusAnswer = (target: AnswerTarget) => {
-    if (target === "stage") { const id = view?.progress.current_stage ?? (view ? currentStageId(view.journey) : null); if (id) focusIn(`[data-stage-btn="${id}"]`); return; }
-    if (target === "island") focusIn(vm.islands[0] ? `[data-island="${vm.islands[0].id}"]` : ".start-btn, .pv-start button");
-    if (target === "light") focusIn(".light-btn, .pv-light button");
-    if (target === "checkpoint") { const first = vm.islands[0]; if (!first || !focusIn(`[data-cp-of="${first.id}"], .pv-cps .pv-cp`)) focusIn(first ? `[data-island="${first.id}"]` : ".light-btn"); }
-  };
+  /** An Answers-log row moves focus to the thing it names: everything lives on this one scrolling view. */
   const onAnswer = (target: AnswerTarget) => {
-    const need = answerSegment(target, true, segment);
-    if (need === null) { onOpenDocuments(); return; }
-    if (need !== segment) { setSegment(need); setPendingFocus(target); return; }
-    focusAnswer(target);
+    if (target === "documents") { onOpenDocuments(); return; }
+    if (target === "stage") { const id = view?.progress.current_stage ?? (view ? currentStageId(view.journey) : null); if (id) focusIn(`[data-stage-btn="${id}"]`); return; }
+    if (target === "island") focusIn(vm.islands[0] ? `[data-island="${vm.islands[0].id}"]` : ".pv-start button");
+    if (target === "light") focusIn(".pv-light button");
+    if (target === "checkpoint") { const first = vm.islands[0]; if (!first || !focusIn(".pv-cps .pv-cp")) focusIn(first ? `[data-island="${first.id}"]` : ".pv-light button"); }
   };
-  // runs once after the requested segment has rendered, then clears itself (no timer chain, nothing left running after unmount)
-  useEffect(() => {
-    if (!pendingFocus) return;
-    setPendingFocus(null);
-    focusAnswer(pendingFocus);
-  }, [pendingFocus, segment]);
   const linkedIsland = useCallback((s: Stage) => vm.islands.find((i) => i.item && (s.linked_treatment_items ?? []).includes(itemRef(i.item)))?.id ?? null, [vm]);
 
   // still loading the journeys list: reserve the space instead of painting a start screen that is replaced a moment later (mobile-18)
@@ -124,57 +142,48 @@ export function JourneyView({ data, selection, onOpenLandmark, onOpenDocuments, 
                      onSelectStitch={(s) => onSelectStitch?.(s)} onOpenDocuments={onOpenDocuments} onClose={() => { selection.clear(); }} returnFocus={selection.returnFocusRef.current} onRecordsChanged={onRecordsChanged} stageProgress={view.progress.stages} planRef={planRef} hypotheticals={hypotheticals} onHypotheticals={setHypotheticals} />
   ) : null;
   const stagePanel = stage ? <DetailPanel view={view} selection={stage} onSelect={(s) => selection.selectStage(s)} onOpenLandmark={onOpenLandmark} onOpenDocuments={onOpenDocuments} onPatch={patch} onInstructions={instructions} busy={busy} estimate={estimate} onClose={() => selection.clear()} returnFocus={selection.returnFocusRef.current} /> : null;
-  const dense = denseFrom(vm.islands.length);
-  const pickers = (
-    <div className="journey-pickers">
-      {journeys && journeys.length > 0 && samples.length > 0 && <select aria-label="Journey" title={headingLabel(view.journey.label)} value={view.id} onChange={(e) => { const v = journeys.find((j) => j.id === e.target.value); if (v) setView(v); }}>
-        {journeys.map((j) => <option key={j.id} value={j.id} title={headingLabel(j.journey.label)}>{shortJourneyLabel(j.journey.label)}</option>)}</select>}
-      {/* choosing an option only selects it; the journey is created by the Add button (a11y-16, SC 3.2.2: arrow keys on a closed
-          select must not create journeys) */}
-      <form className="add-journey-form" onSubmit={(e) => { e.preventDefault(); if (addFrom) { const from = addFrom; setAddFrom(""); void startJourney(from); } }}>
-        <select className="add-journey" aria-label="Add a journey" value={addFrom} onChange={(e) => setAddFrom(e.target.value)}><option value="">Add another journey…</option><option value="empty">Empty (no documents yet)</option>{labeledSamples(samples).filter((s) => s.id !== "empty").map((s) => <option key={s.id} value={s.id}>{headingLabel(s.label)}</option>)}</select>
-        <button type="submit" className="secondary" disabled={!addFrom || busy}>{UI.addJourney}</button>
-      </form>
-    </div>
-  );
+  const fullTitle = headingLabel(view.journey.label);
 
   return (
-    <div ref={rootRef} className="passage-layout is-mobile" onKeyDown={onKeyDown}>
-      <div className="passage-main">
-        <div className="journey-head">
-          <h2>{headingLabel(view.journey.label)}</h2>
-          <div className="progress-line">
-            <strong className="num">{view.progress.label}</strong>
-            {/* the one place the completion disclaimer is printed on My journey (not repeated in the stage panel or the overview) */}
-            <details className="progress-note"><summary>{PASSAGE.whatCompletionMeans}</summary><p>{view.progress.note || UI.progressNote}</p></details>
-          </div>
-        </div>
+    <div ref={rootRef} className="passage-layout journey-phone" onKeyDown={onKeyDown}>
+      <p className="sr-only" aria-live="polite" role="status">{announce}</p>
+      <CinematicStage art="journey" title={<span title={fullTitle}>{stageTitle(view.journey.label)}</span>} facts={<Facts view={view} estimate={estimate} recalculating={recalculating} />}>
+        {!plan && <p className="hint cin-hint">{PASSAGE.noPlanSelected}</p>}
+        <PassageVertical vm={vm} selected={islandSel} onSelect={selectIsland} planCode={planCode} onSelectStitch={onSelectStitch} drawKey={drawKey} />
+      </CinematicStage>
+
+      {/* the rest of the journey head, below the map (the pickers keep their accessible names "Journey" and "Add a journey") */}
+      <details className="journey-switch journey-details journey-section">
+        <summary>{PASSAGE.journeyDetails}</summary>
+        <p className="jd-title"><span className="jd-term">{PASSAGE.journeyTitleLabel}</span> {fullTitle}</p>
         <AnswersLog vm={vm} view={view} plan={plan} estimate={estimate} recalculating={recalculating} onFocus={onAnswer} />
-        <p className="sr-only" aria-live="polite" role="status">{announce}</p>
-        <div className="journey-controls">
-          {/* one segmented control: the parchment thumb glides to the pressed segment on pointer (200 ms), snaps for keyboard and reduced motion */}
-          <div className="segment-row segmented" role="group" aria-label="Journey views">
-            {([["map", UI.mapView], ["care", PASSAGE.careTimeline], ["overview", UI.overview]] as const).map(([k, label]) => (
-              <button key={k} type="button" className="unstyled seg-btn" aria-pressed={segment === k} onClick={(e) => { segPointer.current = e.detail > 0; setSegment(k); }}>
-                {segment === k && <motion.span layoutId="segment-thumb" className="seg-thumb" aria-hidden="true" transition={reduce || !segPointer.current ? { duration: 0 } : { duration: 0.2, ease: [0.2, 0.7, 0.2, 1] }} />}
-                {label}
-              </button>
-            ))}
-          </div>
-          {/* the journey picker and "Add another journey" sit in a closed disclosure so the passage starts higher (orchestrator
-              note 5); the accessible names "Journey" and "Add a journey" are unchanged */}
-          <details className="journey-switch"><summary>{PASSAGE.journeysSummary(journeys?.length ?? 0)}</summary>{pickers}</details>
+        {/* the one place the completion disclaimer is printed on My journey (not repeated in the stage panel or the overview) */}
+        <details className="progress-note"><summary>{PASSAGE.whatCompletionMeans}</summary><p>{view.progress.note || UI.progressNote}</p></details>
+        <div className="journey-pickers">
+          {journeys && journeys.length > 0 && samples.length > 0 && <select aria-label="Journey" title={fullTitle} value={view.id} onChange={(e) => { const v = journeys.find((j) => j.id === e.target.value); if (v) setView(v); }}>
+            {journeys.map((j) => <option key={j.id} value={j.id} title={headingLabel(j.journey.label)}>{shortJourneyLabel(j.journey.label)}</option>)}</select>}
+          {/* choosing an option only selects it; the journey is created by the Add button (a11y-16, SC 3.2.2: arrow keys on a closed
+              select must not create journeys) */}
+          <form className="add-journey-form" onSubmit={(e) => { e.preventDefault(); if (addFrom) { const from = addFrom; setAddFrom(""); void startJourney(from); } }}>
+            <select className="add-journey" aria-label="Add a journey" value={addFrom} onChange={(e) => setAddFrom(e.target.value)}><option value="">Add another journey…</option><option value="empty">Empty (no documents yet)</option>{labeledSamples(samples).filter((s) => s.id !== "empty").map((s) => <option key={s.id} value={s.id}>{headingLabel(s.label)}</option>)}</select>
+            <button type="submit" className="secondary" disabled={!addFrom || busy}>{UI.addJourney}</button>
+          </form>
         </div>
-        {!plan && <p className="hint">{PASSAGE.noPlanSelected}</p>}
-        {segment === "overview" && <div id="passage-islands" tabIndex={-1} className="segment-target"><OverviewList journey={view.journey} vm={vm} planTitle={plan?.title} onSelect={(s) => { selection.selectStage(s); setSegment("map"); }} onSelectIsland={(id, cp) => { selectIsland(id, cp, null, true); }} onSelectStitch={onSelectStitch} /></div>}
-        {segment === "care" && <div id="passage-islands" tabIndex={-1} className="segment-target"><CareTimeline journey={view.journey} progress={view.progress} selected={stage} onSelect={(s, el) => selection.selectStage(s, el)} currentStageId={currentStageId(view.journey)} linkedIsland={linkedIsland} onShowOnChart={(id) => { setSegment("map"); selectIsland(id, undefined, null, true); }} /></div>}
-        {segment === "map" && (
-          <>
-            {dense && <IslandStrip vm={vm} selected={islandSel} onSelect={(id, el) => selectIsland(id, undefined, el, false)} />}
-            <PassageVertical vm={vm} selected={islandSel} onSelect={selectIsland} planCode={planCode} onSelectStitch={onSelectStitch} />
-          </>
-        )}
-      </div>
+      </details>
+
+      <PassageSides vm={vm} selected={islandSel} onSelect={selectIsland} />
+
+      <section id="care-timeline" className="journey-section" aria-labelledby="care-timeline-h">
+        <h3 id="care-timeline-h" className="journey-section-h">{PASSAGE.careTimeline}</h3>
+        <CareTimeline journey={view.journey} progress={view.progress} selected={stage} onSelect={(s, el) => selection.selectStage(s, el)} currentStageId={currentStageId(view.journey)} linkedIsland={linkedIsland}
+                      onShowOnChart={(id) => selectIsland(id, undefined, null, true)} />
+      </section>
+
+      <details className="journey-overview journey-section">
+        <summary>{PASSAGE.overviewHeading}</summary>
+        <p className="muted small">{PASSAGE.overviewNote}</p>
+        <OverviewList journey={view.journey} vm={vm} planTitle={plan?.title} onSelect={(s) => selection.selectStage(s)} onSelectIsland={(id, cp) => { selectIsland(id, cp, null, true); }} onSelectStitch={onSelectStitch} />
+      </details>
 
       {drawer}{stagePanel}
     </div>
