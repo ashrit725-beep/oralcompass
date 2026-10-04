@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OralCompass harness: upload, assistant, reminders (dev only)</title>
+    <!-- Dev-only entry served by `npm run dev` at /harness.html. It is NOT part of `vite build` (index.html is the only build input) and
+         exists so the upload wizard, the inline assistant and the reminders panel can be exercised against the API before App.tsx wires them in. -->
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/components/upload/__harness__/main.tsx"></script>
+  </body>
+</html>
