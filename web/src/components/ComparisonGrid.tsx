@@ -19,8 +19,9 @@ export interface GridPlan { model: PlanFixture; ref: string }
 interface Props { data: ComparisonResponse; plans: Record<string, GridPlan>; /** Plan refs whose column received entered inputs (spec: "Entered for this plan only"). */ enteredFor?: string[] }
 
 /**
- * ComparisonGrid (component plan N12; CLAUDE.md rule 6). shadcn Table, `table-fixed` + `<colgroup>` for equal columns, sticky header
- * in a `max-h-[70dvh] overflow-auto scroll-fade-x` container; columns in the USER's order, no sort, no winner; the eligibility quote
+ * ComparisonGrid (component plan N12; CLAUDE.md rule 6). shadcn Table, `table-fixed` + `<colgroup>` for equal columns, in a
+ * horizontal-only `scroll-fade-x` container: the table takes its natural height and scrolls with the page (no nested vertical scroll box
+ * that slices a row; layout-22 / mobile-10 / slop-10); columns in the USER's order, no sort, no winner; the eligibility quote
  * under every column header; the factual-differences sentence under every row. Every cell is a 44 px PopoverTrigger whose card is the
  * paired clause (document label, page, quote with one terracotta Highlighter underline, evidence badge); at phone width the card opens
  * in the Drawer instead. The cell keeps its value printed while the card is open and the card repeats it as plain text (integration: the
@@ -32,15 +33,15 @@ export function ComparisonGrid({ data, plans, enteredFor = [] }: Props) {
   return (
       <section className="compare" aria-labelledby="cmp-h">
         <h2 id="cmp-h">{PLAN.cmpTitle}</h2>
-        <Table containerClassName="grid-scroll max-h-[70dvh] overflow-auto scroll-fade-x rounded-xl border border-rule" className="grid table-fixed min-w-[640px] text-[.9rem]">
+        <Table containerClassName="grid-scroll overflow-x-auto overflow-y-visible overscroll-x-contain scroll-fade-x rounded-xl border border-rule" className="grid table-fixed min-w-[640px] text-[.9rem]">
           <colgroup><col style={{ width: "20%" }} />{cols.map((c) => <col key={c} />)}</colgroup>
           <TableHeader>
             <TableRow>
-              <TableHead scope="col" className="sticky top-0 z-10 bg-paper-deep align-top whitespace-normal">{PLAN.cmpTopic}</TableHead>
+              <TableHead scope="col" className="bg-paper-deep align-top whitespace-normal">{PLAN.cmpTopic}</TableHead>
               {cols.map((c) => {
                 const p = plans[c]?.model;
                 return (
-                  <TableHead scope="col" key={c} className="sticky top-0 z-10 bg-paper-deep align-top whitespace-normal">
+                  <TableHead scope="col" key={c} className="bg-paper-deep align-top whitespace-normal">
                     <div className="plan-h">
                       <strong>{titleOf(c)}</strong>
                       {p?.is_fictional && <span className="ribbon">{UI.fictional}</span>}

@@ -128,7 +128,11 @@
 
 /* ---- compare grid cells and cards ---- */
 .compare .grid th, .compare .grid td { vertical-align: top; }
-.compare .grid thead th { position: sticky; top: 0; }
+/* the grid flows with the page (no inner vertical scroller), so the header row is not sticky inside it */
+.compare .grid thead th { position: static; }
+.compare .grid-scroll { overflow-y: visible; max-height: none; }
+/* the differences sentence is a screen-reader summary of the row (every figure is badged in its cell): no visible band */
+.compare table.grid tr.differences td { border: 0; background: none; padding: 0; }
 .cmp-cell-face { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-1) var(--s-2); }
 .cmp-cell-face .amt { font-weight: 600; }
 .cmp-cell-face .cite { color: var(--ink-soft); font-size: .78rem; flex-basis: 100%; }

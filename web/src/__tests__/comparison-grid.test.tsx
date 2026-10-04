@@ -48,3 +48,22 @@ describe("ComparisonGrid rails (info-only-1: entered for this plan only)", () =>
     expect(html.match(/Nothing is entered for this plan/g)).toHaveLength(1);
   });
 });
+
+describe("ComparisonGrid layout (layout-22, mobile-10, slop-10: no nested vertical scroll box)", () => {
+  const html = renderToStaticMarkup(<ComparisonGrid data={data} plans={plans} />);
+  it("lets the table take its natural height inside a horizontal-only scroller", () => {
+    const container = /<div[^>]*class="([^"]*grid-scroll[^"]*)"/.exec(html)?.[1] ?? "";
+    expect(container).toContain("overflow-x-auto");
+    expect(container).not.toMatch(/max-h-|overflow-auto(?!-)/);
+  });
+});
+
+describe("ComparisonGrid repetition (info-only-6, slop-11, slop-12)", () => {
+  const html = renderToStaticMarkup(<ComparisonGrid data={data} plans={plans} />);
+  it("prints the differences sentence only for screen readers (its figures are badged in the cells)", () => {
+    expect(html).toMatch(/<tr[^>]*class="[^"]*differences[^"]*"[^>]*><td[^>]*><span class="sr-only">MetLife NCFlex: \$1,500\.00/);
+  });
+  it("lists each rail flag once", () => {
+    expect(html.match(/waiting period: not found/g)).toHaveLength(1);
+  });
+});
