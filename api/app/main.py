@@ -5,6 +5,7 @@ data. No endpoint steers the user. Money is integer cents everywhere.
 """
 from __future__ import annotations
 
+import os
 import sys
 from datetime import date
 from pathlib import Path
@@ -31,7 +32,9 @@ from .store import NOT_FOUND, repo  # noqa: E402
 from .sessions import SessionMiddleware, mark_cleared  # noqa: E402
 from .security import SecurityMiddleware  # noqa: E402
 
-app = FastAPI(title="OralCompass API", version="0.1.0")
+_PROD = os.getenv("ORALCOMPASS_ENV") == "production"     # production: no interactive docs (they load CDN scripts the CSP blocks)
+app = FastAPI(title="OralCompass API", version="0.1.0", docs_url=None if _PROD else "/docs", redoc_url=None if _PROD else "/redoc",
+              openapi_url=None if _PROD else "/openapi.json")
 app.add_middleware(SessionMiddleware)      # production: per-visitor signed-cookie sessions (inactive under ORALCOMPASS_DEV_AUTH=1 or Cognito)
 app.add_middleware(SecurityMiddleware)     # outermost: CSP and security headers, body size limits, ids-only request logs (security.py)
 extractor = FixtureExtractor()
