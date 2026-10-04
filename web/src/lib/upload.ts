@@ -1,0 +1,298 @@
+/**
+ * Upload helpers (spec §7.3, component plan N6). Pure where possible; tested in lib/upload.test.ts.
+ * - client validation mirrors api/app/uploads.py: `%PDF-` magic bytes, ≤ 32 MB, ≤ 100 pages (counted with pdf.js), SHA-256 (WebCrypto);
+ * - pdf.js is loaded with a dynamic import so it stays in the lazy `pdfjs-*` chunk (vite.config manualChunks);
+ * - `pollExtraction` reads GET /me/documents/{id}/extraction every 1.5 s until a terminal status;
+ * - review helpers (grouping by landmark, proposed-value formatting, the required-rows rule) mirror `uploads.undecided_required`.
+ * Frozen types are extended here (additive) rather than edited: `ExtractionStatusFull` adds the API's extra fields.
+ */
+import { ApiError, api } from "./api";
+import { UPLOAD } from "./copy/upload";
+import type { ExtractedField, ExtractionStatus, ReviewDecision } from "./types";
+
+export const MAX_BYTES = 32 * 1024 * 1024;
+export const MAX_PAGES = 100;
+export const MAX_PREVIEW_CHARS = 400_000;
+export const PREVIEW_SHOWN_CHARS = 1200;
+export const POLL_MS = 1500;
+export const TERMINAL = new Set(["ready", "failed", "demo_no_model"]);
+
+/** The API's status dict carries more than the frozen `ExtractionStatus` (foundation notes §3.2); additive extension. */
+export type ExtractionStatusFull = ExtractionStatus & {
+  ribbon?: string;
+  counts?: { confirmed: number; likely: number; needs_review: number; not_found: number } | null;
+  structure?: {
+    classes?: { name: string; procedures_text?: string[] }[]; carrier_text?: string;
+    ignored_wording?: { page: number; quote: string }[]; unmatched_wording?: { wording: string; context?: string }[];
+    annual_max_unlimited?: boolean; [k: string]: unknown;
+  };
+  demo_fixture_match?: boolean;
+  notes?: string[];
+  notes_dropped?: number;
+  notes_for_review?: { paraphrase: string; publish: string; ignored_wording: string; unmatched_wording: string };
+  undecided_required?: string[];
+  model?: string | null;
+  reason?: string | null;
+};
+
+export type FileProblem = "not_pdf" | "too_large" | "too_many_pages" | "unreadable";
+export type FileCheck = { ok: true } | { ok: false; problem: FileProblem };
+
+export const problemCopy: Record<FileProblem, string> = {
+  not_pdf: UPLOAD.notPdf, too_large: UPLOAD.tooLarge, too_many_pages: UPLOAD.tooManyPages, unreadable: UPLOAD.unreadable,
+};
+
+/** `%PDF-` at byte 0 (the server applies the same check). */
+export function isPdfMagic(bytes: Uint8Array): boolean {
+  const magic = [0x25, 0x50, 0x44, 0x46, 0x2d];
+  return bytes.length >= 5 && magic.every((b, i) => bytes[i] === b);
+}
+
+export function checkSize(bytes: number): FileCheck {
+  return bytes > MAX_BYTES ? { ok: false, problem: "too_large" } : { ok: true };
+}
+
+export function checkPages(pages: number): FileCheck {
+  if (!Number.isFinite(pages) || pages < 1) return { ok: false, problem: "unreadable" };
+  return pages > MAX_PAGES ? { ok: false, problem: "too_many_pages" } : { ok: true };
+}
+
+export function bytesToHex(bytes: ArrayBuffer | Uint8Array): string {
+  const u = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+  let out = "";
+  for (const b of u) out += b.toString(16).padStart(2, "0");
+  return out;
+}
+
+/** SHA-256 of the file bytes via WebCrypto; the server recomputes it and rejects a mismatch (422 sha256_mismatch). */
+export async function sha256Hex(data: ArrayBuffer | Uint8Array): Promise<string> {
+  const buf = data instanceof Uint8Array ? data.slice().buffer : data;
+  const digest = await crypto.subtle.digest("SHA-256", buf as ArrayBuffer);
+  return bytesToHex(digest);
+}
+
+export interface PdfInspection { pages: number; text: string }
+
+/** Page count + text layer of the first 100 pages (for the redaction preview). pdf.js is imported lazily (its own chunk). */
+export async function inspectPdf(data: ArrayBuffer, onPage?: (done: number, total: number) => void): Promise<PdfInspection> {
+  const pdfjs = await import("pdfjs-dist");
+  if (!pdfjs.GlobalWorkerOptions.workerSrc) {
+    pdfjs.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url).toString();
+  }
+  const doc = await pdfjs.getDocument({ data: new Uint8Array(data.slice(0)) }).promise;
+  const pages = doc.numPages;
+  const parts: string[] = [];
+  let total = 0;
+  const limit = Math.min(pages, MAX_PAGES);
+  for (let i = 1; i <= limit && total < MAX_PREVIEW_CHARS; i++) {
+    const page = await doc.getPage(i);
+    const content = await page.getTextContent();
+    const text = content.items.map((it) => ("str" in it ? it.str : "")).join(" ").replace(/\s+/g, " ").trim();
+    parts.push(text);
+    total += text.length + 1;
+    onPage?.(i, limit);
+  }
+  await doc.destroy().catch(() => undefined);
+  return { pages, text: parts.join("\n").slice(0, MAX_PREVIEW_CHARS) };
+}
+
+export type PreparePhase = { phase: "checksum" } | { phase: "reading"; done: number; total: number } | { phase: "uploading" };
+export interface PreparedFile { sha256: string; pages: number; text: string; bytes: number }
+
+/** Validate + hash + inspect a chosen file. Returns a FileCheck problem instead of throwing for the three spec'd failures. */
+export async function prepareFile(file: File, onPhase?: (p: PreparePhase) => void): Promise<{ ok: true; prepared: PreparedFile } | { ok: false; problem: FileProblem }> {
+  const size = checkSize(file.size);
+  if (!size.ok) return size;
+  const data = await file.arrayBuffer();
+  if (!isPdfMagic(new Uint8Array(data, 0, Math.min(5, data.byteLength)))) return { ok: false, problem: "not_pdf" };
+  onPhase?.({ phase: "checksum" });
+  const sha = await sha256Hex(data);
+  let inspection: PdfInspection;
+  try {
+    inspection = await inspectPdf(data, (done, total) => onPhase?.({ phase: "reading", done, total }));
+  } catch {
+    return { ok: false, problem: "unreadable" };
+  }
+  const pages = checkPages(inspection.pages);
+  if (!pages.ok) return pages;
+  return { ok: true, prepared: { sha256: sha, pages: inspection.pages, text: inspection.text, bytes: file.size } };
+}
+
+export const isTerminal = (status: string | undefined | null) => !!status && TERMINAL.has(status);
+
+const sleep = (ms: number, signal?: AbortSignal) =>
+  new Promise<void>((resolve, reject) => {
+    const t = setTimeout(resolve, ms);
+    signal?.addEventListener("abort", () => { clearTimeout(t); reject(new DOMException("aborted", "AbortError")); }, { once: true });
+  });
+
+/** Poll GET /me/documents/{id}/extraction until a terminal status; every reading is reported to `onStatus`. */
+export async function pollExtraction(
+  id: string,
+  onStatus: (st: ExtractionStatusFull) => void,
+  opts: { intervalMs?: number; signal?: AbortSignal; fetcher?: (id: string) => Promise<ExtractionStatusFull>; maxPolls?: number } = {},
+): Promise<ExtractionStatusFull> {
+  const fetcher = opts.fetcher ?? ((d: string) => api.extraction(d) as Promise<ExtractionStatusFull>);
+  const interval = opts.intervalMs ?? POLL_MS;
+  const max = opts.maxPolls ?? Infinity;
+  let n = 0;
+  for (;;) {
+    const st = await fetcher(id);
+    onStatus(st);
+    if (isTerminal(st.status)) return st;
+    if (++n >= max) return st;
+    await sleep(interval, opts.signal);
+  }
+}
+
+/** Spec §7.3 step 3 copy for the current status (the server's `stages[]` labels remain the row names). */
+export function stageCopy(st: Pick<ExtractionStatusFull, "status" | "pages" | "pages_done" | "quotes_total" | "quotes_verified" | "counts" | "reason">): string {
+  switch (st.status) {
+    case "queued": return UPLOAD.stageQueued;
+    case "reading_text": return UPLOAD.stageReading(st.pages_done ?? 0, st.pages ?? 0);
+    case "redacting": return UPLOAD.stageRedacting;
+    case "identifying_fields": return UPLOAD.stageIdentifying;
+    case "matching_rules": return UPLOAD.stageMatching;
+    case "verifying_quotes": return UPLOAD.stageVerifying(st.quotes_verified ?? 0, st.quotes_total ?? 0);
+    case "ready": { const c = st.counts ?? { confirmed: 0, likely: 0, needs_review: 0, not_found: 0 }; return UPLOAD.stageReady(c.confirmed, c.likely, c.needs_review, c.not_found); }
+    case "failed": return UPLOAD.stageFailed(st.reason || UPLOAD.unreadable);
+    case "demo_no_model": return UPLOAD.stageDemoNoModel;
+    default: return String(st.status);
+  }
+}
+
+/** 0..1 for the running stage when it is measurable (pages, quotes); otherwise null. */
+export function stageProgress(st: Pick<ExtractionStatusFull, "status" | "pages" | "pages_done" | "quotes_total" | "quotes_verified">): number | null {
+  if (st.status === "reading_text" && st.pages > 0) return Math.min(1, st.pages_done / st.pages);
+  if (st.status === "verifying_quotes" && st.quotes_total > 0) return Math.min(1, st.quotes_verified / st.quotes_total);
+  return null;
+}
+
+export const LANDMARK_ORDER = ["harbor", "bridge", "cove", "lookout", "rules"] as const;
+export type LandmarkKey = (typeof LANDMARK_ORDER)[number];
+
+export function groupByLandmark(fields: ExtractedField[]): { landmark: LandmarkKey; title: string; fields: ExtractedField[] }[] {
+  return LANDMARK_ORDER.map((landmark) => ({ landmark, title: UPLOAD.landmark[landmark], fields: fields.filter((f) => f.landmark === landmark) })).filter((g) => g.fields.length > 0);
+}
+
+export type Proposed = { kind: "money"; cents: number } | { kind: "text"; text: string } | { kind: "none" };
+
+/** Format a proposed (or decided) value by unit. Cents are returned as a number so the caller renders them through <Money>. */
+export function formatProposed(unit: ExtractedField["unit"], value: unknown): Proposed {
+  if (value === null || value === undefined || value === "") return { kind: "none" };
+  if (value === "unlimited") return { kind: "text", text: UPLOAD.valueUnlimited };
+  switch (unit) {
+    case "cents": return typeof value === "number" ? { kind: "money", cents: value } : { kind: "text", text: String(value) };
+    case "bp": return typeof value === "number" ? { kind: "text", text: UPLOAD.percent(value) } : { kind: "text", text: String(value) };
+    case "months": return typeof value === "number" ? { kind: "text", text: UPLOAD.months(value) } : { kind: "text", text: String(value) };
+    case "month_index": return typeof value === "number" && value >= 1 && value <= 12 ? { kind: "text", text: UPLOAD.monthNames[value - 1] } : { kind: "text", text: String(value) };
+    case "bool": return { kind: "text", text: value ? UPLOAD.valueBool.yes : UPLOAD.valueBool.no };
+    case "text":
+      if (typeof value === "object") { const o = value as Record<string, unknown>; return { kind: "text", text: Object.entries(o).map(([k, v]) => `${k}: ${String(v)}`).join("; ") }; }
+      return { kind: "text", text: String(value) };
+    case "list": return { kind: "text", text: listText(value) };
+    default: return { kind: "text", text: typeof value === "string" ? value : JSON.stringify(value) };
+  }
+}
+
+function listText(value: unknown): string {
+  if (Array.isArray(value)) {
+    if (value.length === 0) return UPLOAD.valueNone;
+    return value.map((c) => (c && typeof c === "object" ? [c.procedure_key, c.condition, c.text].filter(Boolean).join(": ") : String(c))).join("; ");
+  }
+  if (value && typeof value === "object") {
+    const o = value as Record<string, unknown>;
+    if ("procedure_key" in o && "n" in o) return UPLOAD.frequencyValue(Number(o.n), String(o.clock ?? "benefit year"));
+    return Object.entries(o).map(([k, v]) => `${k.replace(/_/g, " ")}: ${typeof v === "number" ? UPLOAD.months(v) : String(v)}`).join("; ");
+  }
+  return String(value);
+}
+
+export const isDecided = (f: ExtractedField) => !!f.decision;
+
+/** Mirrors `uploads.undecided_required`: required rows without a decision; class_of.* rows count as one group ("class_of"). */
+export function undecidedRequired(fields: ExtractedField[]): string[] {
+  const out = fields.filter((f) => f.required && !f.decision && !f.field_path.startsWith("class_of.")).map((f) => f.field_path);
+  const classRows = fields.filter((f) => f.field_path.startsWith("class_of."));
+  if (classRows.length && !classRows.some((f) => f.decision)) out.push("class_of");
+  return out;
+}
+
+/** Rows whose quote verified on the cited page, with a proposed value and no decision yet ("Confirm all verified quotes"). */
+export function verifiedUndecided(fields: ExtractedField[]): ExtractedField[] {
+  return fields.filter((f) => f.confidence === "confirmed" && f.quote_verified && f.proposed_value !== null && f.proposed_value !== undefined && !f.decision);
+}
+
+export function labelFor(fields: ExtractedField[], path: string): string {
+  if (path === "class_of") return UPLOAD.requiredGroup;
+  return fields.find((f) => f.field_path === path)?.label ?? path;
+}
+
+export type ParsedValue = { ok: true; value: unknown } | { ok: false };
+
+/** Parse the inline edit input by unit into the value the server validates (`_UNIT_CHECK`). */
+export function parseValueInput(unit: ExtractedField["unit"], raw: string): ParsedValue {
+  const s = raw.trim();
+  if (!s) return { ok: false };
+  switch (unit) {
+    case "cents": { const n = Number(s.replace(/[$,\s]/g, "")); return Number.isFinite(n) && n >= 0 ? { ok: true, value: Math.round(n * 100) } : { ok: false }; }
+    case "bp": { const n = Number(s.replace(/[%\s]/g, "")); return Number.isFinite(n) && n >= 0 && n <= 100 ? { ok: true, value: Math.round(n * 100) } : { ok: false }; }
+    case "months": { const n = Number(s); return Number.isInteger(n) && n >= 0 ? { ok: true, value: n } : { ok: false }; }
+    case "month_index": { const n = Number(s); return Number.isInteger(n) && n >= 1 && n <= 12 ? { ok: true, value: n } : { ok: false }; }
+    case "bool": return s === "true" || s === "yes" ? { ok: true, value: true } : s === "false" || s === "no" ? { ok: true, value: false } : { ok: false };
+    case "text": return { ok: true, value: s };
+    case "list": { try { const v = JSON.parse(s); return Array.isArray(v) || (v && typeof v === "object") ? { ok: true, value: v } : { ok: false }; } catch { return { ok: false }; } }
+    default: return { ok: false };
+  }
+}
+
+export const decisionConfirm = (f: ExtractedField): ReviewDecision => ({ field_path: f.field_path, decision: "confirmed" });
+export const decisionNotInDocument = (f: ExtractedField): ReviewDecision => ({ field_path: f.field_path, decision: "not_in_document" });
+export const decisionCandidate = (f: ExtractedField, index: number): ReviewDecision => ({ field_path: f.field_path, decision: "candidate", candidate_index: index });
+export const decisionEdit = (f: ExtractedField, value: unknown, source: string): ReviewDecision => ({ field_path: f.field_path, decision: "edited", value, source });
+
+type Body = { error?: string; fields?: string[]; type?: string; field_path?: string; unit?: string } | undefined;
+const body = (e: unknown): Body => (e instanceof ApiError ? (e.body as Body) : undefined);
+
+/** Upload failure → one UPLOAD sentence (the server's error codes, foundation notes §3.2 item 1). */
+export function uploadErrorCopy(e: unknown): string {
+  const b = body(e);
+  switch (b?.error) {
+    case "not_a_pdf": return UPLOAD.serverNotPdf;
+    case "unreadable_pdf": return UPLOAD.unreadable;
+    case "file_too_large": return UPLOAD.serverTooLarge;
+    case "too_many_pages": return UPLOAD.serverTooManyPages;
+    case "sha256_mismatch": return UPLOAD.shaMismatch;
+    default: return UPLOAD.uploadFailed;
+  }
+}
+
+export function reviewErrorCopy(e: unknown): string {
+  const b = body(e);
+  switch (b?.error) {
+    case "source_required": return UPLOAD.sourceRequired;
+    case "invalid_value": return UPLOAD.invalidValue;
+    case "unknown_class": return UPLOAD.unknownClass;
+    default: return UPLOAD.reviewFailed;
+  }
+}
+
+export function publishErrorCopy(e: unknown, fields: ExtractedField[]): string {
+  const b = body(e);
+  if (b?.error === "undecided_fields") return UPLOAD.publishUndecided((b.fields ?? []).map((p) => labelFor(fields, p)).join(", "));
+  if (b?.error === "plan_invalid") return UPLOAD.publishInvalid(b.type ?? "error");
+  return UPLOAD.publishFailed;
+}
+
+/** Scheme + host check for Web Push (RemindersPanel). */
+export const pushSupported = () => typeof window !== "undefined" && "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+
+/** VAPID public key (base64url) → the Uint8Array `applicationServerKey` wants. */
+export function urlBase64ToUint8Array(base64: string): Uint8Array {
+  const padding = "=".repeat((4 - (base64.length % 4)) % 4);
+  const b64 = (base64 + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const raw = atob(b64);
+  const out = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
+  return out;
+}
