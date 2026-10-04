@@ -15,7 +15,6 @@ import type { ExtractedField, ExtractionStatus, ReviewDecision, UploadResponse }
 export const MAX_BYTES = 32 * 1024 * 1024;
 export const MAX_PAGES = 100;
 export const MAX_PREVIEW_CHARS = 400_000;
-export const PREVIEW_SHOWN_CHARS = 1200;
 export const POLL_MS = 1500;
 export const TERMINAL = new Set(["ready", "failed", "demo_no_model"]);
 
@@ -177,7 +176,9 @@ export function buildClientRedaction(result: Pick<RedactionResult, "removed">, t
 }
 
 /** The clearly fictional sample statement (design point 5), read in the browser and sent down the SAME client path as a picked file. */
-export const SAMPLE_STATEMENT = { path: "/fixtures/documents/sample_member_statement_hb26_fictional.pdf", name: "sample_member_statement_hb26_fictional.pdf" } as const;
+/** (red/sample: fixtures/documents/tw26_fictional_sample_statement.pdf, Tidewater Dental Select 2026, TW26; served from /fixtures by
+ *  api/app/server.py in production and by the preview once fixtures are copied into web/public/fixtures.) */
+export const SAMPLE_STATEMENT = { path: "/fixtures/documents/tw26_fictional_sample_statement.pdf", name: "tw26_fictional_sample_statement.pdf" } as const;
 
 export async function loadSampleStatement(fetcher: typeof fetch = fetch): Promise<File> {
   const r = await fetcher(SAMPLE_STATEMENT.path);

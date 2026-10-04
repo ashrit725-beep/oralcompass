@@ -91,7 +91,7 @@ export const UPLOAD = {
   previewEmpty: "This PDF has no text layer to read on this device. The server reads it and applies its own check before any AI call.",
   continueUpload: "Continue",
   chooseAnother: "Choose another file",
-  continueNote: "Continue stores the PDF in your private space and starts the extraction. Before any AI call, the server removes each of these details from the text it reads, then runs its own check.",
+  continueNote: "Continue stores the PDF in your private space and starts the extraction. The server removes these details again, and runs its own check, before any AI call.",
   storedNote: "The document is stored with these removals.",
   liveCount: (n: number) => (n === 1 ? "1 personal identifier removed before AI analysis" : `${n} personal identifiers removed before AI analysis`),
   stageRemovedCount: (label: string, n: number) => `${label} \u00b7 ${n} removed`,

@@ -200,7 +200,7 @@
 .rs-show[aria-pressed="true"] { text-decoration-color: currentColor; }
 .rs-show:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 @media (hover: hover) and (pointer: fine) { .rs-show:hover { background: var(--paper-deep); } }
-.rs-keep { display: inline-flex; align-items: center; gap: var(--s-2); min-height: 44px; padding: 0 var(--s-1) 0 var(--s-2); font-size: 13px; line-height: 18px; color: var(--ink-soft);
+.rs-keep { display: inline-flex; flex-direction: row; align-items: center; gap: var(--s-2); min-height: 44px; padding: 0 var(--s-1) 0 var(--s-2); font-size: 13px; line-height: 18px; color: var(--ink-soft);
   white-space: nowrap; cursor: pointer; }
 .rs-keep[data-locked] { cursor: default; }
 /* a real switch (Radix, role="switch"): the track keeps 3:1 against the paper in both states */
@@ -241,6 +241,10 @@
 .rs-footer-row { display: flex; justify-content: flex-end; }
 .rs-continue { min-width: 10rem; }
 @media (min-width: 640px) { .rs-footer { margin-left: calc(-1 * var(--s-6)); margin-right: calc(-1 * var(--s-6)); padding-left: var(--s-6); padding-right: var(--s-6); } }
+@media (max-width: 767px) {
+  /* phones: from step 2 on, the review is the first thing on the screen; the dialog's general description stays for screen readers */
+  .up-dialog:not([data-step="1"]) [data-slot="dialog-description"] { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+}
 @media (max-width: 639px) {
   .rs-count { font-size: 46px; }
   .rs-words { font-size: 18px; line-height: 24px; }

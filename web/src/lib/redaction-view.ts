@@ -86,7 +86,10 @@ export function previewPages(pages: readonly string[], budget: number): { pages:
 
 /** Where one of the person's own terms landed in a result: its occurrences, or null when it is not in the text. */
 export function termOccurrences(result: Pick<RedactionResult, "removed">, term: string): number | null {
-  const t = term.trim().toLowerCase().replace(/\s+/g, " ");
-  const hit = result.removed.find((f) => f.value.trim().toLowerCase().replace(/\s+/g, " ") === t);
+  // compared without case, spacing or punctuation, so "919-555-0142" finds the phone the detector printed as "(919) 555-0142"
+  const loose = (v: string) => v.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "");
+  const t = loose(term);
+  if (!t) return null;
+  const hit = result.removed.find((f) => loose(f.value) === t);
   return hit && hit.occurrences > 0 ? hit.occurrences : null;
 }

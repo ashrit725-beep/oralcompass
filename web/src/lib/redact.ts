@@ -155,11 +155,13 @@ function matchesPattern(term: string): IdentifierCategory | null {
 }
 
 export function applyRedaction(pages: string[], found: FoundIdentifier[], keep: ReadonlySet<string>, extraTerms: readonly string[]): RedactionResult {
-  const removed: FoundIdentifier[] = found.filter((f) => !keep.has(f.id));
-  const loose = new Set(removed.map((f) => normalise("phone", f.value)));
+  // a term equal to a found value (loosely) removes that identifier even when it was switched to "Keep in text"
+  const forced = new Set(found.filter((f) => extraTerms.some((t) => normalise("phone", t) !== "" && normalise("phone", t) === normalise("phone", f.value))).map((f) => f.id));
+  const removed: FoundIdentifier[] = found.filter((f) => forced.has(f.id) || !keep.has(f.id));
+  const loose = new Set(found.map((f) => normalise("phone", f.value)));
   for (const t of extraTerms) {
     const term = t.trim();
-    if (term.length < 2) continue;
+    if (term.length < 2 || term.length > 64) continue;
     const category = matchesPattern(term) ?? "name";
     const key = `${category}|${normalise(category, term)}`;
     if (loose.has(normalise("phone", term))) continue;

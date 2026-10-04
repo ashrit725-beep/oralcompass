@@ -51,7 +51,10 @@ export function RedactionSummary({ pageTexts, found, onContinue, onChooseAnother
     if (locked) return;
     setKeep((k) => { const n = new Set(k); if (n.has(id)) n.delete(id); else n.add(id); return n; });
   };
-  const keptCount = found.filter((f) => keep.has(f.id)).length;
+  // kept = switched to "Keep in text" AND not removed anyway (one of the person's own terms can still remove a kept value)
+  const removedIds = useMemo(() => new Set(result.removed.map((f) => f.id)), [result.removed]);
+  const isKept = (id: string) => keep.has(id) && !removedIds.has(id);
+  const keptCount = found.filter((f) => isKept(f.id)).length;
 
   const noteId = useId();
   const nothingRemoved = result.total === 0;
@@ -63,18 +66,18 @@ export function RedactionSummary({ pageTexts, found, onContinue, onChooseAnother
       <Chips result={result} />
       {keptCount > 0 && <p className="rs-kept">{UPLOAD.keptCount(keptCount)}</p>}
 
-      {found.length > 0 && <IdentifierList found={found} result={result} keep={keep} locked={locked} onToggle={toggleKeep} />}
+      {found.length > 0 && <IdentifierList found={found} result={result} isKept={isKept} locked={locked} onToggle={toggleKeep} />}
       <Terms terms={terms} result={result} locked={locked} onChange={setTerms} />
       <RedactedText pages={result.pages} />
+      {onChooseAnother && !stored && (
+        <Button type="button" variant="outline" size="touch" className="rs-another" aria-disabled={!!busy || undefined} onClick={() => { if (!busy) onChooseAnother(); }}>{UPLOAD.chooseAnother}</Button>
+      )}
 
       {/* the thumb zone: sticky at the bottom of the dialog (the dialog is the scroller), last in reading and tab order */}
       <footer className="rs-footer">
         {error && <p role="alert" className="up-error">{error}</p>}
         <p id={noteId} className="up-caption rs-continue-note">{stored ? UPLOAD.storedNote : UPLOAD.continueNote}</p>
         <div className="rs-footer-row">
-          {onChooseAnother && !stored && (
-            <Button type="button" variant="outline" size="touch" className="rs-another" aria-disabled={!!busy || undefined} onClick={() => { if (!busy) onChooseAnother(); }}>{UPLOAD.chooseAnother}</Button>
-          )}
           <Button type="button" size="touch" className="rs-continue" aria-disabled={!!busy || undefined} aria-describedby={noteId}
                   onClick={() => { if (!busy) onContinue({ result, terms }); }}>
             {busy === "uploading" ? UPLOAD.phaseUploading : busy === "starting" ? UPLOAD.startingExtraction : UPLOAD.continueUpload}
@@ -132,7 +135,7 @@ function Chips({ result }: { result: RedactionResult }) {
   );
 }
 
-function IdentifierList({ found, result, keep, locked, onToggle }: { found: FoundIdentifier[]; result: RedactionResult; keep: ReadonlySet<string>; locked: boolean; onToggle: (id: string) => void }) {
+function IdentifierList({ found, result, isKept, locked, onToggle }: { found: FoundIdentifier[]; result: RedactionResult; isKept: (id: string) => boolean; locked: boolean; onToggle: (id: string) => void }) {
   const rows = useMemo(() => sortIdentifiers(found), [found]);
   const [revealed, setRevealed] = useState<ReadonlySet<string>>(() => new Set());
   const toggleReveal = (id: string) => setRevealed((r) => { const n = new Set(r); if (n.has(id)) n.delete(id); else n.add(id); return n; });
@@ -144,7 +147,7 @@ function IdentifierList({ found, result, keep, locked, onToggle }: { found: Foun
       <p className="up-caption rs-list-intro">{UPLOAD.listIntro}</p>
       <ul className="rs-rows">
         {rows.map((f) => (
-          <IdentifierRow key={f.id} f={removedById.get(f.id) ?? f} kept={keep.has(f.id)} shown={revealed.has(f.id)} locked={locked}
+          <IdentifierRow key={f.id} f={removedById.get(f.id) ?? f} kept={isKept(f.id)} shown={revealed.has(f.id)} locked={locked}
                          onToggleKeep={() => onToggle(f.id)} onToggleShow={() => toggleReveal(f.id)} />
         ))}
       </ul>
@@ -169,13 +172,13 @@ function IdentifierRow({ f, kept, shown, locked, onToggleKeep, onToggleShow }: {
         </span>
       </div>
       <div className="rs-row-actions">
-        <button type="button" className="rs-show" aria-pressed={shown} aria-label={shown ? UPLOAD.hideValue(f.category) : UPLOAD.showValue(f.category)}
+        <button type="button" className="unstyled rs-show" aria-pressed={shown} aria-label={shown ? UPLOAD.hideValue(f.category) : UPLOAD.showValue(f.category)}
                 aria-describedby={`${id}-cat ${id}-val`} onClick={onToggleShow}>
           {shown ? UPLOAD.hide : UPLOAD.show}
         </button>
         <label className="rs-keep" htmlFor={`${id}-keep`} data-locked={locked || undefined}>
           <span id={`${id}-keep-label`}>{UPLOAD.keepInText}</span>
-          <SwitchPrimitive.Root id={`${id}-keep`} className="rs-switch" checked={kept} onCheckedChange={onToggleKeep} disabled={locked}
+          <SwitchPrimitive.Root id={`${id}-keep`} className="unstyled rs-switch" checked={kept} onCheckedChange={onToggleKeep} disabled={locked}
                                 aria-labelledby={`${id}-keep-label ${id}-cat ${id}-val`}>
             <SwitchPrimitive.Thumb className="rs-switch-thumb" />
           </SwitchPrimitive.Root>
@@ -235,7 +238,7 @@ function Terms({ terms, result, locked, onChange }: { terms: string[]; result: R
               <li key={t} className="rs-term" data-missing={n === null || undefined}>
                 <span className="rs-term-text">{t}</span>
                 <span className="rs-where">{n === null ? UPLOAD.termNotFound : UPLOAD.termIn(n)}</span>
-                <button type="button" className="rs-term-remove" aria-label={UPLOAD.termRemove(t)} aria-disabled={locked || undefined} onClick={() => remove(t)}>
+                <button type="button" className="unstyled rs-term-remove" aria-label={UPLOAD.termRemove(t)} aria-disabled={locked || undefined} onClick={() => remove(t)}>
                   <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /></svg>
                 </button>
               </li>
