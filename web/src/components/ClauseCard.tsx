@@ -1,48 +1,104 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
+import { motion, useReducedMotion } from "motion/react";
 import { PLAIN, UI } from "../lib/copy";
+import { takeStitchAnchor } from "../lib/drawer";
+import { transitions } from "../lib/motion";
 import { money } from "../lib/stitches";
-import type { LedgerLine, Stitch } from "../lib/types";
+import type { AssistScope, LedgerLine, Stitch } from "../lib/types";
+import { AskAboutStep } from "./assistant/AskAboutStep";
 import { DepthDial, EvidenceBadge, StitchChip } from "./Primitives";
 
 interface Props {
   stitch: Stitch; lines: LedgerLine[]; onClose: () => void; onOpenOnPage: (s: Stitch) => void;
   /** Hook point for the assistant agent (spec §13.2): rendered in the footer, before the "Open in Documents" button. */
   askSlot?: ReactNode;
+  /** When given (and no `askSlot`), the footer mounts `AskAboutStep` with this clause scope (spec §8.1 placement 2). */
+  askScope?: AssistScope;
+  /** The pressed stitch chip's rectangle: the origin of the gold `thread-pull` (spec §5.5). Defaults to the last chip pressed inside a drawer. */
+  anchorRect?: DOMRect | null;
+  /** Focus returns here on close (defaults to the element focused when the card opened). */
+  returnFocus?: HTMLElement | null;
 }
 
-/** Clause card: depth 1 plain sentence · depth 2 the user's numbers · depth 3 exact wording + arithmetic — one element, no new route. */
-export function ClauseCard({ stitch, lines, onClose, onOpenOnPage, askSlot }: Props) {
+/**
+ * Clause card: depth 1 plain sentence · depth 2 the user's numbers · depth 3 exact wording + arithmetic — one element, no new route.
+ * `thread-pull`: a 1.5 px gold SVG thread draws from the pressed stitch chip to the card header in 300 ms, holds, and fades (omitted under
+ * reduced motion; the card simply appears). Escape closes the card (before any drawer beneath it) and focus returns to the opener.
+ */
+export function ClauseCard({ stitch, lines, onClose, onOpenOnPage, askSlot, askScope, anchorRect, returnFocus }: Props) {
   const [depth, setDepth] = useState<1 | 2 | 3>(1);
+  const reduce = useReducedMotion();
+  const cardRef = useRef<HTMLElement>(null);
+  const opener = useRef<HTMLElement | null>(null);
+  const [thread, setThread] = useState<string | null>(null);
   const topicKey = stitch.topic.startsWith("class:") ? "coinsurance" : stitch.topic;
   const plain = PLAIN[topicKey] ?? "This sentence states a rule of your plan.";
   const affected = lines.flatMap((l) => l.steps.filter((s) => s.stitch?.endsWith(`#p${stitch.page}`) && stitch.ruleCodes.includes(s.rule)).map((s) => ({ line: l.label, step: s })));
-  return (
-    <aside className="clause" role="dialog" aria-labelledby="clause-h" aria-modal="false">
-      <header>
-        <StitchChip stitch={stitch} selected prominent />
-        <h3 id="clause-h">{stitch.topic.replace(/[_:]/g, " ")}</h3>
-        <EvidenceBadge status="DOC" />
-        <button type="button" className="close" onClick={onClose} aria-label="Close clause card">×</button>
-      </header>
-      <DepthDial depth={depth} onChange={setDepth} />
-      {depth === 1 && <p className="plain">{plain}</p>}
-      {depth === 2 && (
-        affected.length ? (
-          <table className="mini"><caption>In this scenario</caption><tbody>
-            {affected.map((a, i) => <tr key={i}><th scope="row">{a.line}: {a.step.label}</th><td className="amt">{money(Math.abs(a.step.cents))}</td></tr>)}
-          </tbody></table>
-        ) : <p className="plain">This sentence does not change your numbers in this scenario.</p>
+
+  // On the phone the card is pressed from inside the modal bottom sheet (vaul over Radix Dialog): a card outside that dialog would sit under
+  // its overlay, outside its focus trap and count as an "outside" press. Mount it inside the open sheet instead so it stacks above it.
+  const [host] = useState<HTMLElement | null>(() => (typeof document === "undefined" ? null : document.querySelector<HTMLElement>('[data-vaul-drawer][data-state="open"]')));
+
+  useLayoutEffect(() => {
+    opener.current = (document.activeElement as HTMLElement | null) ?? null;
+    const a = anchorRect ?? takeStitchAnchor();
+    const h = cardRef.current?.querySelector("header")?.getBoundingClientRect();
+    if (!a || !h || reduce) { setThread(null); return; }
+    const o = host?.getBoundingClientRect() ?? { left: 0, top: 0 };      // inside the sheet the svg is positioned against the sheet, not the viewport
+    const x1 = a.left + a.width / 2 - o.left, y1 = a.top + a.height / 2 - o.top, x2 = h.left + 12 - o.left, y2 = h.top + h.height / 2 - o.top;
+    setThread(`M ${x1} ${y1} C ${x1} ${(y1 + y2) / 2}, ${x2} ${(y1 + y2) / 2}, ${x2} ${y2}`);
+  }, [stitch.id, anchorRect, reduce, host]);
+
+  // Escape closes the card before anything beneath it: a capture listener on `window` runs before Radix's document-level handlers
+  // (vaul sheet, dialogs) and stops the event there, so the sheet or drawer under the card stays open (addendum B1 Escape order).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") { e.stopPropagation(); e.preventDefault(); onClose(); } };
+    window.addEventListener("keydown", onKey, true);
+    return () => {
+      window.removeEventListener("keydown", onKey, true);
+      const el = returnFocus ?? opener.current;
+      if (el && document.contains(el)) el.focus();
+    };
+  }, [onClose, returnFocus]);
+
+  const card = (
+    <>
+      {thread && (
+        <svg className={`thread-pull ${host ? "thread-pull-in-sheet" : ""}`} aria-hidden="true" focusable="false">
+          <motion.path d={thread} fill="none" stroke="var(--gold)" strokeWidth="1.5" strokeLinecap="round"
+                       initial={{ pathLength: 0, opacity: 1 }} animate={{ pathLength: 1, opacity: [1, 1, 0] }}
+                       transition={{ pathLength: transitions.threadPull, opacity: { duration: 1.4, times: [0, 0.7, 1] } }} onAnimationComplete={() => setThread(null)} />
+        </svg>
       )}
-      {depth === 3 && (
-        <figure className="wording">
-          <blockquote>“{stitch.quote}”</blockquote>
-          <figcaption>{stitch.doc}, page {stitch.page}</figcaption>
-        </figure>
-      )}
-      <footer>
-        {askSlot}
-        <button type="button" onClick={() => onOpenOnPage(stitch)}>{UI.showInDocuments}</button>
-      </footer>
-    </aside>
+      <aside ref={cardRef} className={`clause ${host ? "clause-in-sheet" : ""}`} role="dialog" aria-labelledby="clause-h" aria-modal="false">
+        <header>
+          <StitchChip stitch={stitch} selected prominent />
+          <h3 id="clause-h">{stitch.topic.replace(/[_:]/g, " ")}</h3>
+          <EvidenceBadge status="DOC" />
+          <button type="button" className="close" onClick={onClose} aria-label="Close clause card">×</button>
+        </header>
+        <DepthDial depth={depth} onChange={setDepth} />
+        {depth === 1 && <p className="plain">{plain}</p>}
+        {depth === 2 && (
+          affected.length ? (
+            <table className="mini"><caption>In this scenario</caption><tbody>
+              {affected.map((a, i) => <tr key={i}><th scope="row">{a.line}: {a.step.label}</th><td className="amt">{money(Math.abs(a.step.cents))} <StitchChip stitch={stitch} /></td></tr>)}
+            </tbody></table>
+          ) : <p className="plain">This sentence does not change your numbers in this scenario.</p>
+        )}
+        {depth === 3 && (
+          <figure className="wording">
+            <blockquote>“{stitch.quote}”</blockquote>
+            <figcaption>{stitch.doc}, page {stitch.page}</figcaption>
+          </figure>
+        )}
+        <footer>
+          {askSlot ?? (askScope ? <AskAboutStep scope={askScope} className="clause-ask" /> : null)}
+          <button type="button" onClick={() => onOpenOnPage(stitch)}>{UI.showInDocuments}</button>
+        </footer>
+      </aside>
+    </>
   );
+  return host ? createPortal(card, host) : card;
 }
