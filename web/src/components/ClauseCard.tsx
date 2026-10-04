@@ -8,7 +8,7 @@ import { takeStitchAnchor } from "../lib/drawer";
 import { transitions } from "../lib/motion";
 import { money, plainNote } from "../lib/stitches";
 import type { AssistScope, LedgerLine, Step, Stitch } from "../lib/types";
-import { AskAboutStep } from "./assistant/AskAboutStep";
+import { AskAboutStepLazy as AskAboutStep } from "./assistant/lazy";
 import { DepthDial } from "./DepthDial";
 import { EvidenceBadge, StitchChip } from "./Primitives";
 import { PlainWords } from "./PlainWords";

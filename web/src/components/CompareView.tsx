@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { api } from "@/lib/api";
 import { UI } from "@/lib/copy";
 import { PLAN } from "@/lib/copy/plan";
@@ -8,7 +8,7 @@ import type { Benefits, ComparisonResponse, PlanRef, PlanSummary, TreatmentItem 
 import { ComparisonGrid, type GridPlan } from "./ComparisonGrid";
 import { EvidenceBadge } from "./Primitives";
 
-interface Props { plans: PlanSummary[]; items: TreatmentItem[]; benefits: Benefits[]; initial: string[] }
+interface Props { plans: PlanSummary[]; items: TreatmentItem[]; benefits: Benefits[]; initial: string[]; /** "Ask in plain words" (desktop card), above the grid. */ askSlot?: ReactNode }
 
 /**
  * Compare (spec §2.2; CLAUDE.md rule 6): up to three plan refs (presets or your published uploads) in the order you pick. Per-plan inputs
@@ -16,7 +16,7 @@ interface Props { plans: PlanSummary[]; items: TreatmentItem[]; benefits: Benefi
  * records are kept under (`initial[0]`, the plan selected in the app) and reach that column only (lib/compare-state.ts); a plan with no
  * inputs gets nothing (its column stays unresolved); nothing is copied between plans. The pickers are grouped native selects (carrier optgroups, fictional plans under their own group, uploads last).
  */
-export function CompareView({ plans, items, benefits, initial }: Props) {
+export function CompareView({ plans, items, benefits, initial, askSlot }: Props) {
   const [picked, setPicked] = useState<PlanRef[]>(initial.slice(0, 3));
   const [uploads, setUploads] = useState<UploadSummary[]>([]);
   const [data, setData] = useState<ComparisonResponse | null>(null);
@@ -80,6 +80,7 @@ export function CompareView({ plans, items, benefits, initial }: Props) {
         ))}
       </div>
       <p className="muted small">{PLAN.cmpProcedures(planned.length ? planned.map((i) => `${i.procedure_name ?? i.procedure_key}${i.tooth ? ` (tooth ${i.tooth})` : ""}`).join("; ") : PLAN.cmpNoneRecorded)} {PLAN.cmpUsageFor(benefits.map((b) => b.plan_code).join(", ") || PLAN.cmpNone)}</p>
+      {askSlot}
       <p className="muted" role="status">{busy ? UI.processing : ""}</p>
       {err && <p className="error" role="alert">{err}</p>}
       {data && <ComparisonGrid data={data} plans={models} enteredFor={enteredFor} />}

@@ -6,14 +6,40 @@
  *   template `label`, clarify `text` and the `tools_used` id strings (foundation notes §2.3 / §3.1).
  */
 import { ASSIST } from "./copy/assistant";
+import { BADGE_LABEL } from "./copy";
 import { PROCEDURE_NAMES } from "./clauses";
 import { plainNote, stitchForLabel } from "./stitches";
 import type { AssistRef, AssistResponse, AssistScope, Benefits, CoverageRule, Evidence, LedgerLine, PlanFixture, SavedEstimate, Step, Stitch, TreatmentItem, VJson } from "./types";
 
+/** `kind: "simple"` marks the plain-words lead block (the simple-terms contract: block 1 of every answer is 1–2 short everyday sentences,
+ *  figures as `{{ref:n}}`). The API may send it as a sentence or template block carrying `kind`, or as its own `type: "simple"`; both read
+ *  the same here. Blocks without `kind` are the detailed blocks shown under "Show the details". */
 export type AssistBlockX =
-  | { type: "sentence"; text: string; refs: AssistRef[] }
-  | { type: "clarify"; text?: string; options: { label: string; scope_patch: Partial<AssistScope> }[] }
-  | { type: "template"; key: "advice_question" | "out_of_scope" | string; label?: string; text: string };
+  | { type: "sentence"; text: string; refs: AssistRef[]; kind?: string }
+  | { type: "simple"; text: string; refs?: AssistRef[]; kind?: string }
+  | { type: "clarify"; text?: string; options: { label: string; scope_patch: Partial<AssistScope> }[]; kind?: string }
+  | { type: "template"; key: "advice_question" | "out_of_scope" | string; label?: string; text: string; kind?: string };
+
+/** The plain-words register the question is asked in (AssistIn.style): "plain" (default) or "simpler" (one even plainer sentence). */
+export type AssistStyle = "plain" | "simpler";
+
+/** One plain-words sentence ready to render: text with `{{ref:n}}` placeholders and the refs they point at. */
+export interface SimpleBlock { text: string; refs: AssistRef[]; label?: string }
+
+export const isSimpleBlock = (b: AssistBlockX): boolean => b.kind === "simple" || b.type === "simple";
+
+/** Split an answer into its plain-words lead (every block marked simple, in order) and the detailed blocks behind "Show the details". */
+export function splitAnswer(blocks: AssistBlockX[]): { simple: SimpleBlock[]; details: AssistBlockX[] } {
+  const simple: SimpleBlock[] = [];
+  const details: AssistBlockX[] = [];
+  for (const b of blocks) {
+    if (!isSimpleBlock(b)) { details.push(b); continue; }
+    if (b.type === "sentence" || b.type === "simple") simple.push({ text: b.text, refs: b.refs ?? [] });
+    else if (b.type === "template") simple.push({ text: b.text, refs: [], label: b.label });
+    else if (b.type === "clarify") { if (b.text) simple.push({ text: b.text, refs: [] }); details.push(b); }
+  }
+  return { simple, details };
+}
 
 export interface AssistResponseX extends Omit<AssistResponse, "blocks"> {
   blocks: AssistBlockX[];
@@ -84,7 +110,7 @@ export function trailingRefs(text: string, refs: AssistRef[]): AssistRef[] {
 }
 
 export type Resolved =
-  | { kind: "money"; cents: number | null; evidence: Evidence; label: string }
+  | { kind: "money"; cents: number | null; evidence: Evidence; label: string; /** an engine total: "Calculated from the clauses cited" */ calc?: boolean }
   | { kind: "percent"; pct: number | null; evidence: Evidence; label: string }
   | { kind: "text"; text: string; evidence: Evidence; label: string }
   | { kind: "clause"; stitch: Stitch | undefined; raw: string; rule?: string; label: string };
@@ -172,6 +198,20 @@ export function resolveRef(ref: AssistRef, data: AssistData, scope?: AssistScope
     }
     case "estimate.missing_inputs": { const m = data.estimate?.missing_inputs ?? []; return { kind: "text", text: m.length ? m.map((x) => x.input).join(", ") : ASSIST.none, evidence: "UNKNOWN", label }; }
     case "estimate.ledger.not_provided": { const m = data.estimate?.ledger.not_provided ?? []; return { kind: "text", text: m.length ? m.join(", ") : ASSIST.none, evidence: "UNKNOWN", label }; }
+    // journey totals (journey_total intent): engine sums of the lines, so they read "calculated" rather than a single source badge
+    case "estimate.ledger.patient_total_cents":
+    case "estimate.ledger.plan_total_cents": {
+      const ledger = data.estimate?.ledger;
+      const cents = path.endsWith("patient_total_cents") ? ledger?.patient_total_cents ?? null : ledger?.plan_total_cents ?? null;
+      const ev: Evidence = cents === null ? "UNKNOWN" : ledger?.lines.some((l) => l.steps.some((s) => s.stitch)) ? "DOC" : "USER";
+      return { kind: "money", cents, evidence: ev, label, calc: cents !== null };
+    }
+  }
+  const lt = /^estimate\.ledger\.lines\[(\d+)\]\.(patient_cents|plan_cents)$/.exec(path);
+  if (lt) {
+    const line = lines[Number(lt[1])];
+    const cents = lt[2] === "patient_cents" ? line?.patient_cents ?? null : line?.plan_cents ?? null;
+    return { kind: "money", cents, evidence: cents === null ? "UNKNOWN" : lineEvidence(line), label };
   }
   const ra = /^estimate\.ledger\.lines\[(\d+)\]\.remaining_after\.(deductible_cents|annual_max_cents)$/.exec(path);
   if (ra) {
@@ -306,9 +346,56 @@ export const lookupLabels = (tools: string[], data?: Pick<AssistData, "estimate"
 /** Client-side mirror of the server's amount check: a sentence that still carries a bare amount is not rendered and counted as dropped. */
 export function clientGuard(blocks: AssistBlockX[]): { blocks: AssistBlockX[]; dropped: number } {
   let dropped = 0;
-  const kept = blocks.filter((b) => { if (b.type === "sentence" && hasBareMoney(b.text)) { dropped++; return false; } return true; });
+  const kept = blocks.filter((b) => { if ((b.type === "sentence" || b.type === "simple") && hasBareMoney(b.text)) { dropped++; return false; } return true; });
   return { blocks: kept, dropped };
 }
+
+export type AskTab = "journey" | "plan" | "compare" | "documents";
+
+/** The journey's planned procedures in everyday words, most you-pay first (resolved lines only; a name is listed once). */
+function journeyProcedureNames(data: Pick<AssistData, "estimate" | "items">): string[] {
+  const lines = data.estimate?.ledger.lines ?? [];
+  const ids = data.estimate?.inputs?.treatment_item_ids ?? [];
+  const named = lines.map((l, i) => {
+    const key = l.procedure_key ?? data.items.find((it) => it.id === ids[i] || it.seed_id === ids[i])?.procedure_key;
+    return { name: key ? ASSIST.everydayName[key] : undefined, cents: l.patient_cents };
+  }).filter((x): x is { name: string; cents: number } => !!x.name && typeof x.cents === "number");
+  named.sort((a, b) => b.cents - a.cents);
+  const seen = new Set<string>();
+  return named.filter((x) => (seen.has(x.name) ? false : (seen.add(x.name), true))).map((x) => x.name);
+}
+
+/** The AskBox chips for a tab, in everyday words. On My journey the second chip is built from the journey's real procedures: "Why does
+ *  the crown cost more than the root canal?" names the two planned procedures with the largest you-pay figures (only when the higher one
+ *  really is higher), one procedure gives "What do I pay for the crown?", none gives a plain definition question. */
+export function boxSuggestions(tab: AskTab, data: Pick<AssistData, "estimate" | "items">): string[] {
+  const base = ASSIST.boxChips[tab] ?? ASSIST.boxChips.plan;
+  if (tab !== "journey") return base;
+  const names = journeyProcedureNames(data);
+  let chip: string = ASSIST.chipFallback;
+  if (names.length >= 2) chip = ASSIST.chipWhyMore(names[0], names[1]);
+  else if (names.length === 1) chip = ASSIST.chipWhatFor(names[0]);
+  return [base[0], chip, ...base.slice(1)];
+}
+
+/** Plain text of a plain-words block for the screen-reader announcement: figures as "$902.00 (calculated from the clauses cited)" /
+ *  "$0.00 (From the plan document)", clause refs by their label. Visible text renders the same refs through <Money> with the badge. */
+export function plainText(block: SimpleBlock, data: AssistData, scope?: AssistScope): string {
+  return splitPlaceholders(block.text, block.refs).map((s) => {
+    if (s.type === "text") return s.text;
+    if (!s.ref) return ASSIST.notLoaded;
+    const r = resolveRef(s.ref, data, scope);
+    switch (r.kind) {
+      case "money": return r.cents === null ? ASSIST.notProvided : `${moneyWords(r.cents)} (${r.calc ? ASSIST.calcWords : BADGE_LABEL[r.evidence] ?? r.evidence})`;
+      case "percent": return r.pct === null ? ASSIST.notStated : `${r.pct}%`;
+      case "text": return r.text;
+      case "clause": return r.label;
+    }
+  }).join("").replace(/\s+/g, " ").trim();
+}
+
+const moneyWords = (c: number) => `$${(c / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
 
 export const isTemplateBlock = (b: AssistBlockX): b is Extract<AssistBlockX, { type: "template" }> => b.type === "template";
 
@@ -323,4 +410,14 @@ export function templateLabel(b: Extract<AssistBlockX, { type: "template" }>): s
 export function createRequestGate(): { begin: () => number; isCurrent: (ticket: number) => boolean; invalidate: () => void } {
   let current = 0;
   return { begin: () => ++current, isCurrent: (ticket) => ticket === current, invalidate: () => { current++; } };
+}
+
+const normRef = (r: string) => (r.startsWith("upload:") ? r : r.toUpperCase());
+
+/** The AskBox scope (journey level, no line): the selected plan, the journey's estimate when it belongs to that plan (the API locks an
+ *  estimate to its plan and answers 404 otherwise, e.g. for the moment between a plan switch and the new estimate), and the journey. */
+export function askBoxScope(planRef: string, estimate: Pick<SavedEstimate, "id" | "plan_code"> | null | undefined, journeyId?: string | null): AssistScope | null {
+  if (!planRef) return null;
+  const est = estimate && (!estimate.plan_code || normRef(estimate.plan_code) === normRef(planRef)) ? { estimate_id: estimate.id } : {};
+  return { plan_ref: planRef, ...est, ...(journeyId ? { journey_id: journeyId } : {}) };
 }

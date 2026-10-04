@@ -25,6 +25,8 @@ export interface PlanViewProps {
   stitch: Stitch | undefined;
   onStitch: (s: Stitch | undefined) => void;
   onOpenDocuments: () => void;
+  /** "Ask in plain words" (desktop card): under the plan selector, above the atlas. */
+  askSlot?: ReactNode;
 }
 
 /**
@@ -35,7 +37,7 @@ export interface PlanViewProps {
  * model/rules/evidence; the summary comes from GET /me/plans. Benefit statement figures recorded here are kept per plan ref (nothing
  * transfers) and shown back immediately while the records reload. One aria-live region announces recalculation and updates.
  */
-export function PlanView({ data, mobile, landmark, onLandmark, stitch, onStitch, onOpenDocuments }: PlanViewProps) {
+export function PlanView({ data, mobile, landmark, onLandmark, stitch, onStitch, onOpenDocuments, askSlot }: PlanViewProps) {
   const { plans, planRef, selectPlan, plan, rules, benefits, estimate, stitches, procedures, reestimate, loadRecords, loading } = data;
   const [uploads, setUploads] = useState<UploadSummary[]>([]);
   const [uploadsLoading, setUploadsLoading] = useState(true);
@@ -105,6 +107,7 @@ export function PlanView({ data, mobile, landmark, onLandmark, stitch, onStitch,
             </p>
           )}
         </div>
+        {askSlot}
         <PlanAtlas selected={landmark} onSelect={pickLandmark} summary={landmarkSummary} summaryNode={landmarkNode} compact={mobile} />
         {!landmark && <p className="hint">{PLAN.landmarkHint}</p>}
         {plan && <BenefitsCompass plan={plan} benefits={benefitsFor} estimate={estimate} stitches={stitches} onOpenLandmark={openLandmarkDeep} onSelectStitch={onStitch} selectedStitch={stitch} />}

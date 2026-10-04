@@ -112,7 +112,8 @@ export const api = {
   review: (id: string, decisions: ReviewDecision[]) => put<{ fields: ExtractionStatus["fields"] }>(`/me/documents/${id}/review`, { decisions }),
   publish: (id: string) => post<{ plan_ref: PlanRef; version_label: string; published_at: string; sha256: string; summary: UploadedPlanSummary }>(`/me/documents/${id}/publish`, {}),
   // grounded assistant (spec §8.2; api/app/assistant.py)
-  ask: (body: { message: string; scope: AssistScope }) => post<AssistResponse>("/me/assistant", body),
+  /** `style` (AssistIn.style): "plain" (the default: a plain-words lead block, then the details) or "simpler" (one even plainer sentence). */
+  ask: (body: { message: string; scope: AssistScope; style?: "plain" | "simpler" }) => post<AssistResponse>("/me/assistant", body),
   // AI treatment-plan reader and clause explainer (addendum D.5; api/app/treatment_reader.py, api/app/explain.py)
   readTreatmentPlanText: (text: string) => post<ReadResponse>("/me/treatment-plans/read", { text }),
   /** `imageConsent` is sent only after the visitor confirmed `image_notice` (a photo or scan cannot be redacted; docs/SECURITY.md). */

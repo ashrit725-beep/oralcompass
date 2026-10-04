@@ -29,6 +29,8 @@ interface Props {
   uploadSlot?: ReactNode;
   /** Called after a publish from the default wizard mount (the shell then re-estimates). */
   onPublished?: (summary: UploadedPlanSummary, planRef: PlanRef) => void;
+  /** "Ask in plain words" (desktop card), under the plan picker. */
+  askSlot?: ReactNode;
 }
 
 /**
@@ -37,7 +39,7 @@ interface Props {
  * clause list with its filter, conflicts, "Your documents" (the UploadWizard entry, your private records, the reminders mount point),
  * sources and privacy controls. For an uploaded plan the two wording lists the extractor set aside are shown and never acted on.
  */
-export function DocumentsView({ planCode, plans, onPlan, evidence, stitches, selected, onSelect, onRetry, uploadSlot, onPublished }: Props) {
+export function DocumentsView({ planCode, plans, onPlan, evidence, stitches, selected, onSelect, onRetry, uploadSlot, onPublished, askSlot }: Props) {
   const [mine, setMine] = useState<PrivateDocument[] | null>(null);
   const [uploads, setUploads] = useState<UploadSummary[]>([]);
   const [sources, setSources] = useState<SourceItem[] | null>(null);
@@ -117,6 +119,7 @@ export function DocumentsView({ planCode, plans, onPlan, evidence, stitches, sel
         </div>
         {summary && <p className="muted">{upload ? <><span className="ribbon">{PLAN.uploadedRibbon(upload.version_label)}</span> {upload.banner ?? ""}</> : summary.is_fictional ? UI.fictional : UI.realPlan}{summary.currency_note ? ` · ${UI.outdated}` : ""}</p>}
         {upload?.versions && upload.versions.length > 1 && <p className="muted small">{PLAN.docsVersions(upload.versions.join(", "))}</p>}
+        {askSlot}
         {evidence?.documents.map((d) => (
           <article key={d.version_label} className="doc-card">
             <h3><span className="scope">{d.version_label}</span> {plainNote(d.title)}</h3>

@@ -1,5 +1,5 @@
 import { useId } from "react";
-import { AskAboutStep } from "@/components/assistant/AskAboutStep";
+import { AskAboutStepLazy as AskAboutStep } from "@/components/assistant/lazy";
 import { ASSIST } from "@/lib/copy/assistant";
 import type { AssistScope } from "@/lib/types";
 import type { AssistData } from "@/lib/assistant";

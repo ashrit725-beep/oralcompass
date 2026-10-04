@@ -84,6 +84,8 @@ export const ASSIST = {
     "estimate.inputs.hypotheticals": "Hypotheticals on this estimate",
     "estimate.missing_inputs": "Inputs the estimate is waiting for",
     "estimate.ledger.not_provided": "Inputs not provided",
+    "estimate.ledger.patient_total_cents": "You pay for the planned work (calculated)",
+    "estimate.ledger.plan_total_cents": "The plan pays for the planned work (calculated)",
   } as Record<string, string>,
   refFlags: (i: number) => `Flags on line ${i + 1}`,
   refRemainingAfter: (i: number, which: string) => `${which === "deductible_cents" ? "Deductible" : "Annual maximum"} left after line ${i + 1}`,
@@ -109,4 +111,44 @@ export const ASSIST = {
     clause: ["What does this sentence change in my estimate?", "Which procedures does this sentence apply to?"],
     default: ["What does this step mean?", "Where does this figure come from?", "What does the plan document say here?"],
   } as Record<string, string[]>,
+
+  // ---- the AskBox: "Ask in plain words" on every tab (desktop card; phone field above the dock + bottom sheet) ----
+  boxTitle: "Ask in plain words",
+  boxPlaceholder: "Ask anything about your plan, in your own words",
+  boxDescribedBy: "Answers come from your plan document and your estimate, in everyday words. Information, not advice.",
+  boxSending: "Reading your plan and your estimate…",
+  boxSuggestionsLabel: "Questions people often ask",
+  boxOpen: "Ask in plain words",
+  boxClose: "Close",
+  boxEarlier: (n: number) => (n === 1 ? "1 earlier answer" : `${n} earlier answers`),
+  boxNothingSurvived: "No plain-words answer passed the information-only check. What the answer looked up is listed below.",
+  liveUnavailable: "The live model is not answering right now. The map, the plan and the clauses do not depend on it.",
+  // the answer card
+  simpleLabel: "In simple terms",
+  calcWords: "calculated from the clauses cited",
+  simplerLabel: "Even simpler",
+  sayItSimpler: "Say it more simply",
+  sayingItSimpler: "Finding plainer words…",
+  noSimpler: "No plainer version came back for this answer.",
+  showDetails: "Show the details",
+  hideDetails: "Hide the details",
+  announce: (text: string) => `Answer: ${text}`,
+  announceSimpler: (text: string) => `Even simpler: ${text}`,
+  // tab-aware suggestion chips (everyday wording; the journey's comparison chip is built from the journey's own procedures)
+  boxChips: {
+    journey: ["What will I pay in total?", "What is a deductible?", "How much of my yearly maximum is left?"],
+    plan: ["What is a deductible?", "What does plan share mean?", "What is an annual maximum?", "What is a waiting period?"],
+    compare: ["What is the difference between these plans' deductibles?", "What does 'allowed amount' mean?", "What is an annual maximum?", "What does in-network mean?"],
+    documents: ["What does this document cover?", "What is a frequency limit?", "What is an alternate benefit?", "What does 'not covered' mean?"],
+  } as Record<string, string[]>,
+  chipWhyMore: (higher: string, lower: string) => `Why does ${higher} cost more than ${lower}?`,
+  chipWhatFor: (name: string) => `What do I pay for ${name}?`,
+  chipFallback: "What does plan share mean?",
+  /** Everyday names for the 16 procedure keys, used only to build the journey's comparison chip. */
+  everydayName: {
+    exam: "the checkup", cleaning: "the cleaning", bitewing_xrays: "the x-rays", fluoride_child: "the fluoride treatment", sealant: "the sealant",
+    composite: "the filling", amalgam: "the filling", extraction_simple: "the extraction", extraction_surgical: "the surgical extraction",
+    scaling_root_planing: "the deep cleaning", root_canal_molar: "the root canal", crown: "the crown", cast_crown: "the metal crown",
+    denture_partial: "the partial denture", implant: "the implant", night_guard: "the night guard",
+  } as Record<string, string>,
 } as const satisfies Record<string, string | string[] | Record<string, string | string[]> | ((...a: never[]) => string)>;

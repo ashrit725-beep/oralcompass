@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { motion } from "motion/react";
 import { FOOTER, NAV, PASSAGE, TAGLINE, UI, type LandmarkId } from "@/lib/copy";
 import { defaultCompareColumns } from "@/lib/appData";
@@ -9,6 +9,9 @@ import { useMobile } from "@/hooks/useMobile";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dock, DockIcon } from "@/components/eldoraui/dock";
 import { AssistDataProvider } from "@/components/assistant/AssistData";
+import { AskDockLazy as AskDock, preloadAssistant } from "@/components/assistant/lazy";
+import { askBoxScope } from "@/lib/assistant";
+import { useMeasuredVar } from "@/hooks/useAskKeyboardInset";
 import { ClauseCard } from "@/components/ClauseCard";
 import { CompareView } from "@/components/CompareView";
 import { DocumentsView } from "@/components/DocumentsView";
@@ -20,6 +23,7 @@ import { JourneyView } from "@/views/JourneyView";
 import { PlanView } from "@/views/PlanView";
 
 type Tab = keyof typeof NAV;
+preloadAssistant();
 const TABS = Object.keys(NAV) as Tab[];
 
 /**
@@ -47,6 +51,11 @@ export default function App() {
   const closeStitch = useCallback(() => setStitch(undefined), []);
   const openOnPage = useCallback((s: Stitch) => { setStitch(s); setTab("documents"); }, []);
   const { plans, planRef, selectPlan, items, benefits, evidence, stitches, estimate, loading, error, retry, resetPrivate } = data;
+  const dockRef = useRef<HTMLDivElement>(null);
+  useMeasuredVar(dockRef, "--dock-h", mobile);
+  // "Ask in plain words" on every tab: the journey-level scope (plan + the journey's estimate + the journey, no line)
+  const askScope = useMemo(() => askBoxScope(planRef, estimate, data.view?.id), [planRef, estimate, data.view?.id]);
+  const openStitchById = useCallback((id: string) => { const s = stitches.find((x) => x.id === id); if (s) setStitch(s); }, [stitches]);
 
   const list = (
     <TabsList variant="line" className={mobile ? "dock-list grid! h-auto! w-full grid-cols-4 gap-1" : "h-11 w-full justify-between gap-0 md:w-auto md:justify-start md:gap-1"}>
@@ -77,7 +86,7 @@ export default function App() {
       {tab === "journey" && data.view && <a href="#passage-islands" className="skip-link">{PASSAGE.skipToRoute}</a>}
       <header className="appbar">
         <div className="brand"><h1>{UI.appName}</h1><p className="tagline">{TAGLINE}</p></div>
-        <div className="topnav">{mobile ? <Dock aria-label={UI.viewsLabel}>{list}</Dock> : list}</div>
+        <div className="topnav">{mobile ? <Dock ref={dockRef} aria-label={UI.viewsLabel}>{list}</Dock> : list}</div>
         {data.view?.is_sample && <span className="ribbon" role="note">{UI.sampleRibbon}</span>}
       </header>
       {error && <div className="error" role="alert"><p>{error}</p><button type="button" onClick={() => void retry()}>{UI.retry}</button></div>}
@@ -105,6 +114,7 @@ export default function App() {
       </main>
 
       {stitch && <ClauseCard stitch={stitch} lines={estimate?.ledger.lines ?? []} askScope={{ plan_ref: planRef, stitch: `${stitch.doc}#p${stitch.page}`, estimate_id: estimate?.id }} onClose={closeStitch} onOpenOnPage={openOnPage} />}
+      <AskDock tab={tab} scope={askScope} onOpenStitch={openStitchById} />
       <footer className="footer">{FOOTER}</footer>
     </Tabs>
     </AssistDataProvider>
