@@ -248,7 +248,10 @@ def _run(sub: str, doc_id: str, mode: str, limit_reason: Optional[str] = None) -
         if limit_reason:
             extraction["limit_reached"] = limit_reason
         # merge only the extraction fields into the CURRENT record (never re-create a deleted one, never overwrite a newer redaction)
-        if repo.patch_if_exists(sub, "document", doc_id, {"extraction": extraction, "extraction_status": st["status"]}) is None:
+        fields = {"extraction": extraction, "extraction_status": st["status"]}
+        if st["status"] in ("ready", "failed", "demo_no_model"):
+            fields["fields_needing_confirmation"] = undecided_required(st.get("fields") or [])   # the Documents list shows them from the start
+        if repo.patch_if_exists(sub, "document", doc_id, fields) is None:
             raise _DocumentGone()
         log.info("extraction id=%s stage=%s", doc_id, st["status"])
 
