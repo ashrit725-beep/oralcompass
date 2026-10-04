@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { motion } from "motion/react";
 import { FOOTER, NAV, PASSAGE, TAGLINE, UI, type LandmarkId } from "@/lib/copy";
 import { defaultCompareColumns } from "@/lib/appData";
@@ -9,6 +9,9 @@ import { useMobile } from "@/hooks/useMobile";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dock, DockIcon } from "@/components/eldoraui/dock";
 import { AssistDataProvider } from "@/components/assistant/AssistData";
+import { AskBoxSlotLazy as AskBoxSlot, AskDockLazy as AskDock, preloadAssistant } from "@/components/assistant/lazy";
+import { askBoxScope } from "@/lib/assistant";
+import { useMeasuredVar } from "@/hooks/useKeyboardInset";
 import { ClauseCard } from "@/components/ClauseCard";
 import { CompareView } from "@/components/CompareView";
 import { DocumentsView } from "@/components/DocumentsView";
@@ -20,6 +23,7 @@ import { JourneyView } from "@/views/JourneyView";
 import { PlanView } from "@/views/PlanView";
 
 type Tab = keyof typeof NAV;
+preloadAssistant();
 const TABS = Object.keys(NAV) as Tab[];
 
 /**
@@ -47,6 +51,12 @@ export default function App() {
   const closeStitch = useCallback(() => setStitch(undefined), []);
   const openOnPage = useCallback((s: Stitch) => { setStitch(s); setTab("documents"); }, []);
   const { plans, planRef, selectPlan, items, benefits, evidence, stitches, estimate, loading, error, retry, resetPrivate } = data;
+  const dockRef = useRef<HTMLDivElement>(null);
+  useMeasuredVar(dockRef, "--dock-h", mobile);
+  // "Ask in plain words" on every tab: the journey-level scope (plan + the journey's estimate + the journey, no line)
+  const askScope = useMemo(() => askBoxScope(planRef, estimate, data.view?.id), [planRef, estimate, data.view?.id]);
+  const openStitchById = useCallback((id: string) => { const s = stitches.find((x) => x.id === id); if (s) setStitch(s); }, [stitches]);
+  const askSlot = (t: Tab) => <AskBoxSlot mobile={mobile} tab={t} scope={askScope} onOpenStitch={openStitchById} fallback={mobile || !askScope ? null : <div className="askbox-pending" aria-hidden="true" />} />;
 
   const list = (
     <TabsList variant="line" className={mobile ? "dock-list grid! h-auto! w-full grid-cols-4 gap-1" : "h-11 w-full justify-between gap-0 md:w-auto md:justify-start md:gap-1"}>
@@ -77,7 +87,7 @@ export default function App() {
       {tab === "journey" && data.view && <a href="#passage-islands" className="skip-link">{PASSAGE.skipToRoute}</a>}
       <header className="appbar">
         <div className="brand"><h1>{UI.appName}</h1><p className="tagline">{TAGLINE}</p></div>
-        <div className="topnav">{mobile ? <Dock aria-label={UI.viewsLabel}>{list}</Dock> : list}</div>
+        <div className="topnav">{mobile ? <Dock ref={dockRef} aria-label={UI.viewsLabel}>{list}</Dock> : list}</div>
         {data.view?.is_sample && <span className="ribbon" role="note">{UI.sampleRibbon}</span>}
       </header>
       {error && <div className="error" role="alert"><p>{error}</p><button type="button" onClick={() => void retry()}>{UI.retry}</button></div>}
@@ -88,23 +98,24 @@ export default function App() {
         <TabsContent value={tab} forceMount tabIndex={-1} className="view-panel">
           <ViewSwitch index={TABS.indexOf(tab)}>
             <ErrorBoundary label={NAV.journey} resetKey={tab}>
-              <JourneyView data={data} selection={selection} mobile={mobile} onOpenLandmark={openLandmark} onOpenDocuments={openDocuments} onSelectStitch={setStitch} />
+              <JourneyView data={data} selection={selection} mobile={mobile} onOpenLandmark={openLandmark} onOpenDocuments={openDocuments} onSelectStitch={setStitch} askSlot={askSlot("journey")} />
             </ErrorBoundary>
             <ErrorBoundary label={NAV.plan} resetKey={tab}>
-              <PlanView data={data} mobile={mobile} landmark={landmark} onLandmark={setLandmark} stitch={stitch} onStitch={setStitch} onOpenDocuments={openDocuments} />
+              <PlanView data={data} mobile={mobile} landmark={landmark} onLandmark={setLandmark} stitch={stitch} onStitch={setStitch} onOpenDocuments={openDocuments} askSlot={askSlot("plan")} />
             </ErrorBoundary>
             <ErrorBoundary label={NAV.compare} resetKey={tab}>
-              <CompareView plans={plans} items={items} benefits={benefits} initial={defaultCompareColumns(planRef, plans)} />
+              <CompareView plans={plans} items={items} benefits={benefits} initial={defaultCompareColumns(planRef, plans)} askSlot={askSlot("compare")} />
             </ErrorBoundary>
             <ErrorBoundary label={NAV.documents} resetKey={tab}>
               <DocumentsView planCode={planRef} plans={plans} onPlan={selectPlan} evidence={evidence} stitches={stitches} selected={stitch} onSelect={setStitch}
-                             onRetry={() => { void resetPrivate(); }} />
+                             onRetry={() => { void resetPrivate(); }} askSlot={askSlot("documents")} />
             </ErrorBoundary>
           </ViewSwitch>
         </TabsContent>
       </main>
 
       {stitch && <ClauseCard stitch={stitch} lines={estimate?.ledger.lines ?? []} askScope={{ plan_ref: planRef, stitch: `${stitch.doc}#p${stitch.page}`, estimate_id: estimate?.id }} onClose={closeStitch} onOpenOnPage={openOnPage} />}
+      {mobile && <AskDock tab={tab} scope={askScope} onOpenStitch={openStitchById} />}
       <footer className="footer">{FOOTER}</footer>
     </Tabs>
     </AssistDataProvider>

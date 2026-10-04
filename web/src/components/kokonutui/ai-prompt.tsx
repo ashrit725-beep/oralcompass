@@ -4,13 +4,16 @@
  * SCOPE selector ("This step" / "This island" / "Whole plan" supplied by the wrapper); surfaces → paper-deep, focus
  * focus ring → sea, check → forest; fixed `w-4/6` and the hard-coded id are gone (`useId`); all icon
  * buttons are 44 px; focus rings terracotta (3:1 on paper-deep), the question box's on its shell (a11y-20); the send button is `aria-label` "Ask" with lucide Compass (never AI iconography). Enter submits, Shift+Enter newline.
+ * AskBox additions (2026-10-04): `compact` puts the send button beside a one-line (48 px) question box with no toolbar row; `busy`
+ * disables only the send button (the question box stays editable and focused while an answer is on its way, so a phone keyboard does
+ * not drop); `inputRef` hands the textarea to the host (the phone sheet focuses it on open).
  * Strings are props with NO shipped defaults: `AskAboutStep` passes the ASSIST copy namespace. Reduced motion: the one 150 ms
  * opacity swap is the only animation (MotionConfig covers it).
  */
 
 import { Check, ChevronDown, Compass } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useId, useState } from "react";
+import { useCallback, useId, useState, type Ref } from "react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -38,6 +41,12 @@ interface AIPromptProps {
   /** id of the element that describes the composer ("Answers quote your plan document; this is information, not advice"). */
   describedBy?: string;
   disabled?: boolean;
+  /** An answer is on its way: the send button waits, the question box stays editable. */
+  busy?: boolean;
+  /** One-line layout: the send button sits beside the question box (no toolbar row, no scope selector). */
+  compact?: boolean;
+  /** The question box element, for the host (focus on open). */
+  inputRef?: Ref<HTMLTextAreaElement>;
   onSubmit?: (value: string, scope: string) => void;
   className?: string;
 }
@@ -52,19 +61,28 @@ export default function AI_Prompt({
   scopeLabel,
   describedBy,
   disabled = false,
+  busy = false,
+  compact = false,
+  inputRef,
   onSubmit,
   className,
 }: AIPromptProps) {
   const [value, setValue] = useState("");
   const id = useId();
-  const { textareaRef, adjustHeight } = useAutoResizeTextarea({ minHeight: 72, maxHeight: 300 });
+  const minHeight = compact ? 48 : 72;
+  const { textareaRef, adjustHeight } = useAutoResizeTextarea({ minHeight, maxHeight: compact ? 160 : 300 });
+  const setRefs = useCallback((el: HTMLTextAreaElement | null) => {
+    (textareaRef as React.MutableRefObject<HTMLTextAreaElement | null>).current = el;
+    if (typeof inputRef === "function") inputRef(el);
+    else if (inputRef) (inputRef as React.MutableRefObject<HTMLTextAreaElement | null>).current = el;
+  }, [textareaRef, inputRef]);
   const [innerScope, setInnerScope] = useState(scopes[0]?.value ?? "");
   const selectedScope = scope ?? innerScope;
   const selectScope = (v: string) => { setInnerScope(v); onScopeChange?.(v); };
   const scopeText = scopes.find((s) => s.value === selectedScope)?.label ?? selectedScope;
 
   const submit = () => {
-    if (!value.trim() || disabled) return;
+    if (!value.trim() || disabled || busy) return;
     onSubmit?.(value, selectedScope);
     setValue("");
     adjustHeight(true);
@@ -75,6 +93,44 @@ export default function AI_Prompt({
       submit();
     }
   };
+
+  const sendButton = (
+    <Button
+      aria-label={sendLabel}
+      variant="ghost"
+      size="icon-touch"
+      className="shrink-0 rounded-lg text-ink hover:bg-parchment focus-visible:ring-2 focus-visible:ring-terracotta focus-visible:ring-offset-0 disabled:opacity-40"
+      disabled={disabled || busy || !value.trim()}
+      type="button"
+      onClick={submit}
+    >
+      <Compass className={cn("transition-opacity duration-200 motion-reduce:transition-none", value.trim() ? "opacity-100" : "opacity-40")} aria-hidden="true" />
+    </Button>
+  );
+
+  if (compact) {
+    return (
+      <div className={cn("w-full", className)}>
+        <div className="ai-prompt-shell ai-prompt-compact flex items-end gap-1 rounded-xl border border-rule bg-paper p-1">
+          <Textarea
+            className="min-h-12 w-full flex-1 resize-none rounded-lg border-none bg-paper px-3 py-3 font-serif text-base leading-6 text-ink placeholder:text-ink-soft focus-visible:ring-0 focus-visible:ring-offset-0"
+            id={id}
+            rows={1}
+            aria-label={label || placeholder || undefined}
+            aria-describedby={describedBy}
+            disabled={disabled}
+            onChange={(e) => { setValue(e.target.value); adjustHeight(); }}
+            onKeyDown={handleKeyDown}
+            placeholder={placeholder}
+            ref={setRefs}
+            value={value}
+            enterKeyHint="send"
+          />
+          {sendButton}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={cn("w-full", className)}>
@@ -95,7 +151,7 @@ export default function AI_Prompt({
               onChange={(e) => { setValue(e.target.value); adjustHeight(); }}
               onKeyDown={handleKeyDown}
               placeholder={placeholder}
-              ref={textareaRef}
+              ref={setRefs}
               value={value}
             />
           </div>
@@ -140,17 +196,7 @@ export default function AI_Prompt({
                 </DropdownMenu>
               )}
             </div>
-            <Button
-              aria-label={sendLabel}
-              variant="ghost"
-              size="icon-touch"
-              className="rounded-lg text-ink hover:bg-parchment focus-visible:ring-2 focus-visible:ring-terracotta focus-visible:ring-offset-0 disabled:opacity-40"
-              disabled={disabled || !value.trim()}
-              type="button"
-              onClick={submit}
-            >
-              <Compass className={cn("transition-opacity duration-200 motion-reduce:transition-none", value.trim() ? "opacity-100" : "opacity-40")} aria-hidden="true" />
-            </Button>
+            {sendButton}
           </div>
         </div>
       </div>

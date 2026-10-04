@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { PASSAGE } from "@/lib/copy/passage";
 import { UI, type LandmarkId } from "@/lib/copy";
@@ -25,6 +25,8 @@ export interface JourneyViewProps {
   onOpenDocuments: () => void;
   /** Opens the ClauseCard for a stitch pressed on the passage or in the drawer (wired by App). */
   onSelectStitch?: (s: Stitch) => void;
+  /** "Ask in plain words" (desktop card): under the summary, above the map controls. */
+  askSlot?: ReactNode;
 }
 
 type Segment = JourneySegment;
@@ -41,7 +43,7 @@ type Segment = JourneySegment;
 /** Journey labels arrive with an em dash ("Sample journey — Alex Chen …"); the heading reads it as a label and a colon (copy rule R-02). */
 const headingLabel = (label: string) => label.replace(/\s+—\s+/, ": ").replace(/\s+—\s+/g, ", ");
 
-export function JourneyView({ data, selection, mobile, onOpenLandmark, onOpenDocuments, onSelectStitch }: JourneyViewProps) {
+export function JourneyView({ data, selection, mobile, onOpenLandmark, onOpenDocuments, onSelectStitch, askSlot }: JourneyViewProps) {
   const { view, journeys, samples, plans, busy, startJourney, setView, patch, instructions, items, estimate, benefits, rules, plan, procedures, stitches, planRef, loading, loadRecords, reestimate, hypotheticals, setHypotheticals } = data;
   /** The drawer's Allowance input and the Benefit statement form change private records: reload them and re-run the estimate. */
   const onRecordsChanged = () => { loadRecords(); reestimate(); };
@@ -157,6 +159,7 @@ export function JourneyView({ data, selection, mobile, onOpenLandmark, onOpenDoc
         </div>
         <AnswersLog vm={vm} view={view} plan={plan} estimate={estimate} recalculating={recalculating} onFocus={onAnswer} />
         <p className="sr-only" aria-live="polite" role="status">{announce}</p>
+        {askSlot}
         <div className="journey-controls">
           {/* one segmented control: the parchment thumb glides to the pressed segment on pointer (200 ms), snaps for keyboard and reduced motion */}
           <div className="segment-row segmented" role="group" aria-label="Journey views">

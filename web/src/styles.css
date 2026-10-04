@@ -391,7 +391,12 @@ summary { min-height: 32px; padding-block: 4px; }
   .dock [role="tab"] { color: var(--ink-soft); }
   .dock [role="tab"][data-state="active"] { color: var(--ink); background: var(--paper); }
   /* the procedure sheet and the stage sheet sit where the dock is: the dock steps aside while either is open */
-  body:has([data-vaul-drawer][data-state="open"]) .dock, body:has(.detail.sheet:not(.is-empty)) .dock { visibility: hidden; }
+  body:has([data-vaul-drawer][data-state="open"]:not(.ask-sheet)) .dock, body:has(.detail.sheet:not(.is-empty)) .dock { visibility: hidden; }
+  /* "Ask in plain words" field above the dock: it steps aside with the dock; the dock and the field read as one bottom panel, and the
+     page keeps clear of both. The ask sheet itself stops at the dock's top edge (the dock stays reachable). */
+  body:has([data-vaul-drawer][data-state="open"]:not(.ask-sheet)) .askfield-bar, body:has(.detail.sheet:not(.is-empty)) .askfield-bar { visibility: hidden; }
+  body:has(.askfield-bar) .dock { box-shadow: none; border-top-color: transparent; }
+  body:has(.askfield-bar) .app { padding-bottom: calc(var(--dock-h, 68px) + var(--askfield-h, 60px)); }
   /* the dock is fixed edge to edge, so it keeps clear of the notch / rounded corners in landscape itself (body's safe-area padding does not reach it) */
   .dock { padding-left: max(8px, env(safe-area-inset-left)); padding-right: max(8px, env(safe-area-inset-right)); }
 }

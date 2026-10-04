@@ -27,16 +27,16 @@ export interface AnswerBlocksProps {
   onClarify?: (patch: Partial<AssistScope>) => void;
 }
 
-function Inline({ r, onOpenStitch }: { r: Resolved; onOpenStitch?: (id: string) => void }) {
+export function Inline({ r, onOpenStitch }: { r: Resolved; onOpenStitch?: (id: string) => void }) {
   switch (r.kind) {
-    case "money": return <Money cents={r.cents} evidence={r.evidence} className="as-money" />;
+    case "money": return <Money cents={r.cents} evidence={r.evidence} calc={r.calc} className="as-money" />;
     case "percent": return <span className="as-inline"><span className="num">{r.pct === null ? ASSIST.notStated : `${r.pct}%`}</span> <EvidenceBadge status={r.evidence} /></span>;
     case "text": return <span className="as-inline"><span>{r.text}</span> <EvidenceBadge status={r.evidence} /></span>;
     case "clause": return r.stitch ? <StitchChip stitch={r.stitch} onSelect={(s) => onOpenStitch?.(s.id)} /> : <span className="as-clause-text">{r.label}</span>;
   }
 }
 
-function Chip({ r, data, scope, onOpenStitch, onOpenStep }: { r: AssistRef; data: AssistData; scope: AssistScope; onOpenStitch?: (id: string) => void; onOpenStep?: (l: number, s: number) => void }) {
+export function Chip({ r, data, scope, onOpenStitch, onOpenStep }: { r: AssistRef; data: AssistData; scope: AssistScope; onOpenStitch?: (id: string) => void; onOpenStep?: (l: number, s: number) => void }) {
   const res = resolveRef(r, data, scope);
   if (res.kind === "clause") return res.stitch ? <StitchChip stitch={res.stitch} onSelect={(s) => onOpenStitch?.(s.id)} /> : <span className="as-chip">{res.label}</span>;
   if (r.kind === "step") {
@@ -59,9 +59,10 @@ export function AnswerBlocks({ blocks, data, scope, onOpenStitch, onOpenStep, on
   return (
     <div className="as-blocks">
       {blocks.map((b, i) => {
-        if (b.type === "sentence") {
-          const segs = splitPlaceholders(b.text, b.refs);
-          const trailing = trailingRefs(b.text, b.refs);
+        if (b.type === "sentence" || b.type === "simple") {
+          const refs = b.refs ?? [];
+          const segs = splitPlaceholders(b.text, refs);
+          const trailing = trailingRefs(b.text, refs);
           return (
             <motion.div key={i} className="as-sentence" {...reveal(i)}>
               <p className="as-text">

@@ -55,3 +55,60 @@
 @media (max-width: 760px) {
   .ai-prompt-shell, .as-composer { scroll-margin-bottom: calc(env(safe-area-inset-bottom, 0px) + 24px); }
 }
+
+/* ---- simple terms first (every answer card): the plain-words lead, "Even simpler", the two quiet actions, the details disclosure ---- */
+.as-simple { display: flex; flex-direction: column; gap: var(--s-1); }
+.as-simple-label { margin: 0; font-size: 13px; line-height: 18px; font-weight: 600; color: var(--ink-soft); }
+.as-simple-text { margin: 0; font-family: var(--serif); font-size: 19px; line-height: 30px; color: var(--ink); text-wrap: pretty; max-width: 62ch; }
+.as-simple-text .amt { font-weight: 600; }
+.as-simple .as-chips { margin-top: var(--s-1); }
+.as-simpler { margin-top: var(--s-3); padding-top: var(--s-3); border-top: 1px solid var(--rule); }
+.as-simpler .as-simple-text { font-size: 18px; line-height: 28px; }
+.as-actions { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-3); }
+.as-chevron { width: 16px; height: 16px; transition: transform var(--dur-micro) var(--ease-standard); }
+.as-chevron[data-open="true"] { transform: rotate(180deg); }
+.as-details { margin-top: var(--s-3); padding-top: var(--s-3); border-top: 1px dashed var(--rule); }
+.as-answer-foot .as-ribbon { margin: 0; font-size: 12px; line-height: 16px; }
+.as-answer-foot .ribbon { margin-left: 0; font-weight: 600; }
+.as-earlier > summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; font-size: 14px; color: var(--ink-soft); }
+.as-earlier > .as-answers { margin-top: var(--s-2); }
+@media (prefers-reduced-motion: reduce) { .as-chevron { transition: none; } }
+
+/* ---- the AskBox card (desktop): one parchment card at the top of each tab's main column ---- */
+.askbox { display: flex; flex-direction: column; gap: var(--s-3); margin: var(--s-4) 0; padding: var(--s-4) var(--s-5); background: var(--paper-deep); border: 1px solid var(--rule); border-radius: var(--r-4); font-family: var(--sans); }
+.askbox-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-1) var(--s-3); }
+.askbox-title { margin: 0; font-family: var(--serif); font-size: 18px; line-height: 24px; font-weight: 600; color: var(--ink); }
+.askbox-desc { margin: 0; font-size: 13px; line-height: 18px; color: var(--ink-soft); }
+.askbox-composer { max-width: 52rem; }
+.askbox-chips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--s-2); }
+.askbox .as-answers { gap: var(--s-2); }
+.askbox .as-answer { background: var(--paper); box-shadow: none; max-width: 64rem; }
+.askbox .as-error { max-width: 52rem; }
+
+/* ---- the phone field above the dock and its bottom sheet ---- */
+.askfield-bar { position: fixed; left: 0; right: 0; bottom: var(--dock-h, 68px); z-index: 14; padding: var(--s-2) max(12px, env(safe-area-inset-right)) var(--s-1) max(12px, env(safe-area-inset-left)); background: var(--paper-deep); border-top: 1px solid var(--rule); box-shadow: var(--shadow-1); }
+.askfield-bar[data-open="true"] { visibility: hidden; }
+.askfield { display: flex; align-items: center; justify-content: space-between; gap: var(--s-2); width: 100%; min-height: 44px; padding: 0 var(--s-3) 0 var(--s-4); background: var(--paper); border: 1px solid var(--rule); border-radius: var(--r-3); font-family: var(--serif); font-size: 16px; line-height: 22px; color: var(--ink-soft); text-align: left; cursor: text; }
+.askfield:focus-visible { outline: 3px solid var(--terracotta); outline-offset: 1px; }
+.askfield-glyph { width: 20px; height: 20px; flex: none; color: var(--ink-soft); }
+.ask-scrim { position: fixed; left: 0; right: 0; top: 0; bottom: var(--dock-h, 0px); z-index: 39; background: rgba(35, 48, 61, .2); touch-action: none; animation: ask-scrim-in var(--dur-standard) var(--ease-standard); }
+@keyframes ask-scrim-in { from { opacity: 0; } to { opacity: 1; } }
+.ask-sheet { position: fixed; left: 0; right: 0; bottom: var(--dock-h, 0px); z-index: 40; display: flex; flex-direction: column; max-height: calc(85vh - var(--dock-h, 0px)); background: var(--paper-deep); color: var(--ink); border-top: 1px solid var(--rule); border-radius: var(--r-sheet); box-shadow: var(--shadow-3); outline: none; }
+@supports (height: 1dvh) { .ask-sheet { max-height: calc(85dvh - var(--dock-h, 0px)); } }
+.ask-sheet-handle { display: flex; align-items: center; justify-content: center; height: 44px; width: 96px; margin: 0 auto -8px; flex: none; cursor: grab; background: transparent; border: 0; }
+.ask-sheet-handle > span { display: block; width: 44px; height: 4px; border-radius: 999px; background: var(--sand); }
+.ask-sheet-handle:focus-visible { outline: 3px solid var(--terracotta); outline-offset: -6px; }
+.ask-sheet-head { display: flex; align-items: center; justify-content: space-between; gap: var(--s-2); min-height: 48px; padding: 0 var(--s-4); border-bottom: 1px solid var(--rule); flex: none; }
+.ask-sheet-title { margin: 0; font-family: var(--serif); font-size: 20px; line-height: 26px; font-weight: 600; }
+.askbox-sheet-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: var(--s-3) var(--s-4) var(--s-4); display: flex; flex-direction: column; gap: var(--s-3); overflow-wrap: anywhere; }
+.askbox-sheet-foot { flex: none; padding: var(--s-2) var(--s-3) var(--s-3); border-top: 1px solid var(--rule); background: var(--paper-deep); }
+.ask-sheet .as-answer { background: var(--paper); box-shadow: none; padding: var(--s-3); }
+.ask-sheet .as-simple-text { font-size: 18px; line-height: 28px; }
+/* vaul extends every bottom drawer downwards with a ::after (drag overshoot cover); this sheet ends at the dock's edge, so the cover
+   would hide the dock. vaul's rule is unlayered, hence !important from this layer. */
+.ask-sheet::after { display: none !important; }
+/* the placeholder ("Ask anything about your plan, in your own words") takes two lines at phone width: show both */
+.askbox-sheet-foot textarea { min-height: 72px !important; }   /* over the composer's min-h-12 utility */
+@media (prefers-reduced-motion: reduce) { .ask-scrim { animation: none; } }
+/* the AskBox chunk normally arrives before the journey data; if not, this keeps the card's place so the map does not move */
+.askbox-pending { min-height: 176px; margin: var(--s-4) 0; border: 1px solid var(--rule); border-radius: var(--r-4); background: var(--paper-deep); }
