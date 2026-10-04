@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { LANDMARKS, type LandmarkId } from "@/lib/copy";
-import { artSources } from "@/lib/art-srcset";
+import { ArtPicture } from "./ArtPicture";
 import { hasDrawn, markDrawn } from "@/lib/drawRegistry";
 import { useReducedMotion } from "@/lib/motion";
 import type { RouteSegment } from "@/lib/passage";
@@ -82,18 +82,11 @@ const PLATE_ART: Record<LandmarkId, string> = {
   harbor: "", bridge: "island-generic", cove: "island-generic", lookout: "island-major", lighthouse: "island-lighthouse",
 };
 
-/** A painted plate at its slot width: the phone variants (art-srcset) with the original as the fallback. */
-function PlatePicture({ name, sizePx, className, lazy, onError }: { name: string; sizePx: number; className: string; lazy?: boolean; onError?: (img: HTMLImageElement) => void }) {
-  const art = artSources(name);
-  const sizes = `${Math.max(1, Math.round(sizePx))}px`;
-  return (
-    <picture>
-      {art.avif && <source type="image/avif" srcSet={art.avif} sizes={sizes} />}
-      <source type="image/webp" srcSet={art.webp} sizes={sizes} />
-      <img src={art.src} alt="" decoding="async" loading={lazy ? "lazy" : undefined} className={className}
-           onError={onError ? (e) => onError(e.currentTarget) : undefined} />
-    </picture>
-  );
+/** A painted plate at its slot width (ArtPicture: the phone variants, the original as the widest candidate); a plate that fails to
+ *  load is hidden (the label and route stay). */
+function PlatePicture({ name, sizePx, className, lazy }: { name: string; sizePx: number; className: string; lazy?: boolean }) {
+  return <ArtPicture name={name} sizes={`${Math.max(1, Math.round(sizePx))}px`} decoding="async" loading={lazy ? "lazy" : undefined} className={className}
+                     onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />;
 }
 const ROUTE_KEY = "plan-route";
 const SEG_START = 0.25, SEG_GAP = 0.34;   // seconds: segment i starts at SEG_START + i × SEG_GAP and draws for 0.7 s (RouteLine)
@@ -188,7 +181,7 @@ export function PlanAtlas({ selected, onSelect, stops, label = "Plan map" }: Pla
                 {s.id === "harbor" ? (
                   <svg className="pa-harbor" viewBox="-74 -50 148 80" preserveAspectRatio="xMidYMid meet" focusable="false"><StartHarbor x={0} y={0} /></svg>
                 ) : (
-                  <PlatePicture name={PLATE_ART[s.id]} sizePx={s.plate.w} className={`pa-plate-img plate-${s.id}`} onError={(img) => { img.style.visibility = "hidden"; }} />
+                  <PlatePicture name={PLATE_ART[s.id]} sizePx={s.plate.w} className={`pa-plate-img plate-${s.id}`} />
                 )}
                 {s.id === "bridge" && <Bridge />}
                 {stop.state === "fog" && <PlatePicture name="fog-layer-1" sizePx={s.plate.w * 1.44} lazy className="pa-fog" />}

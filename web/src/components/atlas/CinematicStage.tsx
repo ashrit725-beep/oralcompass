@@ -1,5 +1,6 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { artSources, FULL_BLEED_SIZES } from "@/lib/art-srcset";
+import { FULL_BLEED_SIZES } from "@/lib/art-srcset";
+import { ArtPicture } from "./ArtPicture";
 import { hasDrawn, markDrawn } from "@/lib/drawRegistry";
 import { useReducedMotion } from "@/lib/motion";
 
@@ -149,7 +150,6 @@ export function CinematicStage({ art, title, facts, children, height }: Cinemati
     transform: cam ? `translate3d(0, ${cam.ty}px, 0) scale(${cam.s})` : "none",
     transition: reduce ? "none" : undefined,
   };
-  const plate = artSources(`${art}-passage`);
 
   return (
     <section ref={stageRef} className={`cin-stage cin-${art}`} aria-labelledby={titleId} data-hidden={hidden ? "" : undefined} data-dolly={cam ? "" : undefined}
@@ -159,12 +159,8 @@ export function CinematicStage({ art, title, facts, children, height }: Cinemati
           <div className={`cin-settle ${establish && !reduce ? "is-establishing" : ""}`}>
           <div className={`cin-drift ${reduce ? "" : "motion-drift"}`}>
             {Array.from({ length: tiles }, (_, i) => (
-              <picture key={i}>
-                {plate.avif && <source type="image/avif" srcSet={plate.avif} sizes={FULL_BLEED_SIZES} />}
-                <source type="image/webp" srcSet={plate.webp} sizes={FULL_BLEED_SIZES} />
-                <img src={plate.src} alt="" width={1080} height={1920} decoding="async" draggable={false}
-                     loading={i < 2 ? "eager" : "lazy"} className={i % 2 ? "cin-tile is-mirror" : "cin-tile"} />
-              </picture>
+              <ArtPicture key={i} name={`${art}-passage`} sizes={FULL_BLEED_SIZES} width={1080} height={1920} decoding="async" draggable={false}
+                          loading={i < 2 ? "eager" : "lazy"} className={i % 2 ? "cin-tile is-mirror" : "cin-tile"} />
             ))}
           </div>
           </div>

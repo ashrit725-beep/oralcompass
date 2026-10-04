@@ -44,3 +44,4 @@ export function artHref(name: string, cssPx: number, dpr: number = typeof window
   const fit = plate.variants.find((v) => v.w >= need);
   return fit ? fit.webp : plate.src;
 }
+
