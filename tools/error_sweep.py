@@ -33,6 +33,9 @@ ROOT = Path(__file__).resolve().parent.parent
 QUICK = "--quick" in sys.argv
 ONLY = sys.argv[sys.argv.index("--only") + 1].lower() if "--only" in sys.argv else ""     # e.g. --only iphone (run devices in parallel)
 EXPECTED_STATUS = {404, 409, 415, 422}
+# the AI endpoints throttle per user by design (security §20: 60 explains / 10 min); the client answers a 429 with the PLAIN template or
+# the assistant's "paused" line, so a throttle there is a handled answer, not a fault (each run also uses its own dev user)
+THROTTLED_OK = re.compile(r"/api/me/(explain|assistant)$")
 SKIP_NAME = re.compile(r"delete|erase|sign out|log out|remove all|publish|hold to|reset everything|export", re.I)
 TABS = ["My journey", "My plan", "Compare", "Documents"]
 QUESTIONS = ["What is the annual maximum?", "How much is the deductible?", "Is there a waiting period for crowns?",
@@ -57,7 +60,8 @@ class Sweep:
         browser = getattr(pw, engine).launch()
         self.browser = browser
         self.ctx = browser.new_context(**ctx_kwargs)
-        self.ctx.route(re.compile(r"^https?://[^/]+/api/"), self._dev_user)
+        user = "sweep-" + re.sub(r"[^a-z0-9]+", "-", label.lower()).strip("-")
+        self.ctx.route(re.compile(r"^https?://[^/]+/api/"), lambda route: route.continue_(headers={**route.request.headers, "x-dev-user": user}))
         self.page = self.ctx.new_page()
         self._action = "load"
         self.count = 0
@@ -76,12 +80,6 @@ class Sweep:
     def action(self, value: str):
         self._action = value; self.count += 1
 
-    @staticmethod
-    def _dev_user(route):
-        headers = {**route.request.headers}
-        headers.setdefault("x-dev-user", "sweep-user")
-        route.continue_(headers=headers)
-
     def _console(self, msg):
         if msg.type in ("error", "warning", "assert"):
             text = msg.text
@@ -96,6 +94,8 @@ class Sweep:
             note(kind, text, f"{self.label} / {self.action}")
 
     def _response(self, resp):
+        if resp.status == 429 and THROTTLED_OK.search(resp.url):
+            return
         if resp.status >= 400 and resp.status not in EXPECTED_STATUS:
             note("http", f"{resp.status} {resp.request.method} {resp.url}", f"{self.label} / {self.action}")
 
