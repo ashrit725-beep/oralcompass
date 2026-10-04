@@ -420,6 +420,10 @@ def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-pref
     # click a clause → clause card
     page.locator("ol.clauses li button").first.click(); page.wait_for_timeout(400)
     check(f"{device}: clause card opens", page.get_by_role("dialog").count() > 0)
+    page.wait_for_timeout(800)
+    pw = page.evaluate("(() => { const p = document.querySelector('aside.clause .plain-words'); return p ? [p.querySelector('.pw-sentence')?.textContent || '', p.querySelector('.pw-label')?.textContent || '', p.querySelector('.pw-where')?.textContent || ''] : null; })()")
+    check(f"{device}: clause explainer labels its plain sentence", bool(pw) and len(pw[0]) > 20 and pw[1] in ("Demo mode", "Written by the model from this quote", "Plain-words template") and pw[2].startswith("From "),
+          str(pw)[:160])
     page.get_by_role("button", name="Close clause card").click(); page.wait_for_timeout(200)
     # reminders: fact sentences with their evidence, one live region
     rm = page.locator(".rm-item")
@@ -466,6 +470,27 @@ def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-pref
             break
     check(f"{device}: keyboard activates an island", page.get_by_role("heading", name="Starting point").count() > 0, str(focused)[:40])
     close_sheet()
+
+    # ---- AI treatment-plan reader (addendum D.5a): the stored fictional estimate reads into reviewed rows, nothing ticked; read-only (no confirm) ----
+    if not mobile:
+      try:
+        page.get_by_role("tab", name="My plan").click(); page.wait_for_timeout(800)
+        det = page.locator("details", has_text="Add a procedure").first
+        if det.count() and not det.evaluate("d => d.open"): det.locator("summary").first.click(); page.wait_for_timeout(600)
+        page.locator(".tpr").first.scroll_into_view_if_needed(); page.wait_for_timeout(600)
+        page.locator(".tpr-sample", has_text="Greensboro").first.click(); page.wait_for_timeout(200)
+        page.get_by_role("button", name="Read these lines").click(); page.wait_for_timeout(2500)
+        rows = page.locator(".tpr-table tbody tr")
+        mapped = page.evaluate("[...document.querySelectorAll('.tpr-table tbody select')].map(s => s.value)")
+        ticked = page.evaluate("[...document.querySelectorAll('.tpr-include input')].filter(i => i.checked).length")
+        fee_badged = page.evaluate("[...document.querySelectorAll('.tpr-table tbody tr')].every(r => r.querySelector('.badge'))")
+        shot("29-treatment-plan-reader")
+        check(f"{device}: treatment-plan reader reads the stored estimate", rows.count() == 2 and mapped == ["root_canal_molar", "crown"] and ticked == 0 and fee_badged,
+              f"rows={rows.count()} mapped={mapped} ticked={ticked} badged={fee_badged}")
+        if det.count() and det.evaluate("d => d.open"): det.locator("summary").first.click(); page.wait_for_timeout(200)
+      except Exception as e:  # noqa: BLE001
+        check(f"{device}: treatment-plan reader reads the stored estimate", False, str(e).splitlines()[0][:160])
+      page.get_by_role("tab", name="My journey").click(); page.wait_for_timeout(2000)     # the next block counts islands on the map
 
     # ---- add a procedure (spec §12 "add procedure draws island"); desktop only, reverted through the API so the phone pass sees Alex unchanged ----
     if not mobile:

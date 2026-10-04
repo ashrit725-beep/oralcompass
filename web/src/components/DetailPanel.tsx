@@ -32,7 +32,7 @@ export function DetailPanel(props: Props) {
 
 function StageDetail({ view, stage, onSelect, onOpenLandmark, onInstructions, busy }: Props & { stage: Stage }) {
   const prog = stageProgress(stage);
-  const items = stage.linked_treatment_items.map((id) => view.links.treatment_items[id]).filter(Boolean);
+  const items = (stage.linked_treatment_items ?? []).map((id) => view.links.treatment_items[id]).filter(Boolean);
   const [text, setText] = useState(""); const [source, setSource] = useState(""); const [given, setGiven] = useState("");
   return (
     <div className="detail-body">

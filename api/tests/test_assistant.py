@@ -163,6 +163,44 @@ def test_advice_question_gets_the_fixed_information_template(alex):
         assert "get_estimate_line(line 1)" in j["tools_used"]           # facts were still gathered deterministically first
 
 
+def test_demo_intent_follows_the_question_topic_before_the_selected_step(alex):
+    """BUILD_FOLLOWUPS 8: the question names the annual maximum while the deductible step is selected -> the annual-maximum answer."""
+    est = alex["est"]
+    j = ask("What happens to the annual maximum on this line?", estimate_id=est["id"], line_index=1, step_key="deductible").json()
+    assert j["intent"] == "explain_step" and j["mode"] == "demo"
+    assert j["blocks"][0]["text"] == "This line stays within the remaining annual maximum of {{ref:0}}."
+    refs = j["blocks"][0]["refs"]
+    assert refs[0]["kind"] == "field" and refs[0]["path"].endswith("annual_max_cents")
+    assert {"kind": "clause", "stitch": "ML26#p25", "rule": "M"} in refs
+    assert j["suggested"] == SUGGESTIONS["M"]
+    for b in j["blocks"]:
+        assert_grounded(b, est, alex)
+    # the question names nothing -> the selected step answers (unchanged behaviour)
+    j = ask("Why is it what it is on this line?", estimate_id=est["id"], line_index=0, step_key="deductible").json()
+    assert j["blocks"][0]["text"].startswith("No deductible was applied")
+    # topic table: earliest mention wins; bare "my share" names no checkpoint
+    assert assistant.question_topic("Is the deductible counted before the annual max?") == "D"
+    assert assistant.question_topic("What percent does the plan pay?") == "CO"
+    assert assistant.question_topic("Why is the allowed amount lower?") == "N"
+    assert assistant.question_topic("Does a downgrade apply?") == "AB"
+    assert assistant.question_topic("Which steps make up my share?") is None
+
+
+def test_advice_template_reads_as_plain_sentences_from_engine_fields(alex):
+    """BUILD_FOLLOWUPS 10: prose built from the line's status and its cited steps; no amounts; lint clean."""
+    from app.lint_runtime import guard as lint_guard
+    est = alex["est"]
+    text = ask("Should I get the crown?", estimate_id=est["id"], line_index=1).json()["blocks"][0]["text"]
+    assert text == ("OralCompass provides information, not a choice. Here is what the supplied documents and inputs show. "
+                    "For Crown, porcelain/ceramic (tooth 19), the estimate is complete. "
+                    "Its network and coinsurance steps are each tied to a sentence in the plan document (ML26, page 25). "
+                    "Each amount is on the estimate line beside its evidence label.")
+    assert "status estimate" not in text and ";" not in text.split("(ML26")[0]
+    assert lint_guard(text)["dropped"] == []
+    both = ask("Which is better?", estimate_id=est["id"]).json()["blocks"][0]["text"]
+    assert both.count("the estimate is complete") == 2 and both.count("Each amount is on the estimate line") == 1
+
+
 def test_guard_drops_planted_steering_sentence_and_grounding_drops_amounts():
     allowed = {"step:0:1", "clause:ML26#p25"}
     ok = {"kind": "step", "line_index": 0, "step_index": 1, "label": "x"}

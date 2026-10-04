@@ -34,6 +34,14 @@ def test_put_get_list_and_constant_404(repo):
     assert repo.list_owned("bob", "document") == []
 
 
+def test_find_owned_is_a_quiet_keyed_lookup(repo):
+    a = repo.put("alice", "explanation", {"id": "k1", "sentence": "s"})
+    n = len(repo.audit_for("alice"))
+    assert repo.find_owned("alice", "explanation", "k1") == a
+    assert repo.find_owned("bob", "explanation", "k1") is None and repo.find_owned("alice", "explanation", "nope") is None
+    assert len(repo.audit_for("alice")) == n                         # a cache miss is not recorded as a denied read
+
+
 def test_update_keeps_first_insert_order_and_explicit_ids(repo):
     first = repo.put("u", "journey", {"n": 1})
     repo.put("u", "journey", {"id": "fixed", "n": 2})

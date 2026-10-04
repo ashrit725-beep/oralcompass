@@ -82,3 +82,22 @@ def test_production_config_is_checked(monkeypatch):
     monkeypatch.setenv("ORALCOMPASS_DEV_AUTH", "1")
     with pytest.raises(RuntimeError, match="DEV_AUTH"):
         server.check_production_config()
+
+
+@pytest.mark.parametrize("env,loads", [("production", False), ("", True)])
+def test_api_env_file_is_read_only_outside_production(env, loads, tmp_path):
+    """A developer's api/.env (dev auth, a live key) must not switch a production run into dev auth after the config check passed."""
+    import os
+    import subprocess
+    import sys
+    from pathlib import Path
+    api = Path(__file__).resolve().parents[1]
+    code = ("import dotenv, json; calls = []\n"
+            "dotenv.load_dotenv = lambda *a, **k: calls.append(1)\n"
+            "import app.main\n"
+            "print(json.dumps(len(calls)))")
+    child = {k: v for k, v in os.environ.items() if not k.startswith(("ORALCOMPASS_", "OPENROUTER_"))}
+    child.update({"ORALCOMPASS_ENV": env, "ORALCOMPASS_DATA_DIR": str(tmp_path)})
+    out = subprocess.run([sys.executable, "-c", code], cwd=api, env=child, capture_output=True, text=True, timeout=120)
+    assert out.returncode == 0, out.stderr[-2000:]
+    assert (out.stdout.strip().splitlines()[-1] != "0") is loads

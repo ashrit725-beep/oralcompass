@@ -16,7 +16,11 @@ from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel, Field
 
-load_dotenv(Path(__file__).resolve().parents[1] / ".env", override=False)      # api/.env is gitignored; values are never logged
+# api/.env (gitignored; values are never logged) is the local development file. Production takes its settings from the platform's
+# environment only: a developer's api/.env (which can carry ORALCOMPASS_DEV_AUTH=1 and a live key) must never switch a production run
+# into dev auth after server.check_production_config has passed.
+if os.getenv("ORALCOMPASS_ENV") != "production":
+    load_dotenv(Path(__file__).resolve().parents[1] / ".env", override=False)
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "engine"))
@@ -49,6 +53,9 @@ app.include_router(journeys.router)
 app.include_router(uploads.router)
 app.include_router(assistant.router)
 app.include_router(notifications.router)
+from . import explain, treatment_reader  # noqa: E402  (AI features, addendum D.5)
+app.include_router(treatment_reader.router)
+app.include_router(explain.router)
 
 
 # ---------- schemas ----------

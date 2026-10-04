@@ -22,14 +22,14 @@ Status legend: OPEN · DONE · DEFERRED (with reason). Every item names the file
    root canal sits on top of the crown island button; the crown title truncates ("Crown, porcelain/cera…"); visited-island chips truncate ("Periodic oral..",
    "Adult cleani...", "Bitewing x-..."). Check: no control rectangle overlaps another (assert in layoutPassage), full titles visible or available via the
    accessible name + a 2-line clamp, soundings placed on the route between islands, not on a label.
-8. OPEN — Demo-mode assistant answers the selected step instead of the question (`api/app/assistant.py` intent/step resolution, `assistant_templates.py`):
+8. DONE (2026-10-03, `assistant.question_topic`; test `test_demo_intent_follows_the_question_topic_before_the_selected_step`) — Demo-mode assistant answers the selected step instead of the question (`api/app/assistant.py` intent/step resolution, `assistant_templates.py`):
    with step key "deductible" selected, "What happens to the annual maximum on this line?" returned the deductible template. Demo intent should read the
    question (maximum/annual max → M, deductible → D, share/percent/coinsurance → CO, allowed/network → N, downgrade/alternate → AB) and fall back to the
    selected step only when the question names none. Check: that exact question returns the annual-maximum sentence with the M step and maximum refs.
 9. OPEN — Upload review table clipped inside the stepper (`components/upload/UploadWizard.tsx` / vendored `ui/Stepper.tsx` container width, `styles/upload.css`):
    the Confidence/Quote/Decision columns are cut off at 1366 px; the review step needs the full dialog width (or a horizontal scroll container with a
    scroll-fade) and a stacked card layout at 360 px. Check: all five columns visible at 1366, no clipped text at 360.
-10. OPEN — The advice-question template reads mechanically ("status estimate; steps cited to the plan document: coinsurance, network basis"); rewrite as
+10. DONE (2026-10-03, `templates.ADVICE_*` sentences; test `test_advice_template_reads_as_plain_sentences_from_engine_fields`) — The advice-question template reads mechanically ("status estimate; steps cited to the plan document: coinsurance, network basis"); rewrite as
    plain sentences from the same engine fields (antislop-copywriting), still information-only. Check: lint clean and reads as prose.
 
 ## Integration (2026-10-03, merge of the four web build branches into `build/journey-v2`)
@@ -57,11 +57,10 @@ statically; `vite.config.ts` splits react/radix/vaul into `ui-vendor` (main 121 
 20. OPEN — Live-mode extraction of the 14-page fixture took ~5 min on one run; the screenshot walk runs the API in demo mode (`ORALCOMPASS_LLM_PROVIDER=demo`).
 
 ## Production readiness (2026-10-03, addendum §D; not deployed — see `docs/DEPLOY.md`)
-21. NOTE for the AI-features branch — the treatment-plan reader and clause explainer must call the live-AI cost guard:
-   `from . import llm_guard`; `ok, reason = llm_guard.allow(user.sub, "reader" | "explainer")` before the provider call (on refusal use the demo
-   path and `templates.LLM_LIMIT_RIBBON`), then `llm_guard.record(kind, *llm_guard.usage_tokens(resp_json, fallback_in=..., fallback_out=max_tokens))`.
-   Tests get fresh counters per test (`api/tests/conftest.py`). A reader route that accepts a photo/PDF must end in `/upload` (35 MB body limit,
-   `api/app/security.py`) or be listed in `ORALCOMPASS_LARGE_BODY_PATHS`; every other route is capped at 1 MB.
+21. DONE (merge) — The treatment-plan reader and clause explainer call the live-AI cost guard: `ai_support.guard_allow` → `llm_guard.allow(sub,
+   "reader" | "explainer")` before any provider call (refusal or guard error → demo path, labelled); each completed call's provider-reported usage is
+   recorded by `extraction.OpenRouterExtractor._call` under the same kind (`spend_kind`), so spend is counted once. `POST /me/treatment-plans/read`
+   is in `security.LARGE_BODY_SUFFIXES` (the reader caps the file at 10 MB itself); every other non-upload route stays at 1 MB.
 22. NOTE — The production bundle no longer sends `X-Dev-User` (only `import.meta.env.DEV` or `VITE_DEV_AUTH=1` builds do; `web/src/lib/auth.ts`).
    `tools/screenshots.py` adds the header to `/api` requests itself, so the dev walk works against `npm run build` output unchanged. The walk can also
    run against the single server instead of `vite preview` (CSP applied): `cd api && ORALCOMPASS_DEV_AUTH=1 ORALCOMPASS_LLM_PROVIDER=none
@@ -71,6 +70,24 @@ statically; `vite.config.ts` splits react/radix/vaul into `ui-vendor` (main 121 
 24. OPEN — Assistant: the existing per-user 429 rate limit (30 per 10 min, all requests) and the guard's live-call limit (30 per 10 min) are equal, so
    the guard's assistant ribbon appears only after the global caps; lower `ORALCOMPASS_LLM_LIMIT_ASSISTANT` to make the per-visitor fallback reachable.
 25. OPEN — No expiry for abandoned sessions' records in SQLite (a periodic purge by `updated_at` would be the next step).
+
+## AI features (addendum D.5; AI-features branch, 2026-10-03)
+26. DONE — Treatment-plan reader: `api/app/treatment_reader.py` (POST `/me/treatment-plans/read`, `/confirm`, GET `/samples`), web `components/plan/TreatmentPlanReader.tsx`
+   inside the importer. Demo reads only the two stored fictional estimates; live verified with Haiku 4.5 (Alex's pasted text → 2 items D3330/D2740; a rendered photo of
+   Sam's estimate → 2 items, the crown with the cast-crown alternative). Tests `api/tests/test_treatment_reader.py`; walk check "treatment-plan reader reads the stored estimate".
+27. DONE — Clause explainer: `api/app/explain.py` (POST `/me/explain`), web `components/PlainWords.tsx` in ClauseCard depth 1 and each drawer clause-evidence item.
+   Tests `api/tests/test_explain.py` (PLAIN parity with `web/src/lib/copy.ts`), `web/src/__tests__/explain.test.ts`; walk check "clause explainer labels its plain sentence".
+28. DONE (merge) — `ai_support` imports `llm_guard` directly (no lazy "allowed" fallback); kinds map `treatment_reader` → `reader` (10/day) and
+   `explain` → `explainer` (60/day). The explainer cache uses the new `repo.find_owned` (keyed, no audit entry for a miss) on both repositories.
+   `api/.env` is no longer read when `ORALCOMPASS_ENV=production` (a developer's file carried `ORALCOMPASS_DEV_AUTH=1`, which switched the local
+   production smoke into dev auth after the config check).
+29. DEFERRED (privacy, stated in the UI) — a photo cannot be regex-redacted before reading: in live mode the image reaches the model; the server redacts the model's answer
+   and the ribbon says so. A scanned PDF is rendered to page images the same way. An OCR-then-redact step would close this.
+30. DEFERRED (model) — clause fragments without context (e.g. ML26 p.25 "Not eligible for dependent children under age 14", an unsupported-rules row) can be restated
+   too broadly ("…are not eligible for coverage"). The explainer now passes the clause's `section` and rejects "this service"-style referents; fragments with no section
+   still read broadly. A per-field context hint (which procedure a limitation belongs to) would tighten it.
+31. DONE — "Start my journey (no documents yet)" crashed the app (`fixtures/journeys/empty.json` stage had no `linked_treatment_items`; `lib/passage.ts` called `.some`
+   on undefined). Fixture completed and the web guards a missing list; the "Add a journey" select no longer lists "empty" twice.
 
 ## Docs / presentation (filled by the polish pass)
 - README quick start must cover: `api/.env` from `api/.env.example`, demo mode vs live mode, `npm install` (Tailwind/shadcn stack), `web/THIRD_PARTY_NOTICES.md`,

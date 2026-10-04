@@ -63,6 +63,8 @@ def test_chunked_bodies_are_counted_as_they_stream():
 
 def test_upload_route_allows_35_megabytes():
     assert security.body_limit("/me/documents/upload") == 35 * 1024 * 1024 == security.body_limit("/api/me/documents/upload")
+    assert security.body_limit("/api/me/treatment-plans/read") == 35 * 1024 * 1024        # the treatment-plan reader takes a photo or PDF
+    assert security.body_limit("/api/me/treatment-plans/confirm") == 1024 * 1024
     assert security.body_limit("/me/documents/abc/review") == 1024 * 1024
     r = client.post("/me/documents/upload", headers={**U, "Content-Length": str(36 * 1024 * 1024), "Content-Type": "multipart/form-data; boundary=x"}, content=b"")
     assert r.status_code == 413 and r.json()["detail"]["max_bytes"] == 35 * 1024 * 1024

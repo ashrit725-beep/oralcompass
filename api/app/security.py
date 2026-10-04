@@ -56,7 +56,9 @@ HSTS = (b"strict-transport-security", b"max-age=31536000; includeSubDomains")
 
 UPLOAD_LIMIT = 35 * 1024 * 1024
 DEFAULT_LIMIT = 1 * 1024 * 1024
-LARGE_BODY_SUFFIXES: tuple[str, ...] = ("/upload",)        # POST /me/documents/upload; a new file route ending in /upload is covered too
+# POST /me/documents/upload (a new file route ending in /upload is covered too) and POST /me/treatment-plans/read (a photo or PDF of an
+# estimate; the reader caps the file itself at 10 MB and pasted text at 20,000 characters).
+LARGE_BODY_SUFFIXES: tuple[str, ...] = ("/upload", "/me/treatment-plans/read")
 
 
 class BodyTooLarge(HTTPException):

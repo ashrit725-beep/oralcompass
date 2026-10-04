@@ -526,7 +526,7 @@ def build_http_client(timeout: float = LLM_TIMEOUT_S) -> httpx.Client:
     return httpx.Client(timeout=timeout, transport=_TRANSPORT_OVERRIDE) if _TRANSPORT_OVERRIDE else httpx.Client(timeout=timeout)
 
 
-def _record_spend(r: httpx.Response, body: dict) -> None:
+def _record_spend(r: httpx.Response, body: dict, kind: str = "extraction") -> None:
     """Estimated spend of one completed call for the live-AI daily cap (llm_guard). Never raises."""
     try:
         from . import llm_guard
@@ -534,7 +534,7 @@ def _record_spend(r: httpx.Response, body: dict) -> None:
             payload = r.json()
         except ValueError:
             payload = {}
-        llm_guard.record("extraction", *llm_guard.usage_tokens(payload, fallback_in=len(json.dumps(body["messages"])) // 4, fallback_out=body.get("max_tokens", 0)))
+        llm_guard.record(kind, *llm_guard.usage_tokens(payload, fallback_in=len(json.dumps(body["messages"])) // 4, fallback_out=body.get("max_tokens", 0)))
     except Exception:
         pass
 
@@ -543,7 +543,9 @@ class OpenRouterExtractor:
     """Two chat/completions calls with structured output. Returns the raw typed schema (document wording, pages, quotes); mapping
     to procedure keys happens afterwards in `match_rules`, never in the model."""
 
-    def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None, client: Optional[httpx.Client] = None, timeout: float = LLM_TIMEOUT_S) -> None:
+    def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None, client: Optional[httpx.Client] = None, timeout: float = LLM_TIMEOUT_S,
+                 spend_kind: str = "extraction") -> None:
+        self.spend_kind = spend_kind                              # llm_guard kind the spend of each completed call is recorded under
         self.api_key = api_key or os.getenv("OPENROUTER_API_KEY") or ""
         self.model = model or llm_model()
         self.client = client or build_http_client(timeout)
@@ -565,7 +567,7 @@ class OpenRouterExtractor:
             try:
                 r = self.client.post(OPENROUTER_URL, headers=headers, json=body)
                 if r.status_code < 400:
-                    _record_spend(r, body)
+                    _record_spend(r, body, self.spend_kind)
                 if r.status_code == 400 and grammar:
                     grammar = False
                     last = ModelUnavailable("http 400 (schema grammar refused)")

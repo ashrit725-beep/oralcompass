@@ -116,6 +116,12 @@ class SqliteRepo:
             rows = self._db.execute("SELECT payload FROM items WHERE sub = ? AND type = ? ORDER BY rowid", (sub, rtype)).fetchall()
         return [self._load(r[0]) for r in rows]
 
+    def find_owned(self, sub: str, rtype: str, rid: str) -> Optional[dict]:
+        """Keyed lookup for server-side caches: the record or None, no audit entry (a cache miss is not a denied read)."""
+        with self._lock:
+            row = self._db.execute("SELECT payload FROM items WHERE sub = ? AND type = ? AND id = ?", (sub, rtype, str(rid))).fetchone()
+        return self._load(row[0]) if row else None
+
     def delete_all(self, sub: str) -> dict[str, int]:
         with self._lock:
             self._db.execute("BEGIN IMMEDIATE")

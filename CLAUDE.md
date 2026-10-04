@@ -53,6 +53,8 @@ phone first (vertical coast + bottom sheet at 360 px, no horizontal scroll); red
   Production (deployment-ready, not deployed; `docs/DEPLOY.md`): `app/server.py` (API at /api + web/dist at /), `sessions.py` (signed HttpOnly
   per-visitor cookie), `store_sqlite.py` (`ORALCOMPASS_STORE=sqlite`; the API suite runs on both repos), `llm_guard.py` (live-AI limits),
   `security.py` (CSP, body limits, ids-only logs); `Dockerfile`, `railway.json`, `api/.env.production.example`; `python3 tools/prod_smoke.py`.
+  AI features (addendum D.5): `treatment_reader.py` (POST /me/treatment-plans/read, /confirm), `explain.py` (POST /me/explain), both through
+  `ai_support.py` (guard_allow → llm_guard kinds reader/explainer; spend recorded once in extraction's `_call`). api/.env is not read in production.
 - `web/` — React 18 + TypeScript + Vite PWA: `src/App.tsx`, `src/lib/{copy,journey,trail,stitches,api,types}.ts`, `src/components/atlas/*` (paint),
   `src/components/*` (panels, trail, documents, compare), `src/styles.css`. `cd web && npm install && npm run build`; dev `npm run dev` (proxies /api → :8000);
   preview `npx vite preview --port 4173`. Copy fixtures: `cp ../fixtures/plans/*.json public/fixtures/plans/ && cp ../fixtures/documents/*.pdf public/fixtures/documents/`

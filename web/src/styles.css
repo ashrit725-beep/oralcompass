@@ -7,6 +7,7 @@
 @import "./styles/drawer.css" layer(components);
 @import "./styles/upload.css" layer(components);
 @import "./styles/assistant.css" layer(components);
+@import "./styles/reader.css" layer(components);
 
 /* OralCompass — hand-painted atlas theme. Tokens first; components below. Painted scenery is decorative; controls are real HTML.
    The :root block below is the single colour source (docs/ORALCOMPASS_DESIGN_SPEC.md §5). Nothing else may define colours. */

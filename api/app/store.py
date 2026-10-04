@@ -58,6 +58,10 @@ class InMemoryRepo:
     def list_owned(self, sub: str, rtype: str) -> list[dict]:
         return [v for (s, t, _), v in self._items.items() if s == sub and t == rtype]
 
+    def find_owned(self, sub: str, rtype: str, rid: str) -> Optional[dict]:
+        """Keyed lookup for server-side caches: the record or None, no audit entry (a cache miss is not a denied read)."""
+        return self._items.get((sub, rtype, str(rid)))
+
     def delete_all(self, sub: str) -> dict[str, int]:
         counts: dict[str, int] = {}
         for key in [k for k in self._items if k[0] == sub]:
