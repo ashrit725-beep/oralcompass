@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import alexJson from "../__fixtures__/passage/alex.json";
 import samJson from "../__fixtures__/passage/sam.json";
 import { BINDING_PX, TARGET_PX, VB_W, answerSegment, chipTitle, answersLog, buildPassage, planDisplayCode, checkpointAria, findCollisions, islandAmountText, layoutPassage, matchLine, moneyText, type PassageInputs } from "./passage";
+import { checkpointsForLine } from "./drawer";
 import { stitchesFromClauses } from "./stitches";
 import type { Clause, CoverageRule, JourneyView, LedgerLine, PassageVM, PlanFixture, Procedure, SavedEstimate, TreatmentItem } from "./types";
 
@@ -48,7 +49,7 @@ describe("buildPassage — Alex on ML26 (CLAUDE.md rule 8: $902.00 you / $1,098.
     expect(cps.map((c) => c.rule)).toEqual(["fee", "N", "D", "CO", "M", "total"]);
     expect(cps[0].amountOut).toBe(115000);
     expect(cps[1].change).toBe(-17000); expect(cps[1].owner).toBe("nobody"); expect(cps[1].amountOut).toBe(98000);
-    expect(cps[2].change).toBe(0); expect(cps[2].stepIndexes).toEqual([]); expect(cps[2].badge).toBe("USER");   // met per the statement
+    expect(cps[2].change).toBe(0); expect(cps[2].stepIndexes).toEqual([]); expect(cps[2].badge).toBe("DOC"); expect(cps[2].stitch?.page).toBe(25);   // met per the statement; the deductible clause is cited (same as the pipeline)
     expect(cps[3].split).toEqual({ plan: 58800, patient: 39200, planPct: 60 });
     expect(cps[3].stitch?.doc).toBe("ML26"); expect(cps[3].stitch?.page).toBe(25); expect(cps[3].badge).toBe("DOC");
     expect(cps[4].change).toBe(0); expect(cps[4].stepIndexes).toEqual([]);
@@ -98,7 +99,7 @@ describe("buildPassage — Alex on ML26 (CLAUDE.md rule 8: $902.00 you / $1,098.
   it("checkpoint accessible names carry the whole fact", () => {
     const cps = vm.islands[0].checkpoints;
     expect(checkpointAria(cps[1])).toBe("Allowed amount: −$170.00, amount out $980.00, not owed by you, clause ML26 page 25");
-    expect(checkpointAria(cps[2])).toBe("Deductible: no change, amount out $980.00");
+    expect(checkpointAria(cps[2])).toBe("Deductible: no change, amount out $980.00, clause ML26 page 25");
     expect(checkpointAria(cps[3])).toBe("Plan share: plan 60% $588.00, you 40% $392.00, clause ML26 page 25");
     expect(checkpointAria(cps[5])).toBe("You pay: $392.00");
     expect(islandAmountText(vm.islands[0])).toBe("you pay $392.00");
@@ -310,5 +311,16 @@ describe("overflow controls (finding web-correctness-30)", () => {
     expect(l.collisions).toEqual([]);
     expect(l.controls.some((c) => c.id === "marginal:more")).toBe(true);
     expect(layoutPassage(vm, "desktop").marginalMore).toBeNull();          // nothing hidden, no control
+  });
+});
+
+describe("one checkpoint evidence rule for the map and the pipeline (finding web-correctness-25)", () => {
+  it("gives every checkpoint of a line the same badge and clause in both builders", () => {
+    const vm = buildPassage(alex);
+    for (const isl of vm.islands) {
+      const row = alex.rules.find((r) => r.procedure_key === isl.item!.procedure_key);
+      const pipe = checkpointsForLine(isl.line!, isl.item, row, alex.plan!, alex.stitches, [], alex.benefits);
+      expect(pipe.map((c) => [c.rule, c.badge, c.stitch?.id ?? null])).toEqual(isl.checkpoints.map((c) => [c.rule, c.badge, c.stitch?.id ?? null]));
+    }
   });
 });

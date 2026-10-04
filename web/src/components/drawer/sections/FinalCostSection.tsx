@@ -12,7 +12,7 @@ import { Figure, Flag, Section, type SectionProps } from "./shared";
  * Not covered → the engine's closed-step label and the "full fee is your share" sentence. Always rendered for procedure islands.
  */
 export function FinalCostSection(props: SectionProps & { estimateId?: string; first?: boolean }) {
-  const { island, line, item, rule, plan, estimate, stitches, onSelectStitch, mobile, estimateId, first } = props;
+  const { island, line, item, rule, plan, estimate, stitches, onSelectStitch, mobile, estimateId, first, benefits } = props;
   if (!line) return null;
   const chips: Stitch[] = stitchesForLine(line, stitches);
   const unresolved = line.status === "unresolved";
@@ -35,7 +35,7 @@ export function FinalCostSection(props: SectionProps & { estimateId?: string; fi
           <p className="dsec-note">{DRAWER.notCoveredLine}</p>
         </>
       )}
-      <CostPipeline line={line} item={item} rule={rule} plan={plan} stitches={stitches} estimateId={estimateId ?? estimate?.id} missing={estimate?.missing_inputs ?? island.missing} mobile={mobile} onSelectStitch={onSelectStitch} vertical />
+      <CostPipeline line={line} item={item} rule={rule} plan={plan} stitches={stitches} benefits={benefits} estimateId={estimateId ?? estimate?.id} missing={estimate?.missing_inputs ?? island.missing} mobile={mobile} onSelectStitch={onSelectStitch} vertical />
       {otherFlags.map((f, i) => <Flag key={i} text={f} />)}
       <p className="could-change">{estimate?.ledger.could_change ?? ""}</p>
     </Section>

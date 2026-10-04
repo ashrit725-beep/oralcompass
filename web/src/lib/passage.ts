@@ -12,6 +12,8 @@
  * binding 854 px plate width (addendum B1/B2/B3): arcs widen, zero-change markers collapse into one hollow "passed" marker, and dense
  * routes degrade to a compound marker per island, in that order. `collisions` is returned (and tested to be empty) rather than thrown.
  */
+import { checkpointEvidence } from "./checkpoints";
+import { stitchForCheckpoint } from "./drawer";
 import { CHECKPOINT_PLACE, CHECKPOINT_TERM, CLOSED_SUFFIX, GLYPH_FOR_RULE, LIGHT_PLACE, SLOT_ORDER, START_PLACE, categoryOf, placeName } from "./islands";
 import { PASSAGE } from "./copy/passage";
 import { stitchForLabel } from "./stitches";
@@ -66,25 +68,16 @@ export function matchLine(lines: LedgerLine[], item: TreatmentItem, index: numbe
   return byIndex.label === expectedLineLabel(item, procedures) ? { line: byIndex, lineIndex: index } : { mismatch: true };
 }
 
-function badgeFor(rule: CheckpointRule, step: TrailStep | undefined, stitch: Stitch | undefined, item: TreatmentItem | undefined, benefits: Benefits | null, shareHasStitch: boolean): Evidence {
-  if (stitch) return "DOC";
-  switch (rule) {
-    case "fee": case "L": return "USER";
-    case "N": return item?.allowed_cents != null ? ((item.allowed_status as Evidence) || "USER") : "UNKNOWN";
-    case "D": return benefits?.remaining_deductible_cents != null ? "USER" : "UNKNOWN";
-    case "M": return benefits?.remaining_max_cents != null || benefits?.annual_max_unlimited ? "USER" : "UNKNOWN";
-    case "total": return shareHasStitch ? "DOC" : "UNKNOWN";
-    default: return step?.stitch ? "DOC" : "UNKNOWN";
-  }
-}
-
 const RULE_FLAG_WORDS: Partial<Record<CheckpointRule, RegExp>> = {
   N: /allowed amount|network/i, AB: /alternate/i, D: /deductible/i, CO: /class of|share/i, M: /annual maximum|maximum/i, W: /waiting/i,
 };
 
 /** Insurance checkpoints for one line: the trail steps in fixed slot order; Fee, Allowed, Deductible, Share, Maximum, You pay always present on an estimate line. */
-export function checkpointsFor(line: LedgerLine, islandId: string, stitches: Stitch[], item: TreatmentItem | undefined, benefits: Benefits | null, missing: MissingInput[]): InsuranceCheckpointVM[] {
+export function checkpointsFor(line: LedgerLine, islandId: string, stitches: Stitch[], item: TreatmentItem | undefined, benefits: Benefits | null, missing: MissingInput[], row?: CoverageRule, plan?: PlanFixture | null): InsuranceCheckpointVM[] {
   const trail = buildTrail(line);
+  // the clause behind a step: the coverage rule's exact cite first (as the drawer's pipeline resolves it), then the engine's step label
+  const resolve = (rule: CheckpointRule, label: string | null, engineRule: string): Stitch | undefined =>
+    (plan ? stitchForCheckpoint(rule, label, row, plan, stitches) : undefined) ?? stitchForLabel(label, engineRule, stitches);
   const mk = (rule: CheckpointRule, s: Partial<InsuranceCheckpointVM>): InsuranceCheckpointVM => ({
     key: `${islandId}:${rule}`, rule, term: CHECKPOINT_TERM[rule], place: CHECKPOINT_PLACE[rule], glyph: GLYPH_FOR_RULE[rule],
     amountIn: null, change: null, amountOut: null, owner: "info", explanation: "", stitchLabel: null, badge: "UNKNOWN", stepIndexes: [], flags: [],
@@ -96,14 +89,15 @@ export function checkpointsFor(line: LedgerLine, islandId: string, stitches: Sti
   if (line.status === "not_covered") {
     const x = line.steps[0];
     const rule: CheckpointRule = x?.rule === "W" ? "W" : x?.rule === "F" ? "F" : "X";
-    const st = stitchForLabel(x?.stitch ?? null, x?.rule ?? "X", stitches);
+    const st = resolve(rule, x?.stitch ?? null, x?.rule ?? "X");
     return [
       mk("fee", { amountOut: trail.fee, owner: "info", explanation: PASSAGE.feeExplanation, badge: "USER" }),
       mk(rule, { amountIn: trail.fee, change: 0, amountOut: line.patient_cents, owner: "patient", explanation: x?.label ?? "", stitchLabel: x?.stitch ?? null, stitch: st, badge: st ? "DOC" : "UNKNOWN", stepIndexes: x ? [0] : [], flags: line.flags }),
     ];
   }
   const byKey = new Map(trail.steps.map((s) => [s.key, s] as const));
-  const shareStitch = !!byKey.get("share")?.stitch;
+  const shareStep = byKey.get("share");
+  const shareStitch = !!(shareStep && resolve("CO", shareStep.stitch, shareStep.rule));
   const listed = line.steps.map((s, i) => ({ s, i })).filter(({ s }) => s.rule === "X" && /^Listed on your estimate/i.test(s.label));
   const out: InsuranceCheckpointVM[] = [];
   for (const rule of SLOT_ORDER) {
@@ -117,11 +111,11 @@ export function checkpointsFor(line: LedgerLine, islandId: string, stitches: Sti
     const step = byKey.get(key);
     if (!step) continue;                      // AB only when the engine produced one
     const stepIndexes = line.steps.map((s, i) => ({ s, i })).filter(({ s }) => (rule === "N" && s.rule === "N") || (rule === "AB" && s.rule === "AB") || (rule === "D" && s.rule === "D") || (rule === "CO" && s.rule === "CO") || (rule === "M" && s.rule === "M")).map(({ i }) => i);
-    const st = stitchForLabel(step.stitch, step.rule, stitches);
+    const st = resolve(rule, step.stitch, step.rule);
     const flags = line.flags.filter((f) => RULE_FLAG_WORDS[rule]?.test(f));
     out.push(mk(rule, {
       amountIn: step.amountIn, change: step.change == null ? null : step.change || 0, amountOut: step.amountOut, owner: step.owner, explanation: step.explanation, stitchLabel: step.stitch, stitch: st,
-      badge: badgeFor(rule, step, st, item, benefits, shareStitch), stepIndexes, flags, split: step.split,
+      badge: checkpointEvidence(rule, st, { item, benefits, shareHasStitch: shareStitch }), stepIndexes, flags, split: step.split,
     }));
   }
   return out;
@@ -159,7 +153,7 @@ export function buildPassage(inp: PassageInputs): PassageVM {
     return {
       id, kind: "procedure", state, order: i + 1, place: state === "not_covered" ? `${base}${CLOSED_SUFFIX}` : base, title, subtitle, category,
       itemId: item.id, item, line, lineIndex,
-      checkpoints: line ? checkpointsFor(line, id, stitches, item, benefits, missing) : [],
+      checkpoints: line ? checkpointsFor(line, id, stitches, item, benefits, missing, rules.find((r) => r.procedure_key === item.procedure_key), plan) : [],
       youPay: line?.status === "estimate" || line?.status === "not_covered" ? line.patient_cents : null,
       planPays: line?.status === "estimate" ? line.plan_cents : line?.status === "not_covered" ? line.plan_cents : null,
       upperBound: !!line?.plan_is_upper_bound, missing, notices,

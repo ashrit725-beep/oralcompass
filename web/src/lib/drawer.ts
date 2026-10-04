@@ -3,10 +3,11 @@
  * Nothing here computes money: amounts come from the engine's steps through `buildTrail` (lib/trail.ts); these functions only look up
  * rules, resolve the clause stitch behind a checkpoint (the rule row's exact cite first, the engine's page label second) and format words.
  */
+import { checkpointEvidence } from "./checkpoints";
 import { DRAWER } from "./copy/drawer";
 import { money, signed, stitchForCite, stitchForStep } from "./stitches";
 import { buildTrail, type Trail, type TrailStep } from "./trail";
-import type { CheckpointRule, Cite, CoverageRule, Evidence, InsuranceCheckpointVM, LedgerLine, MissingInput, PlanFixture, Stitch, TreatmentItem } from "./types";
+import type { Benefits, CheckpointRule, Cite, CoverageRule, Evidence, InsuranceCheckpointVM, LedgerLine, MissingInput, PlanFixture, Stitch, TreatmentItem } from "./types";
 
 export type DrawerSectionKey =
   | "procedure" | "allowance" | "deductible" | "share" | "annualMax" | "frequency" | "waiting" | "alternate" | "exclusions" | "finalCost" | "calculation" | "evidence" | "ask";
@@ -122,17 +123,20 @@ export function checkpointAriaName(cp: InsuranceCheckpointVM): string {
  * always present on an estimate line (a zero change is itself information); Alternate only when an AB step exists. Not covered → Fee + one
  * closed checkpoint + You pay; unresolved → one "Waiting for information" checkpoint.
  */
-export function checkpointsForLine(line: LedgerLine, item: TreatmentItem | undefined, row: CoverageRule | undefined, plan: PlanFixture, stitches: Stitch[], missing: MissingInput[] = []): InsuranceCheckpointVM[] {
+export function checkpointsForLine(line: LedgerLine, item: TreatmentItem | undefined, row: CoverageRule | undefined, plan: PlanFixture, stitches: Stitch[], missing: MissingInput[] = [], benefits: Benefits | null = null): InsuranceCheckpointVM[] {
   const trail: Trail = buildTrail(line);
   if (line.status === "unresolved") {
     const flags = [...line.flags];
     return [{ key: "missing", rule: "missing", term: DRAWER.waitingInfo, place: CHECKPOINT_PLACE.missing, glyph: CHECKPOINT_GLYPH.missing, amountIn: null, change: null, amountOut: null,
               owner: "info", explanation: [...missing.map((m) => `${m.input}: ${m.how}`), ...flags].join(" "), stitchLabel: null, badge: "UNKNOWN", stepIndexes: [], flags }];
   }
+  const share = trail.steps.find((s) => ruleForTrailStep(s) === "CO");
+  const shareHasStitch = !!(share && stitchForCheckpoint("CO", share.stitch, row, plan, stitches));
   return trail.steps.map((s, i) => {
     const rule = ruleForTrailStep(s);
     const stitch = stitchForCheckpoint(rule, s.stitch, row, plan, stitches);
-    const badge: Evidence = stitch ? "DOC" : rule === "fee" ? "USER" : rule === "N" ? ((item?.allowed_status as Evidence) ?? "USER") : rule === "total" ? "DOC" : "UNKNOWN";
+    // the same evidence rule as the map and the drawer strip (lib/checkpoints; finding web-correctness-25)
+    const badge: Evidence = checkpointEvidence(rule, stitch, { item, benefits, shareHasStitch });
     const stepIndexes = line.steps.map((st, j) => (st.rule === rule || (rule === "CO" && st.rule === "CO")) ? j : -1).filter((j) => j >= 0);
     const flags = rule === "W" ? line.flags.filter((f) => /waiting/i.test(f)) : rule === "AB" ? line.flags.filter((f) => /alternate/i.test(f)) : [];
     return { key: `${s.key}-${i}`, rule, term: s.title, place: CHECKPOINT_PLACE[rule], glyph: CHECKPOINT_GLYPH[rule], amountIn: s.amountIn, change: s.change, amountOut: s.amountOut,
