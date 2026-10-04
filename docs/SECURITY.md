@@ -78,6 +78,23 @@ nothing leaves the server: answers come from templates and stored fictional fixt
   minutes; globally 300 requests and an estimated USD 2.00 per UTC day (`ORALCOMPASS_LLM_*` overrides). A refused call falls back to the
   demo/template path; it never fails the request.
 
+## Offline app shell (implemented)
+
+The web app installs as a phone app and opens without a connection (`web/public/sw.js`, stamped at build time by
+`web/scripts/app-shell-plugin.ts`; registered by `web/src/lib/app-shell.ts` in production builds).
+
+- **Personal data never enters Cache Storage.** The service worker caches from an allowlist only: the built `index.html`, the
+  content-hashed JS/CSS bundles under `/assets/`, the manifest and the painted art under `/art/`. Every other request is not intercepted:
+  everything under `/api/` (journeys, estimates, benefits, reminders, uploaded documents and the bytes pdf.js reads from them) goes straight
+  to the network and is never written to a cache, and so do non-GET requests, other origins and `/fixtures/*`. The build step refuses a
+  precache list that contains `/api/` (`web/src/__tests__/app-shell.test.tsx` runs the worker against fake caches and checks that no
+  `/api` URL is ever stored).
+- **Versioned and cleaned.** The shell cache is named after a hash of the build (`oralcompass-shell-<hash>`); activating a new worker
+  deletes every older `oralcompass-` cache except the art cache. "Delete all my data" has nothing to clear here, because none of it is cached.
+- **Offline is information only.** Without a connection the app shows "You are offline. Your journey needs a connection to load figures."
+  (`web/src/components/OnlineGate.tsx`) and makes no API request; figures are never shown from a stale copy.
+- **Push is unchanged:** the notification text is fixed and generic, and the push payload is never read.
+
 ## Not implemented (stated, not hidden)
 
 - **No OCR-based redaction:** names, member IDs and dates printed inside an image reach the model when the visitor confirms the notice.

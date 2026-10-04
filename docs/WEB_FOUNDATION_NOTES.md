@@ -505,3 +505,16 @@ before the first call; the per-response `mode`/`ribbon` remain authoritative.
 12. `App.tsx` does not yet pass `uploadSlot` to `DocumentsView` or `askSlot` to `ClauseCard`; the integrating agent wires the stubs in.
 13. API follow-ups that affect web behaviour are tracked in `docs/BUILD_FOLLOWUPS.md` (upload refs in the assistant and reminders; the
     "fixed template" label in live mode; `/me/export` and push subscriptions).
+
+## Installable app and offline shell (prep/pwa)
+
+- `web/public/sw.js` is the template; `npm run build` stamps `dist/sw.js` (`web/scripts/app-shell-plugin.ts`) with `BUILD` (a hash of
+  the precached files) and `PRECACHE` (index.html as "/", the hashed JS/CSS except pdf.js, the manifest, the first-screen art). Unstamped
+  (vite dev) the worker handles push only. main.tsx registers it in production builds; RemindersPanel reuses the same registration.
+- Navigations go to the network first (4 s timeout), then fall back to the cached shell, marked `<meta name="oralcompass-offline">`.
+  `components/OnlineGate.tsx` shows the offline screen when `navigator.onLine` is false or the mark is present, then opens the app on
+  the `online` event or when a HEAD probe of `/manifest.webmanifest` answers (every 6 s and on becoming visible).
+  `/assets/*` is cache first; `/art/*` is stale-while-revalidate; `/api/*` is never intercepted (docs/SECURITY.md).
+- Testing offline in Playwright: a production bundle sends no X-Dev-User, and a context `route` (the screenshots.py approach) can leave
+  `navigator.onLine` true under `set_offline(True)`. For an offline walk, build with `VITE_DEV_AUTH=1` (local only) and use no route,
+  or stop the preview server to get a dead connection while the browser still reports it is online.

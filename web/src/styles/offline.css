@@ -1,0 +1,15 @@
+/* Offline (components/OnlineGate.tsx): the parchment screen shown when the installed app opens without a connection, and the status line
+   shown when the connection drops while the app is open. Paper, ink and the serif title; no motion. */
+.offline-screen { min-height: 100%; min-height: 100dvh; display: grid; place-items: center; padding: var(--s-6, 32px) 24px calc(var(--s-6, 32px) + env(safe-area-inset-bottom, 0px)); }
+.offline-card { max-width: 22rem; text-align: center; display: flex; flex-direction: column; align-items: center; }
+.offline-mark { width: 72px; height: 72px; border-radius: 18px; box-shadow: var(--shadow-1, 0 1px 2px rgba(35, 48, 61, .12)); margin-bottom: 14px; }
+.offline-app { margin: 0 0 18px; font-family: var(--serif); font-style: italic; color: var(--ink-soft); font-size: .95rem; }
+.offline-card h1 { font-size: 1.6rem; line-height: 1.2; margin: 0 0 .5rem; text-wrap: balance; }
+.offline-body { margin: 0 0 .5rem; color: var(--ink); font-size: 1.05rem; text-wrap: pretty; }
+.offline-returns { margin: 0 0 1.5rem; color: var(--ink-soft); font-size: .9rem; text-wrap: pretty; }
+.offline-card button { min-height: 44px; padding-inline: 1.4rem; }
+.offline-banner {
+  position: fixed; z-index: 40; top: calc(env(safe-area-inset-top, 0px) + 8px); left: 50%; transform: translateX(-50%);
+  width: max-content; max-width: calc(100vw - 32px); margin: 0; padding: 8px 14px; border-radius: 12px;
+  background: var(--ink); color: var(--paper); font-size: .875rem; line-height: 1.35; text-align: center; box-shadow: var(--shadow);
+}

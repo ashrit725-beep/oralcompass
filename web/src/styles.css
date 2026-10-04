@@ -9,6 +9,7 @@
 @import "./styles/assistant.css" layer(components);
 @import "./styles/reader.css" layer(components);
 @import "./styles/safe-area.css" layer(components);
+@import "./styles/offline.css" layer(components);
 
 /* OralCompass — hand-painted atlas theme. Tokens first; components below. Painted scenery is decorative; controls are real HTML.
    The :root block below is the single colour source (docs/ORALCOMPASS_DESIGN_SPEC.md §5). Nothing else may define colours. */
@@ -349,7 +350,7 @@ select:not([multiple]):not([size]) {
 /* My plan uses the full width until a landmark opens (the 420 px column exists only while the detail panel shows) */
 .plan-layout:has(> .detail.is-empty) { grid-template-columns: minmax(0, 1fr); }
 /* the loading banner is an overlay: inserting and removing an in-flow row above <main> shifted the page (mobile-18) */
-.processing { position: fixed; top: var(--s-3); right: var(--s-4); z-index: 30; margin: 0; max-width: min(420px, calc(100vw - 2rem)); padding: var(--s-2) var(--s-3); background: var(--paper-deep); border: 1px solid var(--rule); border-radius: var(--r-3); box-shadow: var(--shadow-2); pointer-events: none; }
+.processing { position: fixed; top: calc(var(--s-3) + env(safe-area-inset-top, 0px)); right: var(--s-4); z-index: 30; margin: 0; max-width: min(420px, calc(100vw - 2rem)); padding: var(--s-2) var(--s-3); background: var(--paper-deep); border: 1px solid var(--rule); border-radius: var(--r-3); box-shadow: var(--shadow-2); pointer-events: none; }
 .start-pending { min-height: 60vh; }
 /* status lines are mounted before their message arrives (a11y-25: a region created already filled is often not announced); empty, they take no space */
 p[role="status"]:empty { margin: 0; padding: 0; border: 0; min-height: 0; }

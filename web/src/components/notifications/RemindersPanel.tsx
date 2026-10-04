@@ -8,7 +8,8 @@ import { remindersApi, type ReminderItem, type RemindersResponse } from "./remin
 
 /**
  * RemindersPanel (master prompt §19; api/app/notifications.py). Lists GET /me/reminders (fact sentences with their clause cite and source;
- * nothing urges), and manages this browser's Web Push subscription: the service worker `/sw.js` is registered HERE (not in main.tsx), the
+ * nothing urges), and manages this browser's Web Push subscription: the service worker `/sw.js` (also the offline app shell, registered by
+ * main.tsx in production; same URL and scope, so `register` returns that registration) gets its push subscription HERE, the
  * VAPID public key comes from GET /notifications/vapid-public-key, the subscription is stored with POST /me/push/subscriptions and removed
  * with DELETE. The push body is fixed and generic (sw.js never shows payload text). "Send a test push" renders only when the dev-auth
  * header was accepted (the API exposes the test route in dev mode only; a 404 hides the button). One `role="status"` live region.
