@@ -57,7 +57,7 @@ sequenceDiagram
   O-->>R: owned records (anything else: constant 404)
   R->>E: load_plan(plan) + items + benefits snapshot
   E-->>R: ledger.lines[].steps {label, cents, owner, rule, stitch}, totals, missing_inputs, could_change
-  R->>S: save SavedEstimate (immutable), audit event with ids only
+  R->>S: store SavedEstimate (immutable), audit event with ids only
   R-->>W: SavedEstimate
   W->>W: buildTrail(line) and buildPassage(...): display only, reconciled against engine totals
 ```

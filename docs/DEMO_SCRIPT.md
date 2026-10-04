@@ -44,7 +44,7 @@ in reach for the file picker, and open the app once to warm it.
 
 - "Every dollar is stitched to the clause that produced it." Show it, do not just say it: press a stitch.
 - "Where the document is silent, we say so." Point at an UNKNOWN badge.
-- Never describe a plan as better, cheaper or recommended; Compare has no winner and no sort, by design.
+- Describe each plan only by what its documents say; Compare has no ranking and no sort, by design.
 - No certification or compliance claims. Personal records here are fictional; the plan rules for Alex are public.
 
 ## Fallbacks
