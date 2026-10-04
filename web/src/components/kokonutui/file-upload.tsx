@@ -6,6 +6,8 @@
  * message is persistent (no 3 s auto-dismiss); drag ring `border-sage border-dashed`; grays/blues → tokens. Strings are props with
  * neutral defaults — `UploadWizard` passes the UPLOAD copy namespace. Reduced motion: MotionConfig drops the y/scale transitions; the
  * arc's dashoffset derives from `progress` (`motion-reduce:transition-none`), so every end state is exact.
+ * Patched 2026-10-04 (layout-6): the panes flow in the document (min-height, no `absolute inset-0`), so the zone grows with its content
+ * and never slices the Choose button; AnimatePresence `mode="wait"` keeps one pane mounted at a time.
  */
 
 import { Upload } from "lucide-react";
@@ -168,12 +170,12 @@ export default function FileUpload({
           onDragOver={handleDragOver}
           onDrop={handleDrop}
         >
-          <div className="relative min-h-[220px]">
+          <div className="relative">
             <AnimatePresence mode="wait">
               {status !== "uploading" ? (
                 <motion.div
                   animate={{ opacity: status === "dragging" ? 0.85 : 1, y: 0 }}
-                  className="absolute inset-0 flex flex-col items-center justify-center p-6"
+                  className="flex min-h-[220px] flex-col items-center justify-center p-6"
                   exit={{ opacity: 0, y: -8 }}
                   initial={{ opacity: 0, y: 8 }}
                   key="dropzone"
@@ -204,7 +206,7 @@ export default function FileUpload({
               ) : (
                 <motion.div
                   animate={{ opacity: 1 }}
-                  className="absolute inset-0 flex flex-col items-center justify-center p-6"
+                  className="flex min-h-[220px] flex-col items-center justify-center p-6"
                   exit={{ opacity: 0 }}
                   initial={{ opacity: 0 }}
                   key="uploading"

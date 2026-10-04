@@ -537,6 +537,11 @@ def upload_walk(page, device: str, shot):
     txt = OUT / "not-a-pdf.txt"; txt.write_text("plain text, not a PDF")
     page.locator("input[type=file]").first.set_input_files(str(txt)); page.wait_for_timeout(500)
     check(f"{device}: upload dialog validates type", page.get_by_role("alert").filter(has_text="This file is not a PDF.").count() > 0)
+    # layout-6: the drop zone grows with its content; the Choose button is never cut by the zone's overflow-hidden box
+    cut = page.evaluate("""(() => { const b = [...document.querySelectorAll('[role=dialog] button')].find(x => x.textContent.trim() === 'Choose a PDF'); if (!b) return -1;
+        let a = b.parentElement; while (a && !/hidden|clip/.test(getComputedStyle(a).overflow)) a = a.parentElement; if (!a) return 0;
+        const r = b.getBoundingClientRect(), c = a.getBoundingClientRect(); return Math.round(Math.max(0, r.bottom - c.bottom, c.top - r.top)); })()""")
+    check(f"{device}: upload choose button not clipped", cut == 0, f"cut={cut}px")
     page.locator("input[type=file]").first.set_input_files(str(ROOT / "fixtures/documents/harborview_certificate.pdf"))
     page.wait_for_selector("text=Removed before any model call", timeout=30000); page.wait_for_timeout(300)
     page.get_by_role("button", name="Continue with these redactions").click()
