@@ -124,3 +124,23 @@ def test_private_records_are_isolated_with_constant_404():
     assert next(c for s in r2["journey"]["stages"] for c in s["checkpoints"] if c["id"] == "aftercare")["completed_by"] == "user"     # default attribution is the user, never the dental team
     for method in ("put", "patch", "delete"):
         assert getattr(client, method)("/presets/ML26", headers=A).status_code == 405
+
+
+def test_ledger_lines_carry_record_ids_and_benefits_are_keyed_by_plan_ref():
+    h = {"X-Dev-User": "alex-lines"}
+    client.post("/journeys", json={"from": "sample-alex"}, headers=h)
+    items = {i["id"]: i for i in client.get("/me/treatment-items", headers=h).json()}
+    est = client.post("/me/estimates", json={"plan_code": "ML26"}, headers=h).json()
+    assert est["plan_ref"] == "ML26" and est["plan_version_label"] == "ML26" and len(est["ledger"]["lines"]) == 2
+    for L, tid in zip(est["ledger"]["lines"], est["inputs"]["treatment_item_ids"]):            # lines_from_items keeps the items' order
+        assert L["treatment_item_id"] == tid and L["procedure_key"] == items[tid]["procedure_key"]
+        assert L["label"].startswith(items[tid].get("procedure_name") or "")
+    # an upload reference that does not exist for this owner is a constant 404, on every plan-ref endpoint
+    for path in ("/me/benefits/upload:nope", "/me/benefits/upload%3Anope"):
+        assert client.get(path, headers=h).status_code == 404 and client.get(path, headers=h).json() == {"detail": NOT_FOUND}
+    assert client.put("/me/benefits/upload:nope", json={"deductible_met_cents": 0}, headers=h).status_code == 404
+    assert client.post("/me/estimates", json={"plan_code": "upload:nope"}, headers=h).status_code == 404
+    assert client.post("/me/estimates", json={"plan_code": "ZZ99"}, headers=h).status_code == 404
+    # preset benefits stay keyed by the preset code; listing derives each record against its own plan
+    assert [b["plan_code"] for b in client.get("/me/benefits", headers=h).json()] == ["ML26"]
+    assert client.get("/me/benefits/ml26", headers=h).json()["plan_code"] == "ML26"

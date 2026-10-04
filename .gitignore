@@ -7,3 +7,4 @@ web/public/fixtures/
 .env
 .aws-sam/
 .claude/worktrees/
+api/.data/

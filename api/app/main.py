@@ -10,9 +10,12 @@ from datetime import date
 from pathlib import Path
 from typing import Any, Optional
 
+from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, HTTPException, Response
 from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel, Field
+
+load_dotenv(Path(__file__).resolve().parents[1] / ".env", override=False)      # api/.env is gitignored; values are never logged
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "engine"))
@@ -32,10 +35,11 @@ PRESETS = {p.stem.upper(): load_plan(p) for p in sorted((FIXTURES / "plans").glo
 PRESET_META = {code: extractor.by_code[code] for code in PRESETS}
 
 from .templates import FOOTER, COMPARISON_BANNER, PRESET_BANNER  # noqa: E402
-from . import journeys, records  # noqa: E402
+from . import journeys, records, uploads  # noqa: E402
 
 app.include_router(records.router)
 app.include_router(journeys.router)
+app.include_router(uploads.router)
 
 
 # ---------- schemas ----------
@@ -231,5 +235,8 @@ def my_audit(user: User = Depends(current_user)):
 
 @app.get("/health")
 def health():
+    from .extraction import llm_mode, llm_model
+    mode = llm_mode()
     return {"ok": True, "presets": sorted(PRESETS), "real_presets": sorted(c for c, m in PRESET_META.items() if not m.get("is_fictional")),
-            "fictional_presets": sorted(c for c, m in PRESET_META.items() if m.get("is_fictional"))}
+            "fictional_presets": sorted(c for c, m in PRESET_META.items() if m.get("is_fictional")),
+            "llm_mode": mode, "llm_model": llm_model() if mode == "live" else None}      # the model id only; never the key

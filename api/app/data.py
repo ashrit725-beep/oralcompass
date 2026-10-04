@@ -3,6 +3,9 @@
 Public = plan presets and their public/fictional documents, the procedure catalog, external-code mappings, published fee
 benchmarks, the source inventory and its evidence rows, sample journeys. Private records (benefits, treatment items, estimates,
 journeys, documents) live in the owner-scoped store and never appear here.
+
+The summary / clauses / documents helpers take a plan dict (`*_from_meta`) so presets (fixtures/plans/*.json) and published
+uploads (the same shape, built by uploads.py) share one code path; the `code`-keyed wrappers remain for presets.
 """
 from __future__ import annotations
 
@@ -48,12 +51,14 @@ def evidence_rows(source_id: str) -> list[dict]:
     return j["rows"] if j else []
 
 
-def plan_summary(code: str) -> dict:
-    """Plan preset record: name, insurer, region, network, effective dates, premium, deductibles, annual max, source document(s)."""
-    m = PLAN_META[code]; cat = m.get("catalog", {})
-    src = m["source_document"]
+def plan_summary_from_meta(m: dict, label: str) -> dict:
+    """Plan record summary: name, insurer, region, network, effective dates, premium, deductibles, annual max, source document(s).
+    `label` is the plan reference the client uses to address this plan (a preset code or "upload:<document_id>")."""
+    cat = m.get("catalog", {}) or {}
+    src = m.get("source_document", {}) or {}
+    stored_path = src.get("path")
     return {
-        "plan_code": code, "title": m["title"], "insurer": cat.get("carrier"), "plan_name": cat.get("plan_name"), "option": cat.get("option"), "plan_year": cat.get("plan_year"),
+        "plan_code": label, "title": m["title"], "insurer": cat.get("carrier"), "plan_name": cat.get("plan_name"), "option": cat.get("option"), "plan_year": cat.get("plan_year"),
         "region": cat.get("region") or (cat.get("where_offered") or {}).get("text"), "network": cat.get("network"),
         "effective_dates": cat.get("effective_dates") or {"text": "Not stated in this document"},
         "benefit_year_type": cat.get("benefit_year_type"), "where_offered": cat.get("where_offered"), "eligibility": cat.get("eligibility"), "currency_note": cat.get("currency_note"),
@@ -62,9 +67,13 @@ def plan_summary(code: str) -> dict:
         "annual_max": m.get("annual_max"), "annual_max_out": m.get("annual_max_out"), "annual_max_exempt_classes": m.get("annual_max_exempt_classes", []),
         "source_document": {k: src.get(k) for k in ("title", "publisher", "url", "retrieved_at", "version_label", "document_type", "document_date", "pages", "path", "sha256", "source_id", "reuse_terms", "access_limits")},
         "secondary_documents": m.get("secondary_documents", []), "verification": cat.get("verification"), "is_fictional": m.get("is_fictional", False), "demo_label": m.get("demo_label"),
-        "unsupported_rules": m.get("unsupported_rules", []), "conflicts": m.get("conflicts", []), "has_stored_pdf": bool(src.get("path")),
-        "procedure_codes_printed": sorted(m.get("procedure_codes", {}).keys()), "allowed_amounts_note": m.get("allowed_amounts_note"),
+        "unsupported_rules": m.get("unsupported_rules", []), "conflicts": m.get("conflicts", []), "has_stored_pdf": bool(stored_path or m.get("upload")),
+        "procedure_codes_printed": sorted((m.get("procedure_codes") or {}).keys()), "allowed_amounts_note": m.get("allowed_amounts_note"),
     }
+
+
+def plan_summary(code: str) -> dict:
+    return plan_summary_from_meta(PLAN_META[code], code)
 
 
 def document_pages(code: str) -> list[str]:
@@ -72,15 +81,14 @@ def document_pages(code: str) -> list[str]:
     path = PLAN_META[code]["source_document"].get("path")
     if not path or not (ROOT / path).exists():
         return []
-    import fitz
-    d = fitz.open(str(ROOT / path))
+    import pymupdf
+    d = pymupdf.open(str(ROOT / path))
     return [d[i].get_text() for i in range(d.page_count)]
 
 
-def clauses(code: str) -> list[dict]:
-    """Every cited clause in a plan fixture: (field path, document label, page, page label, quote, fact id) — the plan's evidence list."""
+def clauses_from_meta(meta: dict) -> list[dict]:
+    """Every cited clause in a plan dict: (field path, document label, page, page label, quote, fact id) — the plan's evidence list."""
     out = []
-    meta = PLAN_META[code]
     default_doc = meta["source_document"]["version_label"]
 
     def walk(obj, path):
@@ -93,7 +101,7 @@ def clauses(code: str) -> list[dict]:
         elif isinstance(obj, list):
             for i, v in enumerate(obj):
                 walk(v, f"{path}[{i}]")
-    walk(meta, "")
+    walk({k: v for k, v in meta.items() if k not in ("security_test", "upload")}, "")
     # stable numbering in (document, page, field) order — the UI's stitch numbers
     out.sort(key=lambda c: (c["doc"] != default_doc, c["doc"], c["page"] or 0, c["field"]))
     for i, c in enumerate(out, 1):
@@ -101,14 +109,24 @@ def clauses(code: str) -> list[dict]:
     return out
 
 
-def documents_for_plan(code: str) -> list[dict]:
-    """Primary + secondary documents behind a preset, with access status."""
-    m = PLAN_META[code]
+def clauses(code: str) -> list[dict]:
+    return clauses_from_meta(PLAN_META[code])
+
+
+def documents_for_meta(m: dict) -> list[dict]:
+    """Primary + secondary documents behind a plan dict, with access status. For uploads `stored_path` is the owner-scoped
+    file endpoint (never a public path)."""
     src = m["source_document"]
+    upload = m.get("upload") or {}
+    stored_path = f"/me/documents/{upload['document_id']}/file" if upload.get("document_id") else src.get("path")
     docs = [{"version_label": src.get("version_label"), "title": src.get("title"), "publisher": src.get("publisher"), "url": src.get("url"), "document_type": src.get("document_type"),
-             "document_date": src.get("document_date"), "pages": src.get("pages"), "retrieved_at": src.get("retrieved_at"), "stored_path": src.get("path"),
-             "has_stored_pdf": bool(src.get("path")), "sha256": src.get("sha256"), "access_limits": src.get("access_limits", []), "reuse_terms": src.get("reuse_terms"), "role": "primary",
+             "document_date": src.get("document_date"), "pages": src.get("pages"), "retrieved_at": src.get("retrieved_at"), "stored_path": stored_path,
+             "has_stored_pdf": bool(stored_path), "sha256": src.get("sha256"), "access_limits": src.get("access_limits", []), "reuse_terms": src.get("reuse_terms"), "role": "primary",
              "source_id": src.get("source_id")}]
     for sd in m.get("secondary_documents", []):
         docs.append({**sd, "role": "secondary", "has_stored_pdf": False})
     return docs
+
+
+def documents_for_plan(code: str) -> list[dict]:
+    return documents_for_meta(PLAN_META[code])
