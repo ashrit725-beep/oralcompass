@@ -186,7 +186,7 @@ describe("copy grammar (info-only-12)", () => {
     expect(ASSIST.guardRemoved(2)).toBe("2 sentences were removed by the information-only check.");
     expect(ASSIST.groundingRemoved(1)).toContain("1 sentence named a figure the records do not hold and was not shown.");
     expect(ASSIST.groundingRemoved(3)).toContain("3 sentences named");
-    expect(COMPASS.panelLabel("ML26", COMPASS.notProvided, "$672.00")).toBe("Benefits compass for ML26: deductible remaining: not provided; annual maximum remaining: $672.00.");
+    expect(COMPASS.panelLabel("ML26", COMPASS.notProvided, "$672.00")).toBe("Money map for ML26: pay-first part left: missing; yearly limit left: $672.00.");
   });
 });
 

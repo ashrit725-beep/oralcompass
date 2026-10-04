@@ -32,7 +32,7 @@ const OFFLINE_HTML = `<!doctype html><html lang="en"><head><meta charset="utf-8"
 html,body{height:100%;margin:0}body{display:grid;place-items:center;background:#f6f0e3;color:#23303d;font:16px/1.5 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:max(24px,env(safe-area-inset-top)) 24px max(24px,env(safe-area-inset-bottom))}
 main{max-width:22rem;text-align:center}h1{font:600 1.5rem/1.25 "Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;margin:0 0 .5rem}p{margin:0 0 1.25rem;color:#505a66}
 a{display:inline-flex;align-items:center;min-height:44px;padding:0 1.25rem;border-radius:999px;background:#23303d;color:#f6f0e3;text-decoration:none}
-</style></head><body><main><h1>You are offline.</h1><p>Your journey needs a connection to load figures.</p><a href="/">Try again</a></main></body></html>`;
+</style></head><body><main><h1>You are offline.</h1><p>We need the internet to show your numbers.</p><a href="/">Try again</a></main></body></html>`;
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();

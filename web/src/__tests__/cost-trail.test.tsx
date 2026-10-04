@@ -40,6 +40,6 @@ describe("unresolved estimate range scope (numbers-6)", () => {
     const one = renderToStaticMarkup(<CostTrail estimate={unresolved} stitches={[]} onSelect={() => {}} lineIndex={0} />);
     expect(one).not.toContain("$1,740.00");
     const all = renderToStaticMarkup(<CostTrail estimate={unresolved} stitches={[]} onSelect={() => {}} />);
-    expect(all).toContain("Between $1,740.00 and $2,230.00, because remaining deductible and remaining annual maximum were not provided.");
+    expect(all).toContain("Somewhere from $1,740.00 to $2,230.00. We do not know remaining deductible and remaining annual maximum yet.");
   });
 });

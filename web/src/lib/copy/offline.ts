@@ -5,8 +5,8 @@
  */
 export const OFFLINE = {
   title: "You are offline.",
-  body: "Your journey needs a connection to load figures.",
-  returns: "OralCompass opens your journey again as soon as the connection is back.",
-  banner: "You are offline. Your journey needs a connection to load figures.",
+  body: "We need the internet to show your numbers.",
+  returns: "Your numbers come back when the internet does.",
+  banner: "You are offline. We need the internet to show your numbers.",
   retry: "Try again",
 } as const;

@@ -103,7 +103,7 @@ describe("evidence beside journey figures (findings info-only-5, demo-8)", () =>
   });
   it("Money says 'calculated' for engine totals and reads the badge label (not the code) when the badge is hidden", () => {
     expect(renderToStaticMarkup(<Money cents={90200} evidence="DOC" calc />)).toContain("Calculated from the clauses cited");
-    expect(renderToStaticMarkup(<Money cents={4500} evidence="USER" badge={false} />)).toContain("Evidence: You entered");
+    expect(renderToStaticMarkup(<Money cents={4500} evidence="USER" badge={false} />)).toContain("Evidence: You typed this");
     expect(renderToStaticMarkup(<Money cents={4500} evidence="USER" badge={false} />)).not.toContain("Evidence: USER");
   });
 });

@@ -180,11 +180,11 @@ describe("orchestrator note 1: calculated totals list the evidence of their inpu
 
 describe("demo-15: the movers range sentence never prints an empty cause", () => {
   it("names the measured movers, else every unknown input, else no 'because' clause", () => {
-    expect(rangeWords([64000, 66500], [{ unknown: "remaining deductible", impact_cents: 2500, zero_impact: false }])).toContain("because remaining deductible was not provided");
+    expect(rangeWords([64000, 66500], [{ unknown: "remaining deductible", impact_cents: 2500, zero_impact: false }])).toContain("We do not know remaining deductible yet");
     const multi = rangeWords([64000, 120000], [{ unknown: "remaining deductible", impact_cents: null, zero_impact: false }, { unknown: "enrollment date", impact_cents: null, zero_impact: false }]);
     expect(multi).toContain("remaining deductible and enrollment date");
     expect(multi).not.toMatch(/because\s+was/);
-    expect(rangeWords([64000, 120000], [])).toBe("Between $640.00 and $1,200.00.");
+    expect(rangeWords([64000, 120000], [])).toBe("Somewhere from $640.00 to $1,200.00.");
   });
 });
 

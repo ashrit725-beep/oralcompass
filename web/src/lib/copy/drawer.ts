@@ -229,7 +229,7 @@ export const DRAWER = {
   maximumLeft: "maximum left",
   afterRouteStages: (n: number) => (n === 1 ? "1 care stage follows the route; its checkpoints are on the Care timeline." : `${n} care stages follow the route; their checkpoints are on the Care timeline.`),
   stageProgress: (title: string, done: number, total: number) => `${title} · ${done} of ${total} checkpoint${total === 1 ? "" : "s"} completed`,
-  rangeOnly: (lo: string, hi: string) => `Between ${lo} and ${hi}.`,
+  rangeOnly: (lo: string, hi: string) => `Somewhere from ${lo} to ${hi}.`,
   noAfterRoute: "No care stages follow the route.",
   orderNote: "Processing order",
   missingTitle: "This estimate is waiting for information",
