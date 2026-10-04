@@ -29,7 +29,7 @@ export function CoverageMeter({ cls, stitch, selectedStitch, onSelectStitch }: C
           {stitch ? <StitchChip stitch={stitch} selected={selectedStitch?.id === stitch.id} onSelect={onSelectStitch} /> : <EvidenceBadge status={cls.statusIn} />}
         </span>
       </div>
-      <div className={`cmp-meter cmp-meter-thin ${known ? "" : "is-unknown"}`} role={known ? "meter" : undefined} aria-valuemin={known ? 0 : undefined} aria-valuemax={known ? 100 : undefined}
+      <div className={`cmp-meter cmp-meter-thin ${known ? "" : "is-unknown"}`} role={known ? "meter" : undefined} aria-label={known ? cls.name : undefined} aria-valuemin={known ? 0 : undefined} aria-valuemax={known ? 100 : undefined}
            aria-valuenow={known ? cls.pctIn! : undefined} aria-valuetext={known ? `${cls.name}: ${COMPASS.planPays(pctText(cls.pctIn!))}` : undefined} aria-hidden={known ? undefined : true}>
         <span className="cmp-fill" style={{ transform: `scaleX(${known ? Math.max(0, Math.min(100, cls.pctIn!)) / 100 : 0})` }} />
       </div>

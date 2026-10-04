@@ -82,6 +82,9 @@
 .cmp-meter { position: relative; height: 8px; border-radius: var(--r-1); background: var(--parchment); overflow: visible; margin: var(--s-2) 0 var(--s-3); }
 .cmp-meter-thin { height: 6px; margin: var(--s-1) 0 var(--s-2); }
 .cmp-meter.is-unknown { background: transparent; border: 1px dotted var(--ink-soft); }
+/* limit known, usage not provided: hatched + dashed, so it cannot be mistaken for a plain track with $0 used (info-only-8) */
+.cmp-meter.is-empty:not(.is-unknown) { background: repeating-linear-gradient(135deg, transparent 0 4px, color-mix(in srgb, var(--ink-soft) 30%, transparent) 4px 6px); border: 1px dashed var(--ink-soft); }
+.cmp-meter-word { margin: 0 0 var(--s-2); display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); font-size: .85rem; }
 .cmp-fill { position: absolute; inset: 0; border-radius: var(--r-1); background: var(--water); transform-origin: left center; transition: transform var(--dur-standard) var(--ease-standard); }
 .cmp-meter.is-unknown .cmp-fill, .cmp-meter.is-empty .cmp-fill { display: none; }
 .cmp-tick { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--terracotta); transform: translateX(-1px); }
