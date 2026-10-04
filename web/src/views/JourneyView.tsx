@@ -50,7 +50,7 @@ function CostFact({ estimate, recalculating }: { estimate: SavedEstimate | null;
     <span className="cin-fact cin-fact-cost">
       {PASSAGE.youPay} <Money cents={estimate.user_estimated_payment_cents} evidence="DOC" badge={false} calc />
       <span className="cin-sep" aria-hidden="true"> · </span>
-      {PASSAGE.plan} <Money cents={estimate.insurer_estimated_payment_cents} evidence="DOC" badge={false} calc />
+      {PASSAGE.insurancePays} <Money cents={estimate.insurer_estimated_payment_cents} evidence="DOC" badge={false} calc />
       {estimate.plan_payment_is_upper_bound ? ` ${PASSAGE.upperBoundParen}` : ""}{hypo ? ` ${PASSAGE.withHypothetical}` : ""}
     </span>
   );

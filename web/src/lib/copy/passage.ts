@@ -12,6 +12,7 @@ export const PASSAGE = {
   plan: "insurance",
   you: "you",
   youPay: "you pay",
+  insurancePays: "insurance pays",
   planPaid: "insurance paid",
   procedure: "care item",
   step: "step",
