@@ -91,7 +91,7 @@ button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible
 select, input, textarea { font: inherit; color: var(--ink); background: #fffdf8; border: 1px solid var(--rule); border-radius: 8px; padding: .45rem .6rem; min-height: 40px; }
 textarea { min-height: 80px; }
 label { display: flex; flex-direction: column; gap: .25rem; font-size: .9rem; color: var(--ink-soft); }
-.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 /* ---- shell ---- */
 .app { min-height: 100%; display: flex; flex-direction: column; }
@@ -286,7 +286,7 @@ table.grid thead th { background: var(--paper-deep); position: sticky; top: 0; }
 
 /* ---- phone ---- */
 @media (max-width: 760px) {
-  .view { padding: .75rem; }
+  .view { padding: 1rem; }
   .journey-layout, .plan-layout, .documents { grid-template-columns: minmax(0, 1fr); }
   .detail.sheet { position: fixed; left: 0; right: 0; bottom: 0; max-height: 72vh; border-radius: 18px 18px 0 0; z-index: 15; box-shadow: 0 -10px 30px rgba(35, 48, 61, .25); }
   .detail.sheet::before { content: ""; display: block; width: 44px; height: 4px; border-radius: 2px; background: var(--rule); margin: .4rem auto 0; }
@@ -299,10 +299,16 @@ table.grid thead th { background: var(--paper-deep); position: sticky; top: 0; }
   .appbar .ribbon { order: 5; }
 }
 
-/* overflow guards: long option labels must never widen the page */
-.view { overflow-x: hidden; }
+/* long option labels must never widen the page: selects shrink inside their column (no clipping guard on .view; demo-2, slop-5) */
 .toggles select, .plan-pick select, .pickers select { max-width: 100%; min-width: 0; }
 @media (max-width: 760px) { .toggles select { width: 100%; } .toggles { flex-direction: column; align-items: stretch; } .toggles button { width: 100%; } }
+/* documents: long plan names and source URLs wrap inside the column instead of running past it (slop-5) */
+.doc-head .plan-pick { min-width: 0; max-width: 100%; }
+.sources a, .doc-card a, .sources summary { overflow-wrap: anywhere; }
+/* phone passage: the "Completed on your statement" amount sizes to its figure (a percentage max-width inside an auto grid track let
+   "$45.00" run past the card edge, where the old .view clip cut it to "$45.0"; slop-5). "not covered" still wraps (journey.css). */
+.pv-mini:not(.pv-marginal) .pv-amt { max-width: none; }
+.ov-scroll { overflow-x: auto; max-width: 100%; }
 }
 
 @theme inline {
