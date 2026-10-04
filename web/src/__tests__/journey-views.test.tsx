@@ -5,13 +5,14 @@ vi.mock("@number-flow/react", () => ({ default: ({ value }: { value: number }) =
 
 import { renderToStaticMarkup } from "react-dom/server";
 import alexJson from "../__fixtures__/passage/alex.json";
+import { PassageControls } from "@/components/atlas/PassageControls";
 import { DetailPanel } from "@/components/DetailPanel";
 import { AnswersLog } from "@/components/journey/AnswersLog";
 import { Money } from "@/components/Money";
 import { OverviewList } from "@/components/OverviewList";
 import { UI } from "@/lib/copy";
 import { labeledSamples, shortJourneyLabel } from "@/lib/journey";
-import { answersLog, buildPassage, type PassageInputs } from "@/lib/passage";
+import { answersLog, buildPassage, layoutPassage, type PassageInputs } from "@/lib/passage";
 import { stitchesFromClauses } from "@/lib/stitches";
 import type { Clause, CoverageRule, JourneyView, PlanFixture, Procedure, SavedEstimate, TreatmentItem } from "@/lib/types";
 
@@ -121,5 +122,20 @@ describe("journey picker labels (finding layout-9)", () => {
     expect(shortJourneyLabel("Sample journey — Alex Chen (fictional) on the NCFlex Dental Classic Option 2026 (real public plan document)")).toBe("Alex Chen (fictional) · sample");
     expect(shortJourneyLabel("Sample journey — Sam Rivera (fictional)")).toBe("Sam Rivera (fictional) · sample");
     expect(shortJourneyLabel("Your journey")).toBe("Your journey");
+  });
+});
+
+describe("chart controls keyboard model (finding a11y-17)", () => {
+  it("puts exactly one chart control in the tab order (roving tabindex); checkpoints are reached with the arrow keys", () => {
+    const layout = layoutPassage(vm, "desktop");
+    const html = renderToStaticMarkup(<PassageControls vm={vm} layout={layout} selected={null} onSelect={noop} planCode="ML26" />);
+    const buttons = html.match(/<button[^>]*>/g) ?? [];
+    expect(buttons.length).toBeGreaterThan(10);
+    expect(buttons.filter((b) => b.includes('tabindex="0"'))).toHaveLength(1);
+    expect(buttons.filter((b) => b.includes('tabindex="0"'))[0]).toContain('data-island="start"');
+    expect(buttons.every((b) => b.includes('tabindex="0"') || b.includes('tabindex="-1"'))).toBe(true);
+    // a selection pins the tab stop on the selected island
+    const sel = renderToStaticMarkup(<PassageControls vm={vm} layout={layout} selected={{ islandId: vm.islands[1].id }} onSelect={noop} planCode="ML26" />);
+    expect((sel.match(/<button[^>]*tabindex="0"[^>]*>/g) ?? [])[0]).toContain(`data-island="${vm.islands[1].id}"`);
   });
 });
