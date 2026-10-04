@@ -39,3 +39,16 @@ export function loadingLabel(flags: { base: boolean; plan: boolean; estimate: bo
  * yes as soon as a journey is open or another view (My plan, Compare, Documents) is showing.
  */
 export const planWanted = (planRef: string, planNeeded: boolean, hasView: boolean) => !!planRef && (planNeeded || hasView);
+
+/**
+ * Compare's default columns (demo-20): the open plan first, then the other options of the SAME plan document family (same insurer,
+ * plan name and year: ML26 → ML26H, ML26L), then the rest of the catalog in its own order. This is a starting selection, not a ranking:
+ * the person reorders or replaces any column and the table follows their order (CLAUDE.md rule 6).
+ */
+export function defaultCompareColumns(planRef: string, plans: { plan_code: string; insurer: string; plan_name: string; plan_year: number }[], max = 3): string[] {
+  const open = plans.find((p) => p.plan_code === planRef);
+  const others = plans.filter((p) => p.plan_code !== planRef);
+  const family = open ? others.filter((p) => p.insurer === open.insurer && p.plan_name === open.plan_name && p.plan_year === open.plan_year) : [];
+  const rest = others.filter((p) => !family.includes(p));
+  return [...(planRef ? [planRef] : []), ...family.map((p) => p.plan_code), ...rest.map((p) => p.plan_code)].slice(0, max);
+}
