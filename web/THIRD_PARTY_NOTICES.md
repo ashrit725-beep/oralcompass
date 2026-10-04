@@ -9,6 +9,7 @@ Licence texts for npm packages live in `node_modules/<pkg>/LICENSE`.
 
 | Component | Origin | Author | Licence | Installed | Patches (beyond the generic set) | Path (under `web/src/`) |
 |---|---|---|---|---|---|---|
+| Dock | https://github.com/eldorauiofficial/portfolio-website (`src/components/ui/dock.tsx`) | Eldora UI (Mudunuri bhaskara karthikeya varma) | MIT (© 2024) | 2026-10-04 | phone bottom tab bar around the existing Radix tab triggers; pointer position via context (no `cloneElement`); magnification is a transform scale ≤ 1.15× on a no-overshoot spring, only on `(hover: hover) and (pointer: fine)`, off under reduced motion; solid `--paper-deep` bar, `--rule` top hairline, `--shadow-1` (no blur/glass); full-width bar with safe-area padding | `components/eldoraui/dock.tsx` |
 | Badge | https://ui.shadcn.com/docs/components/badge (radix-nova) | shadcn | MIT | 2026-10-03 | six evidence variants (doc/user/assumed/ambiguous/unknown/conflict) + `numeric`; `rounded-md`; `evidenceVariant` map exported | `components/ui/badge.tsx` |
 | Button | https://ui.shadcn.com/docs/components/button | shadcn | MIT | 2026-10-03 | `size="touch"` (44 px) and `"icon-touch"` (44×44); palette hovers; `motion-reduce:transition-none` | `components/ui/button.tsx` |
 | Checkbox | https://ui.shadcn.com/docs/components/checkbox | shadcn | MIT | 2026-10-03 | generic only | `components/ui/checkbox.tsx` |

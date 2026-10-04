@@ -177,3 +177,11 @@ My plan atlas, which read as a cream-themed admin panel.
 Only `dock.tsx` + `navbar.tsx` fit (as the phone bottom tab bar, slop-30). Rejected: `blur-fade-text` (per-character blur entrance, banned
 by component plan §4.3), `project-card`, `contributions-card`, `tweet`, `sandpack`, `mdx` (portfolio-specific), and `avatar`, `badge`,
 `button`, `card`, `separator`, `tooltip` (duplicates of the installed shadcn primitives).
+
+### Phone dock (slop-30, fix/web-shell 2026-10-04)
+`web/src/components/eldoraui/dock.tsx` (MIT, © 2024 Mudunuri bhaskara karthikeya varma; `web/THIRD_PARTY_NOTICES.md`) wraps the EXISTING
+Radix tab triggers on phones (≤ 760 px): solid `--paper-deep` bar, `--rule` top hairline, `--shadow-1`, safe-area padding, 52 px items
+with Compass / Anchor / custom two-column glyph / FileText and a visible 12.5 px label, the gold `nav-underline` as the active mark, press
+scale 0.97 over 120 ms (no overshoot; off under reduced motion), magnification only on fine pointers (≤ 1.15×, transform only), hidden while
+the procedure sheet or the stage sheet is open. Desktop keeps the top nav. DOM order is unchanged, so keyboard order and the walk's tab
+names are the same on every width.

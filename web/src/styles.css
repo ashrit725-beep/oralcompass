@@ -339,6 +339,8 @@ select:not([multiple]):not([size]) {
 /* the loading banner is an overlay: inserting and removing an in-flow row above <main> shifted the page (mobile-18) */
 .processing { position: fixed; top: var(--s-3); right: var(--s-4); z-index: 30; margin: 0; max-width: min(420px, calc(100vw - 2rem)); padding: var(--s-2) var(--s-3); background: var(--paper-deep); border: 1px solid var(--rule); border-radius: var(--r-3); box-shadow: var(--shadow-2); pointer-events: none; }
 .start-pending { min-height: 60vh; }
+/* <main id="main"> takes focus only from the "Skip to content" link (tabindex -1); the link itself shows the ring (a11y-4) */
+#main:focus { outline: none; }
 /* a failed view or lazy surface keeps a labelled recovery message inside the shell (web-correctness-3) */
 .surface-error { margin: var(--s-4) 0; }
 
@@ -361,6 +363,22 @@ summary { min-height: 32px; padding-block: 4px; }
 @media (max-width: 760px), (pointer: coarse) {
   select, input, textarea, textarea.tpr-textarea { font-size: max(16px, 1rem); }
 }
+
+/* ---- phone navigation: the four view tabs in a bottom dock (orchestrator note 7, mobile-6, slop-30) ---- */
+@media (max-width: 760px) {
+  .tagline { display: none; }
+  .appbar { padding: .6rem 1rem; gap: .4rem .75rem; }
+  .app { padding-bottom: calc(68px + env(safe-area-inset-bottom)); }
+  .dock { position: fixed; left: 0; right: 0; bottom: 0; z-index: 14; background: var(--paper-deep); border-top: 1px solid var(--rule); box-shadow: var(--shadow-1); padding: 6px 8px calc(6px + env(safe-area-inset-bottom)); }
+  .dock-item { display: flex; min-width: 0; }
+  .dock [role="tab"] { color: var(--ink-soft); }
+  .dock [role="tab"][data-state="active"] { color: var(--ink); background: var(--paper); }
+  /* the procedure sheet and the stage sheet sit where the dock is: the dock steps aside while either is open */
+  body:has([data-vaul-drawer][data-state="open"]) .dock, body:has(.detail.sheet:not(.is-empty)) .dock { visibility: hidden; }
+}
+@media (max-width: 760px) and (prefers-reduced-motion: no-preference) {
+  .dock [role="tab"] { transition: color var(--dur-micro) var(--ease-standard), background-color var(--dur-micro) var(--ease-standard), transform var(--dur-micro) var(--ease-standard); }
+  .dock [role="tab"]:active { transform: scale(.97); }
 }
 }
 
