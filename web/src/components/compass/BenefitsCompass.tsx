@@ -67,7 +67,9 @@ export function BenefitsCompass({ plan, benefits, estimate, stitches, compact = 
             )}
           </h3>
           <p className="cmp-a">
-            {h.kind === "after" && <><Money cents={h.answerCents} evidence={vm.annualMax.limitStatus} badge={!maxStitch} className="cmp-a-amt" />{maxStitch && <StitchChip stitch={maxStitch} selected={selectedStitch?.id === maxStitch.id} onSelect={onSelectStitch} />}</>}
+            {/* a calculated figure (the document's limit, your statement, the planned work): the limit's clause stitch plus the word
+                "calculated", never a lone "From the plan document" badge (orchestrator note 1) */}
+            {h.kind === "after" && <><Money cents={h.answerCents} evidence={vm.annualMax.limitStatus} badge={false} className="cmp-a-amt" />{maxStitch && <StitchChip stitch={maxStitch} selected={selectedStitch?.id === maxStitch.id} onSelect={onSelectStitch} />}<small className="calc-note cmp-calc">{COMPASS.afterCalculated}</small></>}
             {h.kind === "remaining" && <Money cents={h.answerCents} evidence="USER" className="cmp-a-amt" />}
             {h.kind === "no_usage" && <><span className="cmp-word">{COMPASS.notProvided}</span> <EvidenceBadge status="UNKNOWN" /></>}
             {h.kind === "unresolved" && <EvidenceBadge status="UNKNOWN" />}
@@ -100,7 +102,8 @@ export function BenefitsCompass({ plan, benefits, estimate, stitches, compact = 
       {vm.conflict && <p className="cmp-conflict"><EvidenceBadge status="CONFLICT" /> {vm.conflict.note}</p>}
       <p className="cmp-note">{COMPASS.derivedNote}</p>
 
-      {/* the visually hidden figures table sits in a clipped wrapper: a table ignores width:1px and widened the phone page to 530 px */}
+      {/* the visually hidden copy sits in an sr-only wrapper: WebKit sizes a table by its cells and ignores the 1 px sr-only box on the
+          table itself, which widened the My plan panel on iPhone (layout audit) */}
       <div className="sr-only"><table>
         <caption>{COMPASS.tableCaption}</caption>
         <thead><tr><th scope="col">{COMPASS.colFigure}</th><th scope="col">{COMPASS.colAmount}</th><th scope="col">{COMPASS.colEvidence}</th></tr></thead>

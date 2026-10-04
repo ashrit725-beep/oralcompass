@@ -6,6 +6,7 @@ import { dollarsToCents } from "@/lib/plan-catalog";
 import type { Procedure, TreatmentItem } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { EvidenceBadge } from "@/components/Primitives";
+import { Field } from "@/components/records/BenefitStatementForm";
 import { TreatmentPlanReader } from "./TreatmentPlanReader";
 
 /**
@@ -22,6 +23,9 @@ export interface TreatmentPlanImporterProps {
   onAdded: (item: TreatmentItem) => void;
   compact?: boolean;
 }
+
+/** Validation order = visual order (the first invalid field receives focus). */
+const ADD_ORDER = ["key", "fee", "allowed", "allowedSource", "source"];
 
 export function TreatmentPlanImporter({ procedures, onAdded, compact }: TreatmentPlanImporterProps) {
   const id = useId();
@@ -54,7 +58,8 @@ export function TreatmentPlanImporter({ procedures, onAdded, compact }: Treatmen
     if (!source.trim()) errs.source = PLAN.addSourceRequired;
     if (!proc) errs.key = PLAN.procedureRequired;
     setErrors(errs);
-    if (Object.keys(errs).length) return;
+    const firstBad = ADD_ORDER.find((k) => errs[k]);
+    if (firstBad) { document.getElementById(`${id}-${firstBad}`)?.focus(); return; }   // a11y-26: focus the first invalid field
     setBusy(true); setMessage(null);
     try {
       const item = await api.addItem({
@@ -69,8 +74,11 @@ export function TreatmentPlanImporter({ procedures, onAdded, compact }: Treatmen
     } catch { setMessage(PLAN.addError); }
     finally { setBusy(false); }
   }
-  const err = (k: string) => (errors[k] ? <small id={`${id}-${k}-e`} className="bs-error" role="alert">{errors[k]}</small> : null);
+  // a11y-26: errors and notes sit outside the labels (not part of the names); one summary region announces the errors
+  const err = (k: string) => (errors[k] ? <small id={`${id}-${k}-e`} className="bs-error">{errors[k]}</small> : null);
   const describe = (k: string) => (errors[k] ? `${id}-${k}-e` : undefined);
+  const fid = (k: string) => `${id}-${k}`;
+  const errorList = ADD_ORDER.filter((k) => errors[k]).map((k) => errors[k]);
 
   return (
     <div className={`tpi ${compact ? "is-compact" : ""}`}>
@@ -79,18 +87,17 @@ export function TreatmentPlanImporter({ procedures, onAdded, compact }: Treatmen
       <h4 id={`${id}-h`} className="bs-h">{PLAN.readManualTitle}</h4>
       <p className="bs-note">{PLAN.addIntro}</p>
       <div className="bs-grid">
-        <label className="bs-span">{PLAN.addProcedure}
-          <select value={key} onChange={(e) => setKey(e.target.value)} aria-describedby={`${id}-hint`}>
+        <Field id={fid("key")} label={PLAN.addProcedure} className="bs-span" after={<small id={`${id}-hint`} className="muted small">{proc ? PLAN.addCategoryHint(proc.category_hint) : ""}</small>}>
+          <select id={fid("key")} value={key} onChange={(e) => setKey(e.target.value)} aria-describedby={`${id}-hint`}>
             {procedures.map((p) => <option key={p.key} value={p.key}>{p.name}</option>)}
           </select>
-          <small id={`${id}-hint`} className="muted small">{proc ? PLAN.addCategoryHint(proc.category_hint) : ""}</small>
-        </label>
+        </Field>
         <label>{PLAN.addProcedureName}<input value={name} onChange={(e) => setName(e.target.value)} /></label>
         {proc?.tooth_or_area_relevant && <label>{PLAN.addTooth}<input value={tooth} onChange={(e) => setTooth(e.target.value)} placeholder="19" /></label>}
         <label>{PLAN.addQuantity}<input inputMode="numeric" value={quantity} onChange={(e) => setQuantity(e.target.value)} /></label>
-        <label>{PLAN.addFee}<input inputMode="decimal" value={fee} onChange={(e) => setFee(e.target.value)} required aria-invalid={!!errors.fee} aria-describedby={describe("fee")} placeholder="125.00" />{err("fee")}</label>
-        <label>{PLAN.addAllowed}<input inputMode="decimal" value={allowed} onChange={(e) => setAllowed(e.target.value)} aria-invalid={!!errors.allowed} aria-describedby={describe("allowed")} placeholder="82.00" />{err("allowed")}</label>
-        <label>{PLAN.addAllowedSource}<input value={allowedSource} onChange={(e) => setAllowedSource(e.target.value)} aria-invalid={!!errors.allowedSource} aria-describedby={describe("allowedSource") ?? `${id}-as`} /><small id={`${id}-as`} className="muted small">{PLAN.addAllowedSourceNote}</small>{err("allowedSource")}</label>
+        <Field id={fid("fee")} label={PLAN.addFee} after={err("fee")}><input id={fid("fee")} inputMode="decimal" value={fee} onChange={(e) => setFee(e.target.value)} required aria-invalid={!!errors.fee} aria-describedby={describe("fee")} placeholder="125.00" /></Field>
+        <Field id={fid("allowed")} label={PLAN.addAllowed} after={err("allowed")}><input id={fid("allowed")} inputMode="decimal" value={allowed} onChange={(e) => setAllowed(e.target.value)} aria-invalid={!!errors.allowed} aria-describedby={describe("allowed")} placeholder="82.00" /></Field>
+        <Field id={fid("allowedSource")} label={PLAN.addAllowedSource} after={<><small id={`${id}-as`} className="muted small">{PLAN.addAllowedSourceNote}</small>{err("allowedSource")}</>}><input id={fid("allowedSource")} value={allowedSource} onChange={(e) => setAllowedSource(e.target.value)} aria-invalid={!!errors.allowedSource} aria-describedby={[`${id}-as`, describe("allowedSource")].filter(Boolean).join(" ")} /></Field>
         <label>{PLAN.addNetwork}
           <select value={network} onChange={(e) => setNetwork(e.target.value)}>
             <option value="">{PLAN.bsNetworkUnknown}</option><option value="in">{PLAN.bsNetworkIn}</option><option value="out">{PLAN.bsNetworkOut}</option>
@@ -104,13 +111,14 @@ export function TreatmentPlanImporter({ procedures, onAdded, compact }: Treatmen
             <option value="planned">{PLAN.statusPlanned}</option><option value="scheduled">{PLAN.statusScheduled}</option><option value="consultation_mentioned">{PLAN.statusMentioned}</option>
           </select>
         </label>
-        <label>{PLAN.addSource}<input value={source} onChange={(e) => setSource(e.target.value)} required aria-invalid={!!errors.source} aria-describedby={describe("source")} placeholder={PLAN.addSourcePlaceholder} />{err("source")}</label>
-        <label>{PLAN.addCode}<input value={code} onChange={(e) => setCode(e.target.value)} aria-describedby={`${id}-code`} /><small id={`${id}-code`} className="muted small">{UI.codesNote}</small></label>
+        <Field id={fid("source")} label={PLAN.addSource} after={err("source")}><input id={fid("source")} value={source} onChange={(e) => setSource(e.target.value)} required aria-invalid={!!errors.source} aria-describedby={describe("source")} placeholder={PLAN.addSourcePlaceholder} /></Field>
+        <Field id={fid("code")} label={PLAN.addCode} after={<small id={`${id}-code`} className="muted small">{UI.codesNote}</small>}><input id={fid("code")} value={code} onChange={(e) => setCode(e.target.value)} aria-describedby={`${id}-code`} /></Field>
       </div>
       <div className="bs-actions">
         <Button type="submit" size="touch" disabled={busy || !proc}>{PLAN.addSubmit}</Button>
         <span className="bs-user"><EvidenceBadge status="USER" /></span>
       </div>
+      <p className="bs-error bs-error-summary" role="alert">{errorList.join(" ")}</p>
       <p className="bs-status" role="status">{message ?? ""}</p>
     </form>
     </div>

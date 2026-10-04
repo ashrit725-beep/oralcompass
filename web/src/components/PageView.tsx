@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { PLAN } from "../lib/copy/plan";
 import * as pdfjs from "pdfjs-dist";
 import type { Stitch } from "../lib/types";
 import { circled } from "../lib/stitches";
@@ -7,7 +8,7 @@ import { renderSequential, stitchKey } from "../lib/pdfRender";
 // Vite-friendly worker
 pdfjs.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url).toString();
 
-interface Props { url: string; stitches: Stitch[]; selected?: Stitch; onSelect: (s: Stitch) => void; dim?: boolean }
+interface Props { url: string; stitches: Stitch[]; selected?: Stitch; onSelect: (s: Stitch) => void; dim?: boolean; /** The document's title, for each page's text alternative. */ title?: string }
 
 const norm = (s: string) => s.replace(/\s+/g, " ").trim().toLowerCase();
 
@@ -63,23 +64,24 @@ const token = (name: string, fallback: string) => (typeof document === "undefine
  * The Page: real document pages; everything dimmed except stitched sentences, which stay at full opacity and wear chips.
  * The canvases are rendered ONCE per `url` (web-correctness-16); the dim + highlight + chips are an overlay pass that repaints from the
  * untouched copy of each page when the stitch set, the selection or `dim` changes, so typing in the clause filter or pressing a stitch no
- * longer re-downloads and re-renders the document. A superseded run never appends pages (cancel checked after every await), its render
+ * longer re-downloads and re-renders the document. Selecting a stitch only restyles the outline box and chip that already exist, so the
+ * pressed chip keeps keyboard focus (a11y-9). Each page is a labelled group whose canvas carries a text alternative (a11y-8). A superseded run never appends pages (cancel checked after every await), its render
  * task is cancelled and the pdf.js document is destroyed on cleanup.
  */
-export function PageView({ url, stitches, selected, onSelect, dim = true }: Props) {
+export function PageView({ url, stitches, selected, onSelect, dim = true, title }: Props) {
   const host = useRef<HTMLDivElement>(null);
   const pages = useRef<RenderedPage[]>([]);
   const overlayGen = useRef(0);
   const [status, setStatus] = useState("loading");
   const reduced = typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
   // the overlay reads the latest props without re-running the render effect
-  const latest = useRef({ stitches, selected, onSelect, dim });
-  latest.current = { stitches, selected, onSelect, dim };
+  const latest = useRef({ stitches, selected, onSelect, dim, title });
+  latest.current = { stitches, selected, onSelect, dim, title };
   const key = stitchKey(stitches);
 
   /** Repaint one page's overlay from its untouched copy. Async only while locating quotes; the drawing itself is synchronous. */
   async function paint(rp: RenderedPage, gen: number) {
-    const { stitches: all, selected: sel, dim: dimOn } = latest.current;
+    const { stitches: all, dim: dimOn } = latest.current;
     const pageStitches = dimOn ? all.filter((s) => s.page === rp.p) : [];
     const located = await Promise.all(pageStitches.map((s) => {
       let r = rp.rects.get(s.quote);
@@ -89,7 +91,7 @@ export function PageView({ url, stitches, selected, onSelect, dim = true }: Prop
     if (gen !== overlayGen.current) return;                     // a newer overlay pass owns the canvas now
     const ctx = rp.canvas.getContext("2d")!;
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(rp.base, 0, 0); ctx.restore();
-    rp.wrap.querySelectorAll(".pdf-stitch").forEach((n) => n.remove());
+    rp.wrap.querySelectorAll(".pdf-stitch, .pdf-outline").forEach((n) => n.remove());
     if (!pageStitches.length) return;
     const dpr = rp.canvas.width / rp.vp.width;
     const placed: Box[] = [];
@@ -99,16 +101,20 @@ export function PageView({ url, stitches, selected, onSelect, dim = true }: Prop
       const rects = located[i];
       const tag = document.createElement("button"); tag.type = "button"; tag.className = "pdf-stitch"; tag.textContent = `${s.doc} ${circled(s.n)}`;
       tag.setAttribute("aria-label", `Stitch ${s.n}, ${s.topic.replace(/[_:]/g, " ")}, page ${rp.p}`);
+      tag.dataset.stitch = s.id; tag.setAttribute("aria-pressed", "false");
       tag.onclick = () => latest.current.onSelect(s);
       if (rects.length) {
         const minX = Math.min(...rects.map((r) => r[0])), minY = Math.min(...rects.map((r) => r[1]));
         const maxX = Math.max(...rects.map((r) => r[0] + r[2])), maxY = Math.max(...rects.map((r) => r[1] + r[3]));
-        const pad = 2, on = sel?.id === s.id;
+        const pad = 2;
         ctx.save(); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         ctx.drawImage(rp.base, (minX - pad) * dpr, (minY - pad) * dpr, (maxX - minX + 2 * pad) * dpr, (maxY - minY + 2 * pad) * dpr,
           minX - pad, minY - pad, maxX - minX + 2 * pad, maxY - minY + 2 * pad);
-        ctx.strokeStyle = on ? token("--terracotta", "#b86a4b") : token("--ink", "#23303d"); ctx.lineWidth = on ? 3 : 1.5;
-        ctx.strokeRect(minX - pad, minY - pad, maxX - minX + 2 * pad, maxY - minY + 2 * pad); ctx.restore();
+        ctx.restore();
+        // the outline is a positioned box, not canvas ink, so selection restyles it without repainting the page (a11y-9)
+        const box = document.createElement("span"); box.className = "pdf-outline"; box.dataset.stitch = s.id; box.setAttribute("aria-hidden", "true");
+        Object.assign(box.style, { left: `${minX - pad}px`, top: `${minY - pad}px`, width: `${maxX - minX + 2 * pad}px`, height: `${maxY - minY + 2 * pad}px` });
+        rp.wrap.appendChild(box);
         tag.style.top = `${Math.max(0, minY - 22)}px`; tag.style.left = `${Math.max(0, minX)}px`;
       } else {
         tag.classList.add("pdf-stitch-margin"); tag.style.top = "8px"; tag.style.right = "8px";   // fallback: margin stitch
@@ -116,6 +122,7 @@ export function PageView({ url, stitches, selected, onSelect, dim = true }: Prop
       rp.wrap.appendChild(tag);
       place(tag, placed, rp.vp.width);
     });
+    markSelected(rp.wrap, latest.current.selected?.id);
   }
 
   // render the pages once per document
@@ -136,9 +143,11 @@ export function PageView({ url, stitches, selected, onSelect, dim = true }: Prop
         const vp = page.getViewport({ scale });
         const dpr = window.devicePixelRatio || 1;
         const wrap = document.createElement("div"); wrap.className = "pdf-page"; wrap.dataset.page = String(p);
+        wrap.setAttribute("role", "group"); wrap.setAttribute("aria-label", PLAN.docsPageGroup(p, doc.numPages));
         wrap.style.width = `${vp.width}px`; wrap.style.height = `${vp.height}px`;
         const canvas = document.createElement("canvas"); canvas.width = vp.width * dpr; canvas.height = vp.height * dpr;
         canvas.style.width = `${vp.width}px`; canvas.style.height = `${vp.height}px`;
+        canvas.setAttribute("role", "img"); canvas.setAttribute("aria-label", PLAN.docsPageAlt(p, doc.numPages, latest.current.title ?? ""));
         const ctx = canvas.getContext("2d")!; ctx.scale(dpr, dpr);
         const rt = page.render({ canvasContext: ctx, viewport: vp }); task = rt;
         await rt.promise; task = null;
@@ -158,11 +167,14 @@ export function PageView({ url, stitches, selected, onSelect, dim = true }: Prop
     };
   }, [url]);
 
-  // the overlay: repaint every rendered page when the stitch set, the selection or the dim switch changes
+  // the overlay: repaint every rendered page when the stitch set or the dim switch changes
   useEffect(() => {
     const gen = ++overlayGen.current;
     pages.current.forEach((rp) => { void paint(rp, gen); });
-  }, [key, selected?.id, dim]);
+  }, [key, dim]);
+
+  // selection: restyle the existing outline + chip only (no repaint, focus stays on the pressed chip; a11y-9)
+  useEffect(() => { if (host.current) markSelected(host.current, selected?.id); }, [selected?.id]);
 
   // scroll to the selected stitch's page once it exists
   useEffect(() => {
@@ -172,9 +184,17 @@ export function PageView({ url, stitches, selected, onSelect, dim = true }: Prop
   }, [selected?.id, status === "ready"]);
 
   return (
-    <section className="page" aria-label="Plan document">
+    <section className="page" aria-label={PLAN.docsPlanDocument}>
       <div ref={host} className="pdf-host" />
-      <p className="sr-only" aria-live="polite">{status === "ready" ? "Document rendered." : status}</p>
+      <p className="sr-only" aria-live="polite">{status === "ready" ? PLAN.docsRendered : status}</p>
     </section>
   );
+}
+
+function markSelected(root: HTMLElement, id: string | undefined) {
+  root.querySelectorAll<HTMLElement>("[data-stitch]").forEach((n) => {
+    const on = !!id && n.dataset.stitch === id;
+    n.classList.toggle("is-selected", on);
+    if (n.tagName === "BUTTON") n.setAttribute("aria-pressed", String(on));
+  });
 }

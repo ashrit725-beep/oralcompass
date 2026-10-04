@@ -4,6 +4,10 @@
  * Voice: what the documents say, what your records say, what the arithmetic yields. Nothing here tells the reader what to do.
  */
 export const PLAN = {
+  viewTitle: "My plan",
+  // engine totals: arithmetic over steps that each carry their own stitch or badge (CLAUDE.md rule 2; orchestrator note 1)
+  calculatedFromSteps: "Calculated from the steps below; each step shows its clause or source.",
+  calculatedShort: "calculated",
   // ---- plan selector (spec §7.2; addendum B1/B2: a single `label.plan-pick select` of plan codes stays as the fast path) ----
   sourceLabel: "Plan source",
   modePreset: "Preset plan",
@@ -31,6 +35,7 @@ export const PLAN = {
   noProcedures: "No planned procedures are recorded. The cost breakdown is drawn once a treatment item is added.",
   waitingForInfo: "Waiting for information",
   unlimited: "Unlimited (no dollar maximum)",
+  unlimitedShort: "No dollar maximum",
   notProvided: "Not provided",
   // ---- benefit statement form (spec §4.5) ----
   bsTitle: "Benefit statement figures",
@@ -59,6 +64,7 @@ export const PLAN = {
   bsSeparateOut: "This document states separate out-of-network limits; their figures are tracked separately.",
   // ---- add a procedure (spec §4.5) ----
   addTitle: "Add a procedure",
+  addSummaryNote: "Type it, paste the estimate's text or read a photo of it",
   addIntro: "A treatment item from your dentist's estimate. The procedure is matched to one of 16 fixed identifiers; the name as written stays on the island.",
   addProcedure: "Procedure (one of 16 fixed identifiers)",
   addProcedureName: "Name as written on the estimate (optional)",
@@ -90,7 +96,7 @@ export const PLAN = {
   procedureRequired: "A procedure is required.",
   // ---- read a treatment plan (addendum D.5a; api/app/treatment_reader.py) ----
   readTitle: "Read a treatment plan",
-  readIntro: "Paste the text of your dentist's estimate, or add a photo or PDF of it. Personal details are removed first, each line is matched to one of the 16 procedure identifiers, and nothing is added until you confirm it.",
+  readIntro: "Paste the text of your dentist's estimate, or add a photo or PDF of it. Personal details are removed from pasted text first; a photo reaches the model as it is. Each line is matched to one of the 16 procedure identifiers, and nothing is added until you confirm it.",
   readModeDemo: "Demo mode: only the two stored fictional estimates are read",
   readModeLive: (model: string) => `Live mode: read by ${model}`,
   readPasteLabel: "Estimate text",
@@ -109,7 +115,19 @@ export const PLAN = {
   readFileWrongType: "Only PNG, JPEG or WebP images and PDF files are read.",
   readImageSend: "Send the image to the model",
   readImageNote: "A photo cannot be redacted before reading. In live mode the image itself reaches the model; the server removes personal details from the model's answer.",
-  readWorking: "Reading the estimate. Personal details are removed before anything reaches a model.",
+  readWorking: "Reading the estimate. Personal details are removed from the text before anything reaches a model.",
+  readWorkingFile: "Reading the file. A photo or a scanned page cannot be redacted; the image itself reaches the model.",
+  readWorkingDemo: "Reading the estimate in demo mode. Nothing is sent to a model.",
+  // the send gate for files (orchestrator note 11): nothing leaves the browser in live mode until the user confirms
+  readGateTitle: (name: string) => `Before ${name} is sent`,
+  readGateImage: "This image is sent to the model as is; names, member IDs and dates on it are not removed. Pasting the text instead lets OralCompass remove them first.",
+  readGatePdf: "A PDF with a text layer is redacted before reading. A scanned PDF has no text to redact: its pages are sent to the model as images, with any names, member IDs and dates on them. Pasting the text instead lets OralCompass remove them first.",
+  readGateAck: "I understand the file may reach the model without redaction.",
+  readGateSend: "Send this file to the model",
+  readGatePaste: "Paste the text instead",
+  readGateCancel: "Do not send",
+  readGateCancelled: "The file was not sent.",
+  readDemoImage: "Demo mode reads only the two stored fictional estimates, as text. The image was not sent.",
   readStagesTitle: "Stages that ran",
   readRemoved: (labels: string) => `Removed before reading: ${labels}.`,
   readNothingRemoved: "No personal details were found to remove.",
@@ -151,6 +169,8 @@ export const PLAN = {
   cmpProcedures: (list: string) => `Procedures compared: ${list}.`,
   cmpNoneRecorded: "none recorded as planned",
   cmpUsageFor: (codes: string) => `Usage figures are entered for: ${codes}. Other columns show what is not provided.`,
+  cmpEnteredThisPlan: "Usage, network status and allowed amounts in this column: entered for this plan only.",
+  cmpNothingEntered: "Nothing is entered for this plan; figures from other plans are never carried over.",
   cmpNoPlanned: "No planned procedures to compare. A treatment item on My journey or My plan starts the comparison.",
   cmpLedgers: "Same estimate, each plan",
   cmpLedgerOf: (title: string) => `${title}: ledger`,
@@ -187,6 +207,10 @@ export const PLAN = {
   docsRedactionRemoved: "Redaction preview removed:",
   docsNothing: "nothing",
   docsVersions: (labels: string) => `Published versions: ${labels}`,
+  docsPlanDocument: "Plan document",
+  docsRendered: "Document rendered. The sentences used in your estimate are listed under Evidence below the pages.",
+  docsPageGroup: (p: number, n: number) => `Page ${p} of ${n}`,
+  docsPageAlt: (p: number, n: number, title: string) => `Page ${p} of ${n}${title ? ` of ${title}` : ""}, as an image. The sentences used in your estimate are listed as text under Evidence below the pages.`,
 } as const satisfies Record<string, string | ((...a: never[]) => string)>;
 
 /** Word lists for the treatment-plan reader (kept outside PLAN, whose values are strings or formatters). */

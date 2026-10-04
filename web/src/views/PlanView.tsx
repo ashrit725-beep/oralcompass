@@ -73,7 +73,7 @@ export function PlanView({ data, mobile, landmark, onLandmark, stitch, onStitch,
   const landmarkNode = useMemo(() => {
     if (!plan) return {} as Partial<Record<LandmarkId, ReactNode>>;
     const fig = (v: { value: number | null; unlimited?: boolean; status: Benefits["conflict"] extends infer _ ? any : never } | undefined) =>
-      !v ? UI.notStated : v.unlimited ? PLAN.unlimited : v.value == null ? UI.notStated : <Money cents={v.value} evidence={v.status} badge={false} />;
+      !v ? UI.notStated : v.unlimited ? PLAN.unlimitedShort : v.value == null ? UI.notStated : <Money cents={v.value} evidence={v.status} badge={false} />;
     return {
       bridge: fig(plan.deductible_individual),
       lookout: fig(plan.annual_max),
@@ -90,8 +90,10 @@ export function PlanView({ data, mobile, landmark, onLandmark, stitch, onStitch,
   );
 
   return (
-    <div className="plan-layout">
+    <div className={`plan-layout ${landmark ? "" : "is-solo"}`}>
       <div className="plan-main">
+        {/* the view's own h2 (spec §9.1: one h1, an h2 per view, no skipped levels); the compass question is the h3 under it */}
+        <h2 className="sr-only">{PLAN.viewTitle}</h2>
         <div className="plan-head">
           <PlanSelector plans={plans} uploads={uploads} uploadsLoading={uploadsLoading} value={planRef} onChange={(ref) => { selectPlan(ref); onStitch(undefined); }} mode={mode} onMode={setMode} uploadSlot={uploadSlot} />
           {!planRef && <p className="plan-empty">{PLAN.noPlan}</p>}
@@ -108,7 +110,7 @@ export function PlanView({ data, mobile, landmark, onLandmark, stitch, onStitch,
         {plan && <BenefitsCompass plan={plan} benefits={benefitsFor} estimate={estimate} stitches={stitches} onOpenLandmark={openLandmarkDeep} onSelectStitch={onStitch} selectedStitch={stitch} />}
         {procedures.length > 0 && (
           <details className="plan-add">
-            <summary>{PLAN.addTitle}</summary>
+            <summary><span className="plan-add-title">{PLAN.addTitle}</span><span className="plan-add-sub">{PLAN.addSummaryNote}</span></summary>
             <TreatmentPlanImporter procedures={procedures} onAdded={() => { setLive(PLAN.recalculating); loadRecords(); reestimate(); }} />
           </details>
         )}

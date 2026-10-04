@@ -7,7 +7,8 @@
 .plan-selector { display: grid; gap: var(--s-3); width: 100%; }
 .ps-mode { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2) var(--s-4); }
 .ps-mode-label { font-size: .9rem; color: var(--ink-soft); }
-.ps-toggle [data-slot="toggle-group-item"] { font-family: var(--serif); }
+/* controls are set in the sans face (spec §5.2); a long label wraps inside its segment instead of spilling past the border (mobile-19) */
+.ps-toggle [data-slot="toggle-group-item"] { font-family: var(--sans); white-space: normal; height: auto; line-height: 1.2; text-align: center; }
 .ps-row { display: grid; gap: var(--s-3); align-items: end; grid-template-columns: minmax(0, 1fr); }
 .ps-cascade { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-3); }
 .ps-cascade select, .ps-upload select, .plan-selector .plan-pick select { width: 100%; min-height: 44px; }
@@ -16,16 +17,34 @@
 .plan-banner .ribbon { margin-left: 0; margin-right: .4rem; }
 .plan-empty { font-family: var(--serif); color: var(--ink-soft); margin: var(--s-2) 0 0; }
 .plan-head { align-items: start; }
-/* the full plan name gets its own row; the cascade sits under it with room for the longest carrier and plan names (orchestrator note 3) */
+.ps-current { display: none; margin: 0; overflow-wrap: anywhere; }
+/* the plan select gets its own row; the cascade puts carrier + year on one row and the long plan name on a full row of its own, so the
+   longest carrier and plan names fit at 898 px (a landmark open) as well as at full width (orchestrator note 3, layout-8, slop-20) */
 @media (min-width: 761px) {
   .ps-row { grid-template-columns: minmax(0, 1fr); }
   .plan-selector .plan-pick select { max-width: 640px; }
-  .ps-cascade { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1.6fr) minmax(120px, .5fr); }
+  .ps-cascade { grid-template-columns: minmax(0, 1fr) 8rem; grid-template-areas: "carrier year" "plan plan"; max-width: 760px; }
+  .ps-carrier { grid-area: carrier; } .ps-plan { grid-area: plan; } .ps-year { grid-area: year; }
 }
 @media (max-width: 760px) {
   .ps-cascade { display: none; }                 /* phones keep the single grouped select (addendum B2: fewer controls at 360 px) */
+  .ps-current { display: block; }
   .ps-mode { flex-direction: column; align-items: stretch; }
   .ps-toggle { width: 100%; } .ps-toggle [data-slot="toggle-group-item"] { flex: 1; }
+}
+
+/* ---- My plan layout: with no landmark open the 420 px detail column is not reserved (demo-18); from 1200 px the page splits in two
+   halves (slop-21): plan selector, atlas, hint and "Add a procedure" on the left, the Benefits compass on the right from the top, instead
+   of a dead third of the page. A landmark opens the detail column as before (the compass then sits under the atlas). ---- */
+@media (min-width: 761px) { .plan-layout.is-solo { grid-template-columns: minmax(0, 1fr); } }
+@media (min-width: 1200px) {
+  .plan-layout.is-solo .plan-main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto auto auto auto 1fr; column-gap: var(--s-5); align-items: start; }
+  .plan-layout.is-solo .plan-main > * { grid-column: 1; }
+  .plan-layout.is-solo .plan-main > .plan-head { grid-row: 1; }
+  .plan-layout.is-solo .plan-main > .plan-map { grid-row: 2; margin-top: var(--s-4); }
+  .plan-layout.is-solo .plan-main > .hint { grid-row: 3; }
+  .plan-layout.is-solo .plan-main > .plan-add { grid-row: 4; }
+  .plan-layout.is-solo .plan-main > .compass { grid-column: 2; grid-row: 1 / -1; margin-top: 0; }
 }
 
 /* ---- depth dial (RubberSegment wrapper) ---- */
@@ -52,6 +71,7 @@
 .cmp-q .amt { font-family: var(--sans); font-size: 1.05em; }
 .cmp-a { margin: .25rem 0 0; display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); }
 .cmp-a-amt .amt { font-size: 1.75rem; font-weight: 700; line-height: 1.1; }
+.cmp-a .cmp-calc { flex-basis: 100%; }
 .cmp-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .cmp-quad { padding: var(--s-4) var(--s-4) var(--s-4) 0; min-width: 0; }
 .cmp-ne, .cmp-se { padding-left: var(--s-4); padding-right: 0; border-left: 1px solid var(--rule); }
@@ -63,6 +83,9 @@
 .cmp-meter { position: relative; height: 8px; border-radius: var(--r-1); background: var(--parchment); overflow: visible; margin: var(--s-2) 0 var(--s-3); }
 .cmp-meter-thin { height: 6px; margin: var(--s-1) 0 var(--s-2); }
 .cmp-meter.is-unknown { background: transparent; border: 1px dotted var(--ink-soft); }
+/* limit known, usage not provided: hatched + dashed, so it cannot be mistaken for a plain track with $0 used (info-only-8) */
+.cmp-meter.is-empty:not(.is-unknown) { background: repeating-linear-gradient(135deg, transparent 0 4px, color-mix(in srgb, var(--ink-soft) 30%, transparent) 4px 6px); border: 1px dashed var(--ink-soft); }
+.cmp-meter-word { margin: 0 0 var(--s-2); display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); font-size: .85rem; }
 .cmp-fill { position: absolute; inset: 0; border-radius: var(--r-1); background: var(--water); transform-origin: left center; transition: transform var(--dur-standard) var(--ease-standard); }
 .cmp-meter.is-unknown .cmp-fill, .cmp-meter.is-empty .cmp-fill { display: none; }
 .cmp-tick { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--terracotta); transform: translateX(-1px); }
@@ -76,7 +99,7 @@
 .cmp-derivation { margin: var(--s-2) 0 0; font-size: .8rem; color: var(--ink-soft); }
 .cmp-classes { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s-2); }
 .cmp-class-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s-2); flex-wrap: wrap; font-size: .9rem; }
-.cmp-class-name { font-weight: 500; } .cmp-class-pct { display: inline-flex; align-items: center; gap: var(--s-2); }
+.cmp-class-name { font-weight: 500; } .cmp-class-section { font-weight: 400; color: var(--ink-soft); font-size: .8rem; } .cmp-class-pct { display: inline-flex; align-items: center; gap: var(--s-2); }
 .cmp-out { margin: 0; font-size: .8rem; color: var(--ink-soft); }
 .cmp-restrictions { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s-1); }
 .cmp-restriction { min-height: 44px; text-align: left; font-size: .95rem; display: inline-flex; align-items: center; }
@@ -105,7 +128,8 @@
 .bs-h { margin: 0; font-size: 1rem; }
 .bs-note { margin: 0; font-size: .85rem; color: var(--ink-soft); }
 .bs-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-3); }
-.bs-grid label { min-width: 0; } .bs-grid input, .bs-grid select { min-height: 44px; width: 100%; }
+.bs-grid label, .bs-grid .bs-field { min-width: 0; } .bs-grid select { height: 44px; }   /* WebKit ignores min-height on a native select */ .bs-field { display: grid; gap: .25rem; align-content: start; }
+.bs-error-summary:empty { display: none; } .bs-grid input, .bs-grid select { min-height: 44px; width: 100%; }
 .bs-span { grid-column: 1 / -1; margin: 0; }
 .bs-error { color: var(--danger); font-size: .8rem; }
 .bs-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-3); }
@@ -113,15 +137,38 @@
 .bs-status { margin: 0; font-size: .9rem; }
 .bs-derivation { margin: 0; font-size: .85rem; } .bs-derivation dt { color: var(--ink-soft); } .bs-derivation dd { margin: .2rem 0 0; }
 .is-compact .bs-grid { grid-template-columns: minmax(0, 1fr); }
-.plan-add { margin-top: var(--s-4); }
-.plan-add > summary { cursor: pointer; font-family: var(--serif); font-weight: 600; min-height: 44px; display: flex; align-items: center; padding: 0 var(--s-2); border-radius: var(--r-2); }
+/* "Add a procedure" reads as a control (layout-26, slop-22): a card header with a chevron that turns when open and a one-line sub-title */
+.plan-add { margin-top: var(--s-4); background: var(--paper-deep); border: 1px solid var(--rule); border-radius: var(--r-4); }
+.plan-add > summary { cursor: pointer; list-style: none; min-height: 56px; display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: var(--s-3); align-content: center;
+  padding: var(--s-2) var(--s-4); border-radius: var(--r-4); }
+.plan-add > summary::-webkit-details-marker { display: none; }
+.plan-add > summary::after { content: ""; grid-column: 2; grid-row: 1 / span 2; align-self: center; width: 9px; height: 9px; border-right: 2px solid var(--ink); border-bottom: 2px solid var(--ink);
+  transform: rotate(45deg); transition: transform var(--dur-standard) var(--ease-standard); }
+.plan-add[open] > summary::after { transform: rotate(225deg); }
+.plan-add-title { font-family: var(--serif); font-weight: 600; font-size: 1.05rem; }
+.plan-add-sub { grid-column: 1; font-size: .85rem; color: var(--ink-soft); }
+.plan-add > summary:hover { background: var(--parchment); }
 .plan-add > summary:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
-.plan-add[open] > summary { margin-bottom: var(--s-2); }
+.plan-add[open] > summary { margin-bottom: var(--s-2); border-bottom: 1px solid var(--rule); border-radius: var(--r-4) var(--r-4) 0 0; }
+.plan-add > :not(summary) { padding: 0 var(--s-4) var(--s-4); }
+@media (prefers-reduced-motion: reduce) { .plan-add > summary::after { transition: none; } }
+@media (max-width: 760px) { .plan-add > :not(summary) { padding: 0 var(--s-1) var(--s-3); } }   /* keep the reader's drop zone at full width on phones */
 @media (max-width: 760px) { .bs-grid { grid-template-columns: minmax(0, 1fr); } }
+
+/* ---- treatment plan reader: the send gate for files (orchestrator note 11) ---- */
+.tpr-gate { display: grid; gap: var(--s-2); padding: var(--s-3) var(--s-4); background: var(--paper-deep); border: 1px solid var(--rule); border-left: 3px solid var(--terracotta); border-radius: var(--r-2); }
+.tpr-gate-h { margin: 0; font-family: var(--serif); font-weight: 600; overflow-wrap: anywhere; }
+.tpr-gate-note { margin: 0; font-size: .9rem; line-height: 1.45; }
+.tpr-gate-ack { display: flex; align-items: center; gap: var(--s-2); min-height: 44px; font-size: .9rem; }
+.tpr-gate-ack input { width: 20px; height: 20px; flex: none; }
 
 /* ---- compare grid cells and cards ---- */
 .compare .grid th, .compare .grid td { vertical-align: top; }
-.compare .grid thead th { position: sticky; top: 0; }
+/* the grid flows with the page (no inner vertical scroller), so the header row is not sticky inside it */
+.compare .grid thead th { position: static; }
+.compare .grid-scroll { overflow-y: visible; max-height: none; }
+/* the differences sentence is a screen-reader summary of the row (every figure is badged in its cell): no visible band */
+.compare table.grid tr.differences td { border: 0; background: none; padding: 0; }
 .cmp-cell-face { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-1) var(--s-2); }
 .cmp-cell-face .amt { font-weight: 600; }
 .cmp-cell-face .cite { color: var(--ink-soft); font-size: .78rem; flex-basis: 100%; }
@@ -132,5 +179,13 @@
 .amt-cell { text-align: right; white-space: nowrap; }
 @media (max-width: 760px) { .rail-total .amt { font-size: 1.8rem; } }
 
+/* ---- cost trail: the "calculated" note beside engine totals ---- */
+.calc-note { display: block; font-size: .78rem; font-style: italic; color: var(--ink-soft); font-family: var(--sans); font-weight: 400; }
+td .calc-note, .note .calc-note, .line-tabs .calc-note { display: inline; }
+
 /* ---- documents additions ---- */
+/* stitch outlines on the pdf.js page are positioned boxes (PageView): selection restyles them without redrawing the canvas */
+.pdf-outline { position: absolute; border: 1.5px solid var(--ink); border-radius: 2px; pointer-events: none; }
+.pdf-outline.is-selected { border: 3px solid var(--terracotta); }
+.pdf-stitch.is-selected { border-color: var(--terracotta); box-shadow: 0 0 0 2px var(--select-ring); }
 .doc-wording { margin-top: var(--s-4); } .doc-wording h3 { font-size: 1rem; }

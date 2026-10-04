@@ -4,7 +4,7 @@ import { failureReason, saveJson } from "@/lib/download";
 import { UI } from "@/lib/copy";
 import { PLAN } from "@/lib/copy/plan";
 import { ownedFileObjectUrl } from "@/lib/owned-file";
-import { fastPathLabel, groupPlans, summaryFor, uploadLabel, type UploadEvidenceExtras, type UploadSummary } from "@/lib/plan-catalog";
+import { fastPathLabel, fullPlanLabel, groupPlans, summaryFor, uploadLabel, type UploadEvidenceExtras, type UploadSummary } from "@/lib/plan-catalog";
 import { circled } from "@/lib/stitches";
 import type { PlanEvidence, PlanRef, PlanSummary, PrivateDocument, SourceItem, Stitch, UploadedPlanSummary } from "@/lib/types";
 import { isUpload } from "@/lib/types";
@@ -74,7 +74,8 @@ export function DocumentsView({ planCode, plans, onPlan, evidence, stitches, sel
   }
   const clauses = (evidence?.clauses ?? []).filter((c) => !filter || c.quote.toLowerCase().includes(filter.toLowerCase()) || c.field.toLowerCase().includes(filter.toLowerCase()));
   const pageUrl = primary?.has_stored_pdf && primary.stored_path ? (ownedPath ? ownedUrl : `/${primary.stored_path}`) : null;
-  // one array per stitch set: PageView repaints its overlay only when the set changes (web-correctness-16)
+  // one array per stitch set: typing in the clause filter never hands PageView a new list, and its overlay repaints only when the set
+  // changes (web-correctness-16, a11y-9)
   const pageStitches = useMemo(() => (primary ? stitches.filter((s) => s.doc === primary.version_label) : []), [stitches, primary?.version_label]);
 
   return (
@@ -85,8 +86,8 @@ export function DocumentsView({ planCode, plans, onPlan, evidence, stitches, sel
           <label className="plan-pick">{PLAN.planCode}
             <select value={planCode} onChange={(e) => onPlan(e.target.value)} title={upload ? uploadLabel(upload) : summary ? fastPathLabel(summary as PlanSummary) : undefined}>
               {!summary && <option value="">{PLAN.cmpNone}</option>}
-              {carriers.filter((c) => !c.fictional).map((c) => <optgroup key={c.key} label={c.label}>{c.plans.flatMap((p) => p.years.map((y) => <option key={y.code} value={y.code}>{fastPathLabel(y.summary)}</option>))}</optgroup>)}
-              {carriers.some((c) => c.fictional) && <optgroup label={PLAN.fictionalGroup}>{carriers.filter((c) => c.fictional).flatMap((c) => c.plans.flatMap((p) => p.years.map((y) => <option key={y.code} value={y.code}>{fastPathLabel(y.summary)}</option>)))}</optgroup>}
+              {carriers.filter((c) => !c.fictional).map((c) => <optgroup key={c.key} label={c.label}>{c.plans.flatMap((p) => p.years.map((y) => <option key={y.code} value={y.code} title={fullPlanLabel(y.summary)}>{fastPathLabel(y.summary)}</option>))}</optgroup>)}
+              {carriers.some((c) => c.fictional) && <optgroup label={PLAN.fictionalGroup}>{carriers.filter((c) => c.fictional).flatMap((c) => c.plans.flatMap((p) => p.years.map((y) => <option key={y.code} value={y.code} title={fullPlanLabel(y.summary)}>{fastPathLabel(y.summary)}</option>)))}</optgroup>}
               {uploads.length > 0 && <optgroup label={PLAN.uploadsGroup}>{uploads.map((u) => <option key={u.plan_code} value={u.plan_code}>{uploadLabel(u)}</option>)}</optgroup>}
             </select>
           </label>
@@ -107,7 +108,7 @@ export function DocumentsView({ planCode, plans, onPlan, evidence, stitches, sel
         {pageUrl && primary && (
           <ErrorBoundary label={PLAN.docsPlan} resetKey={pageUrl}>
             <Suspense fallback={<StageLoader label={UI.renderingDocument} size="sm" />}>
-              <PageView url={pageUrl} stitches={pageStitches} selected={selected} onSelect={onSelect} />
+              <PageView url={pageUrl} stitches={pageStitches} selected={selected} onSelect={onSelect} title={primary.title} />
             </Suspense>
           </ErrorBoundary>
         )}

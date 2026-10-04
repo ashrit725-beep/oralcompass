@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { compassModel, headlineFor, ledgerEvidence, remainingAfterPlanned, restrictionsFor } from "@/lib/compass-model";
+import { compassModel, headlineFor, ledgerEvidence, remainingAfterPlanned, restrictionsFor, sectionLabel } from "@/lib/compass-model";
 import type { Benefits, PlanFixture, SavedEstimate } from "@/lib/types";
 
 const ml26: PlanFixture = JSON.parse(readFileSync(join(__dirname, "../../../fixtures/plans/ml26.json"), "utf8"));
@@ -95,5 +95,18 @@ describe("helpers", () => {
     expect(ledgerEvidence({ assumptions: [] })).toBe("DOC");
     expect(ledgerEvidence({ assumptions: ["remaining_max_cents: hypothetical you entered"] })).toBe("ASSUMED");
     expect(ledgerEvidence(null)).toBe("DOC");
+  });
+});
+
+describe("coverage rows carry the document's row heading (demo-18)", () => {
+  const rows = compassModel(ml26, null, null).coverage;
+  it("tells the two Type II rows apart with the guide's own wording", () => {
+    const two = rows.filter((r) => r.name.startsWith("Type II") && r.name !== "Type III");
+    expect(two.map((r) => r.section)).toEqual(["Basic Services (row 1)", "Basic Services (row 2)"]);
+    expect(rows.find((r) => r.name === "Type I")?.section).toBe("Diagnostic and Preventive");
+  });
+  it("adds nothing when the heading repeats the name or is missing", () => {
+    expect(sectionLabel("Summary — Type I", "Type I")).toBeNull();
+    expect(sectionLabel(undefined, "Type I")).toBeNull();
   });
 });

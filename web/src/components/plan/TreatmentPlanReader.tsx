@@ -9,12 +9,14 @@ import { ApiError, api } from "@/lib/api";
 import type { ConfirmItem, ReadItem, ReadResponse, ReadSample } from "@/lib/ai-types";
 import { PLAN, PLAN_READ } from "@/lib/copy/plan";
 import { dollarsToCents } from "@/lib/plan-catalog";
+import { fileGate, isImageFile } from "@/lib/reader-gate";
 import type { TreatmentItem } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 /**
  * TreatmentPlanReader (addendum D.5a): the "Read a treatment plan" flow inside TreatmentPlanImporter. Paste the estimate's text or drop a
- * photo/PDF (vendored Kokonut file-upload) → POST /me/treatment-plans/read (redaction first; live model or the stored fictional estimates in
+ * photo/PDF (vendored Kokonut file-upload; in live mode a picked file is HELD behind a notice + required confirm, since an image or a
+ * scanned page cannot be redacted; in demo mode an image is never sent, lib/reader-gate.ts) → POST /me/treatment-plans/read (redaction first; live model or the stored fictional estimates in
  * demo mode) → a review table with one row per line: procedure as written → mapped procedure (a select of the server's candidates, or
  * "Not matched"), tooth, fee (<Money> with the USER badge: it comes from the user's own estimate), code as written. Nothing is ticked in
  * advance; "Add the ticked lines" posts /me/treatment-plans/confirm and hands the created items to the caller, which re-estimates so the
@@ -34,6 +36,8 @@ export function TreatmentPlanReader({ onConfirmed }: TreatmentPlanReaderProps) {
   const [health, setHealth] = useState<{ mode: "demo" | "live"; model?: string } | null>(null);
   const [busy, setBusy] = useState<null | "text" | "file">(null);
   const [file, setFile] = useState<File | null>(null);
+  const [staged, setStaged] = useState<File | null>(null);
+  const [ack, setAck] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<ReadResponse | null>(null);
   const [rows, setRows] = useState<Row[]>([]);
@@ -43,6 +47,7 @@ export function TreatmentPlanReader({ onConfirmed }: TreatmentPlanReaderProps) {
   const [pendingImage, setPendingImage] = useState<File | null>(null);
   // The section usually sits in a closed <details>: nothing is fetched and no file input exists until it has been visible once.
   const rootRef = useRef<HTMLElement>(null);
+  const textRef = useRef<HTMLTextAreaElement>(null);
   const seen = useInView(rootRef, { once: true });
 
   useEffect(() => {
@@ -66,8 +71,20 @@ export function TreatmentPlanReader({ onConfirmed }: TreatmentPlanReaderProps) {
     setBusy("text"); setError(null); setMessage(null); setResult(null);
     try { show(await api.readTreatmentPlanText(text)); } catch (e) { fail(e); } finally { setBusy(null); }
   }
+  /** A picked file is never posted straight away in live mode: it waits for the notice to be acknowledged (orchestrator note 11). */
+  function pickFile(f: File) {
+    setError(null); setMessage(null); setAck(false);
+    const gate = fileGate(health?.mode, f);
+    if (gate === "demo_image") { setStaged(null); setMessage(PLAN.readDemoImage); return; }
+    if (gate === "confirm") { setStaged(f); return; }
+    void readFile(f);
+  }
+  function dropStaged(msg: string | null) { setStaged(null); setAck(false); setMessage(msg); }
+  function pasteInstead() { dropStaged(PLAN.readGateCancelled); textRef.current?.focus(); }
+  /** `imageConsent`: the visitor acknowledged the notice for this file; the server still holds a photo or scan without it (needs_image_consent). */
   async function readFile(f: File, imageConsent = false) {
-    setFile(f); setBusy("file"); setError(null); setMessage(null); setResult(null); setPendingImage(null);
+    setStaged(null); setAck(false); setPendingImage(null);
+    setFile(f); setBusy("file"); setError(null); setMessage(null); setResult(null);
     try { const res = await api.readTreatmentPlanFile(f, imageConsent); show(res); if (res.needs_image_consent) setPendingImage(f); }
     catch (e) { fail(e); } finally { setBusy(null); setFile(null); }
   }
@@ -108,7 +125,7 @@ export function TreatmentPlanReader({ onConfirmed }: TreatmentPlanReaderProps) {
       <div className="tpr-inputs">
         <div className="tpr-paste">
           <label htmlFor={`${id}-text`} className="tpr-label">{PLAN.readPasteLabel}</label>
-          <textarea id={`${id}-text`} className="tpr-textarea" rows={7} value={text} onChange={(e) => setText(e.target.value)} placeholder={PLAN.readPastePlaceholder} spellCheck={false} maxLength={20000} />
+          <textarea ref={textRef} id={`${id}-text`} className="tpr-textarea" rows={7} value={text} onChange={(e) => setText(e.target.value)} placeholder={PLAN.readPastePlaceholder} spellCheck={false} maxLength={20000} />
           {samples.length > 0 && (
             <div className="tpr-samples" role="group" aria-label={PLAN.readSamplesLabel}>
               <span className="tpr-samples-label">{PLAN.readSamplesLabel}</span>
@@ -121,13 +138,29 @@ export function TreatmentPlanReader({ onConfirmed }: TreatmentPlanReaderProps) {
         </div>
         <span className="tpr-or" aria-hidden="true">{PLAN.readOr}</span>
         <div className="tpr-file">
-          {seen && <FileUpload onFileSelected={readFile} status={busy === "file" ? "uploading" : "idle"} currentFile={file} acceptedFileTypes={ACCEPTED} maxFileSize={MAX_BYTES} showTitle
+          {seen && <FileUpload onFileSelected={pickFile} status={busy === "file" ? "uploading" : "idle"} currentFile={file} acceptedFileTypes={ACCEPTED} maxFileSize={MAX_BYTES} showTitle
                       labels={{ title: PLAN.readFileTitle, hint: PLAN.readFileHint, choose: PLAN.readFileChoose, cancel: PLAN.readFileCancel, limits: PLAN.readFileLimits, tooLarge: () => PLAN.readFileTooLarge, wrongType: PLAN.readFileWrongType }} />}
           <p className="muted small tpr-image-note">{PLAN.readImageNote}</p>
         </div>
       </div>
 
-      {busy && <StageLoader label={PLAN.readWorking} size="sm" className="tpr-loader" />}
+      {staged && (
+        <div className="tpr-gate" role="group" aria-labelledby={`${id}-gate-h`}>
+          <p id={`${id}-gate-h`} className="tpr-gate-h">{PLAN.readGateTitle(staged.name)}</p>
+          <p className="tpr-gate-note">{isImageFile(staged) ? PLAN.readGateImage : PLAN.readGatePdf}</p>
+          <label className="tpr-gate-ack">
+            <input type="checkbox" checked={ack} onChange={(e) => setAck(e.target.checked)} />
+            <span>{PLAN.readGateAck}</span>
+          </label>
+          <div className="bs-actions">
+            <Button type="button" size="touch" variant="outline" onClick={pasteInstead}>{PLAN.readGatePaste}</Button>
+            <Button type="button" size="touch" onClick={() => readFile(staged, true)} disabled={!ack || !!busy}>{PLAN.readGateSend}</Button>
+            <Button type="button" size="touch" variant="ghost" onClick={() => dropStaged(PLAN.readGateCancelled)}>{PLAN.readGateCancel}</Button>
+          </div>
+        </div>
+      )}
+
+      {busy && <StageLoader label={health?.mode === "demo" ? PLAN.readWorkingDemo : busy === "file" ? PLAN.readWorkingFile : PLAN.readWorking} size="sm" className="tpr-loader" />}
       {error && <p role="alert" className="bs-error tpr-error">{error}</p>}
       <p className="bs-status" role="status">{message ?? ""}</p>
 

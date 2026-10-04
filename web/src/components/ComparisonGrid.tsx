@@ -1,4 +1,4 @@
-import { Fragment, Suspense, lazy, useState } from "react";
+import { Fragment, Suspense, lazy, useId, useState } from "react";
 import { UI } from "@/lib/copy";
 import { PLAN } from "@/lib/copy/plan";
 import { ledgerEvidence } from "@/lib/compass-model";
@@ -16,31 +16,32 @@ const Highlighter = lazy(() => import("@/components/magicui/highlighter").then((
 
 /** One column of the grid: the plan model the API resolved for that column plus the ref the user picked. */
 export interface GridPlan { model: PlanFixture; ref: string }
-interface Props { data: ComparisonResponse; plans: Record<string, GridPlan> }
+interface Props { data: ComparisonResponse; plans: Record<string, GridPlan>; /** Plan refs whose column received entered inputs (spec: "Entered for this plan only"). */ enteredFor?: string[] }
 
 /**
- * ComparisonGrid (component plan N12; CLAUDE.md rule 6). shadcn Table, `table-fixed` + `<colgroup>` for equal columns, sticky header
- * in a `max-h-[70dvh] overflow-auto scroll-fade-x` container; columns in the USER's order, no sort, no winner; the eligibility quote
+ * ComparisonGrid (component plan N12; CLAUDE.md rule 6). shadcn Table, `table-fixed` + `<colgroup>` for equal columns, in a
+ * horizontal-only `scroll-fade-x` container: the table takes its natural height and scrolls with the page (no nested vertical scroll box
+ * that slices a row; layout-22 / mobile-10 / slop-10); columns in the USER's order, no sort, no winner; the eligibility quote
  * under every column header; the factual-differences sentence under every row. Every cell is a 44 px PopoverTrigger whose card is the
  * paired clause (document label, page, quote with one terracotta Highlighter underline, evidence badge); at phone width the card opens
  * in the Drawer instead. The cell keeps its value printed while the card is open and the card repeats it as plain text (integration: the
  * earlier shared-layoutId hop emptied the cell and left a ghost figure outside the card). Rails: the same estimate per plan, totals through <Money>.
  */
-export function ComparisonGrid({ data, plans }: Props) {
+export function ComparisonGrid({ data, plans, enteredFor = [] }: Props) {
   const cols = data.result.columns;
   const titleOf = (c: string) => plans[c]?.model.title ?? c;
   return (
       <section className="compare" aria-labelledby="cmp-h">
-        <h2 id="cmp-h">{PLAN.cmpTitle}</h2>
-        <Table containerClassName="grid-scroll max-h-[70dvh] overflow-auto scroll-fade-x rounded-xl border border-rule" className="grid table-fixed min-w-[640px] text-[.9rem]">
+        <h3 id="cmp-h">{PLAN.cmpTitle}</h3>
+        <Table containerClassName="grid-scroll overflow-x-auto overflow-y-visible overscroll-x-contain scroll-fade-x rounded-xl border border-rule" className="grid table-fixed min-w-[640px] text-[.9rem]">
           <colgroup><col style={{ width: "20%" }} />{cols.map((c) => <col key={c} />)}</colgroup>
           <TableHeader>
             <TableRow>
-              <TableHead scope="col" className="sticky top-0 z-10 bg-paper-deep align-top whitespace-normal">{PLAN.cmpTopic}</TableHead>
+              <TableHead scope="col" className="bg-paper-deep align-top whitespace-normal">{PLAN.cmpTopic}</TableHead>
               {cols.map((c) => {
                 const p = plans[c]?.model;
                 return (
-                  <TableHead scope="col" key={c} className="sticky top-0 z-10 bg-paper-deep align-top whitespace-normal">
+                  <TableHead scope="col" key={c} className="bg-paper-deep align-top whitespace-normal">
                     <div className="plan-h">
                       <strong>{titleOf(c)}</strong>
                       {p?.is_fictional && <span className="ribbon">{UI.fictional}</span>}
@@ -88,6 +89,7 @@ export function ComparisonGrid({ data, plans }: Props) {
                   </p>
                 )}
                 {[...new Set(L?.flags ?? [])].map((f) => <p key={f} className="flag">{f}</p>)}
+                <p className="note">{enteredFor.includes(plans[c]?.ref ?? c) ? PLAN.cmpEnteredThisPlan : PLAN.cmpNothingEntered}</p>
                 <p className="note">{PLAN.cmpPremium}: {premium?.value != null ? <Money cents={premium.value} evidence={premium.status} /> : <><span>{UI.notStated}</span> <EvidenceBadge status="UNKNOWN" /></>}</p>
               </article>
             );
@@ -107,6 +109,7 @@ function eligibilityOnly(text?: string | null): string {
 function ClauseCell({ cell, topic, planTitle }: { cell: GridCell; topic: string; planTitle: string }) {
   const mobile = useMobile();
   const [open, setOpen] = useState(false);
+  const descId = useId();
   const isAmount = cell.text.includes("$");
   const face = (
     <span className="cmp-cell-face">
@@ -116,8 +119,11 @@ function ClauseCell({ cell, topic, planTitle }: { cell: GridCell; topic: string;
     </span>
   );
   const trigger = (
-    <Button variant="ghost" size="touch" className="cmp-cell h-auto w-full justify-start px-2 py-1.5 text-left font-normal whitespace-normal" aria-label={PLAN.cmpOpenClause(topic, planTitle)} aria-expanded={open}>
+    <Button variant="ghost" size="touch" className="cmp-cell h-auto w-full justify-start px-2 py-1.5 text-left font-normal whitespace-normal" aria-describedby={descId} aria-expanded={open}>
       {face}
+      {/* the visible value + badge + cite name the button (SC 2.5.3 label in name); the topic, plan and action are its description.
+          `hidden` keeps the sentence out of the name computed from content while aria-describedby still reads it. */}
+      <span id={descId} hidden>{PLAN.cmpOpenClause(topic, planTitle)}</span>
     </Button>
   );
   const card = (

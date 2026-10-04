@@ -10,7 +10,8 @@ import { EvidenceBadge, StitchChip } from "@/components/Primitives";
  * 8 px: track parchment, fill `--water` for the part already met / paid (USER figures from the statement), a thin terracotta tick for
  * the level after the planned work (the engine's `remaining_after`, stitched to the clause). Labels in ink: limit (DOC + stitch),
  * met / remaining (USER + derivation), after the planned work (DOC via the clause stitch). UNKNOWN limit → empty dotted track and
- * "Not stated in this document"; unlimited → the words and no meter; no statement → the track stays empty with "Not provided".
+ * "Not stated in this document"; unlimited → the words and no meter; no statement → a hatched dashed track (never the plain track of
+ * "$0 used") with "Not provided".
  * Motion: the fill scales on the x axis with a CSS transition (`--dur-standard`), zeroed under reduced motion; the figures roll through
  * <Money> (NumberFlow) which respects the user's motion preference itself. Status is never colour alone: glyph + word on every badge.
  */
@@ -52,6 +53,7 @@ export function Gauge({ label, meter, stitch, selectedStitch, onSelectStitch, us
         <div
           className={`cmp-meter ${known ? "" : "is-unknown"} ${meter.usedCents == null ? "is-empty" : ""}`}
           role={known && meter.usedCents != null ? "meter" : undefined}
+          aria-label={known && meter.usedCents != null ? label : undefined}
           aria-valuemin={known && meter.usedCents != null ? 0 : undefined}
           aria-valuemax={known && meter.usedCents != null ? meter.limitCents! / 100 : undefined}
           aria-valuenow={known && meter.usedCents != null ? meter.usedCents / 100 : undefined}
@@ -62,6 +64,8 @@ export function Gauge({ label, meter, stitch, selectedStitch, onSelectStitch, us
           {afterPct != null && <span className="cmp-tick" style={{ left: `${afterPct}%` }} />}
         </div>
       )}
+      {/* usage not provided: the hatched track must never read as "$0 used" (info-only-8); the compact gauge has no figure list, so it says so */}
+      {compact && known && meter.usedCents == null && <p className="cmp-meter-word"><span className="cmp-word">{COMPASS.notProvided}</span> <EvidenceBadge status="UNKNOWN" /></p>}
 
       {!compact && !meter.unlimited && (
         <dl className="cmp-figures">

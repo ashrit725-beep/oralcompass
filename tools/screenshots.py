@@ -367,6 +367,16 @@ def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-pref
     figs_ok = has_amount(page, ".cmp-figures", "$1,260.00") and has_amount(page, ".cmp-figures", "$240.00") and figs.locator(".badge", has_text="You entered").count() >= 2
     check(f"{device}: answers from the compass", q.startswith("How much of the") and has_amount(page, ".compass .cmp-q", "$1,500.00") and "maximum remains after the planned work?" in q and has_amount(page, ".cmp-a", "$162.00") and stitch_beside and figs_ok and page.locator(".cmp-classes li").count() == 4,
           f"q={q[:70]!r} stitch={stitch_beside} figs={figs_ok} classes={page.locator('.cmp-classes li').count()}")
+    # a11y-22: the view's h2 comes before the compass question (h3); no heading level is skipped on My plan
+    levels = page.evaluate("[...document.querySelectorAll('.plan-main h2, .plan-main h3, .plan-main h4, .plan-main h5')].map(h => [Number(h.tagName[1]), h.textContent.trim().slice(0, 30)])")
+    seen_levels, skip = [1], None
+    for lv, name in levels:
+        if lv > max(seen_levels) + 1 and skip is None: skip = f"h{lv} {name!r}"
+        seen_levels.append(lv)
+    # layout-26 / slop-22: "Add a procedure" reads as a disclosure control (bordered card header, chevron, sub-line, 44 px+)
+    add_aff = page.evaluate("(() => { const s = document.querySelector('.plan-add > summary'); if (!s) return null; const a = getComputedStyle(s, '::after'); const d = getComputedStyle(s.parentElement); return [a.content !== 'none' && a.borderRightStyle === 'solid', d.borderTopStyle === 'solid', !!s.querySelector('.plan-add-sub'), s.getBoundingClientRect().height >= 44]; })()")
+    check(f"{device}: add a procedure has a disclosure affordance", bool(add_aff) and all(add_aff), str(add_aff))
+    check(f"{device}: My plan heading outline", bool(levels) and levels[0][0] == 2 and levels[0][1] == "My plan" and skip is None, f"first={levels[:2]} skip={skip}")
     shot("19-compass")
     page.get_by_role("button", name=re.compile("^Frequency limits")).first.click(); page.wait_for_timeout(600)
     lm = page.locator("#lm-h").first.inner_text() if page.locator("#lm-h").count() else ""
@@ -381,6 +391,17 @@ def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-pref
     dial_widths = [group.get_by_role("radio").nth(i).bounding_box()["width"] for i in range(group.get_by_role("radio").count())]
     check(f"{device}: depth dial", group.get_by_role("radio").count() == 3 and bool(after_arrow) and "Your numbers" in str(after_arrow) and exact_again == "true" and (not mobile or all(w >= 100 for w in dial_widths)) and (not mobile or page.evaluate("document.documentElement.scrollWidth") == width),
           f"after_arrow={str(after_arrow)[:20]!r} exact={exact_again} widths={[round(w) for w in dial_widths]}")
+    # web-correctness-6: a stitch chip in the landmark card survives the re-render its press causes, so closing the clause card returns
+    # focus to that same chip (figures are no longer remounted on every render)
+    lm_chip = page.locator(".landmark .facts .stitch").first
+    chip_label = lm_chip.get_attribute("aria-label") if lm_chip.count() else None
+    if chip_label:
+        page.evaluate("document.querySelector('.landmark .facts .stitch').dataset.walkMark = '1'")
+        lm_chip.focus(); page.keyboard.press("Enter"); page.wait_for_timeout(500)
+        if page.get_by_role("button", name="Close clause card").count():
+            page.get_by_role("button", name="Close clause card").click(); page.wait_for_timeout(300)
+    chip_back = page.evaluate("(() => { const a = document.activeElement; return !!a && a.dataset.walkMark === '1'; })()")
+    check(f"{device}: landmark stitch keeps focus across its card", bool(chip_label) and chip_back, f"chip={str(chip_label)[:40]!r} back={chip_back}")
     close_sheet()
     # benefit statement form at depth 2 on the bridge (figures identical to the seeded statement, so nothing downstream changes)
     page.locator("button[aria-label^='Deductible']").first.click(); page.wait_for_timeout(400)
@@ -472,6 +493,16 @@ def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-pref
         shot("20-compare-clause")
         page.keyboard.press("Escape"); page.wait_for_timeout(300)
     check(f"{device}: compare cell opens its clause", ok)
+    # web-correctness-13: picking fewer than two plans clears the grid (no stale columns under pickers that show fewer plans)
+    pickers = page.locator(".compare-view .pickers select")
+    before = [pickers.nth(i).input_value() for i in range(pickers.count())]
+    pickers.nth(2).select_option(""); page.wait_for_timeout(1500)
+    cols_two = page.locator("table.grid thead th").count()
+    pickers.nth(1).select_option(""); page.wait_for_timeout(800)
+    cleared = page.locator("table.grid").count() == 0
+    pickers.nth(1).select_option(before[1]); page.wait_for_timeout(300)
+    pickers.nth(2).select_option(before[2]); page.wait_for_timeout(1800)
+    check(f"{device}: compare grid follows the pickers", cols_two == 3 and cleared and page.locator("table.grid thead th").count() == 4, f"before={before} cols_two={cols_two} cleared={cleared}")
 
     # ---- Documents ----
     page.get_by_role("tab", name="Documents").click(); page.wait_for_timeout(1500)
@@ -495,6 +526,29 @@ def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-pref
     rm_unbadged = page.evaluate("[...document.querySelectorAll('.rm-text')].filter(t => /\\$\\s?\\d/.test(t.textContent) && !t.querySelector('.badge')).length")
     check(f"{device}: reminders listed with evidence", rm.count() >= 1 and rm_unbadged == 0 and page.locator(".rm-status[role=status]").count() == 1, f"items={rm.count()} unbadged={rm_unbadged}")
     shot("23-reminders")
+    # the pdf.js page (a fictional plan with a stored PDF): each page is a labelled group with a text alternative (a11y-8); pressing a
+    # stitch chip opens its card without redrawing the pages, so closing the card returns focus to the same chip, and typing in the
+    # clause filter leaves the drawn pages in place (a11y-9). The walk returns to ML26 afterwards.
+    try:
+        page.locator("label.plan-pick select").first.select_option("HB26"); page.wait_for_selector(".pdf-page .pdf-stitch", timeout=15000)
+        page.wait_for_timeout(800)
+        labelled = page.evaluate("(() => { const ps = [...document.querySelectorAll('.pdf-page')]; return ps.length > 0 && ps.every(p => p.getAttribute('role') === 'group' && /^Page \\d+ of \\d+$/.test(p.getAttribute('aria-label') || '') && p.querySelector('canvas[role=img]')?.getAttribute('aria-label')?.includes('under Evidence')); })()")
+        page.evaluate("document.querySelector('.pdf-page').dataset.walkMark = '1'")
+        chip = page.locator(".pdf-stitch").first
+        chip_id = chip.get_attribute("data-stitch"); chip.focus(); page.keyboard.press("Enter"); page.wait_for_timeout(500)
+        pressed = page.evaluate(f"document.querySelector('.pdf-stitch[data-stitch=\"{chip_id}\"]')?.getAttribute('aria-pressed')")
+        if page.get_by_role("button", name="Close clause card").count():
+            page.get_by_role("button", name="Close clause card").click(); page.wait_for_timeout(300)
+        back = page.evaluate("document.activeElement?.dataset?.stitch || document.activeElement?.tagName")
+        page.locator("label.filter input").fill("deduct"); page.wait_for_timeout(600)
+        kept = page.evaluate("!!document.querySelector('.pdf-page[data-walk-mark=\"1\"]')")
+        page.locator("label.filter input").fill(""); page.wait_for_timeout(200)
+        check(f"{device}: pdf pages labelled; stitch select keeps the drawn pages and focus", labelled and pressed == "true" and back == chip_id and kept,
+              f"labelled={labelled} pressed={pressed} focus={back} chip={chip_id} kept={kept}")
+    except Exception as e:  # noqa: BLE001
+        check(f"{device}: pdf pages labelled; stitch select keeps the drawn pages and focus", False, str(e).splitlines()[0][:160])
+    finally:
+        page.locator("label.plan-pick select").first.select_option("ML26"); page.wait_for_timeout(1200)
 
     # ---- upload wizard (spec §12 "upload plan"): type validation, demo extraction, review table, hold-to-publish → UP1 ----
     try:
