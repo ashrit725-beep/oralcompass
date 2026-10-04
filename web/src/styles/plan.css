@@ -119,6 +119,13 @@
 .plan-add[open] > summary { margin-bottom: var(--s-2); }
 @media (max-width: 760px) { .bs-grid { grid-template-columns: minmax(0, 1fr); } }
 
+/* ---- treatment plan reader: the send gate for files (orchestrator note 11) ---- */
+.tpr-gate { display: grid; gap: var(--s-2); padding: var(--s-3) var(--s-4); background: var(--paper-deep); border: 1px solid var(--rule); border-left: 3px solid var(--terracotta); border-radius: var(--r-2); }
+.tpr-gate-h { margin: 0; font-family: var(--serif); font-weight: 600; overflow-wrap: anywhere; }
+.tpr-gate-note { margin: 0; font-size: .9rem; line-height: 1.45; }
+.tpr-gate-ack { display: flex; align-items: center; gap: var(--s-2); min-height: 44px; font-size: .9rem; }
+.tpr-gate-ack input { width: 20px; height: 20px; flex: none; }
+
 /* ---- compare grid cells and cards ---- */
 .compare .grid th, .compare .grid td { vertical-align: top; }
 .compare .grid thead th { position: sticky; top: 0; }
