@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import alexJson from "../__fixtures__/passage/alex.json";
 import samJson from "../__fixtures__/passage/sam.json";
-import { BINDING_PX, TARGET_PX, VB_W, answersLog, buildPassage, checkpointAria, findCollisions, islandAmountText, layoutPassage, matchLine, moneyText, type PassageInputs } from "./passage";
+import { BINDING_PX, TARGET_PX, VB_W, answersLog, buildPassage, planDisplayCode, checkpointAria, findCollisions, islandAmountText, layoutPassage, matchLine, moneyText, type PassageInputs } from "./passage";
 import { stitchesFromClauses } from "./stitches";
 import type { Clause, CoverageRule, JourneyView, LedgerLine, PassageVM, PlanFixture, Procedure, SavedEstimate, TreatmentItem } from "./types";
 
@@ -260,5 +260,16 @@ describe("layoutPassage — 44 px targets at the 854 px plate (addendum B1/B2/B3
     const layout = layoutPassage(buildPassage(alex), "desktop");
     const cp = layout.controls.find((c) => c.id.endsWith(":CO"))!;
     expect(cp.w).toBeCloseTo(hitUnits, 5);
+  });
+});
+
+describe("plan code on the START pennant (finding demo-14)", () => {
+  it("shows an uploaded plan's version label, never the internal upload ref", () => {
+    const plan = { ...(alex.plan as PlanFixture), plan_code: "UP1", source_document: { ...(alex.plan as PlanFixture).source_document, version_label: "UP1", document_type: "uploaded_plan_document" } };
+    const vm = buildPassage({ ...alex, plan, planRef: "upload:c5fd44ebabc8d1e2" });
+    expect(vm.start.subtitle).toMatch(/^UP1 · /);
+    expect(vm.start.subtitle).not.toContain("upload:");
+    expect(planDisplayCode("upload:c5fd44ebabc8d1e2", null)).toBe("your uploaded document");
+    expect(planDisplayCode("ML26", alex.plan)).toBe("ML26");
   });
 });

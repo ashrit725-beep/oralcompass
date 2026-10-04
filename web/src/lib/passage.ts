@@ -16,6 +16,7 @@ import { CHECKPOINT_PLACE, CHECKPOINT_TERM, CLOSED_SUFFIX, GLYPH_FOR_RULE, LIGHT
 import { PASSAGE } from "./copy/passage";
 import { stitchForLabel } from "./stitches";
 import { buildTrail, type TrailStep } from "./trail";
+import { isUpload } from "./types";
 import type {
   Benefits, CheckpointRule, Claim, CoverageRule, Evidence, InsuranceCheckpointVM, IslandVM, JourneyView, LedgerLine, MissingInput, PassageVM, PlanFixture,
   PlanRef, Procedure, SavedEstimate, Stitch, TreatmentItem,
@@ -40,6 +41,14 @@ export interface PassageInputs {
 const PLANNED = new Set(["planned", "scheduled"]);
 const networkWord = (n: string | null | undefined) => (n === "in" ? PASSAGE.inNetwork : n === "out" ? PASSAGE.outOfNetwork : PASSAGE.networkNotProvided);
 export const itemRef = (i: TreatmentItem) => i.seed_id ?? i.id;
+
+/** The plan code people read: a preset's code (ML26), or an uploaded plan's version label (UP1), never the internal
+ *  "upload:<content hash>" ref. Until the uploaded plan's model has loaded the words "your uploaded document" stand in. */
+export function planDisplayCode(planRef: PlanRef, plan: PlanFixture | null): string {
+  if (!planRef) return "—";
+  if (!isUpload(planRef)) return planRef;
+  return plan?.source_document?.document_type === "uploaded_plan_document" && plan.source_document.version_label ? plan.source_document.version_label : PASSAGE.uploadedPlan;
+}
 
 /** The engine's own label for an item (records.py `lines_from_items`), used to verify the index fallback. */
 export function expectedLineLabel(item: TreatmentItem, procedures: Procedure[]): string {
@@ -214,7 +223,7 @@ export function buildPassage(inp: PassageInputs): PassageVM {
   if (estimate && networkStatus === "UNKNOWN") startNotices.push(PASSAGE.networkUnknown);
   const start: IslandVM = {
     id: "start", kind: "start", state: "frame", order: 0, place: planStage?.island ?? START_PLACE, title: planStage?.title ?? PASSAGE.startTitle,
-    subtitle: `${planRef || "—"} · ${networkWord(estimate?.inputs.network ?? (benefits as { network_default?: string } | null)?.network_default)}`, category: null,
+    subtitle: `${planDisplayCode(planRef, plan)} · ${networkWord(estimate?.inputs.network ?? (benefits as { network_default?: string } | null)?.network_default)}`, category: null,
     checkpoints: [], youPay: null, planPays: null, upperBound: false, missing: noLines ? globalMissing : [], notices: startNotices,
     soundingsAfter: benefits ? { deductible: benefits.remaining_deductible_cents ?? null, annualMax: benefits.remaining_max_cents ?? null, unlimited } : null,
     stageIds: planStage ? [planStage.id] : [],

@@ -4,7 +4,7 @@ import { PASSAGE } from "@/lib/copy/passage";
 import { UI, type LandmarkId } from "@/lib/copy";
 import { currentStageId, labeledSamples } from "@/lib/journey";
 import { transitions, useReducedMotion } from "@/lib/motion";
-import { buildPassage, denseFrom, itemRef, type AnswerTarget } from "@/lib/passage";
+import { buildPassage, denseFrom, itemRef, planDisplayCode, type AnswerTarget } from "@/lib/passage";
 import type { MapSelection, Stage, Stitch } from "@/lib/types";
 import type { AppData } from "@/hooks/useAppData";
 import type { JourneySelectionApi } from "@/hooks/useJourneySelection";
@@ -59,6 +59,7 @@ export function JourneyView({ data, selection, mobile, onOpenLandmark, onOpenDoc
   const benefitsFor = useMemo(() => benefits.find((b) => b.plan_code === planRef) ?? null, [benefits, planRef]);
   const vm = useMemo(() => buildPassage({ items, estimate, benefits: benefitsFor, journey: view, rules, plan, procedures, stitches, planRef }), [items, estimate, benefitsFor, view, rules, plan, procedures, stitches, planRef]);
   const recalculating = !!loading && loading === UI.processing && !!estimate;
+  const planCode = planDisplayCode(planRef, plan);
   const drawKey = `${planRef}:${vm.islands.map((i) => i.id).join(",")}`;
   const allIslands = useMemo(() => [vm.start, ...vm.islands, vm.destination, ...vm.visited, ...vm.marginal], [vm]);
   const selectedIsland = islandSel ? allIslands.find((i) => i.id === islandSel.islandId) ?? null : null;
@@ -154,8 +155,8 @@ export function JourneyView({ data, selection, mobile, onOpenLandmark, onOpenDoc
           <>
             {dense && <IslandStrip vm={vm} selected={islandSel} onSelect={(id, el) => selectIsland(id, undefined, el, false)} mobile={mobile} />}
             {mobile
-              ? <PassageVertical vm={vm} selected={islandSel} onSelect={selectIsland} planCode={planRef} onSelectStitch={onSelectStitch} />
-              : <PassageMap vm={vm} selected={islandSel} onSelect={selectIsland} planCode={planRef} drawKey={drawKey} recalculating={recalculating} pointer={pointer} desktop />}
+              ? <PassageVertical vm={vm} selected={islandSel} onSelect={selectIsland} planCode={planCode} onSelectStitch={onSelectStitch} />
+              : <PassageMap vm={vm} selected={islandSel} onSelect={selectIsland} planCode={planCode} drawKey={drawKey} recalculating={recalculating} pointer={pointer} desktop />}
             {!mobile && <CareTimeline journey={view.journey} progress={view.progress} selected={stage} onSelect={(s, el) => selection.selectStage(s, el)} currentStageId={currentStageId(view.journey)} mobile={false} linkedIsland={linkedIsland} onShowOnChart={(id) => selectIsland(id, undefined, null, true)} />}
           </>
         )}
