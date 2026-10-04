@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useState, type ReactNode } from "react";
+import { Suspense, lazy, useEffect, useMemo, useState, type ReactNode } from "react";
 import { api } from "@/lib/api";
 import { UI } from "@/lib/copy";
 import { PLAN } from "@/lib/copy/plan";
@@ -67,7 +67,9 @@ export function DocumentsView({ planCode, plans, onPlan, evidence, stitches, sel
     const r = await api.deleteMe(); setMsg(PLAN.docsDeleted(Object.entries(r.deleted).map(([k, v]) => `${v} ${k}`).join(", ") || PLAN.docsNothingStored)); setMine([]); onRetry();
   }
   const clauses = (evidence?.clauses ?? []).filter((c) => !filter || c.quote.toLowerCase().includes(filter.toLowerCase()) || c.field.toLowerCase().includes(filter.toLowerCase()));
-  const pageUrl = primary?.has_stored_pdf && primary.stored_path ? (ownedPath ? ownedUrl : `/${primary.stored_path.replace(/^fixtures\//, "fixtures/")}`) : null;
+  const pageUrl = primary?.has_stored_pdf && primary.stored_path ? (ownedPath ? ownedUrl : `/${primary.stored_path}`) : null;
+  // one array per stitch set: PageView repaints its overlay only when the set changes (web-correctness-16)
+  const pageStitches = useMemo(() => (primary ? stitches.filter((s) => s.doc === primary.version_label) : []), [stitches, primary?.version_label]);
 
   return (
     <div className="documents">
@@ -97,9 +99,11 @@ export function DocumentsView({ planCode, plans, onPlan, evidence, stitches, sel
           </article>
         ))}
         {pageUrl && primary && (
-          <Suspense fallback={<StageLoader label={UI.renderingDocument} size="sm" />}>
-            <PageView url={pageUrl} stitches={stitches.filter((s) => s.doc === primary.version_label)} selected={selected} onSelect={onSelect} />
-          </Suspense>
+          <ErrorBoundary label={PLAN.docsPlan} resetKey={pageUrl}>
+            <Suspense fallback={<StageLoader label={UI.renderingDocument} size="sm" />}>
+              <PageView url={pageUrl} stitches={pageStitches} selected={selected} onSelect={onSelect} />
+            </Suspense>
+          </ErrorBoundary>
         )}
         {ownedPath && !ownedUrl && <StageLoader label={UI.renderingDocument} size="sm" />}
         <h3>{UI.evidenceTitle} ({clauses.length})</h3>

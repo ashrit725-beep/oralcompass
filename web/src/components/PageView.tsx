@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import * as pdfjs from "pdfjs-dist";
 import type { Stitch } from "../lib/types";
 import { circled } from "../lib/stitches";
+import { renderSequential, stitchKey } from "../lib/pdfRender";
 
 // Vite-friendly worker
 pdfjs.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url).toString();
@@ -9,6 +10,9 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.min.m
 interface Props { url: string; stitches: Stitch[]; selected?: Stitch; onSelect: (s: Stitch) => void; dim?: boolean }
 
 const norm = (s: string) => s.replace(/\s+/g, " ").trim().toLowerCase();
+
+/** One rendered page: the pdf.js page, its viewport, the visible canvas and an untouched copy of the render (the overlay restores from it). */
+interface RenderedPage { p: number; page: pdfjs.PDFPageProxy; vp: pdfjs.PageViewport; wrap: HTMLDivElement; canvas: HTMLCanvasElement; base: HTMLCanvasElement; rects: Map<string, Promise<number[][]>> }
 
 /** Find viewport rectangles for a quote on a page by matching the text layer. Returns [] when not found (margin-stitch fallback). */
 async function locate(page: pdfjs.PDFPageProxy, viewport: pdfjs.PageViewport, quote: string): Promise<number[][]> {
@@ -32,70 +36,117 @@ async function locate(page: pdfjs.PDFPageProxy, viewport: pdfjs.PageViewport, qu
   return rects;
 }
 
-/** The Page: real document pages; everything dimmed except stitched sentences, which stay at full opacity and wear chips. */
+const token = (name: string, fallback: string) => (typeof document === "undefined" ? fallback : getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback);
+
+/**
+ * The Page: real document pages; everything dimmed except stitched sentences, which stay at full opacity and wear chips.
+ * The canvases are rendered ONCE per `url` (web-correctness-16); the dim + highlight + chips are an overlay pass that repaints from the
+ * untouched copy of each page when the stitch set, the selection or `dim` changes, so typing in the clause filter or pressing a stitch no
+ * longer re-downloads and re-renders the document. A superseded run never appends pages (cancel checked after every await), its render
+ * task is cancelled and the pdf.js document is destroyed on cleanup.
+ */
 export function PageView({ url, stitches, selected, onSelect, dim = true }: Props) {
   const host = useRef<HTMLDivElement>(null);
+  const pages = useRef<RenderedPage[]>([]);
+  const overlayGen = useRef(0);
   const [status, setStatus] = useState("loading");
   const reduced = typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+  // the overlay reads the latest props without re-running the render effect
+  const latest = useRef({ stitches, selected, onSelect, dim });
+  latest.current = { stitches, selected, onSelect, dim };
+  const key = stitchKey(stitches);
 
+  /** Repaint one page's overlay from its untouched copy. Async only while locating quotes; the drawing itself is synchronous. */
+  async function paint(rp: RenderedPage, gen: number) {
+    const { stitches: all, selected: sel, dim: dimOn } = latest.current;
+    const pageStitches = dimOn ? all.filter((s) => s.page === rp.p) : [];
+    const located = await Promise.all(pageStitches.map((s) => {
+      let r = rp.rects.get(s.quote);
+      if (!r) { r = locate(rp.page, rp.vp, s.quote).catch(() => []); rp.rects.set(s.quote, r); }
+      return r;
+    }));
+    if (gen !== overlayGen.current) return;                     // a newer overlay pass owns the canvas now
+    const ctx = rp.canvas.getContext("2d")!;
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(rp.base, 0, 0); ctx.restore();
+    rp.wrap.querySelectorAll(".pdf-stitch").forEach((n) => n.remove());
+    if (!pageStitches.length) return;
+    const dpr = rp.canvas.width / rp.vp.width;
+    // dim everything, then re-draw highlighted regions at full opacity (+ outline)
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 0.33; ctx.fillStyle = token("--paper", "#f6f0e3"); ctx.fillRect(0, 0, rp.canvas.width, rp.canvas.height); ctx.restore();
+    pageStitches.forEach((s, i) => {
+      const rects = located[i];
+      const tag = document.createElement("button"); tag.type = "button"; tag.className = "pdf-stitch"; tag.textContent = `${s.doc} ${circled(s.n)}`;
+      tag.setAttribute("aria-label", `Stitch ${s.n}, ${s.topic.replace(/[_:]/g, " ")}, page ${rp.p}`);
+      tag.onclick = () => latest.current.onSelect(s);
+      if (rects.length) {
+        const minX = Math.min(...rects.map((r) => r[0])), minY = Math.min(...rects.map((r) => r[1]));
+        const maxX = Math.max(...rects.map((r) => r[0] + r[2])), maxY = Math.max(...rects.map((r) => r[1] + r[3]));
+        const pad = 2, on = sel?.id === s.id;
+        ctx.save(); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.drawImage(rp.base, (minX - pad) * dpr, (minY - pad) * dpr, (maxX - minX + 2 * pad) * dpr, (maxY - minY + 2 * pad) * dpr,
+          minX - pad, minY - pad, maxX - minX + 2 * pad, maxY - minY + 2 * pad);
+        ctx.strokeStyle = on ? token("--terracotta", "#b86a4b") : token("--ink", "#23303d"); ctx.lineWidth = on ? 3 : 1.5;
+        ctx.strokeRect(minX - pad, minY - pad, maxX - minX + 2 * pad, maxY - minY + 2 * pad); ctx.restore();
+        tag.style.top = `${Math.max(0, minY - 22)}px`; tag.style.left = `${Math.max(0, minX)}px`;
+      } else {
+        tag.classList.add("pdf-stitch-margin"); tag.style.top = "8px"; tag.style.right = "8px";   // fallback: margin stitch
+      }
+      rp.wrap.appendChild(tag);
+    });
+  }
+
+  // render the pages once per document
   useEffect(() => {
     let cancelled = false;
+    let task: { cancel: () => void } | null = null;
+    const el = host.current;
+    if (!el) return;
+    el.innerHTML = ""; pages.current = []; setStatus("loading");
+    const loading = pdfjs.getDocument(url);
     (async () => {
-      const el = host.current; if (!el) return;
-      el.innerHTML = "";
-      const doc = await pdfjs.getDocument(url).promise;
+      const doc = await loading.promise;
+      if (cancelled) return;
       const width = Math.min(el.clientWidth || 600, 900);
-      for (let p = 1; p <= doc.numPages; p++) {
-        if (cancelled) return;
+      const done = await renderSequential<RenderedPage>(doc.numPages, async (p) => {
         const page = await doc.getPage(p);
-        const base = page.getViewport({ scale: 1 });
-        const scale = width / base.width;
+        const scale = width / page.getViewport({ scale: 1 }).width;
         const vp = page.getViewport({ scale });
+        const dpr = window.devicePixelRatio || 1;
         const wrap = document.createElement("div"); wrap.className = "pdf-page"; wrap.dataset.page = String(p);
         wrap.style.width = `${vp.width}px`; wrap.style.height = `${vp.height}px`;
-        const canvas = document.createElement("canvas"); canvas.width = vp.width * devicePixelRatio; canvas.height = vp.height * devicePixelRatio;
+        const canvas = document.createElement("canvas"); canvas.width = vp.width * dpr; canvas.height = vp.height * dpr;
         canvas.style.width = `${vp.width}px`; canvas.style.height = `${vp.height}px`;
-        const ctx = canvas.getContext("2d")!; ctx.scale(devicePixelRatio, devicePixelRatio);
-        await page.render({ canvasContext: ctx, viewport: vp }).promise;
+        const ctx = canvas.getContext("2d")!; ctx.scale(dpr, dpr);
+        const rt = page.render({ canvasContext: ctx, viewport: vp }); task = rt;
+        await rt.promise; task = null;
+        const base = document.createElement("canvas"); base.width = canvas.width; base.height = canvas.height; base.getContext("2d")!.drawImage(canvas, 0, 0);
         wrap.appendChild(canvas);
-        const pageStitches = stitches.filter((s) => s.page === p);
-        if (dim && pageStitches.length) {
-          // dim everything, then re-draw highlighted regions at full opacity (+ outline)
-          const full = document.createElement("canvas"); full.width = canvas.width; full.height = canvas.height; full.getContext("2d")!.drawImage(canvas, 0, 0);
-          ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 0.33; ctx.fillStyle = "#faf8f3"; ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.restore();
-          for (const s of pageStitches) {
-            const rects = await locate(page, vp, s.quote);
-            const tag = document.createElement("button"); tag.type = "button"; tag.className = "pdf-stitch"; tag.textContent = `${s.doc} ${circled(s.n)}`;
-            tag.setAttribute("aria-label", `Stitch ${s.n}, ${s.topic.replace(/[_:]/g, " ")}, page ${p}`);
-            tag.onclick = () => onSelect(s);
-            if (rects.length) {
-              const minX = Math.min(...rects.map(r => r[0])), minY = Math.min(...rects.map(r => r[1]));
-              const maxX = Math.max(...rects.map(r => r[0] + r[2])), maxY = Math.max(...rects.map(r => r[1] + r[3]));
-              const pad = 2;
-              ctx.save(); ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
-              ctx.drawImage(full, (minX - pad) * devicePixelRatio, (minY - pad) * devicePixelRatio, (maxX - minX + 2 * pad) * devicePixelRatio, (maxY - minY + 2 * pad) * devicePixelRatio,
-                minX - pad, minY - pad, maxX - minX + 2 * pad, maxY - minY + 2 * pad);
-              ctx.strokeStyle = selected?.id === s.id ? "#b45309" : "#1f2a37"; ctx.lineWidth = selected?.id === s.id ? 3 : 1.5;
-              ctx.strokeRect(minX - pad, minY - pad, maxX - minX + 2 * pad, maxY - minY + 2 * pad); ctx.restore();
-              tag.style.top = `${Math.max(0, minY - 22)}px`; tag.style.left = `${Math.max(0, minX)}px`;
-            } else {
-              tag.classList.add("pdf-stitch-margin"); tag.style.top = "8px"; tag.style.right = "8px";   // fallback: margin stitch
-            }
-            wrap.appendChild(tag);
-          }
-        }
-        el.appendChild(wrap);
-      }
-      if (!cancelled) setStatus("ready");
-    })().catch((e) => setStatus(`error: ${e.message}`));
-    return () => { cancelled = true; };
-  }, [url, stitches, selected?.id, dim]);
+        return { p, page, vp, wrap, canvas, base, rects: new Map() };
+      }, (_p, rp) => {
+        el.appendChild(rp.wrap); pages.current.push(rp);
+        void paint(rp, overlayGen.current);
+      }, () => cancelled);
+      if (done) setStatus("ready");
+    })().catch((e) => { if (!cancelled && e?.name !== "RenderingCancelledException") setStatus(`error: ${e.message}`); });
+    return () => {
+      cancelled = true;
+      task?.cancel();
+      void loading.destroy();      // also destroys the document and frees the worker's copy
+    };
+  }, [url]);
 
+  // the overlay: repaint every rendered page when the stitch set, the selection or the dim switch changes
+  useEffect(() => {
+    const gen = ++overlayGen.current;
+    pages.current.forEach((rp) => { void paint(rp, gen); });
+  }, [key, selected?.id, dim]);
+
+  // scroll to the selected stitch's page once it exists
   useEffect(() => {
     if (!selected || !host.current) return;
     const target = host.current.querySelector<HTMLElement>(`.pdf-page[data-page="${selected.page}"]`);
     target?.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
-  }, [selected?.id]);
+  }, [selected?.id, status === "ready"]);
 
   return (
     <section className="page" aria-label="Plan document">
