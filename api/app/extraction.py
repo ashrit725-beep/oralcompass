@@ -5,7 +5,9 @@ Pipeline stages, in order, each reported to the caller through `set_status`:
 
 * `read_text`: PyMuPDF per page. A page with fewer than 20 characters counts as scanned; more than half scanned → failed
   ("no text layer (scanned document)").
-* `redact`: `redaction.py` plus the user's extra terms. Only redacted text is ever sent to a model.
+* `redact`: `redaction.redact_pages` with the identifiers the person's device confirmed (client_redaction), the terms they typed, and the
+  server's own patterns as a safety net. Only redacted text is ever sent to a model. The stage records `redaction_summary` (distinct
+  identifiers removed, by category, masked values only) before any model call, so the progress view can show the count.
 * `identify_fields`:
     - DEMO mode (no OpenRouter key, or ORALCOMPASS_LLM_PROVIDER=none): `FixtureExtractor.extract(sha256)` returns the stored
       fixture model when the checksum matches fixtures/documents/*.pdf (HB26, SM26, NW26, TW26); otherwise every field is
@@ -39,7 +41,7 @@ from typing import Callable, Optional
 import httpx
 
 from .lint_runtime import guard
-from .redaction import redact
+from .redaction import redact_pages
 from .templates import EXTRACTION_FAILED_MODEL, EXTRACTION_FAILED_SCANNED, EXTRACTION_STAGE_LABELS
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -779,7 +781,7 @@ def scrub_notes(notes: list[str]) -> tuple[list[str], int]:
 def new_status(mode: str, pages: int = 0) -> dict:
     return {"status": "queued", "stage_index": 0, "stages": [{"key": k, "label": l, "done": False} for k, l in STAGES], "pages": pages, "pages_done": 0,
             "quotes_total": 0, "quotes_verified": 0, "fields": [], "reason": None, "mode": mode, "model": llm_model() if mode == "live" else None,
-            "structure": {}, "counts": None, "demo_fixture_match": False, "notes": [], "notes_dropped": 0}
+            "structure": {}, "counts": None, "demo_fixture_match": False, "notes": [], "notes_dropped": 0, "redaction_summary": None}
 
 
 def _advance(status: dict, key: str) -> dict:
@@ -791,8 +793,10 @@ def _advance(status: dict, key: str) -> dict:
 
 
 def run_extraction(pdf_path: Path, sha256: str, extra_terms: list[str], set_status: Callable[[dict], None], mode: Optional[str] = None,
-                   fixtures: Optional[FixtureExtractor] = None, live_extractor: Optional[OpenRouterExtractor] = None) -> dict:
-    """Run every stage, persisting progress through set_status. Returns the terminal ExtractionStatus dict."""
+                   fixtures: Optional[FixtureExtractor] = None, live_extractor: Optional[OpenRouterExtractor] = None,
+                   confirmed: Optional[list[dict]] = None) -> dict:
+    """Run every stage, persisting progress through set_status. Returns the terminal ExtractionStatus dict. `confirmed` is the list of
+    {category, value} identifiers the person's device found and confirmed; they and `extra_terms` are removed before any model call."""
     mode = mode or llm_mode()
     fixtures = fixtures or FixtureExtractor()
     st = new_status(mode)
@@ -812,7 +816,8 @@ def run_extraction(pdf_path: Path, sha256: str, extra_terms: list[str], set_stat
         return st
 
     set_status(_advance(st, "redacting"))
-    redacted = [redact(t, extra_terms)[0] for t in pages]
+    redacted, st["redaction_summary"], _ = redact_pages(pages, confirmed, extra_terms)
+    set_status(st)                              # the count is visible while the model call runs
 
     set_status(_advance(st, "identifying_fields"))
     fixture = fixtures.extract(sha256)
@@ -820,7 +825,7 @@ def run_extraction(pdf_path: Path, sha256: str, extra_terms: list[str], set_stat
     if mode == "demo":
         if fixture is None:
             st["fields"], st["structure"] = skeleton_fields()
-            st["structure"]["ignored_wording"] = injected_sentences(pages)
+            st["structure"]["ignored_wording"] = injected_sentences(redacted)   # listed from the redacted text: no identifier comes back
             st["counts"] = counts(st["fields"])
             set_status(_advance(st, "demo_no_model"))
             return st
@@ -852,7 +857,7 @@ def run_extraction(pdf_path: Path, sha256: str, extra_terms: list[str], set_stat
     st["fields"] = fields
     st["quotes_total"], st["quotes_verified"] = meta["quotes_total"], meta["quotes_verified"]
     st["structure"] = verify_structure(st["structure"], pages)
-    st["structure"]["ignored_wording"] = meta["ignored_wording"]
+    st["structure"]["ignored_wording"] = injected_sentences(redacted)   # listed from the redacted text: no identifier comes back
     st["counts"] = counts(fields)
     set_status(_advance(st, "ready"))
     return st

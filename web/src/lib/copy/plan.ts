@@ -219,6 +219,7 @@ export const PLAN = {
 /** Word lists for the treatment-plan reader (kept outside PLAN, whose values are strings or formatters). */
 export const PLAN_READ = {
   removed: { name_line: "a name line", member_id: "a member number", ssn: "a social security number", dob: "a date of birth", phone: "a phone number",
-             email: "an email address", address: "a street address" } as Record<string, string>,
+             email: "an email address", address: "a street address", group_number: "a group number", claim_number: "a claim number",
+             account_number: "an account number" } as Record<string, string>,
   confidence: { printed_code: "Matched by the printed code", wording: "Matched by the wording", ambiguous: "Several identifiers fit", not_matched: "Not matched" } as Record<string, string>,
 } as const;

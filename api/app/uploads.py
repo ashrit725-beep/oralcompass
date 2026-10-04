@@ -7,6 +7,12 @@ never under web/public; the only way to the bytes is GET /me/documents/{id}/file
 Published plan versions are immutable records (`plan_version`): UP1, UP2, ... numbered per owner. A published plan dict has the
 same shape as fixtures/plans/*.json and loads through the engine's `load_plan`, so stitches read "UP1#p6" and the records router
 treats "upload:<document_id>" exactly like a preset code.
+
+Client-side redaction (owner request 05:40): the upload may carry `client_redaction` (multipart, JSON {"version": 1, "identifiers":
+[{"category", "value"}], "extra_terms": [...]}): the identifiers the person's device found and confirmed before anything left it. The values
+are stored privately next to the PDF (<data dir>/<sub>/docs/<id>.redaction.json, mode 0600), never in the document record, never logged and
+never returned: responses carry categories, counts and masked values only (`redaction_summary`). Every model call removes every occurrence
+of every confirmed value, then the server's own patterns run as a safety net. Typed terms (PUT /redaction) are stored the same way.
 """
 from __future__ import annotations
 
@@ -35,7 +41,7 @@ from oralcompass_engine import PlanModel, load_plan  # noqa: E402
 from oralcompass_engine.rules import coverage_rules  # noqa: E402
 from .extraction import (REQUIRED_PATHS, FixtureExtractor, _advance, llm_mode, llm_model, new_status, normalize, page_count, read_text, run_extraction,
                          skeleton_fields, verify_quote)
-from .redaction import redact
+from .redaction import InvalidClientRedaction, parse_client_redaction, redact_pages
 from .store import NOT_FOUND, repo
 from . import llm_guard
 from .templates import (DEMO_EXTRACTION_RIBBON, DEMO_NO_MODEL_NOTE, EXTRACTION_FAILED_MODEL, EXTRACTION_FAILED_UNREADABLE, IGNORED_WORDING_NOTE,
@@ -96,10 +102,67 @@ def _owned_upload(user: User, doc_id: str) -> dict:
     return doc
 
 
-def _preview(pages: list[str], extra_terms: list[str], fallback: str = "") -> dict:
-    text = "\n".join(pages).strip() or fallback
-    redacted, removed = redact(text, extra_terms)
-    return {"text": redacted[:PREVIEW_CHARS], "removed": removed, "note": REDACTION_NOTE}
+def _preview(pages: list[str], extra_terms: list[str], fallback: str = "", confirmed: Optional[list[dict]] = None) -> dict:
+    """The redaction preview: the first PREVIEW_CHARS of the redacted text, the legacy labels, and the authoritative summary (distinct
+    identifiers removed from what a model receives; masked values only)."""
+    texts = list(pages) if "".join(pages).strip() else [fallback]
+    redacted, summary, removed = redact_pages(texts, confirmed, extra_terms)
+    return {"text": "\n".join(redacted).strip()[:PREVIEW_CHARS], "removed": removed, "note": REDACTION_NOTE, "summary": summary}
+
+
+# ---------------------------------------------------------------- private redaction values (never in the record, never in a response)
+INVALID_CLIENT_REDACTION = {"error": "invalid_client_redaction"}      # one constant body: the input is never echoed
+
+
+class RedactionUnavailable(Exception):
+    """The private redaction file of a document that has one cannot be read: nothing is sent to a model (fail closed)."""
+
+
+def redaction_path(sub: str, doc_id: str) -> Path:
+    return data_dir() / sub / "docs" / f"{doc_id}.redaction.json"
+
+
+def save_redaction(sub: str, doc_id: str, stored: dict) -> None:
+    """Atomic, owner-only write of {identifiers, client_extra_terms, extra_terms} next to the document's PDF."""
+    path = redaction_path(sub, doc_id)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(f".{path.name}.{uuid.uuid4().hex}.tmp")
+    fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            json.dump({"version": 1, "identifiers": stored.get("identifiers") or [], "client_extra_terms": stored.get("client_extra_terms") or [],
+                       "extra_terms": stored.get("extra_terms") or []}, f)
+        os.replace(tmp, path)
+    except BaseException:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
+
+
+def load_redaction(sub: str, doc: dict) -> dict:
+    """The stored redaction of a document: {identifiers, client_extra_terms, extra_terms}. A record from before client-side redaction has
+    no file (its typed terms are in the record); a record that has one and cannot read it raises RedactionUnavailable."""
+    legacy_terms = [t for t in (doc.get("extra_terms") or []) if isinstance(t, str)]
+    if not doc.get("redaction_stored"):
+        return {"identifiers": [], "client_extra_terms": [], "extra_terms": legacy_terms}
+    try:
+        data = json.loads(redaction_path(sub, doc["id"]).read_text(encoding="utf-8"))
+        ids = [{"category": i["category"], "value": i["value"]} for i in data["identifiers"]]
+        client_terms = [t for t in data["client_extra_terms"] if isinstance(t, str)]
+        terms = [t for t in data["extra_terms"] if isinstance(t, str)]
+    except (OSError, ValueError, KeyError, TypeError):
+        raise RedactionUnavailable()
+    return {"identifiers": ids, "client_extra_terms": client_terms, "extra_terms": terms + [t for t in legacy_terms if t not in terms]}
+
+
+def all_terms(stored: dict) -> list[str]:
+    out: list[str] = []
+    for t in (stored.get("client_extra_terms") or []) + (stored.get("extra_terms") or []):
+        if t not in out:
+            out.append(t)
+    return out
 
 
 def plan_from_dict(d: dict) -> PlanModel:
@@ -169,6 +232,18 @@ async def upload_document(request: Request, file: UploadFile = File(...), sha256
     owned = [d for d in repo.list_owned(user.sub, "document") if d.get("kind") == "upload"]
     if len(owned) >= MAX_UPLOADS_PER_OWNER:
         raise HTTPException(status_code=429, detail={"error": "upload_quota", "max_uploads": MAX_UPLOADS_PER_OWNER})
+    # client_redaction is read from the already-parsed form (not a typed parameter), so a file part, a repeated field or any malformed value
+    # gets the same constant 422 before anything is stored, and FastAPI's validation body (which echoes input) never sees it
+    form = await request.form()
+    raw_redaction = form.getlist("client_redaction")
+    client_redaction = None
+    if raw_redaction:
+        if len(raw_redaction) != 1 or not isinstance(raw_redaction[0], str):
+            raise HTTPException(status_code=422, detail=INVALID_CLIENT_REDACTION)
+        try:
+            client_redaction = parse_client_redaction(raw_redaction[0])
+        except InvalidClientRedaction:
+            raise HTTPException(status_code=422, detail=INVALID_CLIENT_REDACTION)
     chunks, size = [], 0
     while True:
         chunk = await file.read(1024 * 1024)
@@ -208,18 +283,30 @@ async def upload_document(request: Request, file: UploadFile = File(...), sha256
         os.chmod(path, 0o600)
     except OSError:
         pass
+    stored = {"identifiers": (client_redaction or {}).get("identifiers") or [], "client_extra_terms": (client_redaction or {}).get("extra_terms") or [],
+              "extra_terms": []}
+    try:
+        await run_in_threadpool(save_redaction, user.sub, doc_id, stored)
+    except OSError:
+        path.unlink(missing_ok=True)            # no document without its redaction: nothing half-stored stays behind
+        log.warning("upload refused: redaction could not be stored")
+        raise HTTPException(status_code=507, detail={"error": "storage_full"})
     page_texts, _ = await run_in_threadpool(read_text, path)
-    preview = await run_in_threadpool(_preview, page_texts, [], text_preview)
+    preview = await run_in_threadpool(_preview, page_texts, all_terms(stored), text_preview, stored["identifiers"])
     filename = _safe_name(file.filename)
     item = repo.put(user.sub, "document", {
         "id": doc_id, "kind": "upload", "type": "plan_document_upload", "filename": filename, "label": filename, "sha256": digest, "pages": n_pages,
-        "size_bytes": size, "uploaded_at": _now(), "extraction_status": "uploaded", "redaction_preview": preview,
+        "size_bytes": size, "uploaded_at": _now(), "extraction_status": "uploaded", "redaction_preview": preview, "redaction_summary": preview["summary"],
+        "redaction_stored": True, "client_redaction": {"version": 1, "identifiers": len(stored["identifiers"]), "extra_terms": len(stored["client_extra_terms"])}
+        if client_redaction else None,
         "extra_terms": [], "demo_fixture_match": fixtures.extract(digest) is not None, "extraction": None, "plan_model": None,
         "published_versions": [], "latest_version_id": None, "fields_needing_confirmation": [],
     })
-    log.info("upload stored id=%s pages=%d bytes=%d", doc_id, n_pages, size)
+    log.info("upload stored id=%s pages=%d bytes=%d device_identifiers=%d removed=%d", doc_id, n_pages, size, len(stored["identifiers"]),
+             preview["summary"]["total"])
     return {"id": item["id"], "sha256": digest, "pages": n_pages, "filename": filename, "extraction_status": "uploaded",
-            "redaction_preview": item["redaction_preview"], "demo_fixture_match": item["demo_fixture_match"], "mode": llm_mode()}
+            "redaction_preview": item["redaction_preview"], "redaction_summary": item["redaction_summary"], "demo_fixture_match": item["demo_fixture_match"],
+            "mode": llm_mode()}
 
 
 @router.put("/me/documents/{doc_id}/redaction")
@@ -230,11 +317,18 @@ def put_redaction(doc_id: str, body: RedactionIn, user: User = Depends(current_u
         # the running extraction already redacted with the earlier terms; changing them now would not match what was sent (api-correctness-8)
         raise HTTPException(status_code=409, detail={"error": "extraction_in_progress", "status": current})
     terms = body.clean()
+    try:
+        stored = load_redaction(user.sub, doc)
+    except RedactionUnavailable:
+        raise HTTPException(status_code=409, detail={"error": "redaction_unavailable"})
+    stored["extra_terms"] = terms                   # typed terms live next to the PDF, never in the record (which GET /me/documents returns)
+    save_redaction(user.sub, doc_id, stored)
     page_texts, _ = read_text(doc_path(user.sub, doc_id))
-    doc["extra_terms"] = terms
-    doc["redaction_preview"] = _preview(page_texts, terms)
+    doc["extra_terms"], doc["redaction_stored"] = [], True
+    doc["redaction_preview"] = _preview(page_texts, all_terms(stored), confirmed=stored["identifiers"])
+    doc["redaction_summary"] = doc["redaction_preview"]["summary"]
     repo.put(user.sub, "document", doc)
-    return {"redaction_preview": doc["redaction_preview"]}
+    return {"redaction_preview": doc["redaction_preview"], "redaction_summary": doc["redaction_summary"]}
 
 
 # ---------------------------------------------------------------- extraction
@@ -276,6 +370,8 @@ def _run(sub: str, doc_id: str, mode: str, limit_reason: Optional[str] = None) -
             extraction["limit_reached"] = limit_reason
         # merge only the extraction fields into the CURRENT record (never re-create a deleted one, never overwrite a newer redaction)
         fields = {"extraction": extraction, "extraction_status": st["status"]}
+        if st.get("redaction_summary") is not None:
+            fields["redaction_summary"] = st["redaction_summary"]     # the Documents card shows the count of the run that reached the model
         if st["status"] in ("ready", "failed", "demo_no_model"):
             fields["fields_needing_confirmation"] = undecided_required(st.get("fields") or [])   # the Documents list shows them from the start
         if repo.patch_if_exists(sub, "document", doc_id, fields) is None:
@@ -283,7 +379,8 @@ def _run(sub: str, doc_id: str, mode: str, limit_reason: Optional[str] = None) -
         log.info("extraction id=%s stage=%s", doc_id, st["status"])
 
     try:
-        run_extraction(doc_path(sub, doc_id), doc["sha256"], doc.get("extra_terms") or [], set_status, mode=mode, fixtures=fixtures)
+        stored = load_redaction(sub, doc)           # RedactionUnavailable → the failed path below: nothing reaches a model
+        run_extraction(doc_path(sub, doc_id), doc["sha256"], all_terms(stored), set_status, mode=mode, fixtures=fixtures, confirmed=stored["identifiers"])
     except _DocumentGone:
         log.info("extraction id=%s stopped: document deleted", doc_id)
     except Exception as e:                      # never leak document content; the type name is enough for the operator
