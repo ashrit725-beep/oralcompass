@@ -1,21 +1,44 @@
+import { useState, type ReactNode } from "react";
 import { LANDMARKS, type LandmarkId } from "../../lib/copy";
+import { ArtPlate } from "./ArtPlate";
 import { AtlasDefs, Compass, Grain, Island, Scenery, Vignette } from "./Paper";
 
-interface Props { selected: LandmarkId | null; onSelect: (id: LandmarkId) => void; summary: Partial<Record<LandmarkId, string>>; compact?: boolean }
+interface Props {
+  selected: LandmarkId | null; onSelect: (id: LandmarkId) => void;
+  /** Text summary per landmark (goes into the button's accessible name). */
+  summary: Partial<Record<LandmarkId, string>>;
+  /** Optional rich summary per landmark (e.g. a <Money> with its evidence) rendered instead of the plain text. */
+  summaryNode?: Partial<Record<LandmarkId, ReactNode>>;
+  compact?: boolean;
+}
 
 const W = 1000, H = 520;
 const POS: Record<LandmarkId, { x: number; y: number }> = { harbor: { x: 150, y: 330 }, bridge: { x: 360, y: 215 }, cove: { x: 560, y: 350 }, lookout: { x: 740, y: 180 }, lighthouse: { x: 880, y: 330 } };
 
-/** My plan: five painted landmarks on one coast. Familiar insurance terms stay the prominent label; the place name is the small one. */
-export function PlanAtlas({ selected, onSelect, summary, compact = false }: Props) {
+/**
+ * My plan: five painted landmarks on one coast. Familiar insurance terms stay the prominent label; the place name is the small one.
+ * The lighthouse landmark is the painted `island-lighthouse` plate (ArtPlate: webp → png → the SVG lighthouse below, addendum §C3);
+ * the beam animates only in the SVG fallback (class `motion-drift`, off under reduced motion). The SVG is aria-hidden; the buttons are the UI.
+ */
+export function PlanAtlas({ selected, onSelect, summary, summaryNode, compact = false }: Props) {
   const pct = (v: number, total: number) => `${(v / total) * 100}%`;
+  const [plateFailed, setPlateFailed] = useState(false);
+  const svgLighthouse = (
+    <g>
+      <path d="M -14 40 L -9 -40 L 9 -40 L 14 40 Z" fill="var(--paper)" stroke="var(--ink)" strokeWidth="1.2" />
+      {[-20, 0, 20].map((y) => <rect key={y} x={-12} y={y} width={24} height={8} fill="var(--terracotta)" />)}
+      <rect x={-10} y={-50} width={20} height={12} fill="var(--gold)" />
+      <path d="M -10 -50 L 0 -60 L 10 -50 Z" fill="var(--ink)" />
+      <path className="beam motion-drift" d="M 10 -46 L 120 -80 L 120 -20 Z" fill="var(--gold)" opacity="0.28" />
+    </g>
+  );
   return (
     <div className={`map plan-map ${compact ? "is-compact" : ""}`} role="group" aria-label="Plan map">
       <svg className="map-paint" viewBox={`0 0 ${W} ${H}`} aria-hidden="true" focusable="false" preserveAspectRatio="xMidYMid meet">
         <AtlasDefs />
         <rect width={W} height={H} fill="url(#oc-water)" />
         <Scenery w={W} h={H} horizon={0.34} />
-        <rect width={W} height={H} fill="url(#oc-ripples)" opacity="0.45" className="ripples" />
+        <rect width={W} height={H} fill="url(#oc-ripples)" opacity="0.45" className="ripples motion-drift" />
         {/* coastline */}
         <g filter="url(#oc-wobble)">
           <path d={`M 0 ${H} L 0 400 C 120 380 160 300 260 290 C 360 280 380 240 470 250 C 560 262 600 330 700 300 C 790 272 820 220 900 240 C 950 252 980 300 ${W} 280 L ${W} ${H} Z`} fill="url(#oc-land)" />
@@ -51,15 +74,12 @@ export function PlanAtlas({ selected, onSelect, summary, compact = false }: Prop
           <path d="M 0 -40 l 0 -16" stroke="var(--ink)" strokeWidth="1.5" />
           <path d="M 0 -56 l 16 5 l -16 5 Z" fill="var(--gold)" />
         </g>
-        {/* lighthouse */}
+        {/* lighthouse: painted plate, SVG fallback */}
         <g transform={`translate(${POS.lighthouse.x} ${POS.lighthouse.y})`}>
-          <path d="M -14 40 L -9 -40 L 9 -40 L 14 40 Z" fill="var(--paper)" stroke="var(--ink)" strokeWidth="1.2" />
-          {[-20, 0, 20].map((y) => <rect key={y} x={-12} y={y} width={24} height={8} fill="var(--terracotta)" />)}
-          <rect x={-10} y={-50} width={20} height={12} fill="var(--gold)" />
-          <path d="M -10 -50 L 0 -60 L 10 -50 Z" fill="var(--ink)" />
-          <path className="beam" d="M 10 -46 L 120 -80 L 120 -20 Z" fill="var(--gold)" opacity="0.28" />
+          <ArtPlate slot="island-lighthouse" x={-120} y={-135} w={230} h={175} preserveAspectRatio="xMidYMax meet" fallback={svgLighthouse} onFallback={() => setPlateFailed(true)} />
         </g>
-        <Compass x={W - 60} y={58} />
+        {plateFailed && <Compass x={W - 60} y={58} />}
+        {!plateFailed && <Compass x={W - 60} y={58} size={40} />}
         <Grain />
         <Vignette />
       </svg>
@@ -70,7 +90,7 @@ export function PlanAtlas({ selected, onSelect, summary, compact = false }: Prop
                     aria-pressed={selected === l.id} aria-label={`${l.term} (${l.place})${summary[l.id] ? `: ${summary[l.id]}` : ""}`} onClick={() => onSelect(l.id)}>
               <span className="lm-term">{l.term}</span>
               <span className="lm-place">{l.place}</span>
-              {summary[l.id] && <span className="lm-sum">{summary[l.id]}</span>}
+              {(summaryNode?.[l.id] ?? summary[l.id]) && <span className="lm-sum">{summaryNode?.[l.id] ?? summary[l.id]}</span>}
             </button>
           ))}
         </div>
@@ -79,9 +99,9 @@ export function PlanAtlas({ selected, onSelect, summary, compact = false }: Prop
         <ol className="landmark-list" aria-label="Landmarks">
           {LANDMARKS.map((l) => (
             <li key={l.id}>
-              <button type="button" className={`landmark-row ${selected === l.id ? "is-selected" : ""}`} aria-pressed={selected === l.id}
+              <button type="button" className={`landmark-row unstyled ${selected === l.id ? "is-selected" : ""}`} aria-pressed={selected === l.id}
                       aria-label={`${l.term} (${l.place})${summary[l.id] ? `: ${summary[l.id]}` : ""}`} onClick={() => onSelect(l.id)}>
-                <span className="lm-term">{l.term}</span><span className="lm-place">{l.place}</span><span className="lm-sum">{summary[l.id] ?? ""}</span>
+                <span className="lm-term">{l.term}</span><span className="lm-place">{l.place}</span><span className="lm-sum">{summaryNode?.[l.id] ?? summary[l.id] ?? ""}</span>
               </button>
             </li>
           ))}
