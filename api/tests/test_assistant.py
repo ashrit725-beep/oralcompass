@@ -174,9 +174,9 @@ def test_advice_question_gets_the_fixed_information_template(alex):
         j = ask(q, estimate_id=est["id"], line_index=1).json()
         assert j["intent"] == "advice_request", q
         assert len(j["blocks"]) == 1 and j["blocks"][0]["type"] == "template" and j["blocks"][0]["key"] == "advice_question"
-        assert j["blocks"][0]["label"] == ADVICE_LABEL == "Information, not a choice"
+        assert j["blocks"][0]["label"] == ADVICE_LABEL == "Only costs, no picking"
         text = j["blocks"][0]["text"]
-        assert text.startswith("OralCompass provides information, not a choice.")
+        assert text.startswith("OralCompass only shows costs. It does not pick for you.")
         assert not MONEY_TEXT.search(text) and "{{ref" not in text and "—" not in text
         assert not any(b["type"] == "sentence" for b in j["blocks"])
         assert "get_estimate_line(line 1)" in j["tools_used"]           # facts were still gathered deterministically first
@@ -210,7 +210,7 @@ def test_advice_template_reads_as_plain_sentences_from_engine_fields(alex):
     from app.lint_runtime import guard as lint_guard
     est = alex["est"]
     text = ask("Should I get the crown?", estimate_id=est["id"], line_index=1).json()["blocks"][0]["text"]
-    assert text == ("OralCompass provides information, not a choice. Here is what the supplied documents and inputs show. "
+    assert text == ("OralCompass only shows costs. It does not pick for you. Here is what the costs are. "
                     "For Crown, porcelain/ceramic (tooth 19), the estimate is complete. "
                     "Its network and coinsurance steps are each tied to a sentence in the plan document (ML26, page 25). "
                     "Each amount is on the estimate line beside its evidence label.")

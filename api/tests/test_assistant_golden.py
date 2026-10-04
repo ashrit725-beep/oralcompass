@@ -172,7 +172,7 @@ def test_golden_question(scopes, case):
     j = _ask(scopes, case)
     assert j["mode"] == "demo", case["id"]
     assert j["intent"] == case["expected_intent"] or j["intent"] in case.get("also_accept", []), (case["id"], j["intent"])
-    text, refs = _check_simple(case, j, 2)
+    text, refs = _check_simple(case, j, 3)     # owner rule: short sentences, up to three in a lead
     low = text.lower()
     if j["intent"] == case["expected_intent"]:                     # must_contain describes the expected intent's answer
         for w in case["must_contain"]:

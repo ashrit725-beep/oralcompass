@@ -1,9 +1,9 @@
 """Server-side user-facing strings and templates. Linted by tools/advice_lint.py (information only)."""
-FOOTER = "Information from your documents and your inputs. Not advice. Not the plan's determination."
+FOOTER = "These numbers come from your plan papers and what you typed. The plan makes the final call on what it pays."
 PRESET_BANNER = "Listed here means the document is public, not that you are eligible to enroll."
 COMPARISON_BANNER = "Columns are in the order you selected. Inputs are entered for each plan separately; nothing is copied between plans."
 
-ADVICE_INTRO = "OralCompass provides information, not a choice. Here is what the supplied documents and inputs show."
+ADVICE_INTRO = "OralCompass only shows costs. It does not pick for you. Here is what the costs are."
 ADVICE_LINE_STATUS = {
     "estimate": "For {name}, the estimate is complete.",
     "unresolved": "For {name}, the estimate is waiting for information, so no amount is shown yet.",

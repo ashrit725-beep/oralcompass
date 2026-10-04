@@ -100,8 +100,8 @@ WHERE_FROM = {
 WHAT_IF = ("This assistant does not compute hypotheticals. The Harbor Light has a network 'what if', labeled as assumed on the estimate; "
            "other figures are entered as a new benefit statement or allowed amount, with their source.")
 CLARIFY = "This question could refer to {k} procedures on the route: {names}. Which one?"
-OUT_OF_SCOPE = ("This assistant answers about the selected procedure, its checkpoints and the plan clauses behind them. "
-                "Clinical questions are for your dental team.")
+OUT_OF_SCOPE = ("OralCompass only shows costs, not health answers. "
+                "It shows what you pay, what insurance pays and the plan rules behind each cost.")
 NO_ESTIMATE_IN_SCOPE = "No estimate is selected. The plan's clauses can still be opened from the Documents view."
 
 # Suggested questions per step key (rule code), shown as chips under the composer.
@@ -118,97 +118,98 @@ SUGGESTIONS = {
     "default": ["What does this step mean?", "Where does this figure come from?", "What does the plan document say here?"],
 }
 
-ADVICE_LABEL = "Information, not a choice"
+ADVICE_LABEL = "Only costs, no picking"
 
 # ---------- plain words: the "simple" lead block (kind "simple") shown first in every answer ----------
-# Everyday words, short sentences, no bare amounts (every figure is a {{ref:n}} the client renders with its badge), information only.
+# Words an 8-year-old knows, short sentences, Flesch-Kincaid grade 4 or lower (tested). No advice: only what the numbers are and where they
+# come from. The two big numbers are "you pay" and "insurance pays". Every figure is a {{ref:n}} the client renders with its badge.
 SIMPLE = {
-    "advice_request": ("OralCompass explains what your documents say; it does not choose for you. Here is what the documents say about this.",
-                       "OralCompass explains your documents; it does not choose for you."),
-    "out_of_scope": ("This is a question for your dentist; OralCompass only explains your plan and your costs.",
-                     "Please ask your dentist; OralCompass only explains your plan and your costs."),
-    "what_if_requested": ("OralCompass does not guess at other numbers. It only explains the figures on your estimate and in your documents.",
-                          "It only explains the numbers you have now."),
-    "clarify": ("Your question could be about more than one treatment. The treatments it could mean are listed below.",
-                "This could be about more than one treatment."),
-    "no_estimate": ("There is no cost estimate for this plan yet. Your plan's own rules can still be read on the Documents tab.",
-                    "There is no cost estimate yet."),
+    "advice_request": ("OralCompass only shows costs. It does not pick for you.",
+                       "This app only shows costs."),
+    "out_of_scope": ("OralCompass only shows costs, not health answers. It shows what you pay and what insurance pays.",
+                     "OralCompass only shows costs, not health answers."),
+    "what_if_requested": ("The app does not make up new numbers. It only shows the numbers in your papers.",
+                          "It only shows the numbers you have."),
+    "clarify": ("Your question could be about more than one thing. Each one is in the list below.",
+                "It could mean more than one thing."),
+    "no_estimate": ("There is no estimate for this plan yet. The plan's rules are on the Documents tab.",
+                    "There is no estimate yet."),
     "plan_value": "Your plan's {term} is {{ref:0}}.",
-    "total_one": "For the {name}, you pay {{ref:0}} and the plan pays {{ref:1}}.",
+    "total_one": "For the {name}, you pay {{ref:0}}. Insurance pays {{ref:1}}.",
     "total_many_you": "You pay {parts}.",
-    "total_many_plan": "The plan pays {parts}.",
+    "total_many_plan": "The insurance pays {parts}.",
     "total_simpler_one": "You pay {{ref:0}} for the {name}.",
     "total_simpler_many": "You pay {parts}.",
-    "remaining_max": "Your plan has {{ref:0}} of its yearly maximum (the most it pays in a year) left now.",
-    "remaining_max_after": "Your plan has {{ref:0}} of its yearly maximum left now and {{ref:1}} after the planned work. The maximum is the most it pays in a year.",
-    "remaining_ded": "You have {{ref:0}} of your deductible (the part you pay before the plan pays) left to pay.",
-    "remaining_none": ("Your documents do not show how much of your deductible or yearly maximum is left yet. A benefit statement from your plan shows what was used this year.",
-                       "Your documents do not show what is left yet."),
-    "remaining_ded_simpler": "You have {{ref:0}} of your deductible left.",
-    "remaining_simpler": "Your plan has {{ref:0}} left to pay this year.",
-    "line": "For the {name}, you pay {{ref:0}} and the plan pays {{ref:1}}.",
+    "remaining_max": "Insurance can still pay {{ref:0}} this year. That is what is left of the maximum.",
+    "remaining_max_after": "Insurance can still pay up to {{ref:0}} of its maximum. When this work is done, {{ref:1}} is left.",
+    "remaining_ded": "You still pay the first {{ref:0}} yourself. That part is your deductible.",
+    "remaining_none": ("Your papers do not say what is left of the deductible or the maximum. So we do not have that number yet. It is blank.",
+                       "We do not know what is left yet."),
+    "remaining_ded_simpler": "You pay the first {{ref:0}} yourself.",
+    "remaining_simpler": "The insurance can still pay {{ref:0}} this year.",
+    "line": "For the {name}, you pay {{ref:0}}. Insurance pays {{ref:1}}.",
     "line_simpler": "You pay {{ref:0}} for the {name}.",
     "lead": "In short: {text}",
 }
 
-# Every intent's lead as (plain, simpler): two different sentences, the simpler one shorter. Grade 8 or lower (Flesch-Kincaid, tested).
+# Every intent's lead as (plain, simpler): two different sentences, the simpler one shorter. Grade 4 or lower (Flesch-Kincaid, tested).
 SIMPLE.update({
-    "total_estimate": "For the planned work, you pay {{ref:0}} and the plan pays {{ref:1}}.",
+    "total_estimate": "For all the work, you pay {{ref:0}}. Insurance pays {{ref:1}}.",
     "total_estimate_simpler": "You pay {{ref:0}} in all.",
-    "total_line_detail": "For the {name}, you pay {{ref:0}} and the plan pays {{ref:1}}.",
-    "two_lines": "You pay {{ref:0}} for the {a} and {{ref:1}} for the {b}. The plan pays {{ref:2}} for the {a} and {{ref:3}} for the {b}.",
+    "total_line_detail": "For the {name}, you pay {{ref:0}}. Insurance pays {{ref:1}}.",
+    "two_lines": "You pay {{ref:0}} for the {a} and {{ref:1}} for the {b}. Insurance pays {{ref:2}} for the {a} and {{ref:3}} for the {b}.",
     "two_lines_simpler": "You pay {{ref:0}} for the {a} and {{ref:1}} for the {b}.",
     "compare": "The {term} is {parts}. Each amount comes from that plan's own papers.",
     "compare_simpler": "It is {parts}.",
     "compare_part": "{{{{ref:{n}}}}} on {plan}",
     "compare_unstated": "not in the pages read on {plan}",
-    "doc_overview": "This document is the rule book for your plan {plan}. It covers {topics}.",
+    "doc_overview": "This document is the rule book for your plan {plan}. It tells about {topics}.",
     "doc_overview_simpler": "It lists your plan's rules.",
-    "doc_overview_none": ("This document has no rules that OralCompass could read yet.", "No rules were read yet."),
+    "doc_overview_none": ("The app could not read any rules in this paper yet.", "No rules were read yet."),
 })
 
-# The one main reason a line costs what it does (line_by_name), in everyday words.
+# The one main reason a line costs what it does (line_by_name), in words an 8-year-old knows.
 LINE_REASON = {
-    "not_covered": "The main reason: your plan does not pay for this treatment.",
-    "waiting": "The main reason: some details are still missing, so no amount is shown yet.",
-    "maximum": "The main reason: the plan hit its yearly limit (the most it pays in a year).",
-    "deductible": "The main reason: part of it goes to your deductible (what you pay before the plan pays).",
-    "alternate": "The main reason: the plan pays only what a cheaper treatment would cost.",
-    "share": "The main reason: the plan pays only its share (its part) of the cost, and you pay the rest.",
+    "not_covered": "Why: the plan pays none of this.",
+    "waiting": "Why: some facts are missing.",
+    "maximum": "Why: insurance hit its top limit for the year.",
+    "deductible": "Why: you pay the first part yourself.",
+    "alternate": "Why: insurance only pays for a cheap fix.",
+    "share": "Why: insurance pays its share, and you pay the rest.",
 }
 
 # explain_step leads, by rule code: new everyday sentences (not the detail's first sentence).
 STEP_LEAD = {
-    "D": ("Your deductible is the part you pay before the plan starts to pay. This step shows how much of it this line used.",
-          "This step shows the deductible part."),
-    "CO": ("The plan pays part of the cost and you pay the rest. This step shows how the cost was split.",
-           "This step shows who pays which part."),
-    "M": ("Your plan pays only up to a set amount each year. This step checks if this line goes past that limit.",
-          "This step checks the yearly limit."),
-    "AB": ("Some plans pay only what a cheaper treatment would cost. This step checks if that rule changes this line.",
-           "This step checks the cheaper-treatment rule."),
-    "N": ("Your plan sets its own price for each treatment. This step compares it with the price your dentist wrote.",
-          "This step compares two prices."),
-    "fee": ("This is the price your dentist wrote on your estimate.", "This is your dentist's price."),
-    "X": ("Your plan does not pay for this treatment, so the whole price is yours.", "The plan does not pay for this."),
-    "W": ("This line is waiting for some missing details, so no amount is shown yet.", "Some details are missing."),
-    "F": ("Your plan limits how often it pays for this treatment. This step checks that limit.", "This step checks how often it pays."),
-    "total": ("For the {name}, you pay {{ref:0}} and the plan pays {{ref:1}}.", "You pay {{ref:0}} for the {name}."),
+    "D": ("You pay the first part of the bill yourself. Then insurance starts to help. This step shows that first part.",
+          "This step shows the first part you pay."),
+    "CO": ("Insurance pays one part. You pay the rest. This step shows the two parts.",
+           "This step shows who pays each part."),
+    "M": ("Insurance will only pay up to a top limit each year. This step looks at that limit.",
+          "This step shows the top limit."),
+    "AB": ("Some plans only pay what a cheaper fix would cost. This step shows if that rule is used here.",
+           "This step shows the cheaper fix rule."),
+    "N": ("Your plan has its own price for this work. This step puts it next to the price your dentist wrote.",
+          "This step shows two prices."),
+    "fee": ("This is the price your dentist wrote down for the work.", "This is your dentist's price."),
+    "X": ("Your plan does not pay for this. So you pay all of it.", "Insurance pays none of it."),
+    "W": ("Some facts are missing. So there is no number yet.", "Some facts are missing."),
+    "F": ("Your plan only pays for this so many times. This step looks at that rule.", "This step shows how often it pays."),
+    "total": ("For the {name}, you pay {{ref:0}}. Insurance pays {{ref:1}}.", "You pay {{ref:0}} for the {name}."),
 }
 
 WHERE_LEAD = {
-    "D": ("This number comes from your plan papers and your latest benefit statement. The steps below show each part.",
-          "It comes from your plan and your statement."),
-    "M": ("This number comes from your plan papers and your latest benefit statement. The steps below show each part.",
-          "It comes from your plan and your statement."),
-    "CO": ("This number comes from the coverage table in your plan papers.", "It comes from your plan's table."),
-    "N": ("This number is the price your plan allows for this treatment.", "It is your plan's price."),
-    "fee": ("This number is the price your dentist wrote on your estimate.", "It is your dentist's price."),
-    "default": ("OralCompass worked this out from your plan's rules and your records. Each step below shows where it came from.",
+    "D": ("This number comes from your plan papers and the last note from your plan. The steps below show each part.",
+          "It comes from your plan papers."),
+    "M": ("This number comes from your plan papers and the last note from your plan. The steps below show each part.",
+          "It comes from your plan papers."),
+    "CO": ("This number comes from the table in your plan papers.", "It comes from your plan's table."),
+    "N": ("This number is the price your plan uses for this work.", "It is your plan's price."),
+    "fee": ("This number is the price your dentist wrote down.", "It is your dentist's price."),
+    "default": ("OralCompass got this number from your plan's rules and your papers. Each step below shows where it came from.",
                 "It comes from your plan's rules."),
 }
 
-CLAUSE_LEAD = ("This sentence is a rule from your plan papers. The details below show what it changes in your cost.",
+CLAUSE_LEAD = ("This is a rule from your plan papers. The parts below show how it changes what you pay.",
                "This is a rule from your plan.")
 
 # document_overview topic words (what a plan document covers), by clause field.
