@@ -124,7 +124,7 @@ export function buildPassage(inp: PassageInputs): PassageVM {
   const stages = journey?.journey.stages ?? [];
   const procName = (key: string) => procedures.find((p) => p.key === key)?.name ?? key.replace(/_/g, " ");
   const hintOf = (key: string) => procedures.find((p) => p.key === key)?.category_hint ?? null;
-  const stagesFor = (item: TreatmentItem) => stages.filter((s) => s.linked_treatment_items.includes(itemRef(item)) || s.linked_treatment_items.includes(item.id)).map((s) => s.id);
+  const stagesFor = (item: TreatmentItem) => stages.filter((s) => (s.linked_treatment_items ?? []).includes(itemRef(item)) || (s.linked_treatment_items ?? []).includes(item.id)).map((s) => s.id);
   const seen = new Map<string, number>();
   const unlimited = !!(plan?.annual_max.unlimited || benefits?.annual_max_unlimited);
 
@@ -219,7 +219,7 @@ export function buildPassage(inp: PassageInputs): PassageVM {
     soundingsAfter: benefits ? { deductible: benefits.remaining_deductible_cents ?? null, annualMax: benefits.remaining_max_cents ?? null, unlimited } : null,
     stageIds: planStage ? [planStage.id] : [],
   };
-  const lastLinked = (() => { let k = -1; stages.forEach((s, i) => { if (s.linked_treatment_items.some((ref) => routeItems.some((it) => itemRef(it) === ref || it.id === ref))) k = i; }); return k; })();
+  const lastLinked = (() => { let k = -1; stages.forEach((s, i) => { if ((s.linked_treatment_items ?? []).some((ref) => routeItems.some((it) => itemRef(it) === ref || it.id === ref))) k = i; }); return k; })();
   const afterIds = stages.filter((_, i) => i > lastLinked).map((s) => s.id);
   const lastStage = stages[stages.length - 1];
   if (lastStage && !afterIds.includes(lastStage.id)) afterIds.push(lastStage.id);

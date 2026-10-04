@@ -96,7 +96,7 @@ export function JourneyView({ data, selection, mobile, onOpenLandmark, onOpenDoc
     if (target === "light") focusIn(".light-btn, .pv-light button");
     if (target === "checkpoint") { const first = vm.islands[0]; if (!first || !focusIn(`[data-cp-of="${first.id}"], .pv-cps .pv-cp`)) focusIn(first ? `[data-island="${first.id}"]` : ".light-btn"); }
   };
-  const linkedIsland = useCallback((s: Stage) => vm.islands.find((i) => i.item && s.linked_treatment_items.includes(itemRef(i.item)))?.id ?? null, [vm]);
+  const linkedIsland = useCallback((s: Stage) => vm.islands.find((i) => i.item && (s.linked_treatment_items ?? []).includes(itemRef(i.item)))?.id ?? null, [vm]);
 
   if (newUser || !view) {
     return (
@@ -135,7 +135,7 @@ export function JourneyView({ data, selection, mobile, onOpenLandmark, onOpenDoc
           <button type="button" aria-pressed={segment === "overview"} onClick={() => setSegment("overview")}>{UI.overview}</button>
           {journeys && journeys.length > 0 && samples.length > 0 && <select aria-label="Journey" value={view.id} onChange={(e) => { const v = journeys.find((j) => j.id === e.target.value); if (v) setView(v); }}>
             {journeys.map((j) => <option key={j.id} value={j.id}>{j.journey.label}</option>)}</select>}
-          <select aria-label="Add a journey" value="" onChange={(e) => e.target.value && startJourney(e.target.value)}><option value="">Add another journey…</option><option value="empty">Empty (no documents yet)</option>{samples.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}</select>
+          <select aria-label="Add a journey" value="" onChange={(e) => e.target.value && startJourney(e.target.value)}><option value="">Add another journey…</option><option value="empty">Empty (no documents yet)</option>{samples.filter((s) => s.id !== "empty").map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}</select>
         </div>
         {!plan && <p className="hint">{PASSAGE.noPlanSelected}</p>}
         {segment === "overview" && <OverviewList journey={view.journey} vm={vm} planTitle={plan?.title} onSelect={(s) => { selection.selectStage(s); setSegment("map"); }} onSelectIsland={(id, cp) => { selectIsland(id, cp, null, true); }} onSelectStitch={onSelectStitch} />}
