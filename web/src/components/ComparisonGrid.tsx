@@ -110,6 +110,7 @@ function ClauseCell({ cell, topic, planTitle }: { cell: GridCell; topic: string;
   const mobile = useMobile();
   const [open, setOpen] = useState(false);
   const descId = useId();
+  const titleId = useId();
   const isAmount = cell.text.includes("$");
   const face = (
     <span className="cmp-cell-face">
@@ -157,8 +158,8 @@ function ClauseCell({ cell, topic, planTitle }: { cell: GridCell; topic: string;
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>{trigger}</PopoverTrigger>
-      <PopoverContent align="start">
-        <PopoverHeader><PopoverTitle>{topic}</PopoverTitle><PopoverDescription>{planTitle}</PopoverDescription></PopoverHeader>
+      <PopoverContent align="start" aria-labelledby={titleId}>
+        <PopoverHeader><PopoverTitle id={titleId}>{topic}</PopoverTitle><PopoverDescription>{planTitle}</PopoverDescription></PopoverHeader>
         {card}
       </PopoverContent>
     </Popover>

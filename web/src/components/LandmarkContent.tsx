@@ -102,7 +102,7 @@ export function LandmarkContent({ landmark, plan, summary, benefits, rules, esti
           </ul>
           {depth >= 2 && (
             <div className="lm-usage">
-              <Gauge label={COMPASS.deductible} meter={vm.deductible} stitch={stitchForCite(vm.deductible.limitCite, stitches, doc)} selectedStitch={selected} onSelectStitch={onSelect} usedWord={COMPASS.met} />
+              <Gauge headingLevel={3} label={COMPASS.deductible} meter={vm.deductible} stitch={stitchForCite(vm.deductible.limitCite, stitches, doc)} selectedStitch={selected} onSelectStitch={onSelect} usedWord={COMPASS.met} />
               <UsageSource benefits={benefits} />
               <BenefitStatementForm planRef={planRef} plan={plan} benefits={benefits} onSaved={onBenefitsSaved} compact />
             </div>
@@ -166,7 +166,7 @@ export function LandmarkContent({ landmark, plan, summary, benefits, rules, esti
           </ul>
           {depth >= 2 && (
             <div className="lm-usage">
-              <Gauge label={COMPASS.annualMax} meter={vm.annualMax} stitch={stitchForCite(vm.annualMax.limitCite, stitches, doc)} selectedStitch={selected} onSelectStitch={onSelect} usedWord={COMPASS.used} />
+              <Gauge headingLevel={3} label={COMPASS.annualMax} meter={vm.annualMax} stitch={stitchForCite(vm.annualMax.limitCite, stitches, doc)} selectedStitch={selected} onSelectStitch={onSelect} usedWord={COMPASS.used} />
               <UsageSource benefits={benefits} />
               <BenefitStatementForm planRef={planRef} plan={plan} benefits={benefits} onSaved={onBenefitsSaved} compact />
             </div>

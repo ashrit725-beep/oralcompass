@@ -201,7 +201,7 @@ export function DocumentsView({ planCode, plans, onPlan, evidence, stitches, sel
         <div className="delete-hold">
           <p className="delete-hold-why">{UI.deleteConfirm}</p>
           <HoldButton onHold={deleteData} onTap={() => setMsg(UI.deleteTap)} holdTime={1600} size="lg" resetAfter={0}
-                      backgroundColor="var(--paper-deep)" fillColor="var(--terracotta)" textColor="var(--ink)" fillTextColor="var(--paper)" doneLabel={UI.deleting}
+                      backgroundColor="var(--paper-deep)" fillColor="var(--terracotta-text)" textColor="var(--ink)" fillTextColor="var(--paper)" doneLabel={UI.deleting}
                       className="delete-hold-btn">
             {UI.deleteHold}
           </HoldButton>
