@@ -1,4 +1,4 @@
-import { useEffect, useState, type RefObject } from "react";
+import { useEffect, useLayoutEffect, useState, type RefObject } from "react";
 
 export interface ViewportInset {
   /** Pixels of the layout viewport hidden below the visual viewport (the on-screen keyboard), 0 when none. */
@@ -36,17 +36,33 @@ export function useAskKeyboardInset(active: boolean): ViewportInset {
 }
 
 /** Publishes an element's measured height as a CSS custom property on <html> (`--dock-h`, `--askfield-h`), so fixed layers stack on the
- *  phone dock and the ask field exactly (safe-area padding and landscape sizes included). Removed again when inactive or unmounted. */
+ *  phone dock and the ask field exactly (safe-area padding and landscape sizes included). Works at every width: it measures before
+ *  the first paint (layout effect), follows the element's own size (ResizeObserver) and re-measures on window resize and orientation
+ *  change (a wide window, a rotated phone, or a browser without ResizeObserver). A hidden or zero-height element publishes nothing, so
+ *  the CSS fallbacks apply. Removed again when inactive or unmounted. */
 export function useMeasuredVar(ref: RefObject<HTMLElement | null>, cssVar: string, active: boolean) {
-  useEffect(() => {
+  useLayoutEffect(() => {
     const el = ref.current;
     const root = document.documentElement;
     if (!active || !el) { root.style.removeProperty(cssVar); return; }
-    const set = () => root.style.setProperty(cssVar, `${Math.round(el.getBoundingClientRect().height)}px`);
+    let last = "";
+    const set = () => {
+      const h = Math.round(el.getBoundingClientRect().height);
+      const v = h > 0 ? `${h}px` : "";
+      if (v === last) return;
+      last = v;
+      if (v) root.style.setProperty(cssVar, v); else root.style.removeProperty(cssVar);
+    };
     set();
-    if (typeof ResizeObserver === "undefined") return () => root.style.removeProperty(cssVar);
-    const ro = new ResizeObserver(set);
-    ro.observe(el);
-    return () => { ro.disconnect(); root.style.removeProperty(cssVar); };
+    const ro = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(set);
+    ro?.observe(el);
+    window.addEventListener("resize", set);
+    window.addEventListener("orientationchange", set);
+    return () => {
+      ro?.disconnect();
+      window.removeEventListener("resize", set);
+      window.removeEventListener("orientationchange", set);
+      root.style.removeProperty(cssVar);
+    };
   }, [ref, cssVar, active]);
 }

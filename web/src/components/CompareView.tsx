@@ -9,7 +9,7 @@ import { ComparisonGrid, type GridPlan } from "./ComparisonGrid";
 import { EvidenceBadge } from "./Primitives";
 import { Sheet } from "./Primitives/Sheet";
 
-interface Props { plans: PlanSummary[]; items: TreatmentItem[]; benefits: Benefits[]; initial: string[]; }
+interface Props { plans: PlanSummary[]; items: TreatmentItem[]; benefits: Benefits[]; initial: string[]; /** the plans currently compared (the Ask sheet's scope.compare) */ onColumns?: (refs: string[]) => void; }
 
 /**
  * Compare (spec §2.2; CLAUDE.md rule 6): up to three plan refs (presets or your published uploads) in the order you pick. Per-plan inputs
@@ -19,7 +19,7 @@ interface Props { plans: PlanSummary[]; items: TreatmentItem[]; benefits: Benefi
  * comparison is the first thing on screen; the three grouped native pickers (carrier optgroups, fictional plans under their own group,
  * uploads last) live in the "Choose plans" bottom sheet, and the grid is one swipeable card per plan.
  */
-export function CompareView({ plans, items, benefits, initial }: Props) {
+export function CompareView({ plans, items, benefits, initial, onColumns }: Props) {
   const [picked, setPicked] = useState<PlanRef[]>(initial.slice(0, 3));
   const [uploads, setUploads] = useState<UploadSummary[]>([]);
   const [data, setData] = useState<ComparisonResponse | null>(null);
@@ -37,6 +37,9 @@ export function CompareView({ plans, items, benefits, initial }: Props) {
   // One comparison per picker state. A later change cancels the earlier request's result (it never overwrites a newer grid or clears the
   // busy line early), and fewer than two plans or no planned items clears the grid instead of leaving the old one up (web-correctness-13).
   const pickedKey = picked.join(",");
+  const onColumnsRef = useRef(onColumns);
+  onColumnsRef.current = onColumns;
+  useEffect(() => { onColumnsRef.current?.(picked); }, [pickedKey]);   // eslint-disable-line react-hooks/exhaustive-deps
   const plannedKey = planned.map((i) => `${i.id}:${i.dentist_fee_cents}:${i.quantity}:${i.allowed_cents}:${i.network ?? ""}`).join(",");
   useEffect(() => {
     if (picked.length < 2 || planned.length === 0) { setData(null); setModels({}); setEnteredFor([]); setBusy(false); return; }

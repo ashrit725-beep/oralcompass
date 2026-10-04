@@ -86,3 +86,13 @@ describe("journey totals resolve from the engine, labelled calculated", () => {
     expect(t).toBe("You pay $902.00 (calculated from the clauses cited) and the plan pays $1,098.00 (calculated from the clauses cited).");
   });
 });
+
+import { askBoxScope as _askBoxScope, compareScope as _compareScope } from "@/lib/assistant";
+describe("scope.compare (Compare tab)", () => {
+  it("passes the compared plans, deduplicated, at most three; none leaves compare off", () => {
+    expect(_compareScope(["ML26", "ml26", "HB26", "FM26H", "UP1"])).toEqual(["ML26", "HB26", "FM26H"]);
+    expect(_compareScope([])).toBeUndefined();
+    expect(_askBoxScope("ML26", null, "j1", ["ML26", "HB26"])).toEqual({ plan_ref: "ML26", journey_id: "j1", compare: ["ML26", "HB26"] });
+    expect(_askBoxScope("ML26", null, "j1", null)).toEqual({ plan_ref: "ML26", journey_id: "j1" });
+  });
+});

@@ -13,7 +13,7 @@ import { useAskKeyboardInset, useMeasuredVar } from "@/hooks/useAskKeyboardInset
 import { AnswerList } from "./AnswerList";
 
 /**
- * AskBox ("Ask in plain words", the owner's prompt box): a question box that is reachable on every tab and answers in simple terms first.
+ * AskBox ("Ask in plain words", the owner's prompt box; the desktop card is gone, the field + sheet are the only surface): a question box that is reachable on every tab and answers in simple terms first.
  * Scope = the selected plan + the journey's estimate + the journey (no line). The question/answer logic is the shared `useAsk` hook and the
  * answers are the shared `AnswerList` / `AnswerCard` (the drawer's and the ClauseCard's composers use the same pieces).
  *  - `AskDock` (every width, inside the 480 px column): a one-line "Ask in plain words" field directly above the dock (thumb zone). Activating it (tap, Enter
@@ -37,9 +37,9 @@ function useAskBox(tab: AskTab, scope: AssistScope) {
   return { ask, chips };
 }
 
-/** The shared inside of the card and the sheet. `layout="sheet"` pins the composer at the foot and lists the chips as a ruled list. */
-function AskBoxBody({ ask, chips, layout, describedBy, inputRef, onOpenStitch }: {
-  ask: AskApi; chips: string[]; layout: "card" | "sheet"; describedBy: string; inputRef?: React.Ref<HTMLTextAreaElement>; onOpenStitch?: (id: string) => void;
+/** The inside of the sheet: chips and answers in a scroll area, the composer pinned at the foot, the chips as a ruled list. */
+function AskBoxBody({ ask, chips, describedBy, inputRef, onOpenStitch }: {
+  ask: AskApi; chips: string[]; describedBy: string; inputRef?: React.Ref<HTMLTextAreaElement>; onOpenStitch?: (id: string) => void;
 }) {
   const { pending, simplerFor, paused, error, cycle } = ask;
   const busy = !!pending || simplerFor !== null;
@@ -49,11 +49,11 @@ function AskBoxBody({ ask, chips, layout, describedBy, inputRef, onOpenStitch }:
                disabled={paused} busy={busy} onSubmit={(v) => send(v)} inputRef={inputRef} className="askbox-composer" />
   );
   const chipList = (
-    <ul className={layout === "card" ? "askbox-chips" : "as-suggestions askbox-chips-sheet"} aria-label={ASSIST.boxSuggestionsLabel}>
+    <ul className="as-suggestions askbox-chips-sheet" aria-label={ASSIST.boxSuggestionsLabel}>
       {chips.map((q) => (
         <li key={q}>
-          <Button type="button" variant={layout === "card" ? "outline" : "ghost"} size="touch" disabled={busy || paused} onClick={() => send(q)}
-                  className={layout === "card" ? "askbox-chip h-auto rounded-[var(--r-2)] px-3 py-2 text-left font-serif text-[15px] leading-5 font-normal whitespace-normal" : "as-suggestion h-auto w-full justify-start whitespace-normal rounded-[var(--r-2)] text-left"}>
+          <Button type="button" variant="ghost" size="touch" disabled={busy || paused} onClick={() => send(q)}
+                  className="as-suggestion h-auto w-full justify-start whitespace-normal rounded-[var(--r-2)] text-left">
             {q}
           </Button>
         </li>
@@ -79,51 +79,20 @@ function AskBoxBody({ ask, chips, layout, describedBy, inputRef, onOpenStitch }:
     if (!box || !li || newest === undefined) return;
     box.scrollTop = Math.max(0, li.getBoundingClientRect().top - box.getBoundingClientRect().top + box.scrollTop - 8);
   }, [newest]);
-  if (layout === "sheet") {
-    return (
-      <>
-        <div className="askbox-sheet-scroll" ref={scrollRef}>
-          <p id={describedBy} className="as-described">{ASSIST.boxDescribedBy}</p>
-          {answers}
-          {status}
-          {chipList}
-        </div>
-        <div className="askbox-sheet-foot">{composer}</div>
-      </>
-    );
-  }
   return (
     <>
-      {composer}
-      {chipList}
-      {status}
-      {answers}
+      <div className="askbox-sheet-scroll" ref={scrollRef}>
+        <p id={describedBy} className="as-described">{ASSIST.boxDescribedBy}</p>
+        {answers}
+        {status}
+        {chipList}
+      </div>
+      <div className="askbox-sheet-foot">{composer}</div>
     </>
   );
 }
 
-/** Desktop: the inline card at the top of a tab's main column. */
-export function AskBoxCard({ tab, scope, onOpenStitch }: AskBoxProps) {
-  if (!scope) return null;
-  return <AskBoxCardInner key={tab} tab={tab} scope={scope} onOpenStitch={onOpenStitch} />;
-}
-
-function AskBoxCardInner({ tab, scope, onOpenStitch }: { tab: AskTab; scope: AssistScope; onOpenStitch?: (id: string) => void }) {
-  const headingId = useId();
-  const descId = useId();
-  const { ask, chips } = useAskBox(tab, scope);
-  return (
-    <section className="askbox" data-tab={tab} aria-labelledby={headingId}>
-      <div className="askbox-head">
-        <h3 id={headingId} className="askbox-title">{ASSIST.boxTitle}</h3>
-        <p id={descId} className="askbox-desc">{ASSIST.boxDescribedBy}</p>
-      </div>
-      <AskBoxBody ask={ask} chips={chips} layout="card" describedBy={descId} onOpenStitch={onOpenStitch} />
-    </section>
-  );
-}
-
-/** Phone: the field above the dock and the bottom sheet it opens. Rendered once by App, outside the tab panels (fixed layers must not
+/** The field above the dock and the bottom sheet it opens (every width: the app is the phone column). Rendered once by App, outside the tab panels (fixed layers must not
  *  sit inside the view's transformed wash-in container). */
 export function AskDock({ tab, scope, onOpenStitch }: AskBoxProps) {
   const [open, setOpen] = useState(false);
@@ -198,7 +167,7 @@ function AskSheet({ tab, scope, open, onOpenChange, returnFocus, onOpenStitch }:
               <Button variant="ghost" size="icon-touch" aria-label={ASSIST.boxClose} className="-mr-2 shrink-0"><X aria-hidden="true" /></Button>
             </DrawerPrimitive.Close>
           </div>
-          <AskBoxBody ask={ask} chips={chips} layout="sheet" describedBy={descId} inputRef={inputRef} onOpenStitch={onOpenStitch} />
+          <AskBoxBody ask={ask} chips={chips} describedBy={descId} inputRef={inputRef} onOpenStitch={onOpenStitch} />
         </DrawerPrimitive.Content>
       </DrawerPrimitive.Portal>
     </DrawerPrimitive.Root>
