@@ -460,3 +460,9 @@ table.grid tr.differences td { padding: 0; border: 0; height: 0; }
 table.grid tbody tr:not(.differences) { transition: background-color var(--dur-micro) var(--ease-standard); }
 table.grid tbody tr:not(.differences):hover, table.grid tbody tr:not(.differences):focus-within { background: color-mix(in srgb, var(--parchment) 60%, transparent); }
 .compare > h3 { margin-top: var(--s-5); }
+
+/* fin/mobile-plan: the source-inventory URLs are standalone links (not inline prose), so on touch screens they get a 44 px tall target;
+   long URLs wrap anywhere instead of pushing the card wider. */
+@media (max-width: 760px), (pointer: coarse) {
+  .doc-sources .sources a[href] { display: inline-block; min-height: 44px; padding-block: .6rem; overflow-wrap: anywhere; }
+}
