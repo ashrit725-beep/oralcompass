@@ -121,7 +121,7 @@ export function AskAboutStep({ scope, onOpenStitch, onOpenStep, className, data:
       />
       <ul className="as-suggestions" aria-label={ASSIST.suggestionsLabel}>
         {suggested.map((q) => (
-          <li key={q}><Button type="button" variant="ghost" size="touch" className="as-suggestion h-auto w-full justify-start whitespace-normal text-left" disabled={!!pending || paused} onClick={() => { void ask(q); }}>{q}</Button></li>
+          <li key={q}><Button type="button" variant="ghost" size="touch" className="as-suggestion h-auto w-full justify-start whitespace-normal rounded-[var(--r-2)] text-left" disabled={!!pending || paused} onClick={() => { void ask(q); }}>{q}</Button></li>
         ))}
       </ul>
       {(pending || latest) && (

@@ -8,6 +8,11 @@
 .up-wizard { display: flex; flex-direction: column; gap: var(--s-3); }
 .up-stepper { max-width: none; }
 .up-stepper-content { padding-bottom: var(--s-4); }
+/* slop-24: the sliding pane is absolutely positioned (Stepper), so the wrapper's px padding never reached it and every pane heading sat on
+   the card edge; the pane carries the padding itself */
+.up-stepper-content > div { padding-left: var(--s-4); padding-right: var(--s-4); }
+@media (min-width: 640px) { .up-stepper-content > div { padding-left: var(--s-6); padding-right: var(--s-6); } }
+.up-wizard h3[tabindex="-1"]:focus-visible { outline: none; }   /* a11y-7: a pane heading takes focus by script to announce the step; it is not a control */
 .up-h3 { font-family: var(--serif); font-size: 17px; line-height: 24px; font-weight: 600; margin: 0 0 var(--s-2); }
 .up-h4 { font-family: var(--serif); font-size: 15px; line-height: 22px; font-weight: 600; margin: var(--s-4) 0 var(--s-2); color: var(--ink); }
 .up-caption { font-size: 12px; line-height: 16px; color: var(--ink-soft); margin: var(--s-1) 0; }
@@ -62,6 +67,7 @@
 .up-req { display: inline-block; font-size: 11px; line-height: 14px; color: var(--ink-soft); border: 1px solid var(--rule); border-radius: var(--r-1); padding: 0 var(--s-1); margin-top: var(--s-1); margin-right: var(--s-1); }
 .up-decided { display: block; font-size: 12px; line-height: 16px; color: var(--forest); margin-top: var(--s-1); }
 .up-cell-value .up-value { font-variant-numeric: tabular-nums; }
+.up-cell-value .inline-flex { flex-wrap: wrap; row-gap: var(--s-1); }   /* the badge drops under the amount, so the five columns fit the padded pane */
 .up-cell-value .up-caption { display: block; }
 .up-none { color: var(--ink-soft); font-style: italic; }
 .up-confidence { display: inline-flex; flex-wrap: wrap; gap: var(--s-1) var(--s-2); align-items: center; }
@@ -73,7 +79,13 @@
 .up-page { margin: var(--s-2) 0 0; }
 .up-page-canvas canvas { display: block; max-width: 100%; height: auto; border: 1px solid var(--rule); border-radius: var(--r-2); }
 .up-page figcaption q { font-family: var(--serif); font-style: italic; }
-.up-cell-decision { min-width: 19.5rem; }
+.up-cell-decision { min-width: 10rem; }
+@media (min-width: 1001px) {   /* the five-column table inside the 960 px dialog: the segments join vertically in the narrow column */
+  .up-decide { flex-direction: column; }
+  .up-decide > [data-slot="button"] { width: 100%; margin: 0 0 -1px; min-height: 40px; font-size: 15px; }
+  .up-decide > [data-slot="button"]:first-child { border-radius: var(--r-2) var(--r-2) 0 0; }
+  .up-decide > [data-slot="button"]:last-child { border-radius: 0 0 var(--r-2) var(--r-2); }
+}
 /* slop-24: the three decisions read as one segmented control (the recorded one is the filled segment); it wraps only below ~330 px */
 .up-decide { display: flex; flex-wrap: wrap; gap: 0; }
 .up-decide > [data-slot="button"] { flex: 1 1 auto; border-radius: 0; margin: 0 -1px -1px 0; }
