@@ -36,6 +36,27 @@ async function locate(page: pdfjs.PDFPageProxy, viewport: pdfjs.PageViewport, qu
   return rects;
 }
 
+/**
+ * Stitch chips whose quotes sit on the same line used to land on top of each other (one chip hid the next, and their hit areas
+ * overlapped). After a chip is placed, nudge it right of any chip it collides with, wrapping to the next row at the page edge.
+ */
+function place(tag: HTMLElement, placed: Box[], pageWidth: number) {
+  const w = tag.offsetWidth, h = tag.offsetHeight;
+  if (!w || !h) { placed.push(boxOf(tag)); return; }
+  let x = tag.offsetLeft, y = tag.offsetTop;
+  for (let i = 0; i < 24; i++) {
+    const hit = placed.find((b) => x < b.x + b.w + CHIP_GAP && x + w + CHIP_GAP > b.x && y < b.y + b.h + CHIP_GAP && y + h + CHIP_GAP > b.y);
+    if (!hit) break;
+    x = hit.x + hit.w + CHIP_GAP;
+    if (x + w > pageWidth) { x = Math.max(0, tag.offsetLeft); y = hit.y + hit.h + CHIP_GAP; }
+  }
+  tag.style.left = `${x}px`; tag.style.top = `${y}px`; tag.style.right = "auto";
+  placed.push({ x, y, w, h });
+}
+type Box = { x: number; y: number; w: number; h: number };
+const CHIP_GAP = 6;
+const boxOf = (el: HTMLElement): Box => ({ x: el.offsetLeft, y: el.offsetTop, w: el.offsetWidth, h: el.offsetHeight });
+
 const token = (name: string, fallback: string) => (typeof document === "undefined" ? fallback : getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback);
 
 /**
@@ -71,6 +92,7 @@ export function PageView({ url, stitches, selected, onSelect, dim = true }: Prop
     rp.wrap.querySelectorAll(".pdf-stitch").forEach((n) => n.remove());
     if (!pageStitches.length) return;
     const dpr = rp.canvas.width / rp.vp.width;
+    const placed: Box[] = [];
     // dim everything, then re-draw highlighted regions at full opacity (+ outline)
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 0.33; ctx.fillStyle = token("--paper", "#f6f0e3"); ctx.fillRect(0, 0, rp.canvas.width, rp.canvas.height); ctx.restore();
     pageStitches.forEach((s, i) => {
@@ -92,6 +114,7 @@ export function PageView({ url, stitches, selected, onSelect, dim = true }: Prop
         tag.classList.add("pdf-stitch-margin"); tag.style.top = "8px"; tag.style.right = "8px";   // fallback: margin stitch
       }
       rp.wrap.appendChild(tag);
+      place(tag, placed, rp.vp.width);
     });
   }
 
