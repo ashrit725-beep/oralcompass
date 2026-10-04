@@ -196,7 +196,7 @@ def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-pref
     tools_txt = page.evaluate("[...document.querySelectorAll('.drawer .as-tools')].map(t => t.textContent).join(' | ')")
     timer = page.evaluate("[...document.querySelectorAll('.drawer .as-thought')].some(t => /\\d\\.\\ds/.test(t.textContent))")
     pill = page.evaluate("(() => { const b = document.querySelector('.drawer .as-suggestion'); return b ? parseFloat(getComputedStyle(b).borderTopLeftRadius) : 0; })()")
-    check(f"{device}: assistant lookups in plain words", bool(tools_txt) and not re.search(r"ledger line|step line|_|\(", tools_txt) and not timer and pill <= 10, f"{tools_txt[:120]!r} timer={timer} radius={pill}")
+    check(f"{device}: assistant lookups in plain words", bool(tools_txt) and not re.search(r"ledger line|step line|line \d+, step|_", tools_txt) and not timer and pill <= 10, f"{tools_txt[:120]!r} timer={timer} radius={pill}")
     # the clause composer: a stitch chip in the answer opens the ClauseCard with its own composer
     ans.locator(".stitch").first.click(); page.wait_for_timeout(600)
     card = page.locator(".clause[role=dialog]")
