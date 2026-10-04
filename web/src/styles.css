@@ -329,6 +329,13 @@ select:not([multiple]):not([size]) {
 .journey-pickers .add-journey-form { flex: 0 1 300px; }
 .journey-pickers .add-journey-form select.add-journey { flex: 1 1 auto; max-width: none; }
 @media (max-width: 760px) { .journey-pickers .add-journey-form { flex: none; width: 100%; } }
+
+/* ---- the shell: one content column at every width (layout-21) ---- */
+@media (min-width: 1700px) {
+  .appbar, .view { padding-left: calc((100% - 1680px) / 2 + 1rem); padding-right: calc((100% - 1680px) / 2 + 1rem); }
+}
+/* My plan uses the full width until a landmark opens (the 420 px column exists only while the detail panel shows) */
+.plan-layout:has(> .detail.is-empty) { grid-template-columns: minmax(0, 1fr); }
 /* a failed view or lazy surface keeps a labelled recovery message inside the shell (web-correctness-3) */
 .surface-error { margin: var(--s-4) 0; }
 
