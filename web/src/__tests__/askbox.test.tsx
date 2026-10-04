@@ -55,7 +55,7 @@ const buttons = () => [...document.querySelectorAll("button")];
 const byText = (t: string) => buttons().find((b) => b.textContent?.trim() === t) as HTMLButtonElement | undefined;
 const click = async (el: Element | undefined | null) => { expect(el).toBeTruthy(); await act(async () => { (el as HTMLElement).click(); }); await flush(); };
 /** The AskBox is the field above the dock + the sheet it opens (the desktop card is gone): render the dock for a tab and open its sheet. */
-async function openSheet(tab: "journey" | "plan" | "compare" | "documents", sc: typeof scope = scope) {
+async function openSheet(tab: "journey" | "plan" | "documents", sc: typeof scope = scope) {
   render(<AskDock tab={tab} scope={sc} />);
   await click(q(".askfield"));
   expect(q(".ask-sheet[data-state=open]")).toBeTruthy();
@@ -79,7 +79,7 @@ describe("AskBox chips per tab (in the sheet)", () => {
     expect(ta.getAttribute("aria-label")).toBe("Ask in plain words");
     expect(ta.getAttribute("placeholder")).toBe("Ask anything about your plan, in your own words");
   });
-  it.each(["plan", "compare", "documents"] as const)("%s: the tab's own chips, as buttons", async (tab) => {
+  it.each(["plan", "documents"] as const)("%s: the tab's own chips, as buttons", async (tab) => {
     await openSheet(tab);
     const chips = [...document.querySelectorAll(".askbox-chips-sheet button")];
     expect(chips.map((b) => b.textContent)).toEqual(ASSIST.boxChips[tab]);
@@ -293,16 +293,7 @@ describe("the step composer still works on the shared pieces", () => {
   });
 });
 
-describe("Compare and Documents scopes, the estimate_total ref", () => {
-  it("Compare: the sheet sends scope.compare with the plans currently compared and shows the compare chips", async () => {
-    ask.mockResolvedValue(totalAnswer);
-    const cmp = { ...scope, compare: ["ML26", "HB26"] };
-    await openSheet("compare", cmp);
-    const chips = [...document.querySelectorAll(".askbox-chips-sheet button")].map((b) => b.textContent);
-    expect(chips.slice(0, 2)).toEqual(["What is the difference between these plans' deductibles?", "What does 'allowed amount' mean?"]);
-    await click(byText("What is the difference between these plans' deductibles?"));
-    expect(ask).toHaveBeenCalledWith({ message: "What is the difference between these plans' deductibles?", scope: cmp, style: "plain" });
-  });
+describe("Documents scope, the estimate_total ref", () => {
   it("Documents: the first chip is the document overview question", async () => {
     await openSheet("documents");
     expect(q(".askbox-chips-sheet button")?.textContent).toBe("What does this document cover?");

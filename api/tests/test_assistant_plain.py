@@ -106,33 +106,14 @@ def test_clarify_leads_with_a_simple_block_in_both_styles(est):
             assert j["blocks"][1]["type"] == "clarify"
 
 
-# ---------- compare_terms, document_overview, two procedures, the main reason, readability ----------
-def test_compare_terms_gives_each_plan_its_own_ref(est):
-    j = ask("What is the difference between these plans' deductibles?", estimate_id=est["id"], compare=["ML26", "FM26H"])
-    assert j["intent"] == "compare_terms"
-    b = lead(j)
-    assert "deductible" in b["text"].lower()
-    assert {r.get("plan_ref") for r in b["refs"]} == {"ML26", "FM26H"} and all(r["kind"] == "field" for r in b["refs"])
-    details = [x for x in j["blocks"][1:] if x["refs"]]
-    assert any(r["kind"] == "clause" and r.get("plan_ref") == "FM26H" for x in details for r in x["refs"])
-    s = lead(ask("What is the difference between these plans' deductibles?", style="simpler", estimate_id=est["id"], compare=["ML26", "FM26H"]), 1)
-    assert s["text"] != b["text"] and len(s["text"].split()) < len(b["text"].split())
-
-
-def test_compare_unlimited_maximum_is_the_unlimited_field():
-    j = ask("how do the annual maximums compare", compare=["ML26", "FM26H"])
-    assert j["intent"] == "compare_terms"
-    refs = lead(j)["refs"]
-    assert {"kind": "field", "path": "plan.annual_max_unlimited", "plan_ref": "FM26H"} in refs
-
-
-def test_compare_scope_is_validated_and_owner_scoped():
-    r = client.post("/me/assistant", json={"message": "compare deductibles", "scope": {"plan_ref": "ML26", "compare": ["ML26", "HB26", "FM26H", "ML26X"]}}, headers=H)
-    assert r.status_code == 422
-    r = client.post("/me/assistant", json={"message": "compare deductibles", "scope": {"plan_ref": "ML26", "compare": []}}, headers=H)
-    assert r.status_code == 422
-    r = client.post("/me/assistant", json={"message": "compare deductibles", "scope": {"plan_ref": "ML26", "compare": ["upload:not-mine"]}}, headers=H)
-    assert r.status_code == 404
+# ---------- document_overview, two procedures, the main reason, readability ----------
+def test_no_plan_vs_plan_answer():
+    """Owner direction 2026-10-04: there is no comparing feature; a question about two plans gets no side-by-side answer."""
+    from app import assistant
+    assert "compare_terms" not in assistant.INTENTS and "compare" not in assistant.AssistScope.model_fields
+    j = ask("What is the difference between these plans' deductibles?")
+    assert j["intent"] != "compare_terms"
+    assert all(r.get("plan_ref") in (None, "ML26") for b in j["blocks"] for r in (b.get("refs") or []))
 
 
 @pytest.mark.parametrize("plan", ["ML26", "HB26", "FM26H"])
@@ -198,7 +179,7 @@ def test_every_intent_has_a_distinct_shorter_simpler_lead():
     pairs = [T.SIMPLE[k] for k in ("advice_request", "out_of_scope", "what_if_requested", "clarify", "no_estimate", "remaining_none", "doc_overview_none")]
     pairs += list(T.STEP_LEAD.values()) + list(T.WHERE_LEAD.values()) + [T.CLAUSE_LEAD]
     pairs += [(T.SIMPLE[a], T.SIMPLE[b]) for a, b in (("total_estimate", "total_estimate_simpler"), ("line", "line_simpler"), ("two_lines", "two_lines_simpler"),
-                                                      ("compare", "compare_simpler"), ("doc_overview", "doc_overview_simpler"), ("remaining_max", "remaining_simpler"),
+                                                      ("doc_overview", "doc_overview_simpler"), ("remaining_max", "remaining_simpler"),
                                                       ("remaining_ded", "remaining_ded_simpler"))]
     for plain, simpler in pairs:
         assert plain != simpler and len(simpler.split()) < len(plain.split()), (plain, simpler)

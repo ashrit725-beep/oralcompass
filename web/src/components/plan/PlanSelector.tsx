@@ -49,8 +49,8 @@ export function PlanSelector({ plans, uploads, value, onChange, mode, onMode, up
   const selectedTitle = hit ? fullPlanLabel(hit.year.summary) : uploads.find((u) => u.plan_code === value)?.title ?? "";
   const fictional = carriers.filter((c) => c.fictional);
   const chosenUpload = uploads.find((u) => u.plan_code === value);
-  const pickFace = hit ? fastPathLabel(hit.year.summary) : chosenUpload ? uploadLabel(chosenUpload) : PLAN.cmpNone;
-  const uploadFace = chosenUpload ? PLAN.uploadVersion(uploadLabel(chosenUpload), (chosenUpload.published_at ?? "").slice(0, 10)) : PLAN.cmpNone;
+  const pickFace = hit ? fastPathLabel(hit.year.summary) : chosenUpload ? uploadLabel(chosenUpload) : PLAN.noneOption;
+  const uploadFace = chosenUpload ? PLAN.uploadVersion(uploadLabel(chosenUpload), (chosenUpload.published_at ?? "").slice(0, 10)) : PLAN.noneOption;
 
   return (
     <div className={cn("plan-selector", className)}>
@@ -65,7 +65,7 @@ export function PlanSelector({ plans, uploads, value, onChange, mode, onMode, up
       <div className="ps-row">
         <label className="plan-pick">{PLAN.planCode}
           <PickSelect face={pickFace} value={value} onChange={(e) => onChange(e.target.value)} aria-describedby={`${id}-fast`} title={selectedTitle || undefined}>
-            {!hit && !uploads.some((u) => u.plan_code === value) && <option value="">{PLAN.cmpNone}</option>}
+            {!hit && !uploads.some((u) => u.plan_code === value) && <option value="">{PLAN.noneOption}</option>}
             {real.length > 0 && real.map((c) => (
               <optgroup key={c.key} label={c.label}>
                 {c.plans.flatMap((p) => p.years.map((y) => <option key={y.code} value={y.code} title={fullPlanLabel(y.summary)}>{fastPathLabel(y.summary)}</option>))}
@@ -92,7 +92,7 @@ export function PlanSelector({ plans, uploads, value, onChange, mode, onMode, up
             {uploadsLoading ? <p className="muted small">{PLAN.uploadsLoading}</p> : uploads.length === 0 ? <p className="muted small ps-noup">{PLAN.noUploads}</p> : (
               <label>{PLAN.uploadedPlan}
                 <PickSelect face={uploadFace} aria-label={PLAN.uploadedPlan} value={modeOf(value) === "upload" ? value : ""} onChange={(e) => e.target.value && onChange(e.target.value)}>
-                  {modeOf(value) !== "upload" && <option value="">{PLAN.cmpNone}</option>}
+                  {modeOf(value) !== "upload" && <option value="">{PLAN.noneOption}</option>}
                   {uploads.map((u) => <option key={u.plan_code} value={u.plan_code}>{PLAN.uploadVersion(uploadLabel(u), (u.published_at ?? "").slice(0, 10))}</option>)}
                 </PickSelect>
               </label>

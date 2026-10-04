@@ -660,7 +660,7 @@ def _publish_locked(user: User, doc_id: str) -> dict:
     doc["published_versions"] = list(doc.get("published_versions", [])) + [label]
     doc["latest_version_id"] = version["id"]
     doc["version_ids"] = {**(doc.get("version_ids") or {}), label: version["id"]}
-    doc["plan_model"] = copy.deepcopy(plan_dict)             # legacy main.resolve_plan reads this for /estimates and /comparisons
+    doc["plan_model"] = copy.deepcopy(plan_dict)             # legacy main.resolve_plan reads this for /estimates
     doc["extraction_status"] = "published"
     repo.put(user.sub, "document", doc)
     log.info("published id=%s version=%s", doc_id, label)

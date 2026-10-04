@@ -1,7 +1,7 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
 
-// shadcn/ui Table (radix-nova), patched for OralCompass (component plan §2 N12): `containerClassName` lets ComparisonGrid add
+// shadcn/ui Table (radix-nova), patched for OralCompass (component plan §2 N12): `containerClassName` lets a caller add
 // `max-h-[70dvh] overflow-auto scroll-fade-x`; TableHead gets `sticky top-0 bg-paper-deep` at the call site.
 function Table({ className, containerClassName, ...props }: React.ComponentProps<"table"> & { containerClassName?: string }) {
   return (

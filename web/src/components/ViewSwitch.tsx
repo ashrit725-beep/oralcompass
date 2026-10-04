@@ -4,7 +4,7 @@ import { viewTransition, viewVariants } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 /**
- * ViewSwitch (component plan N3-B): ONE Motion Primitives TransitionPanel per view (My journey / My plan / Compare / Documents) and for
+ * ViewSwitch (component plan N3-B): ONE Motion Primitives TransitionPanel per view (My journey / My plan / Documents) and for
  * wizard panes — never per heading or card. `wash-in`: enter y 8 → 0 + fade over 420 ms; exit is a 120 ms fade only. The container has a `min-h`
  * so the map does not collapse mid-transition (popLayout). Reduced motion: MotionConfig drops the transforms; the opacity crossfade
  * remains and the active panel renders in full.

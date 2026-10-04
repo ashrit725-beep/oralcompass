@@ -26,13 +26,12 @@ SAM_STATE = {"remaining_deductible": {"value": 5000, "status": "USER"}, "remaini
 def test_cross_account_access_is_denied_with_constant_404():
     doc = client.post("/documents", json={"filename": "plan.pdf", "sha256": "abc", "pages": 10, "text_preview": "Patient: Sam Rivera DOB: 01/02/1990"}, headers=A).json()
     est = client.post("/estimates", json={"plan_ref": "HB26", "lines": SAM_LINES, "state": SAM_STATE}, headers=A).json()
-    cmp_ = client.post("/comparisons", json={"plan_refs": ["HB26", "DD24", "ML26"], "lines": SAM_LINES, "states": {"HB26": SAM_STATE}}, headers=A).json()
-    for path in (f"/documents/{doc['id']}", f"/estimates/{est['id']}", f"/comparisons/{cmp_['id']}"):
+    for path in (f"/documents/{doc['id']}", f"/estimates/{est['id']}"):
         r = client.get(path, headers=B)
         assert r.status_code == 404 and r.json() == {"detail": NOT_FOUND}
         assert client.get(path, headers=A).status_code == 200
     denied = [e for e in client.get("/me/audit", headers=B).json() if e["outcome"] == "denied"]
-    assert len(denied) == 3 and all(set(e) == {"ts", "sub", "action", "type", "id", "outcome"} for e in denied)
+    assert len(denied) == 2 and all(set(e) == {"ts", "sub", "action", "type", "id", "outcome"} for e in denied)
     assert "Sam Rivera" not in doc["redaction_preview"]["text"] and "name_line" in doc["redaction_preview"]["removed"]
 
 
@@ -43,12 +42,6 @@ def test_unauthenticated_is_401():
 def test_fixture_totals_through_api():
     est = client.post("/estimates", json={"plan_ref": "HB26", "lines": SAM_LINES, "state": SAM_STATE}, headers=A).json()
     assert est["ledger"]["patient_total_cents"] == 66500 and est["ledger"]["plan_total_cents"] == 53500
-    cmp_ = client.post("/comparisons", json={"plan_refs": ["HB26", "DD24", "ML26"], "lines": SAM_LINES, "states": {"HB26": SAM_STATE}}, headers=A).json()
-    res = cmp_["result"]
-    assert res["columns"] == ["HB26", "DD24", "ML26"]
-    assert res["ledgers"]["DD24"]["status"] == "unresolved" and res["ledgers"]["ML26"]["status"] == "unresolved"
-    basic = next(r for r in res["grid"] if r["topic"].startswith("Basic"))
-    assert "(you pay 20%)" in basic["differences"] and "(you pay 40%)" in basic["differences"]
 
 
 def test_presets_are_read_only_and_searchable():
@@ -84,13 +77,11 @@ def test_legacy_estimates_validate_bodies_and_leave_no_temp_files(tmp_path, monk
            {"plan_ref": "HB26", "lines": [{**line, "key": "zzz"}]}]
     for body in bad:
         assert c.post("/estimates", json=body, headers=h).status_code == 422, body
-        assert c.post("/comparisons", json={"plan_refs": ["HB26", "ML26"], "lines": body["lines"], "states": {"HB26": body.get("state", {})}}, headers=h).status_code == 422
     monkeypatch.setattr(tempfile, "tempdir", str(tmp_path))
     sha = next(iter(extractor.by_sha))
     doc = c.post("/documents", json={"filename": "p.pdf", "sha256": sha, "pages": 1}, headers=h).json()
     for _ in range(3):
         assert c.post("/estimates", json={"plan_ref": f"upload:{doc['id']}", "lines": [line]}, headers=h).status_code == 201
-    assert c.post("/comparisons", json={"plan_refs": [f"upload:{doc['id']}", "HB26"], "lines": [line], "states": {f"upload:{doc['id']}": {}}}, headers=h).status_code == 201
     assert list(tmp_path.iterdir()) == []
 
 
@@ -102,3 +93,9 @@ def test_export_lists_every_stored_record_type():
     src = "".join(p.read_text() for p in (Path(__file__).resolve().parents[1] / "app").glob("*.py"))
     stored = set(re.findall(r'repo\.(?:put|patch_if_exists)\([^,]+, "([a-z_]+)"', src))
     assert stored and stored <= set(EXPORT_TYPES), stored - set(EXPORT_TYPES)
+
+
+def test_no_side_by_side_plan_route():
+    """Owner direction 2026-10-04: OralCompass shows one plan's costs; there is no route that puts plans side by side."""
+    assert client.post("/comparisons", json={"plan_refs": ["HB26", "DD24"], "lines": SAM_LINES}, headers=A).status_code in (404, 405)
+    assert not any("compar" in getattr(r, "path", "") for r in app.routes)

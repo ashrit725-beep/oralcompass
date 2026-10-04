@@ -58,15 +58,3 @@ def test_fedvip_unlimited_maximum_and_separate_out_of_network_limits():
     assert unresolved.lines[0].status == "unresolved" and "not stated in this document" in unresolved.lines[0].flags[0]   # implant class unreadable → never guessed
 
 
-def test_differences_sentence_names_each_ncflex_option_separately():
-    """numbers-3: the three NCFlex options share the carrier name before " — "; the differences sentence must still tell the columns apart."""
-    from oralcompass_engine.comparison import column_names, grid
-    plans = [PLANS["ML26"], PLANS["ML26H"], PLANS["ML26L"]]
-    names = column_names(plans)
-    assert len(set(names)) == 3, names
-    assert all(n.startswith("MetLife NCFlex Dental") for n in names)
-    row = next(r for r in grid(plans) if r["topic"].startswith("Annual maximum"))
-    for n in names:
-        assert f"{n}:" in row["differences"]
-    # different carriers keep their short names
-    assert column_names([PLANS["ML26"], PLANS["HB26"]])[0] == "MetLife NCFlex Dental"

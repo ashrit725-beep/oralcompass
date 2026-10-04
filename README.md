@@ -54,7 +54,6 @@ Phone first: iPhone 13 (WebKit) and Pixel 7 (Chromium), plus one wide window. Al
 
 - [iphone13-01-journey.png](docs/screenshots/iphone13-01-journey.png): My journey, the planned treatment path.
 - [iphone13-02-plan.png](docs/screenshots/iphone13-02-plan.png): My plan, the plan landmarks.
-- [iphone13-03-compare.png](docs/screenshots/iphone13-03-compare.png): Compare, plans side by side.
 - [iphone13-04-documents.png](docs/screenshots/iphone13-04-documents.png): Documents, uploaded plan documents.
 - [iphone13-05-redaction-review.png](docs/screenshots/iphone13-05-redaction-review.png): Fictional sample review step, 12 personal identifiers removed before AI analysis.
 - [iphone13-06-documents-redaction.png](docs/screenshots/iphone13-06-documents-redaction.png): Documents card with the server's redaction count.
@@ -62,9 +61,7 @@ Phone first: iPhone 13 (WebKit) and Pixel 7 (Chromium), plus one wide window. Al
 - [iphone13-08-procedure-sheet.png](docs/screenshots/iphone13-08-procedure-sheet.png): Root canal procedure sheet opened from the journey.
 - [pixel7-01-journey.png](docs/screenshots/pixel7-01-journey.png): My journey on Pixel 7.
 - [pixel7-02-plan.png](docs/screenshots/pixel7-02-plan.png): My plan on Pixel 7.
-- [pixel7-03-compare.png](docs/screenshots/pixel7-03-compare.png): Compare on Pixel 7.
 - [pixel7-04-documents.png](docs/screenshots/pixel7-04-documents.png): Documents on Pixel 7.
-- [pixel7-05-compare-cards.png](docs/screenshots/pixel7-05-compare-cards.png): Compare card totals labelled "Calculated from the clauses cited".
 - [wide-1440.png](docs/screenshots/wide-1440.png): The phone column in a 1440 px window.
 - [style-reference-painting.png](docs/screenshots/style-reference-painting.png): The painting the visual style is drawn from.
 
@@ -109,7 +106,7 @@ A production bundle served by `vite preview` sends no `X-Dev-User` header, so ag
 
 ## Feature tour, by tab, on a phone
 
-Four tabs sit in the bottom dock: My journey, My plan, Compare, Documents. Changing tabs scrolls the new tab to the top and moves focus to
+Three tabs sit in the bottom dock: My journey, My plan, Documents. Changing tabs scrolls the new tab to the top and moves focus to
 its heading. Details open in bottom sheets that leave the dock reachable. <!-- verify: feat/mobile-cinematic -->
 
 ### The cinematic painted map
@@ -146,10 +143,6 @@ Tapping a landmark opens its sheet, which reads at three depths: plain words, yo
 The benefits compass and the plan pickers follow below the map. Two ways to load a plan: pick a preset (real or fictional), or **upload a
 plan document**: personal details removed on the device (next section), extraction stages, a review table where each field shows its quote
 and verification state, then **Publish this plan version** creates an immutable `UP1`, `UP2`, ... that loads through the same engine.
-
-**Compare.** Up to three plans in the order the person chose them, one plan per card: swipe between the cards or use the plan switcher
-pinned on top; the differences stay visible. <!-- verify: feat/mobile-cinematic --> No sort, no winner, no highlighted total; the
-eligibility quote sits with every plan, and nothing (usage, network, allowed amounts) transfers between plans.
 
 **Documents.** The clause list for the active plan as list rows, a pdf.js page view for stored PDFs with the stitch highlighted, and an
 honest note when a real plan's PDF is not stored (the official link is shown instead). The upload wizard and reminders open in bottom sheets.
@@ -199,8 +192,8 @@ answers below as parchment notes, not chat bubbles.
 - **What it can answer:** what a term means (a glossary of US dental benefit terms such as deductible, plan share, allowed amount, annual
   maximum, waiting period, frequency limit, in-network and out-of-network, alternate benefit, exclusions, predetermination, EOB, procedure
   code, copay, balance billing, benefit year; `api/app/assistant_glossary.py`), what you and the plan pay for the planned work, why one
-  procedure on the journey costs what it does, how much deductible and annual maximum are left, how a term differs across the plans on
-  Compare, and what a document covers.
+  procedure on the journey costs what it does, how much deductible and annual maximum are left, and what a document
+  covers.
 - **Guards.** Questions are classified deterministically first. It never computes: every amount is a pointer into the engine's ledger.
   A "should I" question gets "OralCompass explains what your documents say; it does not choose for you." followed by what the document says;
   a clinical question gets "This is a question for your dentist; OralCompass only explains your plan and your costs." In live mode the

@@ -1,7 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import { motion } from "motion/react";
 import { FOOTER, NAV, PASSAGE, TAGLINE, UI, type LandmarkId } from "@/lib/copy";
-import { defaultCompareColumns } from "@/lib/appData";
 import type { Stitch } from "@/lib/types";
 import { useAppData } from "@/hooks/useAppData";
 import { useJourneySelection } from "@/hooks/useJourneySelection";
@@ -13,7 +12,6 @@ import { AskDockLazy as AskDock, preloadAssistant } from "@/components/assistant
 import { askBoxScope } from "@/lib/assistant";
 import { useMeasuredVar } from "@/hooks/useAskKeyboardInset";
 import { ClauseCard } from "@/components/ClauseCard";
-import { CompareView } from "@/components/CompareView";
 import { DocumentsView } from "@/components/DocumentsView";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { NavIcon } from "@/components/NavIcon";
@@ -29,9 +27,9 @@ const TABS = Object.keys(NAV) as Tab[];
 /**
  * OralCompass — "Your care journey. Your coverage. Clearly mapped."
  * The shell (spec §6): data from `useAppData`, selection from `useJourneySelection`, navigation as shadcn Tabs (line variant, 44 px,
- * `motion.span layoutId="nav-underline"` glides between tabs — it snaps under reduced motion), one `ViewSwitch` for the four views,
+ * `motion.span layoutId="nav-underline"` glides between tabs — it snaps under reduced motion), one `ViewSwitch` for the three views,
  * the error and loading banners, the ClauseCard and the footer. `<MotionConfig reducedMotion="user">` wraps the app in main.tsx.
- * Mobile-only (owner direction 2026-10-04, "its fully a mobile app"): the phone layout is the only layout. The four tab triggers sit in the
+ * Mobile-only (owner direction 2026-10-04, "its fully a mobile app"): the phone layout is the only layout. The three tab triggers sit in the
  * bottom dock (Eldora UI dock, orchestrator note 7) with an icon and a visible label at every width; on a window wider than 480 px the same
  * phone app renders in the centred `.app` column and the painted journey backdrop fills the window behind it (`.cinema`, decorative).
  * A tab change opens the new view at the top and, after a tap on the dock, focuses its heading (useTabChangeReset, note 19a); the
@@ -58,14 +56,11 @@ export default function App() {
   const dockRef = useRef<HTMLDivElement>(null);
   useMeasuredVar(dockRef, "--dock-h", true);
   // "Ask in plain words" on every tab: the journey-level scope (plan + the journey's estimate + the journey, no line)
-  // on Compare the scope also carries the plans currently compared (scope.compare, 1–3 refs) for the compare_terms answers
-  const [compared, setCompared] = useState<string[]>([]);
-  const comparedKey = tab === "compare" ? compared.join(",") : "";
-  const askScope = useMemo(() => askBoxScope(planRef, estimate, data.view?.id, comparedKey ? comparedKey.split(",") : null), [planRef, estimate, data.view?.id, comparedKey]);
+  const askScope = useMemo(() => askBoxScope(planRef, estimate, data.view?.id), [planRef, estimate, data.view?.id]);
   const openStitchById = useCallback((id: string) => { const s = stitches.find((x) => x.id === id); if (s) setStitch(s); }, [stitches]);
 
   const list = (
-    <TabsList variant="line" className="dock-list grid! h-auto! w-full grid-cols-4 gap-1">
+    <TabsList variant="line" className="dock-list grid! h-auto! w-full grid-cols-3 gap-1">
       {TABS.map((t) => (
         <DockIcon key={t}>
           <TabsTrigger value={t} className="relative h-auto! min-h-[52px] w-full flex-col gap-0.5 rounded-xl px-1 py-1 text-[12.5px] leading-tight after:hidden">
@@ -109,11 +104,6 @@ export default function App() {
             <div data-view="plan" className="view-pane">
               <ErrorBoundary label={NAV.plan} resetKey={tab}>
                 <PlanView data={data} landmark={landmark} onLandmark={setLandmark} stitch={stitch} onStitch={setStitch} onOpenDocuments={openDocuments} />
-              </ErrorBoundary>
-            </div>
-            <div data-view="compare" className="view-pane">
-              <ErrorBoundary label={NAV.compare} resetKey={tab}>
-                <CompareView plans={plans} items={items} benefits={benefits} initial={defaultCompareColumns(planRef, plans)} onColumns={setCompared} />
               </ErrorBoundary>
             </div>
             <div data-view="documents" className="view-pane">

@@ -134,17 +134,16 @@ export const ASSIST = {
   hideDetails: "Hide the details",
   announce: (text: string) => `Answer: ${text}`,
   announceSimpler: (text: string) => `Even simpler: ${text}`,
-  // tab-aware suggestion chips (everyday wording; the journey's comparison chip is built from the journey's own procedures)
+  // tab-aware suggestion chips (everyday wording; the journey's procedure chip is built from the journey's own procedures)
   boxChips: {
     journey: ["What will I pay in total?", "What is a deductible?", "How much of my yearly maximum is left?"],
     plan: ["What is a deductible?", "What does plan share mean?", "What is an annual maximum?", "What is a waiting period?"],
-    compare: ["What is the difference between these plans' deductibles?", "What does 'allowed amount' mean?", "What is an annual maximum?", "What does in-network mean?"],
     documents: ["What does this document cover?", "What is a frequency limit?", "What is an alternate benefit?", "What does 'not covered' mean?"],
   } as Record<string, string[]>,
   chipWhyMore: (higher: string, lower: string) => `Why does ${higher} cost more than ${lower}?`,
   chipWhatFor: (name: string) => `What do I pay for ${name}?`,
   chipFallback: "What does plan share mean?",
-  /** Everyday names for the 16 procedure keys, used only to build the journey's comparison chip. */
+  /** Everyday names for the 16 procedure keys, used only to build the journey's procedure chip. */
   everydayName: {
     exam: "the checkup", cleaning: "the cleaning", bitewing_xrays: "the x-rays", fluoride_child: "the fluoride treatment", sealant: "the sealant",
     composite: "the filling", amalgam: "the filling", extraction_simple: "the extraction", extraction_surgical: "the surgical extraction",

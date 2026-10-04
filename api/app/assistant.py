@@ -52,8 +52,8 @@ log = logging.getLogger("oralcompass.assistant")
 router = APIRouter()
 
 INTENTS = ("explain_step", "explain_clause", "where_from", "what_if_requested", "advice_request", "out_of_scope", "clarify",
-           "define_term", "journey_total", "remaining_benefits", "line_by_name", "compare_terms", "document_overview")
-JOURNEY_INTENTS = ("define_term", "journey_total", "remaining_benefits", "line_by_name", "compare_terms", "document_overview")
+           "define_term", "journey_total", "remaining_benefits", "line_by_name", "document_overview")
+JOURNEY_INTENTS = ("define_term", "journey_total", "remaining_benefits", "line_by_name", "document_overview")
 ADVICE_KEYWORDS = ("should", "worth", "recommend", "best", "better", "skip", "wait", "which plan", "do i need")
 CLINICAL_KEYWORDS = ("hurt", "pain", "painful", "safe", "infection", "antibiotic", "numb", "heal", "healing", "anesthesia", "anaesthesia", "symptom", "bleed",
                      "swelling", "medication", "ibuprofen", "diagnos", "necessary", "urgent")
@@ -87,16 +87,6 @@ class AssistScope(BaseModel):
     checkpoint_key: Optional[str] = None
     stitch: Optional[str] = None
     journey_id: Optional[str] = None
-    compare: Optional[list[str]] = Field(default=None, min_length=1, max_length=3)   # plan_refs selected on Compare (owner-scoped in load_scope)
-
-    @field_validator("compare")
-    @classmethod
-    def _compare_refs(cls, v):
-        if v is None:
-            return v
-        if any(not isinstance(r, str) or not 0 < len(r) <= 80 for r in v):
-            raise ValueError("compare holds 1 to 3 plan references")
-        return list(dict.fromkeys(v))
 
 
 class AssistIn(BaseModel):
@@ -121,7 +111,7 @@ def estimate_total_ref(which: str) -> dict:
 
 def field_ref(path: str, plan_ref: Optional[str] = None) -> dict:
     out = {"kind": "field", "path": path}
-    if plan_ref:                                   # a compared plan's own field (Compare tab): rendered with that plan's badge
+    if plan_ref:                                   # another plan's own field: rendered with that plan's badge
         out["plan_ref"] = plan_ref
     return out
 
@@ -171,7 +161,6 @@ class Ctx:
     step_rule: Optional[str] = None
     tools_used: list[str] = field(default_factory=list)
     refs_by_id: dict[str, dict] = field(default_factory=dict)
-    compared: list[tuple[str, PlanModel, list[dict]]] = field(default_factory=list)
     ref_notes: dict[str, str] = field(default_factory=dict)
 
     def allow(self, ref: dict, note: str = "") -> dict:
@@ -334,9 +323,6 @@ def load_scope(user: User, scope: AssistScope) -> Ctx:
             scope.line_index = ids.index(ctx.item["id"])
     if scope.journey_id:
         repo.get_owned(user.sub, "journey", scope.journey_id)
-    for ref in scope.compare or []:                # each compared plan: a preset or an owned, published upload; anything else is the 404
-        cplan, _cmeta, ccls, cref = resolve_plan_ref(user, ref)
-        ctx.compared.append((cref, cplan, ccls))
     if ctx.estimate and scope.line_index is not None:
         if scope.line_index >= len(ctx.lines):
             raise HTTPException(status_code=404, detail=NOT_FOUND)
@@ -402,13 +388,6 @@ def gather(ctx: Ctx, message: str) -> dict:
                 ctx.allow(field_ref(f"benefits.{k}"), "from your benefit statement")
         facts["benefits"] = {"source_date": (ctx.benefits.get("source") or {}).get("date"), "derivation": ctx.benefits.get("derivation"),
                              "remaining_deductible_cents": ctx.benefits.get("remaining_deductible_cents"), "remaining_max_cents": ctx.benefits.get("remaining_max_cents")}
-    for cref, cplan, ccls in ctx.compared:
-        for attr in ("deductible_individual", "annual_max"):
-            if getattr(cplan, attr).known:
-                ctx.allow(field_ref(f"plan.{attr}", cref), f"{cref} plan document figure")
-        ctx.allow(field_ref("plan.annual_max_unlimited", cref), f"whether {cref} states no annual maximum")
-        for c in ccls:
-            ctx.allow(clause_ref(f"{c['doc']}#p{c['page']}", plan_ref=cref), f"{cref} {c['field']}")
     if ctx.estimate:
         ctx.allow(estimate_total_ref("patient"), "what you pay for the planned work (calculated)")
         ctx.allow(estimate_total_ref("plan"), "what the plan pays for the planned work (calculated)")
@@ -921,19 +900,6 @@ _DEFINE_RE = re.compile(r"\b(what(?:'?s| is| are| does)|when (?:does|is|do)|mean
 
 _OVERVIEW_RE = re.compile(r"\b(this|the|my) (document|plan document|booklet|paper|papers)\b.{0,30}\b(cover|covers|about|say|include|includes)\b"
                           r"|\bwhat(?:'?s| is) in (this|the|my) (document|booklet)\b")
-_COMPARE_WORDS = re.compile(r"\b(compare|compared|comparison|differ|difference|different|versus|vs|each plan|these plans|both plans)\b")
-_COMPARE_FIELDS = {"plan.deductible_individual": "deductible", "plan.annual_max": "annual maximum"}
-
-
-def _compare_field(low: str) -> Optional[str]:
-    """The plan field a Compare question is about: a glossary term with a plan value, asked as a comparison (or with no other topic)."""
-    key = lookup_term(low)
-    pf = (GLOSSARY.get(key) or {}).get("plan_field") if key else None
-    if pf in _COMPARE_FIELDS and (_COMPARE_WORDS.search(low) or not _DEFINE_RE.search(low)):
-        return pf
-    return None
-
-
 def _named_lines(ctx: Ctx, low: str) -> list[int]:
     cands = resolve_procedure(low, ctx).get("candidates", [])
     keys = _line_procedure_keys(ctx)
@@ -949,8 +915,6 @@ def intent_for_journey(low: str, ctx: Ctx) -> Optional[str]:
     """Journey-level questions (no line, no clause in scope), classified deterministically: remaining, totals, a named line, then a glossary term."""
     if ctx.scope.stitch or ctx.scope.line_index is not None or ctx.scope.step_key or ctx.scope.checkpoint_key:
         return None
-    if ctx.compared and _compare_field(low):
-        return "compare_terms"
     if _OVERVIEW_RE.search(low):
         return "document_overview"
     if _REMAINING_RE.search(low) and re.search(r"\b(max|maximum|deductible|deductable|benefits?)\b", low):
@@ -1078,30 +1042,6 @@ def compose_journey(ctx: Ctx, intent: str, message: str, style: str) -> tuple[Op
                 return _simple(fill(S["two_lines_simpler"], a=na, b=nb), refs[:2]), details
             return _simple(fill(S["two_lines"], a=na, b=nb), refs), details
         return None, []
-    if intent == "compare_terms":
-        pf = _compare_field(low) or "plan.deductible_individual"
-        attr = pf.split(".", 1)[1]
-        plans = [(ctx.plan_ref, ctx.plan, ctx.clauses)] + [c for c in ctx.compared if c[0] != ctx.plan_ref]
-        parts, refs, details = [], [], []
-        for cref, cplan, ccls in plans[:3]:
-            label = _plan_label(cref)
-            v = getattr(cplan, attr)
-            if attr == "annual_max" and cplan.annual_max_unlimited:
-                ref = field_ref("plan.annual_max_unlimited", cref)
-            elif v.known:
-                ref = field_ref(pf, cref)
-            else:
-                parts.append(fill(S["compare_unstated"], plan=label))
-                continue
-            parts.append(S["compare_part"].format(n=len(refs), plan=label))
-            refs.append(ref)
-            cl = [clause_ref(f"{c['doc']}#p{c['page']}", plan_ref=cref) for c in ccls if c["field"].split(".")[0] == attr][:1]
-            details.append({"type": "sentence", "text": f"{label}: {{{{ref:0}}}}, from its own plan papers.", "refs": [ref] + cl})
-        joined = join_words(parts)
-        term = _COMPARE_FIELDS[pf]
-        if simpler:
-            return _simple(fill(S["compare_simpler"], parts=joined), refs), details
-        return _simple(fill(S["compare"], term=term, parts=joined), refs), details
     if intent == "document_overview":
         topics, seen, details = [], set(), []
         for c in ctx.clauses:
@@ -1230,7 +1170,7 @@ def ask(body: AssistIn, request: Request, user: User = Depends(current_user)):
         resp["blocks"] = ([lead] if lead else []) + details
         resp["suggested"] = suggestions_for(ctx, intent); resp["ribbon"] = ASSIST_RIBBON_DEMO; resp["tools_used"] = list(ctx.tools_used)
         return with_lead(ctx, resp, body.style)
-    if intent in ("define_term", "journey_total", "remaining_benefits", "compare_terms", "document_overview"):    # journey level: deterministic in every mode, refs only
+    if intent in ("define_term", "journey_total", "remaining_benefits", "document_overview"):    # journey level: deterministic in every mode, refs only
         lead, details = compose_journey(ctx, intent, message, body.style)
         resp["blocks"] = ([lead] if lead else []) + details
         if not resp["blocks"]:

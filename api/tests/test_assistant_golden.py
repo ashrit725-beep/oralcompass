@@ -1,8 +1,8 @@
 """Golden questions (api/tests/fixtures/assistant_golden.json) against the demo composition of POST /me/assistant.
 
-The file checks always run (60 cases, known personas and intents, glossary terms found by lookup_term, amount and advice words always
+The file checks always run (58 cases, known personas and intents, glossary terms found by lookup_term, amount and advice words always
 excluded). The API run needs the journey-level intents of design point 3 (define_term, journey_total, line_by_name, remaining_benefits,
-compare_terms, document_overview) and the simple-terms-first answer of design point 2, which api/app/assistant.py exposes; it always
+document_overview) and the simple-terms-first answer of design point 2, which api/app/assistant.py exposes; it always
 runs. Demo mode only: conftest.py keeps every test away
 from the live model."""
 import json
@@ -28,8 +28,8 @@ from app.main import app  # noqa: E402
 GOLDEN = json.loads((Path(__file__).resolve().parent / "fixtures" / "assistant_golden.json").read_text(encoding="utf-8"))
 CASES = GOLDEN["cases"]
 OLD_INTENTS = {"explain_step", "explain_clause", "where_from", "what_if_requested", "advice_request", "out_of_scope", "clarify"}
-NEW_INTENTS = {"define_term", "journey_total", "line_by_name", "remaining_benefits", "compare_terms", "document_overview"}
-SIMPLER_INTENTS = {"define_term", "journey_total", "line_by_name", "remaining_benefits", "compare_terms"}
+NEW_INTENTS = {"define_term", "journey_total", "line_by_name", "remaining_benefits", "document_overview"}
+SIMPLER_INTENTS = {"define_term", "journey_total", "line_by_name", "remaining_benefits"}
 SENTENCES = re.compile(r"(?<=[.!?])\s+")
 CHECKED_BLOCK_TYPES = {"simple", "sentence", "template", "clarify", None}     # verbatim document quotes are data and are not word-checked
 
@@ -46,7 +46,6 @@ def _missing_features() -> list[str]:
 
 def test_the_journey_level_assistant_is_exposed():
     assert _missing_features() == []
-    assert _compare_field() == "compare"
 
 
 def needs_assistant(f):            # the golden run is always on (it was skipped until the journey-level assistant landed)
@@ -55,13 +54,13 @@ def needs_assistant(f):            # the golden run is always on (it was skipped
 
 # ---------- the file itself (always runs) ----------
 def test_golden_file_shape():
-    assert len(CASES) == 60
+    assert len(CASES) == 58
     assert {"alex", "sam", "empty", "fm26h"} == set(GOLDEN["personas"])
     ids = [c["id"] for c in CASES]
     assert len(ids) == len(set(ids))
     for c in CASES:
         assert c["persona"] in GOLDEN["personas"], c["id"]
-        assert c["tab"] in {"journey", "plan", "compare", "documents"}, c["id"]
+        assert c["tab"] in {"journey", "plan", "documents"}, c["id"]
         assert 0 < len(c["message"]) <= 400, c["id"]
         assert c["expected_intent"] in OLD_INTENTS | NEW_INTENTS, c["id"]
         assert all(i in OLD_INTENTS | NEW_INTENTS for i in c.get("also_accept", [])), c["id"]
@@ -69,8 +68,7 @@ def test_golden_file_shape():
         for w in ("$", "%", "should", "best", "recommend"):
             assert w in c["must_not_contain"], (c["id"], w)
         assert not set(map(str.lower, c["must_contain"])) & set(map(str.lower, c["must_not_contain"])), c["id"]
-        if c.get("compare"):
-            assert c["tab"] == "compare" and c["persona"] in ("alex", "sam"), c["id"]
+        assert "compare" not in c, c["id"]
     for p in GOLDEN["personas"].values():
         assert (ROOT / "fixtures/plans" / f"{p['plan_ref'].lower()}.json").exists(), p
 
@@ -124,18 +122,9 @@ def scopes():
     return out
 
 
-def _compare_field() -> str | None:
-    return next((f for f in assistant.AssistScope.model_fields if "compare" in f), None)
-
-
 def _ask(scopes, case, style=None):
     headers, scope = scopes[case["persona"]]
     scope = dict(scope)
-    if case.get("compare"):
-        field = _compare_field()
-        if field is None:
-            pytest.skip("AssistScope has no field for the plans selected on Compare yet")
-        scope[field] = case["compare"]
     body = {"message": case["message"], "scope": scope}
     if style:
         body["style"] = style

@@ -3,7 +3,7 @@
 
 Devices (mobile-only app, owner direction 2026-10-04: the phone layout is the only layout): iPhone 13 WebKit (reduced motion), Pixel 7
 Chromium (motion on), and a 1440x900 Chromium window where the same phone app renders in its centred 480 px column (motion on and reduced).
-On every tab (My journey, My plan, Compare, Documents) it clicks every visible button, link, tab, checkpoint, stitch chip, dial stop and
+On every tab (My journey, My plan, Documents) it clicks every visible button, link, tab, checkpoint, stitch chip, dial stop and
 summary, cycles every <select> option, opens and closes every drawer / sheet / dialog / popover (pointer, then Escape), submits the
 benefit-statement form invalid then valid, runs the upload wizard with a .txt (rejected) and the fixture PDF (demo extraction), asks the
 assistant five questions (one an advice question), and exercises Back/Forward plus a phone<->wide-window resize with a drawer open.
@@ -38,7 +38,7 @@ EXPECTED_STATUS = {404, 409, 415, 422}
 # the assistant's "paused" line, so a throttle there is a handled answer, not a fault (each run also uses its own dev user)
 THROTTLED_OK = re.compile(r"/api/me/(explain|assistant)$")
 SKIP_NAME = re.compile(r"delete|erase|sign out|log out|remove all|publish|hold to|reset everything|export", re.I)
-TABS = ["My journey", "My plan", "Compare", "Documents"]
+TABS = ["My journey", "My plan", "Documents"]
 QUESTIONS = ["What is the annual maximum?", "How much is the deductible?", "Is there a waiting period for crowns?",
              "What does coinsurance mean here?", "Should I get the crown now or wait?"]
 REACT_WARN = re.compile(r"Each child in a list|not wrapped in act|uncontrolled|controlled input|findDOMNode|DialogContent|DialogTitle|"
@@ -315,12 +315,6 @@ class Sweep:
         self.click_all("My plan")
         self.cycle_selects("My plan")
 
-    def compare(self):
-        self.tab("Compare")
-        self.wait(1200)
-        self.click_all("Compare")
-        self.cycle_selects("Compare")
-
     def documents(self):
         self.tab("Documents")
         p = self.page
@@ -409,7 +403,6 @@ class Sweep:
             self.start()
             self.journey()
             self.plan()
-            self.compare()
             self.documents()
             self.lifecycle(phone)
         except Exception as e:  # noqa: BLE001

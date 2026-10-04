@@ -1,5 +1,5 @@
 /**
- * Copy namespace: PLAN (My plan view, plan selector, benefit statement form, treatment plan importer, Compare, Documents); owner: web foundation + map agent.
+ * Copy namespace: PLAN (My plan view, plan selector, benefit statement form, treatment plan importer, Documents); owner: web foundation + map agent.
  * Append strings here only; `lib/copy.ts` re-exports this file. Every string must pass `python3 tools/advice_lint.py`; no em dashes.
  * Voice: what the documents say, what your records say, what the arithmetic yields. Nothing here tells the reader what to do.
  */
@@ -166,41 +166,7 @@ export const PLAN = {
   readIgnoredTitle: (n: number) => `Text that was not used (${n})`,
   readIgnoredNote: "Totals, insurance estimates and sentences addressed to automated readers are listed here and not used.",
   readManualTitle: "Add one procedure by hand",
-  // ---- compare (CLAUDE.md rule 6) ----
-  cmpTitle: "Side by side",
-  cmpViewTitle: "Compare plans",
-  cmpEligibilitySeeDoc: "see the plan document",
-  cmpPicker: (i: number) => `Plan ${i}`,
-  cmpNone: "none",
-  cmpProcedures: (list: string) => `Procedures compared: ${list}.`,
-  cmpNoneRecorded: "none recorded as planned",
-  cmpUsageFor: (codes: string) => `Usage figures are entered for: ${codes}. Other columns show what is not provided.`,
-  cmpEnteredThisPlan: "Usage, network status and allowed amounts in this column: entered for this plan only.",
-  cmpNothingEntered: "Nothing is entered for this plan; figures from other plans are never carried over.",
-  cmpNoPlanned: "No planned procedures to compare. A treatment item on My journey or My plan starts the comparison.",
-  cmpLedgers: "Same estimate, each plan",
-  cmpLedgerOf: (title: string) => `${title}: ledger`,
-  cmpTopic: "Topic",
-  cmpEligibility: "Eligibility",
-  cmpOpenClause: (topic: string, plan: string) => `${topic} for ${plan}: open the clause behind this cell`,
-  cmpNoClause: "No clause is cited for this cell; the value is what the document or your records provide.",
-  cmpClauseFrom: (doc: string, page: string) => `${doc}, ${page}`,
-  cmpPremium: "Premium (employee only, monthly)",
-  cmpUpperBound: "(upper bound)",
-  cmpUnresolvedFor: "Unresolved. Not provided for this plan:",
-  cmpClose: "Close clause",
-  // phone Compare (mobile-only direction): one plan per card under a sticky plan switcher
-  cmpChoose: "Choose plans",
-  cmpChooseClose: "Close plan choice",
-  cmpDone: "Done",
-  cmpPickTwo: "Two or more plans are needed for a comparison.",
-  cmpOrderNote: "Plans appear in the order you chose. Inputs are entered for each plan separately; nothing is copied between plans.",
-  cmpSwitcher: "Plans in this comparison",
-  cmpCardsRegion: "Plan cards. Swipe sideways to move between plans.",
-  cmpCardPos: (i: number, n: number) => `Plan ${i} of ${n}`,
-  cmpDiffers: "Differs between plans",
-  cmpWhoCanEnroll: "Where offered and who can enroll",
-  cmpCardEstimate: "Estimated you pay for the procedures compared",
+  noneOption: "none",
   // ---- documents ----
   docsPlan: "Plan documents",
   docsMine: "Your documents",

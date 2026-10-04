@@ -10,7 +10,7 @@ and `docs/SECURITY.md`.
 ```mermaid
 flowchart LR
   subgraph Browser["Phone app in the browser (React 18 + Vite + Tailwind v4 + shadcn + Motion)"]
-    Views["Views: My journey, My plan, Compare, Documents, in the dock"]
+    Views["Views: My journey, My plan, Documents, in the dock"]
     Ask["Ask in plain words (every tab)"]
     Redact["redact.ts: personal details found on the device"]
     Lib["web/src/lib: passage.ts, trail.ts, stitches.ts, api.ts, upload.ts, copy/*"]
@@ -65,7 +65,7 @@ flowchart TB
   W -- "yes (laptop, tablet)" --> C["Cinema layer: painted backdrop, fixed, full-bleed, vignette and ink scrim"]
   C --> Col["App column centered, at most 480 px, own parchment and edge shadow"]
   P & Col --> Shell["App shell: compact header, tab panel, Ask in plain words field, dock"]
-  Shell --> Tabs["Dock tabs: My journey, My plan, Compare, Documents"]
+  Shell --> Tabs["Dock tabs: My journey, My plan, Documents"]
   Tabs -- "tab change" --> Top["Scroll to top, focus the new panel heading"]
   Shell --> Sheets["Bottom sheets: procedure, landmark, clause, Ask, upload, reminders"]
   Tabs --> Stage["CinematicStage (journey or plan art): plate, title card, map layer, bottom fade, vignette"]
@@ -195,7 +195,7 @@ flowchart TB
   T --> C{"Classify deterministically: keywords, glossary lookup_term, procedure names"}
   C -- "advice question" --> AT["Plain template: explains, does not choose; then what the document says"]
   C -- "clinical or out of scope" --> CT["Template: a question for your dentist"]
-  C -- "define_term, journey_total, line_by_name, remaining_benefits, compare_terms, document_overview, explain_step, explain_clause" --> TP["Template answer from engine fields and the glossary"]
+  C -- "define_term, journey_total, line_by_name, remaining_benefits, document_overview, explain_step, explain_clause" --> TP["Template answer from engine fields and the glossary"]
   TP --> Mode{"Live and guard allows?"}
   Mode -- "no (demo)" --> B
   Mode -- "yes" --> LV["Model rewrites only the simple sentence, same refs, redacted facts and question"]
