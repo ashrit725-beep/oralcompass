@@ -153,7 +153,7 @@ label { display: flex; flex-direction: column; gap: .25rem; font-size: .9rem; co
 .toggles { display: flex; gap: .5rem; flex-wrap: wrap; align-items: center; margin-bottom: .75rem; }
 .toggles button { background: transparent !important; color: var(--ink) !important; border: 1px solid var(--rule) !important; }
 .toggles button[aria-pressed="true"] { background: var(--parchment) !important; border-color: var(--gold) !important; }
-.detail { background: var(--paper-deep); border: 1px solid var(--rule); border-radius: var(--radius); box-shadow: var(--shadow); max-height: calc(100vh - 140px); overflow: auto; }
+.detail { background: var(--paper-deep); border: 1px solid var(--rule); border-radius: var(--radius); box-shadow: var(--shadow); max-height: calc(100vh - 140px); overflow: auto; scroll-padding-top: 4rem; }
 .detail.is-empty { display: none; }
 .detail-bar { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: .6rem .9rem; border-bottom: 1px solid var(--rule); position: sticky; top: 0; background: var(--paper-deep); z-index: 1; }
 .crumbs { margin: 0; font-size: .85rem; color: var(--ink-soft); }
@@ -251,7 +251,7 @@ label { display: flex; flex-direction: column; gap: .25rem; font-size: .9rem; co
 .pickers { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: .75rem; margin: .75rem 0; }
 /* The comparison table only (`table.grid`): the bare `.grid` selector also matched Tailwind's `grid` display utility on every shadcn Dialog,
    RubberSegment thumb layer and Popover (640 px minimum on phones); scoped at integration, 2026-10-03. */
-.compare .banner { font-weight: 600; } .grid-scroll { overflow: auto; } table.grid { width: 100%; border-collapse: collapse; font-size: .9rem; min-width: 640px; }
+.compare .banner { font-weight: 600; } .grid-scroll { overflow: auto; scroll-padding-top: 3.5rem; } table.grid { width: 100%; border-collapse: collapse; font-size: .9rem; min-width: 640px; }
 table.grid th, table.grid td { text-align: left; vertical-align: top; padding: .5rem; border-bottom: 1px solid var(--rule); }
 table.grid thead th { background: var(--paper-deep); position: sticky; top: 0; }
 .plan-h small { display: block; font-weight: 400; color: var(--ink-soft); }
