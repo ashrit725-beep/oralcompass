@@ -10,7 +10,7 @@ Generated 2026-10-03 by `tools/audit_data.py` (re-run after any fixture change).
 - fictional_plans: HB26, NW26, SM26, TW26
 - users: 3
 - journeys: 4
-- documents_stored: 4
+- documents_stored: 5
 - procedure_codes_mapped: 16
 - benchmark_rows: 33
 
