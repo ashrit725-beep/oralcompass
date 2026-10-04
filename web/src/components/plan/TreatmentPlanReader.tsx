@@ -4,12 +4,15 @@ import FileUpload from "@/components/kokonutui/file-upload";
 import { Money } from "@/components/Money";
 import { EvidenceBadge } from "@/components/Primitives";
 import { StageLoader } from "@/components/StageLoader";
+import { RedactionCountLine } from "@/components/upload/ServerRedactionLine";
 import { Button } from "@/components/ui/button";
 import { ApiError, api } from "@/lib/api";
 import type { ConfirmItem, ReadItem, ReadResponse, ReadSample } from "@/lib/ai-types";
 import { PLAN, PLAN_READ } from "@/lib/copy/plan";
 import { dollarsToCents } from "@/lib/plan-catalog";
-import { fileGate, isImageFile } from "@/lib/reader-gate";
+import { fileGate, isImageFile, isPdfFile, redactOnDevice, READER_MAX_TEXT } from "@/lib/reader-gate";
+import { UPLOAD } from "@/lib/copy/upload";
+import { serverRedactionSummary } from "@/lib/redaction-summary";
 import type { TreatmentItem } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -34,7 +37,7 @@ export function TreatmentPlanReader({ onConfirmed }: TreatmentPlanReaderProps) {
   const [text, setText] = useState("");
   const [samples, setSamples] = useState<ReadSample[]>([]);
   const [health, setHealth] = useState<{ mode: "demo" | "live"; model?: string } | null>(null);
-  const [busy, setBusy] = useState<null | "text" | "file">(null);
+  const [busy, setBusy] = useState<null | "text" | "file" | "pdf">(null);
   const [file, setFile] = useState<File | null>(null);
   const [staged, setStaged] = useState<File | null>(null);
   const [ack, setAck] = useState(false);
@@ -45,6 +48,9 @@ export function TreatmentPlanReader({ onConfirmed }: TreatmentPlanReaderProps) {
   const [message, setMessage] = useState<string | null>(null);
   // live mode, photo or scan: the server holds it until the visitor confirms the notice (nothing is sent before that; docs/SECURITY.md)
   const [held, setHeld] = useState<{ file: File; notice: string } | null>(null);
+  // client redaction design point 6: pasted text and a PDF's text layer are redacted ON THIS DEVICE before they are sent; this is the count
+  // (null when a file went to the server as is: a photo or a scanned page cannot be redacted)
+  const [deviceRemoved, setDeviceRemoved] = useState<{ total: number; from: "text" | "pdf" } | null>(null);
   const confirmRef = useRef<HTMLDivElement>(null);   // the shadcn Button takes no ref (React 18 function component)
   useEffect(() => { if (held) confirmRef.current?.querySelector<HTMLButtonElement>(".tpr-image-send")?.focus(); }, [held]);
   // The section usually sits in a closed <details>: nothing is fetched and no file input exists until it has been visible once.
@@ -68,14 +74,37 @@ export function TreatmentPlanReader({ onConfirmed }: TreatmentPlanReaderProps) {
     setError(e instanceof ApiError && e.status === 429 ? PLAN.readRateLimited : e instanceof ApiError && e.status === 413 ? PLAN.readFileTooLarge
       : e instanceof ApiError && e.status === 415 ? PLAN.readFileWrongType : PLAN.readError);
   }
+  /** Redact on this device, then send only the redacted text (the raw text never leaves the browser). */
+  async function sendRedacted(raw: string, from: "text" | "pdf") {
+    const r = redactOnDevice(raw);
+    setDeviceRemoved({ total: r.total, from });
+    show(await api.readTreatmentPlanText(r.text));
+  }
   async function readText() {
     if (!text.trim()) { setError(PLAN.readTextRequired); return; }
-    setBusy("text"); setError(null); setMessage(null); setResult(null);
-    try { show(await api.readTreatmentPlanText(text)); } catch (e) { fail(e); } finally { setBusy(null); }
+    setBusy("text"); setError(null); setMessage(null); setResult(null); setDeviceRemoved(null);
+    try { await sendRedacted(text, "text"); } catch (e) { setDeviceRemoved(null); fail(e); } finally { setBusy(null); }
+  }
+  /** A PDF with a text layer is read and redacted here and sent as text, so it needs no notice; a scanned PDF (no text) takes the file path. */
+  async function readPdfOnDevice(f: File): Promise<boolean> {
+    setFile(f); setBusy("pdf"); setError(null); setMessage(null); setResult(null); setDeviceRemoved(null);
+    try {
+      let raw: string;
+      try {
+        const { inspectPdf } = await import("@/lib/upload");
+        raw = (await inspectPdf(await f.arrayBuffer())).pageTexts.join("\n");
+      } catch {
+        return false;                                  // unreadable here: the file path (and its notice) decides and reports it
+      }
+      if (raw.replace(/\s+/g, "").length < 20 || raw.length > READER_MAX_TEXT) return false;   // scanned, or longer than the text path takes
+      try { await sendRedacted(raw, "pdf"); } catch (e) { setDeviceRemoved(null); fail(e); }
+      return true;                                     // handled: the raw PDF is never sent after a failed text read
+    } finally { setBusy(null); setFile(null); }
   }
   /** A picked file is never posted straight away in live mode: it waits for the notice to be acknowledged (orchestrator note 11). */
-  function pickFile(f: File) {
+  async function pickFile(f: File) {
     setError(null); setMessage(null); setAck(false);
+    if (isPdfFile(f) && (await readPdfOnDevice(f))) return;
     const gate = fileGate(health?.mode, f);
     if (gate === "demo_image") { setStaged(null); setMessage(PLAN.readDemoImage); return; }
     if (gate === "confirm") { setStaged(f); return; }
@@ -86,7 +115,7 @@ export function TreatmentPlanReader({ onConfirmed }: TreatmentPlanReaderProps) {
   /** `imageConsent`: the visitor acknowledged the notice for this file; the server still holds a photo or scan without it (needs_image_consent). */
   async function readFile(f: File, imageConsent = false) {
     setStaged(null); setAck(false); setHeld(null);
-    setFile(f); setBusy("file"); setError(null); setMessage(null); setResult(null);
+    setFile(f); setBusy("file"); setError(null); setMessage(null); setResult(null); setDeviceRemoved(null);
     try {
       const res = await api.readTreatmentPlanFile(f, imageConsent);
       if (res.needs_image_consent) setHeld({ file: f, notice: res.image_notice || PLAN.readImageNotice });
@@ -118,6 +147,7 @@ export function TreatmentPlanReader({ onConfirmed }: TreatmentPlanReaderProps) {
   }
   const patch = (i: number, p: Partial<Row>) => setRows((rs) => rs.map((r, j) => (j === i ? { ...r, ...p } : r)));
   const removed = result?.redaction.removed.map((k) => PLAN_READ.removed[k] ?? k) ?? [];
+  const serverExtra = serverRedactionSummary(result)?.from_server_check ?? 0;
 
   return (
     <section ref={rootRef} className="tpr" aria-labelledby={`${id}-h`}>
@@ -143,7 +173,7 @@ export function TreatmentPlanReader({ onConfirmed }: TreatmentPlanReaderProps) {
         </div>
         <span className="tpr-or" aria-hidden="true">{PLAN.readOr}</span>
         <div className="tpr-file">
-          {seen && <FileUpload onFileSelected={pickFile} status={busy === "file" ? "uploading" : "idle"} currentFile={file} acceptedFileTypes={ACCEPTED} maxFileSize={MAX_BYTES} showTitle
+          {seen && <FileUpload onFileSelected={(f) => { void pickFile(f); }} status={busy === "file" || busy === "pdf" ? "uploading" : "idle"} currentFile={file} acceptedFileTypes={ACCEPTED} maxFileSize={MAX_BYTES} showTitle
                       labels={{ title: PLAN.readFileTitle, hint: PLAN.readFileHint, choose: PLAN.readFileChoose, cancel: PLAN.readFileCancel, limits: PLAN.readFileLimits, tooLarge: () => PLAN.readFileTooLarge, wrongType: PLAN.readFileWrongType }} />}
           <p className="muted small tpr-image-note">{PLAN.readImageNote}</p>
           {held && (
@@ -174,7 +204,7 @@ export function TreatmentPlanReader({ onConfirmed }: TreatmentPlanReaderProps) {
         </div>
       )}
 
-      {busy && <StageLoader label={health?.mode === "demo" ? PLAN.readWorkingDemo : busy === "file" ? PLAN.readWorkingFile : PLAN.readWorking} size="sm" className="tpr-loader" />}
+      {busy && <StageLoader label={busy === "pdf" ? PLAN.readWorkingPdf : health?.mode === "demo" ? PLAN.readWorkingDemo : busy === "file" ? PLAN.readWorkingFile : PLAN.readWorking} size="sm" className="tpr-loader" />}
       {error && <p role="alert" className="bs-error tpr-error">{error}</p>}
       <p className="bs-status" role="status">{message ?? ""}</p>
 
@@ -188,10 +218,16 @@ export function TreatmentPlanReader({ onConfirmed }: TreatmentPlanReaderProps) {
           <ol className="tpr-stages" aria-label={PLAN.readStagesTitle}>
             {result.stages.map((s) => <li key={s.key} className={s.done ? "is-done" : "is-not"}><span aria-hidden="true">{s.done ? "✓" : "·"}</span> {s.label}</li>)}
           </ol>
-          <p className="muted small">
-            {result.redaction.image_not_redacted ? PLAN.readImageNotRedacted : removed.length ? PLAN.readRemoved(removed.join(", ")) : PLAN.readNothingRemoved}
-            {result.dropped_unverified > 0 ? ` ${PLAN.readDropped(result.dropped_unverified)}` : ""}
-          </p>
+          {deviceRemoved && !result.redaction.image_not_redacted && (
+            <RedactionCountLine total={deviceRemoved.total} className="tpr-redaction"
+                                detail={`${deviceRemoved.from === "pdf" ? PLAN.readRemovedOnDevicePdf : PLAN.readRemovedOnDevice}${serverExtra > 0 ? ` ${UPLOAD.serverCheckExtra(serverExtra)}` : ""}`} />
+          )}
+          {(!deviceRemoved || result.redaction.image_not_redacted || result.dropped_unverified > 0) && (
+            <p className="muted small">
+              {result.redaction.image_not_redacted ? PLAN.readImageNotRedacted : deviceRemoved ? "" : removed.length ? PLAN.readRemoved(removed.join(", ")) : PLAN.readNothingRemoved}
+              {result.dropped_unverified > 0 ? `${deviceRemoved && !result.redaction.image_not_redacted ? "" : " "}${PLAN.readDropped(result.dropped_unverified)}` : ""}
+            </p>
+          )}
 
           {items.length > 0 && (
             <>

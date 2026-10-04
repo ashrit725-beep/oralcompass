@@ -14,6 +14,8 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { EvidenceBadge } from "@/components/Primitives";
 import { StageLoader } from "@/components/StageLoader";
 import { UploadWizard } from "@/components/upload/UploadWizard";
+import { ServerRedactionLine } from "@/components/upload/ServerRedactionLine";
+import { serverRedactionSummary } from "@/lib/redaction-summary";
 import HoldButton from "@/components/ui/HoldButton";
 
 // pdf.js (≈107 KB gzip) loads only when a stored PDF is rendered — never in the main chunk (component plan §3.2).
@@ -170,7 +172,11 @@ export function DocumentsView({ planCode, plans, onPlan, evidence, stitches, sel
         {mine === null ? <p className="muted">{UI.processing}</p> : mine.length === 0 ? <p className="muted">{PLAN.docsNoPrivate}</p> : (
           <ul className="plain-list">{mine.map((d) => <li key={d.id}><strong>{d.label ?? d.filename}</strong> <span className="muted">· {d.type ?? "upload"} · {d.extraction_status ?? UI.notStated}</span>
             {(d.fields_needing_confirmation?.length ?? 0) > 0 && <ul className="small">{d.fields_needing_confirmation!.map((f) => <li key={f}><EvidenceBadge status="AMBIGUOUS" /> {PLAN.docsNeedsConfirmation} {f}</li>)}</ul>}
-            {d.redaction_preview && <p className="small muted">{PLAN.docsRedactionRemoved} {d.redaction_preview.removed.join(", ") || PLAN.docsNothing}</p>}</li>)}</ul>
+            {d.redaction_preview && (() => {
+              const removed = serverRedactionSummary(d);
+              return removed ? <ServerRedactionLine summary={removed} detail={false} className="doc-redaction" />
+                : <p className="small muted">{PLAN.docsRedactionRemoved} {d.redaction_preview.removed.join(", ") || PLAN.docsNothing}</p>;
+            })()}</li>)}</ul>
         )}
         <p className="muted small">{PLAN.docsUncertain}</p>
       </section>

@@ -9,6 +9,7 @@
 import { ApiError, api } from "./api";
 import { authHeaders } from "./auth";
 import { UPLOAD } from "./copy/upload";
+import { REDACTION_VERSION, type IdentifierCategory, type RedactionResult } from "./redact";
 import type { ExtractedField, ExtractionStatus, ReviewDecision, UploadResponse } from "./types";
 
 export const MAX_BYTES = 32 * 1024 * 1024;
@@ -37,7 +38,7 @@ export type ExtractionStatusFull = ExtractionStatus & {
 };
 
 /** POST /me/documents/upload also returns `mode` and the preview's `note` (additive to the frozen `UploadResponse`). */
-export type UploadResponseX = UploadResponse & { mode?: "demo" | "live"; redaction_preview: UploadResponse["redaction_preview"] & { note?: string } };
+export type UploadResponseX = UploadResponse & { mode?: "demo" | "live"; redaction_preview: UploadResponse["redaction_preview"] & { note?: string; summary?: unknown } };
 
 /** The dev auth header in dev builds (empty in production, where the session cookie identifies the visitor); see lib/auth.ts. */
 export const DEV_USER_HEADER: Record<string, string> = authHeaders();
@@ -78,9 +79,21 @@ export async function sha256Hex(data: ArrayBuffer | Uint8Array): Promise<string>
   return bytesToHex(digest);
 }
 
-export interface PdfInspection { pages: number; text: string }
+export interface PdfInspection { pages: number; text: string; pageTexts: string[] }
 
-/** Page count + text layer of the first 100 pages (for the redaction preview). pdf.js is imported lazily (its own chunk). */
+/** One page's text layer as lines: items joined with a space, a line break where pdf.js marks the end of a line (`hasEOL`), runs of
+ *  spaces collapsed. The on-device detector reads label values up to the line end, so the breaks matter. */
+export function pageTextFromItems(items: readonly unknown[]): string {
+  let out = "";
+  for (const it of items) {
+    if (!it || typeof it !== "object" || !("str" in it)) continue;
+    const item = it as { str: string; hasEOL?: boolean };
+    out += item.str + (item.hasEOL ? "\n" : " ");
+  }
+  return out.split("\n").map((l) => l.replace(/[ \t\u00a0]+/g, " ").trim()).filter(Boolean).join("\n");
+}
+
+/** Page count + the per-page text layer of the first 100 pages (read on this device for the redaction review). pdf.js is imported lazily (its own chunk). */
 export async function inspectPdf(data: ArrayBuffer, onPage?: (done: number, total: number) => void): Promise<PdfInspection> {
   const pdfjs = await import("pdfjs-dist");
   if (!pdfjs.GlobalWorkerOptions.workerSrc) {
@@ -88,25 +101,29 @@ export async function inspectPdf(data: ArrayBuffer, onPage?: (done: number, tota
   }
   const doc = await pdfjs.getDocument({ data: new Uint8Array(data.slice(0)) }).promise;
   const pages = doc.numPages;
-  const parts: string[] = [];
+  const pageTexts: string[] = [];
   let total = 0;
   const limit = Math.min(pages, MAX_PAGES);
-  for (let i = 1; i <= limit && total < MAX_PREVIEW_CHARS; i++) {
-    const page = await doc.getPage(i);
-    const content = await page.getTextContent();
-    const text = content.items.map((it) => ("str" in it ? it.str : "")).join(" ").replace(/\s+/g, " ").trim();
-    parts.push(text);
-    total += text.length + 1;
-    onPage?.(i, limit);
+  try {
+    for (let i = 1; i <= limit && total < MAX_PREVIEW_CHARS; i++) {
+      const page = await doc.getPage(i);
+      const content = await page.getTextContent();
+      const text = pageTextFromItems(content.items).slice(0, MAX_PREVIEW_CHARS - total);
+      pageTexts.push(text);
+      total += text.length + 1;
+      onPage?.(i, limit);
+    }
+  } finally {
+    await doc.destroy().catch(() => undefined);
   }
-  await doc.destroy().catch(() => undefined);
-  return { pages, text: parts.join("\n").slice(0, MAX_PREVIEW_CHARS) };
+  return { pages, text: pageTexts.join("\n"), pageTexts };
 }
 
-export type PreparePhase = { phase: "checksum" } | { phase: "reading"; done: number; total: number } | { phase: "uploading" };
-export interface PreparedFile { sha256: string; pages: number; text: string; bytes: number }
+export type PreparePhase = { phase: "checksum" } | { phase: "reading"; done: number; total: number } | { phase: "detecting" } | { phase: "uploading" };
+export interface PreparedFile { sha256: string; pages: number; text: string; pageTexts: string[]; bytes: number }
 
-/** Validate + hash + inspect a chosen file. Returns a FileCheck problem instead of throwing for the three spec'd failures. */
+/** Validate + hash + read the text layer of a chosen file. Returns a FileCheck problem instead of throwing for the spec'd failures.
+ *  Nothing leaves the device here: the upload happens after the person has reviewed what is removed (UploadWizardBody step 2). */
 export async function prepareFile(file: File, onPhase?: (p: PreparePhase) => void): Promise<{ ok: true; prepared: PreparedFile } | { ok: false; problem: FileProblem }> {
   const size = checkSize(file.size);
   if (!size.ok) return size;
@@ -122,7 +139,51 @@ export async function prepareFile(file: File, onPhase?: (p: PreparePhase) => voi
   }
   const pages = checkPages(inspection.pages);
   if (!pages.ok) return pages;
-  return { ok: true, prepared: { sha256: sha, pages: inspection.pages, text: inspection.text, bytes: file.size } };
+  return { ok: true, prepared: { sha256: sha, pages: inspection.pages, text: inspection.text, pageTexts: inspection.pageTexts, bytes: file.size } };
+}
+
+// ---------------------------------------------------------------- client redaction (design points 2 and 3)
+
+export { serverRedactionSummary, type ServerRedactionSummary } from "./redaction-summary";
+
+export const CLIENT_REDACTION_LIMITS = { identifiers: 300, valueMin: 2, valueMax: 120, terms: 20, termMax: 64, bytes: 64 * 1024 } as const;
+
+export interface ClientRedactionPayload {
+  version: number;
+  identifiers: { category: IdentifierCategory; value: string }[];
+  extra_terms: string[];
+}
+
+/** The multipart `client_redaction` field (upload contract, design point 3): every identifier the person left removed, with its value, so
+ *  the server removes each occurrence from the text it reads before any model call; plus the person's own terms. Values outside the
+ *  contract's 2..120 characters are left to the server's own patterns (a value that long is not an identifier). Within the limits. */
+export function buildClientRedaction(result: Pick<RedactionResult, "removed">, terms: readonly string[]): ClientRedactionPayload {
+  const L = CLIENT_REDACTION_LIMITS;
+  const seen = new Set<string>();
+  const identifiers: ClientRedactionPayload["identifiers"] = [];
+  for (const f of result.removed) {
+    const value = f.value.trim();
+    const key = `${f.category}|${value.toLowerCase()}`;
+    if (value.length < L.valueMin || value.length > L.valueMax || seen.has(key)) continue;
+    seen.add(key);
+    identifiers.push({ category: f.category, value });
+    if (identifiers.length >= L.identifiers) break;
+  }
+  const extra_terms = [...new Set(terms.map((t) => t.trim()).filter((t) => t.length >= L.valueMin && t.length <= L.termMax))].slice(0, L.terms);
+  const payload: ClientRedactionPayload = { version: REDACTION_VERSION, identifiers, extra_terms };
+  // the 64 KB cap: drop identifiers from the end until the JSON fits (only reachable with hundreds of long values)
+  while (identifiers.length && new TextEncoder().encode(JSON.stringify(payload)).length > L.bytes) identifiers.pop();
+  return payload;
+}
+
+/** The clearly fictional sample statement (design point 5), read in the browser and sent down the SAME client path as a picked file. */
+export const SAMPLE_STATEMENT = { path: "/fixtures/documents/sample_member_statement_hb26_fictional.pdf", name: "sample_member_statement_hb26_fictional.pdf" } as const;
+
+export async function loadSampleStatement(fetcher: typeof fetch = fetch): Promise<File> {
+  const r = await fetcher(SAMPLE_STATEMENT.path);
+  if (!r.ok) throw new Error(`sample ${r.status}`);
+  const blob = await r.blob();
+  return new File([blob], SAMPLE_STATEMENT.name, { type: "application/pdf" });
 }
 
 export const isTerminal = (status: string | undefined | null) => !!status && TERMINAL.has(status);
@@ -288,6 +349,8 @@ export function uploadErrorCopy(e: unknown): string {
     case "file_too_large": return UPLOAD.serverTooLarge;
     case "too_many_pages": return UPLOAD.serverTooManyPages;
     case "sha256_mismatch": return UPLOAD.shaMismatch;
+    case "invalid_client_redaction": return UPLOAD.invalidClientRedaction;
+    case "upload_quota": return UPLOAD.uploadQuota;
     default: return UPLOAD.uploadFailed;
   }
 }
