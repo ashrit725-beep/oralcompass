@@ -265,6 +265,15 @@ function stitchForCiteLike(cite: { page: number; quote: string; doc?: string } |
 // ---------------------------------------------------------------------------------------------------------------------------------
 
 export type AnswerTarget = "stage" | "island" | "light" | "checkpoint" | "documents";
+export type JourneySegment = "map" | "care" | "overview";
+
+/** Which segment of My journey shows the thing an Answers-log row names (null: it lives on another tab). Stages live in the Care
+ *  timeline segment on phones and in the map segment's care rail (or the care segment) on desktop; everything else is on the map. */
+export function answerSegment(target: AnswerTarget, mobile: boolean, current: JourneySegment): JourneySegment | null {
+  if (target === "documents") return null;
+  if (target === "stage") return mobile ? "care" : current === "overview" ? "map" : current;
+  return "map";
+}
 export interface AnswerRow { key: string; dt: string; dd: string; title?: string; target: AnswerTarget }
 
 export function answersLog(vm: PassageVM, view: JourneyView | null, plan: PlanFixture | null, estimate: SavedEstimate | null, recalculating = false): AnswerRow[] {

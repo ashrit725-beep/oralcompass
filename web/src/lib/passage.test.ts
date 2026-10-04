@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import alexJson from "../__fixtures__/passage/alex.json";
 import samJson from "../__fixtures__/passage/sam.json";
-import { BINDING_PX, TARGET_PX, VB_W, answersLog, buildPassage, planDisplayCode, checkpointAria, findCollisions, islandAmountText, layoutPassage, matchLine, moneyText, type PassageInputs } from "./passage";
+import { BINDING_PX, TARGET_PX, VB_W, answerSegment, answersLog, buildPassage, planDisplayCode, checkpointAria, findCollisions, islandAmountText, layoutPassage, matchLine, moneyText, type PassageInputs } from "./passage";
 import { stitchesFromClauses } from "./stitches";
 import type { Clause, CoverageRule, JourneyView, LedgerLine, PassageVM, PlanFixture, Procedure, SavedEstimate, TreatmentItem } from "./types";
 
@@ -271,5 +271,20 @@ describe("plan code on the START pennant (finding demo-14)", () => {
     expect(vm.start.subtitle).not.toContain("upload:");
     expect(planDisplayCode("upload:c5fd44ebabc8d1e2", null)).toBe("your uploaded document");
     expect(planDisplayCode("ML26", alex.plan)).toBe("ML26");
+  });
+});
+
+describe("Answers-log jumps (finding web-correctness-1)", () => {
+  it("asks for the segment that shows the target once, and reports no switch when it is already showing", () => {
+    // from the Care timeline or the Overview list, island/light/checkpoint rows need the map: one switch, then focus
+    for (const t of ["island", "light", "checkpoint"] as const) {
+      expect(answerSegment(t, false, "care")).toBe("map");
+      expect(answerSegment(t, true, "overview")).toBe("map");
+      expect(answerSegment(t, false, "map")).toBe("map");          // already there: focus at once, nothing re-scheduled
+    }
+    expect(answerSegment("stage", true, "map")).toBe("care");
+    expect(answerSegment("stage", false, "care")).toBe("care");
+    expect(answerSegment("stage", false, "overview")).toBe("map");
+    expect(answerSegment("documents", false, "map")).toBeNull();
   });
 });

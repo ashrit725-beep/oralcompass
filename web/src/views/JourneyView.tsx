@@ -4,7 +4,7 @@ import { PASSAGE } from "@/lib/copy/passage";
 import { UI, type LandmarkId } from "@/lib/copy";
 import { currentStageId, labeledSamples } from "@/lib/journey";
 import { transitions, useReducedMotion } from "@/lib/motion";
-import { buildPassage, denseFrom, itemRef, planDisplayCode, type AnswerTarget } from "@/lib/passage";
+import { answerSegment, buildPassage, denseFrom, itemRef, planDisplayCode, type AnswerTarget, type JourneySegment } from "@/lib/passage";
 import type { MapSelection, Stage, Stitch } from "@/lib/types";
 import type { AppData } from "@/hooks/useAppData";
 import type { JourneySelectionApi } from "@/hooks/useJourneySelection";
@@ -27,7 +27,7 @@ export interface JourneyViewProps {
   onSelectStitch?: (s: Stitch) => void;
 }
 
-type Segment = "map" | "care" | "overview";
+type Segment = JourneySegment;
 
 /**
  * My journey (spec §2, §4.1, §4.3, §6 `JourneyView`): the start screen for a new user, or the journey head (label, progress line),
@@ -49,6 +49,8 @@ export function JourneyView({ data, selection, mobile, onOpenLandmark, onOpenDoc
   const [segment, setSegment] = useState<Segment>("map");
   const [pointer, setPointer] = useState(false);
   const [announce, setAnnounce] = useState("");
+  /** An Answers-log jump waiting for its segment to render (focus moves in an effect after the commit, never through a stale closure). */
+  const [pendingFocus, setPendingFocus] = useState<AnswerTarget | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const segPointer = useRef(false);
   const lastEstimateId = useRef<string | null>(null);
@@ -84,18 +86,25 @@ export function JourneyView({ data, selection, mobile, onOpenLandmark, onOpenDoc
   };
 
   const focusIn = (sel: string) => { const el = rootRef.current?.querySelector<HTMLElement>(sel); el?.focus(); return !!el; };
-  const onAnswer = (target: AnswerTarget) => {
-    if (target === "documents") { onOpenDocuments(); return; }
-    if (target === "stage") {
-      const id = view?.progress.current_stage ?? currentStageId(view!.journey);
-      if (mobile && segment !== "care") { setSegment("care"); setTimeout(() => focusIn(`[data-stage-btn="${id}"]`), 50); } else focusIn(`[data-stage-btn="${id}"]`);
-      return;
-    }
-    if (segment !== "map") { setSegment("map"); setTimeout(() => onAnswer(target), 50); return; }
+  /** Move focus to what an Answers-log row names; the segment that shows it is already rendered. */
+  const focusAnswer = (target: AnswerTarget) => {
+    if (target === "stage") { const id = view?.progress.current_stage ?? (view ? currentStageId(view.journey) : null); if (id) focusIn(`[data-stage-btn="${id}"]`); return; }
     if (target === "island") focusIn(vm.islands[0] ? `[data-island="${vm.islands[0].id}"]` : ".start-btn, .pv-start button");
     if (target === "light") focusIn(".light-btn, .pv-light button");
     if (target === "checkpoint") { const first = vm.islands[0]; if (!first || !focusIn(`[data-cp-of="${first.id}"], .pv-cps .pv-cp`)) focusIn(first ? `[data-island="${first.id}"]` : ".light-btn"); }
   };
+  const onAnswer = (target: AnswerTarget) => {
+    const need = answerSegment(target, mobile, segment);
+    if (need === null) { onOpenDocuments(); return; }
+    if (need !== segment) { setSegment(need); setPendingFocus(target); return; }
+    focusAnswer(target);
+  };
+  // runs once after the requested segment has rendered, then clears itself (no timer chain, nothing left running after unmount)
+  useEffect(() => {
+    if (!pendingFocus) return;
+    setPendingFocus(null);
+    focusAnswer(pendingFocus);
+  }, [pendingFocus, segment]);
   const linkedIsland = useCallback((s: Stage) => vm.islands.find((i) => i.item && (s.linked_treatment_items ?? []).includes(itemRef(i.item)))?.id ?? null, [vm]);
 
   if (newUser || !view) {
@@ -150,7 +159,7 @@ export function JourneyView({ data, selection, mobile, onOpenLandmark, onOpenDoc
         </div>
         {!plan && <p className="hint">{PASSAGE.noPlanSelected}</p>}
         {segment === "overview" && <OverviewList journey={view.journey} vm={vm} planTitle={plan?.title} onSelect={(s) => { selection.selectStage(s); setSegment("map"); }} onSelectIsland={(id, cp) => { selectIsland(id, cp, null, true); }} onSelectStitch={onSelectStitch} />}
-        {segment === "care" && <CareTimeline journey={view.journey} progress={view.progress} selected={stage} onSelect={(s, el) => selection.selectStage(s, el)} currentStageId={currentStageId(view.journey)} mobile linkedIsland={linkedIsland} onShowOnChart={(id) => { setSegment("map"); setTimeout(() => selectIsland(id, undefined, null, true), 50); }} />}
+        {segment === "care" && <CareTimeline journey={view.journey} progress={view.progress} selected={stage} onSelect={(s, el) => selection.selectStage(s, el)} currentStageId={currentStageId(view.journey)} mobile linkedIsland={linkedIsland} onShowOnChart={(id) => { setSegment("map"); selectIsland(id, undefined, null, true); }} />}
         {segment === "map" && (
           <>
             {dense && <IslandStrip vm={vm} selected={islandSel} onSelect={(id, el) => selectIsland(id, undefined, el, false)} mobile={mobile} />}
