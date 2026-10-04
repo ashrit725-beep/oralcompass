@@ -336,6 +336,9 @@ select:not([multiple]):not([size]) {
 }
 /* My plan uses the full width until a landmark opens (the 420 px column exists only while the detail panel shows) */
 .plan-layout:has(> .detail.is-empty) { grid-template-columns: minmax(0, 1fr); }
+/* the loading banner is an overlay: inserting and removing an in-flow row above <main> shifted the page (mobile-18) */
+.processing { position: fixed; top: var(--s-3); right: var(--s-4); z-index: 30; margin: 0; max-width: min(420px, calc(100vw - 2rem)); padding: var(--s-2) var(--s-3); background: var(--paper-deep); border: 1px solid var(--rule); border-radius: var(--r-3); box-shadow: var(--shadow-2); pointer-events: none; }
+.start-pending { min-height: 60vh; }
 /* a failed view or lazy surface keeps a labelled recovery message inside the shell (web-correctness-3) */
 .surface-error { margin: var(--s-4) 0; }
 

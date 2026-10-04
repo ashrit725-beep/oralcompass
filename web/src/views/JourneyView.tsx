@@ -98,6 +98,8 @@ export function JourneyView({ data, selection, mobile, onOpenLandmark, onOpenDoc
   };
   const linkedIsland = useCallback((s: Stage) => vm.islands.find((i) => i.item && (s.linked_treatment_items ?? []).includes(itemRef(i.item)))?.id ?? null, [vm]);
 
+  // still loading the journeys list: reserve the space instead of painting a start screen that is replaced a moment later (mobile-18)
+  if (journeys === null && !view) return <div className="start-pending" aria-hidden="true" />;
   if (newUser || !view) {
     return (
       <section className="start" aria-labelledby="start-h">
