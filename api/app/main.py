@@ -42,8 +42,9 @@ app.include_router(journeys.router)
 app.include_router(uploads.router)
 app.include_router(assistant.router)
 app.include_router(notifications.router)
-from . import treatment_reader  # noqa: E402  (AI features, addendum D.5)
+from . import explain, treatment_reader  # noqa: E402  (AI features, addendum D.5)
 app.include_router(treatment_reader.router)
+app.include_router(explain.router)
 
 
 # ---------- schemas ----------
