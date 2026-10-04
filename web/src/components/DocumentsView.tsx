@@ -47,7 +47,15 @@ export function DocumentsView({ planCode, plans, onPlan, evidence, stitches, sel
   const primary = evidence?.documents[0];
   const carriers = groupPlans(plans);
   const refreshUploads = () => api.myPlans().then((r) => setUploads(r.items as UploadSummary[])).catch(() => setUploads([]));
-  useEffect(() => { api.myDocuments().then(setMine).catch(() => setMine([])); api.sources().then((r) => setSources(r.items)).catch(() => setSources([])); refreshUploads(); }, [planCode]);
+  // the public source catalog loads once; the person's documents and uploads refresh per plan. A later plan switch drops an earlier,
+  // slower answer instead of letting it overwrite the newer list (rapid switching never shows a stale list).
+  useEffect(() => { let off = false; api.sources().then((r) => { if (!off) setSources(r.items); }).catch(() => { if (!off) setSources([]); }); return () => { off = true; }; }, []);
+  useEffect(() => {
+    let off = false;
+    api.myDocuments().then((d) => { if (!off) setMine(d); }).catch(() => { if (!off) setMine([]); });
+    api.myPlans().then((r) => { if (!off) setUploads(r.items as UploadSummary[]); }).catch(() => { if (!off) setUploads([]); });
+    return () => { off = true; };
+  }, [planCode]);
 
   // an uploaded plan's PDF is private: fetched with the owner header into an object URL, revoked when the page changes
   const ownedPath = primary?.has_stored_pdf && primary.stored_path?.startsWith("/me/") ? primary.stored_path : null;
