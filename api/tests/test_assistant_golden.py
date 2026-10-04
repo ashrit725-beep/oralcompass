@@ -2,8 +2,8 @@
 
 The file checks always run (60 cases, known personas and intents, glossary terms found by lookup_term, amount and advice words always
 excluded). The API run needs the journey-level intents of design point 3 (define_term, journey_total, line_by_name, remaining_benefits,
-compare_terms, document_overview) and the simple-terms-first answer of design point 2; until api/app/assistant.py exposes them it is
-skipped with that reason, and the integrator enables it by merging the assistant work. Demo mode only: conftest.py keeps every test away
+compare_terms, document_overview) and the simple-terms-first answer of design point 2, which api/app/assistant.py exposes; it always
+runs. Demo mode only: conftest.py keeps every test away
 from the live model."""
 import json
 import os
@@ -44,10 +44,13 @@ def _missing_features() -> list[str]:
     return out
 
 
-MISSING = _missing_features()
-needs_assistant = pytest.mark.skipif(
-    bool(MISSING), reason=("api/app/assistant.py does not expose the journey-level assistant yet (missing: " + "; ".join(MISSING) +
-                           "); the integrator enables this golden run when the assistant work is merged"))
+def test_the_journey_level_assistant_is_exposed():
+    assert _missing_features() == []
+    assert _compare_field() == "compare"
+
+
+def needs_assistant(f):            # the golden run is always on (it was skipped until the journey-level assistant landed)
+    return f
 
 
 # ---------- the file itself (always runs) ----------

@@ -60,13 +60,14 @@ def test_define_term_without_a_plan_value():
     assert j["intent"] == "define_term" and lead(j)["refs"] == []
 
 
-def test_journey_total_lists_every_line_by_ref(est):
+def test_journey_total_uses_the_estimate_totals_in_one_sentence(est):
     j = ask("What will I pay in total?", estimate_id=est["id"])
     assert j["intent"] == "journey_total"
-    b = lead(j)
-    kinds = {(r["kind"], r["which"]) for r in b["refs"]}
-    assert kinds == {("line_total", "patient"), ("line_total", "plan")}
-    assert len(lead(ask("What will I pay in total?", style="simpler", estimate_id=est["id"]), 1)["refs"]) == len(est["ledger"]["lines"])
+    b = lead(j, 1)
+    assert b["refs"] == [{"kind": "estimate_total", "which": "patient"}, {"kind": "estimate_total", "which": "plan"}]
+    assert len([x for x in j["blocks"][1:] if x["refs"] and x["refs"][0]["kind"] == "line_total"]) == len(est["ledger"]["lines"])
+    s = lead(ask("What will I pay in total?", style="simpler", estimate_id=est["id"]), 1)
+    assert s["refs"] == [{"kind": "estimate_total", "which": "patient"}]
 
 
 def test_remaining_benefits(est):
@@ -103,3 +104,121 @@ def test_clarify_leads_with_a_simple_block_in_both_styles(est):
         if j["intent"] == "clarify":
             lead(j, 1 if style else 2)
             assert j["blocks"][1]["type"] == "clarify"
+
+
+# ---------- compare_terms, document_overview, two procedures, the main reason, readability ----------
+def test_compare_terms_gives_each_plan_its_own_ref(est):
+    j = ask("What is the difference between these plans' deductibles?", estimate_id=est["id"], compare=["ML26", "FM26H"])
+    assert j["intent"] == "compare_terms"
+    b = lead(j)
+    assert "deductible" in b["text"].lower()
+    assert {r.get("plan_ref") for r in b["refs"]} == {"ML26", "FM26H"} and all(r["kind"] == "field" for r in b["refs"])
+    details = [x for x in j["blocks"][1:] if x["refs"]]
+    assert any(r["kind"] == "clause" and r.get("plan_ref") == "FM26H" for x in details for r in x["refs"])
+    s = lead(ask("What is the difference between these plans' deductibles?", style="simpler", estimate_id=est["id"], compare=["ML26", "FM26H"]), 1)
+    assert s["text"] != b["text"] and len(s["text"].split()) < len(b["text"].split())
+
+
+def test_compare_unlimited_maximum_is_the_unlimited_field():
+    j = ask("how do the annual maximums compare", compare=["ML26", "FM26H"])
+    assert j["intent"] == "compare_terms"
+    refs = lead(j)["refs"]
+    assert {"kind": "field", "path": "plan.annual_max_unlimited", "plan_ref": "FM26H"} in refs
+
+
+def test_compare_scope_is_validated_and_owner_scoped():
+    r = client.post("/me/assistant", json={"message": "compare deductibles", "scope": {"plan_ref": "ML26", "compare": ["ML26", "HB26", "FM26H", "ML26X"]}}, headers=H)
+    assert r.status_code == 422
+    r = client.post("/me/assistant", json={"message": "compare deductibles", "scope": {"plan_ref": "ML26", "compare": []}}, headers=H)
+    assert r.status_code == 422
+    r = client.post("/me/assistant", json={"message": "compare deductibles", "scope": {"plan_ref": "ML26", "compare": ["upload:not-mine"]}}, headers=H)
+    assert r.status_code == 404
+
+
+@pytest.mark.parametrize("plan", ["ML26", "HB26", "FM26H"])
+def test_document_overview_names_what_the_document_covers(plan):
+    body = {"message": "What does this document cover?", "scope": {"plan_ref": plan}}
+    j = client.post("/me/assistant", json=body, headers=H).json()
+    assert j["intent"] == "document_overview"
+    b = lead(j)
+    assert "document" in b["text"].lower()
+    assert j["blocks"][1:] and all(x["refs"][0]["kind"] == "clause" for x in j["blocks"][1:])
+    s = client.post("/me/assistant", json={**body, "style": "simpler"}, headers=H).json()
+    assert lead(s, 1)["text"] != b["text"]
+
+
+def test_two_named_procedures_are_both_answered(est):
+    j = ask("Why does the crown cost more than the root canal?", estimate_id=est["id"])
+    assert j["intent"] == "line_by_name"
+    b = lead(j)
+    assert "crown" in b["text"] and "root canal" in b["text"] and len(b["refs"]) == 4
+    assert all(r["kind"] == "line_total" for r in b["refs"])
+    assert not any(x.get("type") == "clarify" for x in j["blocks"])
+
+
+def test_line_by_name_gives_one_main_reason(est):
+    j = ask("Root canal - why that much?", estimate_id=est["id"])
+    assert j["intent"] == "line_by_name"
+    assert "main reason" in lead(j)["text"].lower()
+
+
+@pytest.mark.parametrize("line,reason", [
+    ({"status": "not_covered", "steps": []}, "not_covered"),
+    ({"status": "unresolved", "steps": []}, "waiting"),
+    ({"status": "ok", "patient_cents": 1000, "steps": [{"rule": "D", "owner": "patient", "cents": 800}]}, "deductible"),
+    ({"status": "ok", "patient_cents": 1000, "steps": [{"rule": "M", "owner": "patient", "cents": 900}]}, "maximum"),
+    ({"status": "ok", "patient_cents": 1000, "steps": [{"rule": "D", "owner": "patient", "cents": 100}]}, "share"),
+])
+def test_line_reason(line, reason):
+    assert assistant.line_reason(line) == reason
+
+
+def _strings(o):
+    if isinstance(o, str):
+        yield o
+    elif isinstance(o, (tuple, list)):
+        for x in o:
+            yield from _strings(x)
+    elif isinstance(o, dict):
+        for x in o.values():
+            yield from _strings(x)
+
+
+def test_every_lead_template_reads_at_grade_8_or_lower():
+    from app import assistant_templates as T
+    from app.assistant_glossary import GLOSSARY
+    texts = [t for name in ("SIMPLE", "LINE_REASON", "STEP_LEAD", "WHERE_LEAD", "CLAUSE_LEAD") for t in _strings(getattr(T, name))]
+    texts += [assistant._first_sentence(e["simple"]) for e in GLOSSARY.values()] + [e["simpler"] for e in GLOSSARY.values()]
+    high = [(round(assistant.fk_grade(t), 1), t) for t in texts if assistant.fk_grade(t) > 8.0]
+    assert not high, high
+
+
+def test_every_intent_has_a_distinct_shorter_simpler_lead():
+    from app import assistant_templates as T
+    pairs = [T.SIMPLE[k] for k in ("advice_request", "out_of_scope", "what_if_requested", "clarify", "no_estimate", "remaining_none", "doc_overview_none")]
+    pairs += list(T.STEP_LEAD.values()) + list(T.WHERE_LEAD.values()) + [T.CLAUSE_LEAD]
+    pairs += [(T.SIMPLE[a], T.SIMPLE[b]) for a, b in (("total_estimate", "total_estimate_simpler"), ("line", "line_simpler"), ("two_lines", "two_lines_simpler"),
+                                                      ("compare", "compare_simpler"), ("doc_overview", "doc_overview_simpler"), ("remaining_max", "remaining_simpler"),
+                                                      ("remaining_ded", "remaining_ded_simpler"))]
+    for plain, simpler in pairs:
+        assert plain != simpler and len(simpler.split()) < len(plain.split()), (plain, simpler)
+
+
+@pytest.mark.parametrize("q,scope", [("What does this step mean?", {"line_index": 0, "step_key": "D"}),
+                                     ("Where does this figure come from?", {"line_index": 0, "step_key": "CO"}),
+                                     ("What does this sentence change in my estimate?", {"stitch": "ML26#p25"})])
+def test_step_where_clause_leads_are_plain_templates_not_the_detail(est, q, scope):
+    j = ask(q, estimate_id=est["id"], **scope)
+    b = lead(j)
+    assert assistant.fk_grade(b["text"]) <= 8.0
+    assert all(b["text"] != (x.get("text") or "") and not (x.get("text") or "").startswith(b["text"]) for x in j["blocks"][1:])
+    s = lead(ask(q, style="simpler", estimate_id=est["id"], **scope), 1)
+    assert s["text"] != b["text"] and len(s["text"].split()) < len(b["text"].split())
+
+
+def test_live_lead_above_grade_9_falls_back_to_the_template():
+    ctx = type("C", (), {"line_index": None, "line": None, "estimate": {"x": 1}, "step_rule": "D", "lines": []})()
+    jargon = [{"type": "sentence", "text": "Contractual deductible obligations accumulate proportionally notwithstanding coinsurance determinations.", "refs": []}]
+    plain = [{"type": "sentence", "text": "You paid part of this line before the plan paid.", "refs": []}]
+    assert assistant.lead_block(ctx, "explain_step", "plain", jargon, live=True)["text"] == assistant.T.STEP_LEAD["D"][0]
+    assert assistant.lead_block(ctx, "explain_step", "plain", plain, live=True)["text"] == plain[0]["text"]
