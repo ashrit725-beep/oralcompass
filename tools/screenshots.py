@@ -112,7 +112,11 @@ def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-pref
         """Close whatever detail surface is open: the phone sheet, else Escape (clause card first, then the drawer)."""
         close_sheet()
         if page.locator(".drawer").count():
-            page.keyboard.press("Escape"); page.wait_for_timeout(300)
+            page.keyboard.press("Escape")
+            # wait for the exit animation to finish instead of a fixed 300 ms (under load the leaving drawer's Close button was clicked mid-exit)
+            try: page.wait_for_selector(".drawer", state="detached", timeout=1500)
+            except Exception: pass  # noqa: BLE001
+            page.wait_for_timeout(100)
         if page.locator(".drawer").count() and page.get_by_role("button", name="Close details").count():
             page.get_by_role("button", name="Close details").first.click(); page.wait_for_timeout(300)
     def drawer_h3s() -> list[str]:
