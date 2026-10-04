@@ -73,7 +73,7 @@ function CheckpointRow({ cp, islandId, closed, selected, onSelect, onSelectStitc
     : cp.change === 0 ? <span className="pv-nochange">{PASSAGE.noChange}</span> : <Money cents={cp.change} evidence={cp.badge} badge={false} signed />;
   return (
     <li className="pv-cp-item">
-      <button type="button" className={`unstyled pv-cp tone-${tone} ${pass ? "is-passed" : ""} ${selected ? "is-selected" : ""}`} aria-pressed={selected} aria-label={checkpointAria(cp)} onClick={(e) => onSelect(islandId, cp.key, e.currentTarget, e.detail === 0)}>
+      <button type="button" className={`unstyled pv-cp tone-${tone} ${pass ? "is-passed" : ""} ${selected ? "is-selected" : ""}`} aria-pressed={selected} data-cp-of={islandId} aria-label={checkpointAria(cp)} onClick={(e) => onSelect(islandId, cp.key, e.currentTarget, e.detail === 0)}>
         <span className="cp-visual" data-wp={`${islandId}:${cp.key}`} data-wp-closed={closed ? "" : undefined}><Glyph id={(pass ? "passed" : cp.glyph) as GlyphId} size={14} /></span>
         <span className="pv-term">{cp.term}{cp.owner === "nobody" && cp.change ? <small className="pv-owner"><span className="pv-owner-sep" aria-hidden="true"> · </span>{PASSAGE.notOwedByYou}</small> : null}</span>
         <span className={`pv-amt ${cp.change != null && cp.change < 0 && cp.owner === "patient" ? "is-yours" : ""}`}>{amount}</span>
