@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useState, type ReactNode } from "react";
+import { Suspense, lazy, useEffect, useMemo, useState, type ReactNode } from "react";
 import { api } from "@/lib/api";
 import { UI } from "@/lib/copy";
 import { PLAN } from "@/lib/copy/plan";
@@ -66,6 +66,8 @@ export function DocumentsView({ planCode, plans, onPlan, evidence, stitches, sel
   async function deleteData() {
     const r = await api.deleteMe(); setMsg(PLAN.docsDeleted(Object.entries(r.deleted).map(([k, v]) => `${v} ${k}`).join(", ") || PLAN.docsNothingStored)); setMine([]); onRetry();
   }
+  // one array per document and stitch set, so typing in the clause filter never hands PageView a new list (a11y-9)
+  const docStitches = useMemo(() => stitches.filter((s) => s.doc === primary?.version_label), [stitches, primary?.version_label]);
   const clauses = (evidence?.clauses ?? []).filter((c) => !filter || c.quote.toLowerCase().includes(filter.toLowerCase()) || c.field.toLowerCase().includes(filter.toLowerCase()));
   const pageUrl = primary?.has_stored_pdf && primary.stored_path ? (ownedPath ? ownedUrl : `/${primary.stored_path.replace(/^fixtures\//, "fixtures/")}`) : null;
 
@@ -98,7 +100,7 @@ export function DocumentsView({ planCode, plans, onPlan, evidence, stitches, sel
         ))}
         {pageUrl && primary && (
           <Suspense fallback={<StageLoader label={UI.renderingDocument} size="sm" />}>
-            <PageView url={pageUrl} stitches={stitches.filter((s) => s.doc === primary.version_label)} selected={selected} onSelect={onSelect} />
+            <PageView url={pageUrl} stitches={docStitches} selected={selected} onSelect={onSelect} title={primary.title} />
           </Suspense>
         )}
         {ownedPath && !ownedUrl && <StageLoader label={UI.renderingDocument} size="sm" />}

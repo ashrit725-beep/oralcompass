@@ -200,6 +200,10 @@ export const PLAN = {
   docsRedactionRemoved: "Redaction preview removed:",
   docsNothing: "nothing",
   docsVersions: (labels: string) => `Published versions: ${labels}`,
+  docsPlanDocument: "Plan document",
+  docsRendered: "Document rendered. The sentences used in your estimate are listed under Evidence below the pages.",
+  docsPageGroup: (p: number, n: number) => `Page ${p} of ${n}`,
+  docsPageAlt: (p: number, n: number, title: string) => `Page ${p} of ${n}${title ? ` of ${title}` : ""}, as an image. The sentences used in your estimate are listed as text under Evidence below the pages.`,
 } as const satisfies Record<string, string | ((...a: never[]) => string)>;
 
 /** Word lists for the treatment-plan reader (kept outside PLAN, whose values are strings or formatters). */

@@ -430,6 +430,29 @@ def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-pref
     rm_unbadged = page.evaluate("[...document.querySelectorAll('.rm-text')].filter(t => /\\$\\s?\\d/.test(t.textContent) && !t.querySelector('.badge')).length")
     check(f"{device}: reminders listed with evidence", rm.count() >= 1 and rm_unbadged == 0 and page.locator(".rm-status[role=status]").count() == 1, f"items={rm.count()} unbadged={rm_unbadged}")
     shot("23-reminders")
+    # the pdf.js page (a fictional plan with a stored PDF): each page is a labelled group with a text alternative (a11y-8); pressing a
+    # stitch chip opens its card without redrawing the pages, so closing the card returns focus to the same chip, and typing in the
+    # clause filter leaves the drawn pages in place (a11y-9). The walk returns to ML26 afterwards.
+    try:
+        page.locator("label.plan-pick select").first.select_option("HB26"); page.wait_for_selector(".pdf-page .pdf-stitch", timeout=15000)
+        page.wait_for_timeout(800)
+        labelled = page.evaluate("(() => { const ps = [...document.querySelectorAll('.pdf-page')]; return ps.length > 0 && ps.every(p => p.getAttribute('role') === 'group' && /^Page \\d+ of \\d+$/.test(p.getAttribute('aria-label') || '') && p.querySelector('canvas[role=img]')?.getAttribute('aria-label')?.includes('under Evidence')); })()")
+        page.evaluate("document.querySelector('.pdf-page').dataset.walkMark = '1'")
+        chip = page.locator(".pdf-stitch").first
+        chip_id = chip.get_attribute("data-stitch"); chip.focus(); page.keyboard.press("Enter"); page.wait_for_timeout(500)
+        pressed = page.evaluate(f"document.querySelector('.pdf-stitch[data-stitch=\"{chip_id}\"]')?.getAttribute('aria-pressed')")
+        if page.get_by_role("button", name="Close clause card").count():
+            page.get_by_role("button", name="Close clause card").click(); page.wait_for_timeout(300)
+        back = page.evaluate("document.activeElement?.dataset?.stitch || document.activeElement?.tagName")
+        page.locator("label.filter input").fill("deduct"); page.wait_for_timeout(600)
+        kept = page.evaluate("!!document.querySelector('.pdf-page[data-walk-mark=\"1\"]')")
+        page.locator("label.filter input").fill(""); page.wait_for_timeout(200)
+        check(f"{device}: pdf pages labelled; stitch select keeps the drawn pages and focus", labelled and pressed == "true" and back == chip_id and kept,
+              f"labelled={labelled} pressed={pressed} focus={back} chip={chip_id} kept={kept}")
+    except Exception as e:  # noqa: BLE001
+        check(f"{device}: pdf pages labelled; stitch select keeps the drawn pages and focus", False, str(e).splitlines()[0][:160])
+    finally:
+        page.locator("label.plan-pick select").first.select_option("ML26"); page.wait_for_timeout(1200)
 
     # ---- upload wizard (spec §12 "upload plan"): type validation, demo extraction, review table, hold-to-publish → UP1 ----
     try:
