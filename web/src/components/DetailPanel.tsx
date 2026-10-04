@@ -37,7 +37,7 @@ export function DetailPanel(props: Props) {
   const body = cp ? <CheckpointDetail key={`${stage.id}:${cp.id}`} {...props} stage={stage} cp={cp} /> : <StageDetail key={stage.id} {...props} stage={stage} />;
   if (mobile) {
     return (
-      <Sheet open onOpenChange={(o) => { if (!o) onClose(); }} title={cp ? cp.label : stage.title} returnFocus={returnFocus ?? undefined} className="detail-sheet" autoFocus>
+      <Sheet open onOpenChange={(o) => { if (!o) onClose(); }} title={stage.title} returnFocus={returnFocus ?? undefined} className="detail-sheet" autoFocus>
         {crumbs}
         {body}
       </Sheet>

@@ -303,9 +303,20 @@
 .detail-bar .close { flex: none; width: 44px; height: 44px; display: inline-grid; place-items: center; }
 .detail-sheet .crumbs { margin: 0 0 var(--s-2); }
 .detail-sheet .detail-body { padding: 0 0 max(16px, env(safe-area-inset-bottom)); }
-.detail-sheet .detail-body button:not(.linklike) { min-height: 44px; }
+/* `:not(#_)` lifts this over the legacy pill rule in styles.css (ten :not() classes, min-height 40px) without repeating its list */
+.detail-sheet .detail-body button:not(.linklike):not(#_) { min-height: 44px; }
 
 /* engine totals on the journey surfaces say how they were made (finding info-only-5; same treatment as the drawer's .fig-calc) */
 .log-calc { display: block; margin-top: 2px; }
 .pv-side-note { margin: 0 0 .4rem; font-size: 13px; line-height: 18px; color: var(--ink-soft); display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; }
 .pv-card .fig-calc { white-space: normal; }
+
+/* target sizes on the overview tables (findings layout-15, mobile-8): row-header links and stage titles are 32 px tall on desktop and
+   44 px on phones; the 20 px stitch chips keep their look and get the same hit height (as on the phone passage) */
+.ov-table .linklike, .ov-stages h3 .linklike { min-height: 32px; display: inline-flex; align-items: center; }
+.ov-table .stitch { position: relative; }
+.ov-table .stitch::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 32px; transform: translateY(-50%); }
+@media (max-width: 760px) {
+  .ov-table .linklike, .ov-stages h3 .linklike { min-height: 44px; }
+  .ov-table .stitch::after { height: 44px; }
+}
