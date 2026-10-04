@@ -8,7 +8,8 @@ inline assistant with a demo answer, an advice question, the clause composer) �
 marginal / visited drawers → care stage / checkpoint detail → record a checkpoint (attribution) → Overview list → My plan (selector
 cascade, preset/upload switch, benefits compass, restriction → cove, depth dial, benefit statement form) → cost trail (reconciles) → FM26H
 (nothing transfers: fog, compass without a maximum, fogged drawer) → Compare (grid, clause popover/sheet, rails) → Documents (clauses,
-sources, privacy, reminders, upload wizard: type validation, demo extraction, review table, hold-to-publish → UP1) → keyboard navigation
+sources, privacy, reminders, upload wizard: type validation, the fictional sample's on-device review (12 identifiers, Keep in text, Show),
+the certificate → server count on extraction and the review table, demo extraction, review table, hold-to-publish → UP1) → keyboard navigation
 (skip link, arrow keys, Escape) → add a procedure (desktop; reverted) → reduced motion.
 Requires the API on :8000 (ORALCOMPASS_DEV_AUTH=1, demo llm mode for the extraction/assistant checks) and the web preview on :4173
 (override with ORALCOMPASS_WEB_BASE). Writes PNGs to the given directory and prints checks; exit 1 on any failed check.
@@ -689,17 +690,60 @@ def upload_walk(page, device: str, shot):
     hidden = page.evaluate("""(() => { const c = document.querySelector('[role=dialog] .up-stepper-content'); const m = c && c.querySelector('.up-mode-line'); if (!c || !m) return -1;
         return Math.round(Math.max(0, m.getBoundingClientRect().bottom - c.getBoundingClientRect().bottom)); })()""")
     check(f"{device}: upload pane grows with its content", hidden == 0, f"hidden={hidden}px")
+    # ---- client redaction (design point 2): personal details are found and reviewed ON THE DEVICE before anything is uploaded ----
+    headline_js = "(() => { const h = document.querySelector('[role=dialog] [data-rs-headline]'); return h ? h.textContent.trim() : null; })()"
+    uploads_before = len([d for d in api("/me/documents") if d.get("kind") == "upload" or str(d.get("type", "")).startswith("plan_document")])
+    page.get_by_role("button", name="Try a fictional sample statement").click()
+    page.wait_for_selector("[role=dialog] [data-rs-headline]", timeout=60000); page.wait_for_timeout(1200)   # the count reveal settles (700 ms)
+    sample_head = page.evaluate(headline_js) or ""
+    focus_on_head = page.evaluate("(() => { const a = document.activeElement; return !!a && a.tagName === 'H3' && !!a.querySelector('[data-rs-headline]'); })()")
+    check(f"{device}: review headline counts the identifiers removed before AI analysis",
+          bool(re.fullmatch(r"\d+ personal identifiers? removed before AI analysis", sample_head)) and focus_on_head, f"{sample_head!r} focus={focus_on_head}")
+    chips = page.locator("[role=dialog] .rs-chip").all_inner_texts()
+    nothing_sent = len([d for d in api("/me/documents") if d.get("kind") == "upload" or str(d.get("type", "")).startswith("plan_document")]) == uploads_before
+    check(f"{device}: the fictional sample shows 12 personal identifiers", sample_head == "12 personal identifiers removed before AI analysis" and len(chips) >= 1 and nothing_sent,
+          f"{sample_head!r} chips={chips} nothing uploaded yet={nothing_sent}")
+    shot("15a-personal-details")
+    if page.viewport_size["width"] < 768:
+        # phones: the count is the first thing in the pane and Continue sits in the thumb zone
+        geo = page.evaluate("""(() => { const h = document.querySelector('[role=dialog] .rs-headline'), b = [...document.querySelectorAll('[role=dialog] .rs-footer button')].find(x => x.textContent.trim() === 'Continue');
+            if (!h || !b) return null; const hr = h.getBoundingClientRect(), br = b.getBoundingClientRect(); return [Math.round(hr.top), Math.round(br.bottom), innerHeight, Math.round(br.height)]; })()""")
+        check(f"{device}: phone review puts the count first and Continue in the thumb zone", bool(geo) and 0 <= geo[0] <= geo[2] * 0.45 and geo[1] <= geo[2] and geo[1] >= geo[2] * 0.75 and geo[3] >= 44, str(geo))
+    # Keep in text: a real switch that changes the count live (and back); Show reveals one masked value
+    page.locator("[role=dialog] summary.rs-list-summary").click(); page.wait_for_timeout(300)
+    rows = page.locator("[role=dialog] .rs-row").count()
+    sw = page.locator("[role=dialog] .rs-row [role=switch]").first
+    sw.click(); page.wait_for_timeout(500)
+    kept_head = page.evaluate(headline_js) or ""
+    live = page.locator("[role=dialog] .rs [role=status]").first.inner_text()
+    show = page.locator("[role=dialog] .rs-row .rs-show").first
+    masked_before = page.locator("[role=dialog] .rs-row .rs-value").first.inner_text()
+    show.click(); page.wait_for_timeout(200)
+    shown_pressed = show.get_attribute("aria-pressed")
+    show.click(); sw.click(); page.wait_for_timeout(500)
+    back_head = page.evaluate(headline_js) or ""
+    check(f"{device}: Keep in text changes the count live and Show unmasks one value", rows == 12 and kept_head.startswith("11 ") and live.startswith("11 ") and "•" in masked_before
+          and shown_pressed == "true" and back_head.startswith("12 "), f"rows={rows} kept={kept_head!r} live={live!r} masked={masked_before!r} pressed={shown_pressed} back={back_head!r}")
+    page.get_by_role("button", name="Choose another file").click(); page.wait_for_timeout(600)
     page.locator("input[type=file]").first.set_input_files(str(ROOT / "fixtures/documents/harborview_certificate.pdf"))
-    page.wait_for_selector("text=Removed before any model call", timeout=30000); page.wait_for_timeout(300)
-    page.get_by_role("button", name="Continue with these redactions").click()
+    page.wait_for_selector("[role=dialog] [data-rs-headline]", timeout=60000); page.wait_for_timeout(1000)
+    cert_head = page.evaluate(headline_js) or ""
+    check(f"{device}: a picked PDF opens the same review", bool(re.fullmatch(r"(\d+ personal identifiers? removed before AI analysis|No personal identifiers found\.)", cert_head)), repr(cert_head))
+    shot("15b-personal-details-certificate")
+    page.get_by_role("button", name="Continue", exact=True).click()
     page.wait_for_selector("text=Review the fields", timeout=240000); page.wait_for_timeout(500)
     stage_rows = page.locator(".up-stage-row").count()
+    redaction_row = page.locator(".up-stage-row").nth(2).inner_text()
+    check(f"{device}: extraction shows the server's count on the redaction stage", bool(re.search(r"Removing personal details \u00b7 \d+ removed", redaction_row)), repr(redaction_row))
     focus_h = lambda: page.evaluate("(() => { const a = document.activeElement; return a && a.tagName === 'H3' ? a.textContent.trim() : (a ? a.tagName : ''); })()")
     at_extraction = focus_h()
     page.get_by_role("button", name="Review the fields").click(); page.wait_for_timeout(800)
     at_review = focus_h()
     # a11y-7: each new wizard step moves focus to its heading
     check(f"{device}: upload step changes move focus to the new heading", at_extraction == "Extraction" and at_review == "Review the extracted fields", f"{at_extraction!r} / {at_review!r}")
+    server_line = page.locator("[role=dialog] .up-review [data-rs-server-count] .rs-server-text").first
+    server_text = server_line.inner_text() if server_line.count() else ""
+    check(f"{device}: review table header shows the server's count", bool(re.fullmatch(r"\d+ personal identifiers? removed before AI analysis", server_text)), repr(server_text))
     confirmed = page.locator(".up-row[data-confidence=confirmed]").count()
     decided = page.locator(".up-row[data-decided]").count()
     hb_disabled = page.evaluate("(() => { const b = document.querySelector('[role=dialog] .hb-root'); return !!b && (b.disabled || b.getAttribute('aria-disabled') === 'true'); })()")
@@ -762,6 +806,8 @@ def upload_walk(page, device: str, shot):
     ribbon_ok = page.get_by_text(f"Uploaded plan, version {label}", exact=False).count() > 0
     stitches_up = page.locator(".pdf-stitch", has_text=label).count()
     check(f"{device}: publish creates UP1", published and up_opt is not None and up_opt[0].startswith("upload:") and ribbon_ok and stitches_up >= 1, f"published={label} option={up_opt} ribbon={ribbon_ok} page stitches={stitches_up}")
+    doc_counts = page.locator(".doc-mine .doc-redaction .rs-server-text").all_inner_texts()
+    check(f"{device}: Documents lists the upload with the server's count", any(re.fullmatch(r"\d+ personal identifiers? removed before AI analysis", t) for t in doc_counts), str(doc_counts[:3]))
     shot("27-documents-upload")
     page.locator("label.plan-pick select").first.select_option("ML26"); page.wait_for_timeout(1200)
 

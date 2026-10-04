@@ -7,8 +7,11 @@ Pipeline for one read, in order (the response lists the stages that ran):
    model; WebP keeps its pixels and loses its EXIF/XMP/ICC chunks. In live mode an image or a scanned PDF is sent only when the request
    carries `image_consent=1` (multipart field; alias `confirm_image_sent_unredacted=true`); without it the reader answers 200 with
    `needs_image_consent: true` and READER_IMAGE_NOTICE, and calls no model.
-2. redacting: `redaction.redact` before any model call. Only redacted text reaches a model. An image cannot be redacted, which the
-   response states (ribbon); every string the model returns is redacted again before it is returned.
+2. redacting: `redaction.redact_pages` before any model call: the identifiers the person's device found and confirmed (optional
+   `client_redaction`, the same contract as the plan upload: a JSON object in the JSON body, or a JSON string in a multipart field), the
+   terms they typed, and the server's own patterns. Only redacted text reaches a model; `redaction.summary` counts the distinct
+   identifiers removed (masked values only). An image cannot be redacted, which the response states (ribbon, summary null); every string
+   the model returns is redacted again before it is returned.
 3. reading_lines:
    - LIVE (OpenRouter key set, guard allows): the model returns each line AS WRITTEN (procedure wording, tooth, surfaces, quantity, fee,
      code, date, the line's own text) under a JSON schema. It never names an internal procedure key and never computes. For text input
@@ -41,7 +44,7 @@ from . import ai_support
 from .auth import User, current_user
 from .data import FIX, PROC_BY_KEY, PROCEDURE_CODES, SAMPLE_USERS
 from .extraction import (NOT_STATED_RULE, VOCAB, ModelUnavailable, _ANCHORS, _GENERIC, _obj, _tokens, looks_like_injection, match_rules, normalize)
-from .redaction import redact
+from .redaction import InvalidClientRedaction, parse_client_redaction, redact, redact_pages
 from .templates import (READER_CODE_NOT_LISTED, READER_CONFIRM_SOURCE, READER_DEMO_CANNOT_READ, READER_DESCRIPTION_DIFFERS, READER_LIMIT_NOTE,
                         READER_MATCH_AMBIGUOUS, READER_MATCH_CODE, READER_MATCH_DESCRIPTOR, READER_MODEL_FAILED, READER_NO_LINES, READER_NOT_MATCHED,
                         READER_IMAGE_NOTICE, READER_RIBBON_DEMO, READER_RIBBON_LIVE, READER_RIBBON_LIVE_IMAGE, READER_SCANNED_PDF, READER_STAGE_LABELS)
@@ -313,22 +316,38 @@ def read_live(redacted_text: Optional[str], images: list[tuple[str, bytes]]) -> 
 
 
 # ---------------------------------------------------------------- input
-async def _read_input(request: Request) -> tuple[str, Optional[str], list[tuple[str, bytes]], Optional[str], bool]:
-    """→ (source, text, images, note, image_consent). source: text | pdf | pdf_scanned | image. image_consent is the multipart field
-    `image_consent` (or its alias `confirm_image_sent_unredacted`; "1"/"true"/"yes"), sent only after the visitor confirmed
-    READER_IMAGE_NOTICE; without it no image leaves the server."""
+INVALID_CLIENT_REDACTION = {"error": "invalid_client_redaction"}      # one constant body: the input is never echoed
+
+
+def _client_redaction(values: list[Any]) -> Optional[dict]:
+    """The optional client_redaction field (0 or 1 value; a JSON string, or an object in a JSON body) → the parsed contract, or 422."""
+    if not values:
+        return None
+    if len(values) != 1 or not isinstance(values[0], (str, dict)):
+        raise HTTPException(status_code=422, detail=INVALID_CLIENT_REDACTION)
+    try:
+        return parse_client_redaction(values[0])
+    except InvalidClientRedaction:
+        raise HTTPException(status_code=422, detail=INVALID_CLIENT_REDACTION)
+
+
+async def _read_input(request: Request) -> tuple[str, Optional[str], list[tuple[str, bytes]], Optional[str], bool, Optional[dict]]:
+    """→ (source, text, images, note, image_consent, client_redaction). source: text | pdf | pdf_scanned | image. image_consent is the
+    multipart field `image_consent` (or its alias `confirm_image_sent_unredacted`; "1"/"true"/"yes"), sent only after the visitor confirmed
+    READER_IMAGE_NOTICE; without it no image leaves the server. client_redaction is validated before anything is read further."""
     declared = request.headers.get("content-length")
     if declared and declared.isdigit() and int(declared) > MAX_BYTES + 64 * 1024:
         raise HTTPException(status_code=413, detail={"error": "file_too_large", "max_bytes": MAX_BYTES})
     ctype = (request.headers.get("content-type") or "").lower()
     if ctype.startswith("multipart/form-data"):
         form = await request.form()
+        client = _client_redaction(form.getlist("client_redaction"))
         consent = any(str(form.get(k) or "").strip().lower() in ("1", "true", "yes") for k in ("image_consent", "confirm_image_sent_unredacted"))
         f = form.get("file")
         if f is None or not hasattr(f, "read"):
             text = form.get("text")
             if isinstance(text, str):
-                return "text", text, [], None, False
+                return "text", text, [], None, False, client
             raise HTTPException(status_code=422, detail={"error": "file_or_text_required"})
         data = await f.read(MAX_BYTES + 1)
         if len(data) > MAX_BYTES:
@@ -337,9 +356,9 @@ async def _read_input(request: Request) -> tuple[str, Optional[str], list[tuple[
         if mime == "application/pdf" or data.startswith(b"%PDF-"):
             if not data.startswith(b"%PDF-"):
                 raise HTTPException(status_code=415, detail={"error": "unsupported_type"})
-            return (*(await run_in_threadpool(_read_pdf, data)), consent)       # PDF parsing and rendering stay off the event loop
+            return (*(await run_in_threadpool(_read_pdf, data)), consent, client)       # PDF parsing and rendering stay off the event loop
         if mime in IMAGE_TYPES and data.startswith(IMAGE_TYPES[mime]) and (mime != "image/webp" or data[8:12] == b"WEBP"):
-            return "image", None, [(mime, data)], None, consent
+            return "image", None, [(mime, data)], None, consent, client
         raise HTTPException(status_code=415, detail={"error": "unsupported_type", "accepted": ["image/png", "image/jpeg", "image/webp", "application/pdf"]})
     try:
         body = await request.json()
@@ -348,7 +367,8 @@ async def _read_input(request: Request) -> tuple[str, Optional[str], list[tuple[
     text = body.get("text") if isinstance(body, dict) else None
     if not isinstance(text, str) or not text.strip():
         raise HTTPException(status_code=422, detail={"error": "file_or_text_required"})
-    return "text", text, [], None, False
+    client = _client_redaction([body["client_redaction"]] if body.get("client_redaction") is not None else [])
+    return "text", text, [], None, False, client
 
 
 def _read_pdf(data: bytes) -> tuple[str, Optional[str], list[tuple[str, bytes]], Optional[str]]:
@@ -462,11 +482,14 @@ def _finish(items: list[dict]) -> list[dict]:
 @router.post("/me/treatment-plans/read")
 async def read_treatment_plan(request: Request, user: User = Depends(current_user)):
     ai_support.local_rate_limit(user.sub, KIND, RATE_N, RATE_WINDOW_S, request)
-    source, text, images, note, image_consent = await _read_input(request)
+    source, text, images, note, image_consent, client = await _read_input(request)
     mode = ai_support.llm_mode()
     if text is not None and len(text) > MAX_TEXT_CHARS:
         raise HTTPException(status_code=422, detail={"error": "text_too_long", "max_chars": MAX_TEXT_CHARS})
-    redacted, removed = (await run_in_threadpool(redact, text)) if text is not None else (None, [])
+    redacted, summary, removed = None, None, []
+    if text is not None:
+        pages, summary, removed = await run_in_threadpool(redact_pages, [text], (client or {}).get("identifiers"), (client or {}).get("extra_terms"))
+        redacted = pages[0]
     ignored_server = []
     if redacted:
         for s in re.split(r"(?<=[.!?])\s+|\n", redacted):
@@ -474,7 +497,7 @@ async def read_treatment_plan(request: Request, user: User = Depends(current_use
                 ignored_server.append(s.strip()[:240])
     skipped = ("redacting",) if images else ()
     resp: dict[str, Any] = {"mode": "demo", "source": "image" if source == "image" else ("pdf" if source.startswith("pdf") else "text"), "items": [],
-                            "ignored_text": ignored_server, "redaction": {"removed": removed, "image_not_redacted": bool(images)}, "ribbon": None, "note": note,
+                            "ignored_text": ignored_server, "redaction": {"removed": removed, "image_not_redacted": bool(images), "summary": summary}, "ribbon": None, "note": note,
                             "stages": _stages("redacting", skipped), "fixture": None, "dropped_unverified": 0}
     reason = None
     if mode == "live" and images and not image_consent:

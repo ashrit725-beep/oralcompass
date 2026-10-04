@@ -5,9 +5,10 @@ import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components
 import { api } from "@/lib/api";
 import { UPLOAD } from "@/lib/copy/upload";
 import type { ExtractedField, PlanRef, ReviewDecision, UploadedPlanSummary } from "@/lib/types";
-import { createSerialGate, groupByLandmark, labelFor, publishErrorCopy, reviewErrorCopy, undecidedRequired, verifiedUndecided, type ExtractionStatusFull } from "@/lib/upload";
+import { createSerialGate, groupByLandmark, labelFor, publishErrorCopy, reviewErrorCopy, undecidedRequired, verifiedUndecided, type ExtractionStatusFull, type ServerRedactionSummary } from "@/lib/upload";
 import { PaneHeading } from "./PaneHeading";
 import { ReviewRow } from "./ReviewRow";
+import { ServerRedactionLine } from "./ServerRedactionLine";
 
 export interface PublishResult { plan_ref: PlanRef; version_label: string; published_at: string; sha256: string; summary: UploadedPlanSummary }
 type ReviewResult = { fields: ExtractedField[]; counts?: ExtractionStatusFull["counts"]; undecided_required?: string[] };
@@ -25,9 +26,11 @@ export interface ReviewTableProps {
   status: ExtractionStatusFull;
   onFields: (r: ReviewResult) => void;
   onPublished: (r: PublishResult) => void;
+  /** The server's redaction summary: the header line "N personal identifiers removed before AI analysis". */
+  redaction?: ServerRedactionSummary | null;
 }
 
-export function ReviewTable({ docId, status, onFields, onPublished }: ReviewTableProps) {
+export function ReviewTable({ docId, status, onFields, onPublished, redaction = null }: ReviewTableProps) {
   const fields = status.fields;
   const undecided = status.undecided_required ?? undecidedRequired(fields);
   const classNames = (status.structure?.classes ?? []).map((c) => c.name);
@@ -81,6 +84,7 @@ export function ReviewTable({ docId, status, onFields, onPublished }: ReviewTabl
   return (
     <div className="up-review">
       <PaneHeading>{UPLOAD.reviewTitle}</PaneHeading>
+      {redaction && <ServerRedactionLine summary={redaction} />}
       {status.ribbon && <p className={status.mode === "demo" ? "ribbon up-ribbon" : "up-mode-line"}>{status.ribbon}</p>}
       <p className="up-caption">{UPLOAD.reviewIntro}</p>
       {status.notes_for_review?.paraphrase && <p className="up-note">{status.notes_for_review.paraphrase}</p>}

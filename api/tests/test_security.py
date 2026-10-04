@@ -102,6 +102,6 @@ def test_redaction_is_linear_and_does_not_eat_plan_prose():
     long_line = "Deductible is 50 per person. The plan pays 80 percent of the allowed amount for services at our office on Main St"
     assert redact(long_line) == (long_line, [])
     out, removed = redact("Smith SMITH smith John", ["Smith"])
-    assert out == "[removed] [removed] [removed] John" and removed == ["user:Smi…"]
+    assert out == "[name removed] [name removed] [name removed] John" and removed == ["user:Smi…"]     # a typed term is a name (web placeholder)
     out, removed = redact("Member ID: ABC123456\nSSN 123-45-6789\nCall (919) 555-1234\nmail a.b@example.org\nPatient: John Doe\nLives at 123 Oak Hill Road")
     assert set(removed) == {"member_id", "ssn", "phone", "email", "name_line", "address"} and "John" not in out and "123456" not in out

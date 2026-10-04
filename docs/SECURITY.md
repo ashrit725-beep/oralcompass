@@ -12,11 +12,31 @@ nothing leaves the server: answers come from templates and stored fictional fixt
 
 | Input | What the model receives | Where |
 | --- | --- | --- |
-| Uploaded plan PDF (text layer) | Redacted page text only (`redaction.redact` plus the visitor's own terms), previewed before extraction | `api/app/extraction.py`, `api/app/uploads.py` |
-| Treatment plan, pasted text or a PDF with a text layer | Redacted text only; every string the model returns is redacted again | `api/app/treatment_reader.py` |
+| Uploaded plan PDF (text layer) | Redacted page text only: the identifiers the visitor's device confirmed, the visitor's own terms, then the server's patterns (`redaction.redact_pages`), previewed before extraction | `api/app/extraction.py`, `api/app/uploads.py` |
+| Treatment plan, pasted text or a PDF with a text layer | Redacted text only (the same three layers when the device sends `client_redaction`); every string the model returns is redacted again | `api/app/treatment_reader.py` |
 | Treatment plan, photo (PNG, JPEG, WebP) | The image itself, unredacted, only after the visitor confirms the notice (below) | `api/app/treatment_reader.py` |
 | Treatment plan, PDF with no text layer | Up to 3 rendered page images, unredacted, only after the same confirmation | `api/app/treatment_reader.py` |
 | Assistant and clause explainer | Facts from the stored ledger and plan clauses; amounts appear only as placeholders | `api/app/assistant.py`, `api/app/explain.py` |
+
+## Personal details removed before AI analysis (implemented, server side)
+
+- **Device first, server authoritative.** The upload can carry `client_redaction` (multipart field, JSON `{"version": 1, "identifiers":
+  [{"category", "value"}], "extra_terms": [...]}`, at most 300 identifiers, 20 terms and 64 KB; ten categories: name, address, member ID,
+  group, claim and account numbers, SSN, date of birth, phone, email). Anything outside the contract gets one constant
+  `422 {"error": "invalid_client_redaction"}` before anything is stored; the input is never echoed.
+- **Every occurrence, any spacing.** Before any model call the server removes every occurrence of every confirmed value and typed term,
+  whatever its case, spacing, punctuation or line breaks (a letters-and-digits match at word boundaries, so pdf.js and PyMuPDF spacing
+  differences do not matter), then runs its own label-anchored patterns for the same ten categories as a safety net, then removes every
+  identifier the patterns found wherever else it appears. Toll-free numbers (800, 833, 844, 855, 866, 877, 888), CDT codes, amounts,
+  percentages, plan dates, frequency limits and waiting periods are kept (`api/tests/test_client_redaction.py`, which captures the exact
+  model input on the real OpenRouter code path).
+- **Values stay private.** Confirmed values and typed terms are stored next to the PDF (`<data dir>/<owner>/docs/<id>.redaction.json`, mode
+  0600), never in the document record, never logged and never returned. Responses carry `redaction_summary` only: the number of distinct
+  identifiers removed, counts by category, occurrences, how many came from the device and from the server check, and masked values
+  ("S•• R•••••", "•••• 0142", "••••@example.com"). The same summary is on the upload response, the redaction preview, the extraction status
+  and the document record. "Delete all my data" removes the file with the PDF.
+- **Fail closed.** If a document's stored redaction cannot be read, the extraction fails before any model call.
+- Quote verification still runs against the PDF's own text layer, so clause quotes (which carry no identifiers) are confirmed as before.
 
 ## Photos and scanned PDFs (implemented)
 
@@ -63,6 +83,7 @@ nothing leaves the server: answers come from templates and stored fictional fixt
 - **No OCR-based redaction:** names, member IDs and dates printed inside an image reach the model when the visitor confirms the notice.
   That is why images need the confirmation above and why the paste path is offered first.
 - **No image cropping:** the whole image is sent once confirmed.
-- Redaction is pattern-based (`api/app/redaction.py`: member/subscriber/policy ids that contain a digit, SSN, date of birth, phone, email,
-  "Patient:/Name:/Insured:/Employee:" lines, street addresses) plus the visitor's own terms, matched without regard to case or spacing. It can miss a name
-  written in running prose; the preview shows the result before anything is sent.
+- Redaction is deterministic, not a model: the device detector and the server patterns (`api/app/redaction.py`) are label-anchored (a name after "Patient:",
+  "Member:", "Dear"...; IDs after "Member ID", "Group No."...; dates only after a birth label) plus the visitor's own terms, matched without regard to case or spacing. A name that
+  never appears next to a label, and that the visitor does not add as a term, can be missed; the review step shows the redacted text
+  before anything is sent, and the add-a-term field covers it.

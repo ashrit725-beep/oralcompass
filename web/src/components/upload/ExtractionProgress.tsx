@@ -4,7 +4,7 @@ import StatusMark, { type StatusMarkStatus } from "@/components/ui/StatusMark";
 import { Button } from "@/components/ui/button";
 import { UPLOAD } from "@/lib/copy/upload";
 import { EASE, transitions, useReducedMotion } from "@/lib/motion";
-import { isTerminal, stageCopy, stageProgress, type ExtractionStatusFull } from "@/lib/upload";
+import { isTerminal, stageCopy, stageProgress, type ExtractionStatusFull, type ServerRedactionSummary } from "@/lib/upload";
 import { PaneHeading } from "./PaneHeading";
 
 /**
@@ -19,6 +19,8 @@ export interface ExtractionProgressProps {
   starting?: boolean;
   pollError?: string | null;
   onReview: () => void;
+  /** The server's redaction summary (upload response or GET extraction): the redaction row reads "Removing personal details · 12 removed". */
+  redaction?: ServerRedactionSummary | null;
 }
 
 function rowStatus(st: ExtractionStatusFull, i: number): StatusMarkStatus {
@@ -32,7 +34,7 @@ function rowStatus(st: ExtractionStatusFull, i: number): StatusMarkStatus {
   return "pending";
 }
 
-export function ExtractionProgress({ status, starting, pollError, onReview }: ExtractionProgressProps) {
+export function ExtractionProgress({ status, starting, pollError, onReview, redaction = null }: ExtractionProgressProps) {
   const reduce = useReducedMotion();
   if (!status) {
     return (
@@ -81,7 +83,7 @@ export function ExtractionProgress({ status, starting, pollError, onReview }: Ex
               <motion.li key={s.key} className="up-stage-row" data-status={rs} aria-current={i === status.stage_index && !terminal ? "step" : undefined}
                          initial={reduce ? false : { opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
                          transition={{ duration: 0.6, ease: EASE.land, delay: Math.min(i, 5) * 0.12 }}>
-                <StatusMark status={rs} progress={rs === "running" && progress !== null ? progress : undefined} spinDuration={2400} label={s.label} size={20} fontSize={15} />
+                <StatusMark status={rs} progress={rs === "running" && progress !== null ? progress : undefined} spinDuration={2400} label={s.key === "redacting" && redaction && rs !== "pending" ? UPLOAD.stageRemovedCount(s.label, redaction.total) : s.label} size={20} fontSize={15} />
               </motion.li>
             );
           })}

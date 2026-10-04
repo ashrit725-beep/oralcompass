@@ -595,7 +595,7 @@ def test_background_extraction_never_recreates_a_deleted_document_or_reverts_new
     h = H(sub)
     up = upload(h, make_pdf(["Deductible $50 per person", "Annual maximum $1,000"])).json()
 
-    def fake_run(path, sha, terms, set_status, mode=None, fixtures=None):
+    def fake_run(path, sha, terms, set_status, mode=None, fixtures=None, **kw):
         st = extraction.new_status("live")
         st["status"] = "reading_text"
         set_status(st)

@@ -105,12 +105,12 @@ def server_env(tmp: Path) -> dict:
 
 
 def upload_and_publish(page) -> None:
-    """The upload wizard in demo mode: fixture PDF → redaction → extraction → review → hold-to-publish (same steps as tools/screenshots.py)."""
+    """The upload wizard in demo mode: fixture PDF → on-device review of personal details → extraction → review → hold-to-publish (same steps as tools/screenshots.py)."""
     page.get_by_role("button", name="Add a plan document").first.click()
     page.wait_for_timeout(600)
     page.locator("input[type=file]").first.set_input_files(str(ROOT / "fixtures/documents/harborview_certificate.pdf"))
-    page.wait_for_selector("text=Removed before any model call", timeout=30000)
-    page.get_by_role("button", name="Continue with these redactions").click()
+    page.wait_for_selector("[role=dialog] [data-rs-headline]", timeout=60000)   # the on-device review of personal details (client redaction)
+    page.get_by_role("button", name="Continue", exact=True).click()
     page.wait_for_selector("text=Review the fields", timeout=120000)
     page.get_by_role("button", name="Review the fields").click()
     page.wait_for_timeout(800)

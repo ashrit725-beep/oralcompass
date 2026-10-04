@@ -260,7 +260,8 @@ EXPORT_TYPES = ("document", "plan_version", "estimate", "comparison", "benefits"
 
 
 def _delete_owner_files(sub: str) -> int:
-    """Remove the caller's stored uploads (ORALCOMPASS_DATA_DIR/<sub>/). Only a plain directory name directly under the data dir is touched."""
+    """Remove the caller's stored uploads (ORALCOMPASS_DATA_DIR/<sub>/: each PDF and its private redaction file). Only a plain directory name
+    directly under the data dir is touched. The count is of stored documents (PDFs); everything in the directory is removed."""
     import re
     import shutil
     if not re.fullmatch(r"[A-Za-z0-9_-]{1,128}", sub):
@@ -269,7 +270,7 @@ def _delete_owner_files(sub: str) -> int:
     target = (base / sub).resolve()
     if target.parent != base or not target.is_dir():
         return 0
-    n = sum(1 for p in target.rglob("*") if p.is_file())
+    n = sum(1 for p in target.rglob("*.pdf") if p.is_file())
     shutil.rmtree(target, ignore_errors=True)
     return n
 

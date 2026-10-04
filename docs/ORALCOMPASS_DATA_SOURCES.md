@@ -60,3 +60,28 @@ Benchmarks (NC Medicaid) are a third category: labeled by payer/geography/date/p
 6. Benchmarks exist for 22 codes only; crowns, cast crowns, cast partial dentures, implants and occlusal guards have no published NC Medicaid rate.
 7. Per-tooth / per-quadrant frequency clocks are shown as rules but not enforced in the arithmetic (tooth/quadrant history is not collected).
 8. CDT: code numbers and descriptors appear only as printed in cited public documents; no CDT catalog is shipped (ADA commercial license required for one).
+
+## 7. The fictional sample statement (client-side redaction demo)
+
+`fixtures/documents/tw26_fictional_sample_statement.pdf` is a **fictional** member benefits statement for the fictional plan TW26
+(Tidewater Dental Select 2026). It exists so the upload step can offer "Try a fictional sample statement" and show identifier removal
+before AI analysis on a document that looks like a real one. Nothing on it is real: the person (Riley Okafor), the dependent (Jamie
+Okafor), the address, every identifying number, the plan and the carrier are invented. The page says so in a ribbon on every page and in
+an "About this sample" notice; the file name and the PDF metadata say so too.
+
+- **Generated, never hand-edited:** `python3 tools/make_sample_statement.py` writes the PDF (pymupdf, byte-for-byte reproducible), the
+  demo extraction fixture `fixtures/extractions/tw26_fictional_sample_statement.json` (keyed by the PDF's SHA-256; every cite is a sentence
+  printed in the statement, on the page cited) and the web text fixture `web/src/lib/__fixtures__/sample-statement-text.ts` (the text as
+  pdf.js reads it, plus the expected identifiers). `--check` exits non-zero when a committed file is out of date.
+- **Exactly 12 distinct personal identifiers:** 2 names, a street line, a city/state/ZIP line, member ID, group number, date of birth,
+  Social Security number (in the 987-65-432x range reserved for advertising), personal phone (555-01xx, reserved for fictional use), email
+  (example.com), claim number, account number. The builder audits its own output: each identifier is present, and nothing else has the
+  shape of one (no other phone-, SSN-, email- or city/ZIP-shaped text, no street-suffix word, identifier labels only where an identifier follows).
+- **The plan's real fixture numbers, quoted from `fixtures/plans/tw26.json`:** $50/$150 deductible (waived for Class I), $1,500 annual
+  maximum, 100/80/50 coinsurance, 12-month Class III waiting period, frequency limits, exclusions, and the four allowed amounts for the
+  claimed services. The claim ($575.00 charged, $420.00 allowed, $338.00 plan, $82.00 you) equals the engine's ledger on the same rules
+  (`api/tests/test_sample_statement.py`). CDT codes on the claim (D0120, D1110, D0274, D2392) are the primary codes already printed in
+  cited public documents (`fixtures/procedure_codes.json`), next to the catalog's plain procedure names; no ADA descriptor is reproduced.
+- **Must survive redaction:** the carrier's toll-free number (1-800-555-0134), plan and service dates, CDT codes, amounts, percentages,
+  limits and the tooth number. The demo extraction fixture is not a plan preset (it is never listed in `/presets`); in demo mode an upload
+  of this file runs the full flow with no key, and its quotes are still verified against the uploaded PDF's text layer.

@@ -13,3 +13,17 @@ export function fileGate(mode: "demo" | "live" | null | undefined, file: { type:
   if (mode === "demo") return isImageFile(file) ? "demo_image" : "send";
   return "confirm";
 }
+
+export const isPdfFile = (f: { type: string; name?: string }) => f.type.toLowerCase() === "application/pdf" || /\.pdf$/i.test(f.name ?? "");
+
+/** The reader's text limit (api/app/treatment_reader.py MAX_TEXT_CHARS). */
+export const READER_MAX_TEXT = 20_000;
+
+/** Client redaction design point 6: the same on-device detector as the upload wizard, applied to a pasted estimate or a PDF's text layer
+ *  before anything is sent. Returns the redacted text and the DISTINCT count. */
+export async function redactOnDevice(text: string): Promise<{ text: string; total: number }> {
+  const { applyRedaction, detectIdentifiers } = await import("./redact");   // the detector loads with the first read, not with the app
+  const pages = [text];
+  const r = applyRedaction(pages, detectIdentifiers(pages), new Set(), []);
+  return { text: r.pages[0] ?? "", total: r.total };
+}
