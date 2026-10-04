@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import HoldButton from "@/components/ui/HoldButton";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -15,7 +15,8 @@ type ReviewResult = { fields: ExtractedField[]; counts?: ExtractionStatusFull["c
  * ReviewTable (spec §7.3 step 4, addendum B2 "no pre-checked Accept"): the extracted fields grouped by landmark, one ReviewRow each.
  * Every decision is sent at once (`PUT /me/documents/{id}/review`, one row or the explicit "Confirm all verified quotes" batch) and the
  * server's `fields` / `undecided_required` replace local state, so the footer count is the server's truth. The HoldButton publishes
- * (`POST /me/documents/{id}/publish`); a tap shows "Hold to publish"; keyboard hold (Space/Enter) is supported by the vendored button.
+ * (`POST /me/documents/{id}/publish`); a tap, a short key press or an AT click (no hold) opens a
+ * "Confirm publish" step instead (WCAG 2.1.1, a11y-1); keyboard hold (Space/Enter) is still supported by the vendored button.
  * The footer `<p role="status">` is this pane's one live region. The server's notes_for_review texts are shown as returned.
  */
 export interface ReviewTableProps {
@@ -35,6 +36,12 @@ export function ReviewTable({ docId, status, onFields, onPublished }: ReviewTabl
   const [publishing, setPublishing] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [publishError, setPublishError] = useState<string | null>(null);
+  // a11y-1 (WCAG 2.1.1): a tap, a keyboard press or an AT click on the HoldButton opens a confirm step, so publishing never needs a hold
+  const [confirming, setConfirming] = useState(false);
+  const publishBox = useRef<HTMLDivElement>(null);
+  const openConfirm = () => { setConfirming(true); setMessage(UPLOAD.publishHold); };
+  const closeConfirm = () => { setConfirming(false); publishBox.current?.querySelector<HTMLElement>(".hb-root")?.focus(); };
+  useEffect(() => { if (confirming) publishBox.current?.querySelector<HTMLElement>(".up-confirm-publish")?.focus(); }, [confirming]);
 
   const decide = useCallback(async (decisions: ReviewDecision[], path: string) => {
     setBusyPath(path); setRowErrors((e) => ({ ...e, [path]: "" })); setPublishError(null);
@@ -52,6 +59,7 @@ export function ReviewTable({ docId, status, onFields, onPublished }: ReviewTabl
 
   const publish = async () => {
     if (undecided.length || publishing) return;
+    setConfirming(false);
     setPublishing(true); setPublishError(null); setMessage(UPLOAD.publishing);
     try {
       const r = (await api.publish(docId)) as PublishResult;
@@ -133,10 +141,19 @@ export function ReviewTable({ docId, status, onFields, onPublished }: ReviewTabl
           {undecided.length ? UPLOAD.waitingCount(undecided.length) : UPLOAD.allDecided}
           {undecided.length > 0 && <span className="up-caption"> {UPLOAD.undecidedList(undecided.map((p) => labelFor(fields, p)).join(", "))}</span>}
         </p>
-        <div className="up-publish">
-          <HoldButton onHold={publish} onTap={() => setMessage(UPLOAD.publishHold)} disabled={undecided.length > 0 || publishing} size="lg" doneLabel={UPLOAD.publishing} resetAfter={0}>
+        <div className="up-publish" ref={publishBox}>
+          <HoldButton onHold={publish} onTap={openConfirm} onActivate={openConfirm} disabled={undecided.length > 0 || publishing} size="lg" doneLabel={UPLOAD.publishing} resetAfter={0}>
             {UPLOAD.publish}
           </HoldButton>
+          {confirming && undecided.length === 0 && !publishing && (
+            <div className="up-confirm-step" role="group" aria-label={UPLOAD.publishConfirm}>
+              <p className="up-caption">{UPLOAD.publishConfirmPrompt}</p>
+              <div className="up-actions">
+                <Button type="button" size="touch" className="up-confirm-publish" onClick={() => { void publish(); }}>{UPLOAD.publishConfirm}</Button>
+                <Button type="button" variant="ghost" size="touch" onClick={closeConfirm}>{UPLOAD.publishConfirmCancel}</Button>
+              </div>
+            </div>
+          )}
           <p role="status" aria-live="polite" className="up-status">{message}</p>
           {publishError && <p role="alert" className="up-error">{publishError}</p>}
         </div>

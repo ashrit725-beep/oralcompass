@@ -557,6 +557,12 @@ def upload_walk(page, device: str, shot):
         if not row.count(): row = page.locator(".up-row:not([data-decided])").first
         if not row.count(): break
         row.get_by_role("button", name="Not in document").first.click(); page.wait_for_timeout(500)
+    # a11y-1 (WCAG 2.1.1): an AT click (detail 0, no hold) opens a "Confirm publish" step that takes focus; "Not yet" closes it
+    page.evaluate("document.querySelector('[role=dialog] .hb-root').click()"); page.wait_for_timeout(300)
+    confirm_btn = page.get_by_role("button", name="Confirm publish", exact=True)
+    confirm_focused = page.evaluate("document.activeElement?.textContent?.trim() === 'Confirm publish'")
+    check(f"{device}: publish has a single-activation path", confirm_btn.count() == 1 and confirm_focused, f"confirm={confirm_btn.count()} focused={confirm_focused}")
+    if confirm_btn.count(): page.get_by_role("button", name="Not yet", exact=True).click(); page.wait_for_timeout(200)
     page.locator("[role=dialog] .hb-root").first.focus()
     page.keyboard.down("Space"); page.wait_for_timeout(1100); page.keyboard.up("Space")
     page.wait_for_selector("text=/Published as UP\\d+/", timeout=30000); page.wait_for_timeout(600)

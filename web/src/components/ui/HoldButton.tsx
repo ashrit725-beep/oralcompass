@@ -1,7 +1,7 @@
 // React Bits "HoldButton" (https://reactbits.dev/components/hold-button, registry @react-bits/HoldButton-TS-TW), MIT + Commons Clause,
 // installed 2026-10-03. Patched for OralCompass (component plan §2 N6): sand/forest/ink/paper, `wave`/`glow` off, `holdTime` 900 ms, focus
 // ring 3 px terracotta, no shipped labels ('Hold to delete'/'Deleted' gone — the wrapper passes copy). Keyboard hold (Space/Enter) kept.
-// Reduced motion: the built-in @media block fills by opacity only.
+// Reduced motion: the built-in @media block fills by opacity only. Patched 2026-10-04 (a11y-1): `onActivate` for AT clicks (detail 0).
 import React, { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 
 export type HoldButtonSize = 'sm' | 'md' | 'lg';
@@ -29,6 +29,9 @@ export interface HoldButtonProps {
   disabled?: boolean;
   onHold?: () => void;
   onTap?: () => void;
+  /** A click with no pointer or key gesture behind it (`detail === 0`: a screen reader, voice control, switch access). WCAG 2.1.1: the
+   *  host gives these users a single-activation path (OralCompass: a confirm step), since they cannot hold. */
+  onActivate?: () => void;
   className?: string;
 }
 
@@ -107,6 +110,7 @@ const HoldButton: React.FC<HoldButtonProps> = ({
   disabled = false,
   onHold,
   onTap,
+  onActivate,
   className = ''
 }) => {
   const [phase, setPhase] = useState<Phase>('idle');
@@ -332,6 +336,10 @@ const HoldButton: React.FC<HoldButtonProps> = ({
       onKeyDown={handleKeyDown}
       onKeyUp={handleKeyUp}
       onContextMenu={e => e.preventDefault()}
+      onClick={e => {
+        // pointer and key gestures preventDefault their own activation, so a click that arrives with detail 0 came from AT
+        if (e.detail === 0 && !disabled && phaseRef.current === 'idle') onActivate?.();
+      }}
     >
       <style>{STYLE}</style>
       <span
