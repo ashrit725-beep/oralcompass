@@ -221,7 +221,8 @@
 .pv-mini .visited-mark { grid-area: mark; }
 .pv-mini .pv-title { grid-area: title; font-size: 14px; }
 .pv-mini .pv-sub { grid-area: sub; }
-.pv-mini .pv-amt { grid-area: amt; }
+.pv-mini .pv-amt { grid-area: amt; white-space: normal; max-width: 42%; text-align: right; font-size: 13px; line-height: 17px; justify-self: end; }
+.pv-mini .pv-amt .pv-wait { font-size: 12px; }
 .pv-mini.pv-marginal { border-style: dashed; grid-template-areas: "title amt" "sub amt"; grid-template-columns: minmax(0, 1fr) auto; }
 .pv-mini.is-selected { border-color: var(--select); box-shadow: 0 0 0 3px var(--select-ring); }
 .pv-legend { margin-top: var(--s-3); border-radius: var(--r-2); border: 1px solid var(--rule); }
@@ -237,3 +238,5 @@
 .ov-cp-details { margin: .25rem 0 .75rem; }
 .ov-cp-details summary { cursor: pointer; min-height: 44px; padding: 10px 0; font-weight: 600; }
 .ov-sound { font-size: .85rem; color: var(--ink-soft); white-space: nowrap; }
+
+.pv-mini.pv-marginal .pv-amt { max-width: 55%; white-space: nowrap; }
