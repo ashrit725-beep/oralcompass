@@ -71,3 +71,11 @@ def test_rules_ignore_unknown_procedure_keys_and_cap_the_list():
     assert len(client.get("/plans/HB26/rules", headers=A).json()["rules"]) > 1
     r = client.get("/plans/HB26/rules?procedure_keys=" + ",".join(["x"] * 65), headers=A)
     assert r.status_code == 422 and r.json()["detail"]["error"] == "too_many_procedure_keys"
+
+
+def test_benefit_and_treatment_amounts_have_an_upper_bound():
+    src = {"type": "benefit_statement", "label": "x", "date": "2026-09-15", "entered_by": "user"}
+    r = client.put("/me/benefits/HB26", json={"coverage_start": "2025-01-01", "network_default": "in", "deductible_met_cents": 10**20, "source": src}, headers=A)
+    assert r.status_code == 422
+    r = client.post("/me/treatment-items", json={"label": "Crown", "procedure_key": "crown", "dentist_fee_cents": 10**20}, headers=A)
+    assert r.status_code == 422
