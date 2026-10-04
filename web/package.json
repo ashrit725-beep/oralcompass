@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "lint:copy": "python3 ../tools/advice_lint.py src/lib/copy.ts",
+    "lint:copy": "python3 ../tools/advice_lint.py src/lib src/components src/views",
     "check:engines": "node scripts/check-engines.mjs",
     "check:bundle": "vite build && node scripts/check-bundle.mjs",
     "test": "vitest run"

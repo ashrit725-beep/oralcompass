@@ -60,8 +60,22 @@ def lint_text(text: str, is_ui_label: bool = False) -> list[dict]:
 STRING_RE = re.compile(r"(?:\"((?:[^\"\\]|\\.)*)\"|'((?:[^'\\]|\\.)*)'|`((?:[^`\\]|\\.)*)`)", re.S)
 
 
+_BLOCK_COMMENT = re.compile(r"/\*.*?\*/", re.S)
+_LINE_COMMENT = re.compile(r"(?<![:\\\w\"'`])//[^\n]*")        # not the "//" of a URL inside a string
+_PY_COMMENT = re.compile(r"(?m)^\s*#[^\n]*$")
+
+
+def strip_comments(src: str, suffix: str) -> str:
+    """Code comments are not copy: apostrophes and quotes in them would otherwise pair up into false 'strings' (info-only-13)."""
+    if suffix in {".ts", ".tsx", ".js", ".jsx", ".mjs"}:
+        return _LINE_COMMENT.sub("", _BLOCK_COMMENT.sub("", src))
+    if suffix == ".py":
+        return _PY_COMMENT.sub("", src)
+    return src
+
+
 def lint_file(path: Path) -> list[dict]:
-    src = path.read_text(encoding="utf-8", errors="ignore")
+    src = strip_comments(path.read_text(encoding="utf-8", errors="ignore"), path.suffix)
     out = []
     for m in STRING_RE.finditer(src):
         s = next(g for g in m.groups() if g is not None)

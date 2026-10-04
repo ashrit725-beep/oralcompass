@@ -166,3 +166,14 @@ def test_reminders_cover_uploaded_plans_and_only_documents_really_awaiting_decis
     client.post(f"/me/documents/{up['id']}/extract", headers=h2)
     assert any(i["kind"] == "document_awaiting_decision" for i in client.get("/me/reminders", headers=h2).json()["items"])
     assert client.get("/me/documents", headers=h2).json()[0]["fields_needing_confirmation"]
+
+
+def test_copy_linter_reads_strings_not_comments(tmp_path):
+    """info-only-13: `npm run lint:copy` covers src/lib, src/components and src/views; comments are not copy, string literals still are."""
+    import advice_lint
+    f = tmp_path / "probe.tsx"
+    f.write_text('const a = "You should book now"; // the best we can do\nconst u = "https://x.org/a"; /* don\'t "best" */\n')
+    found = {v["match"].lower() for v in advice_lint.lint_file(f)}
+    assert "you should" in found and "best" not in found
+    pkg = json.loads((Path(__file__).resolve().parents[2] / "web" / "package.json").read_text())
+    assert pkg["scripts"]["lint:copy"].endswith("src/lib src/components src/views")
