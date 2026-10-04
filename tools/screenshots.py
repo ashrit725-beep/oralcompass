@@ -599,6 +599,16 @@ def upload_walk(page, device: str, shot):
         first.get_by_role("button", name="Not in document").first.focus(); page.keyboard.press("Enter"); page.wait_for_timeout(700)
         kept = page.evaluate("(() => { const a = document.activeElement; return !!a && a.textContent.trim() === 'Not in document' && !!a.closest('.up-row'); })()")
         check(f"{device}: review decision keeps keyboard focus", kept, page.evaluate("document.activeElement?.tagName + ' ' + (document.activeElement?.textContent || '').slice(0, 30)"))
+    # a11y-30: Edit moves focus into the form, an empty entry marks the value field invalid, Cancel returns focus to Edit
+    erow = page.locator(".up-row:not([data-decided])").first
+    if erow.count():
+        erow.get_by_role("button", name="Edit", exact=True).first.click(); page.wait_for_timeout(300)
+        in_form = page.evaluate("!!document.activeElement?.closest('.up-edit')")
+        erow.get_by_role("button", name="Enter this value").first.click(); page.wait_for_timeout(200)
+        marked = page.evaluate("(() => { const a = document.activeElement; return !!a && a.getAttribute('aria-invalid') === 'true' && !!document.getElementById(a.getAttribute('aria-describedby') || '-'); })()")
+        erow.get_by_role("button", name="Cancel", exact=True).first.click(); page.wait_for_timeout(200)
+        back = page.evaluate("(() => { const a = document.activeElement; return !!a && a.textContent.trim() === 'Edit' && a.getAttribute('aria-expanded') === 'false'; })()")
+        check(f"{device}: review edit form manages focus and errors", in_form and marked and back, f"in_form={in_form} marked={marked} back={back}")
     for _ in range(60):
         if page.locator(".up-count[data-undecided='0']").count(): break
         row = page.locator(".up-row:not([data-decided])").filter(has=page.locator(".up-req")).first

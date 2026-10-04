@@ -1,4 +1,4 @@
-import { useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { Money } from "@/components/Money";
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
@@ -35,6 +35,11 @@ export function ReviewRow({ docId, field: f, classNames, busy, error, onDecide }
   const [raw, setRaw] = useState("");
   const [source, setSource] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
+  // a11y-30: the error belongs to one field (aria-invalid + aria-describedby on that field); Edit moves focus into the form, Cancel and a
+  // successful entry return it to the Edit button
+  const [errorField, setErrorField] = useState<"value" | "source" | null>(null);
+  const decideRef = useRef<HTMLDivElement>(null);
+  const opened = useRef(false);
   const [pageOpen, setPageOpen] = useState(false);
   const ids = { value: useId(), source: useId(), cands: useId(), err: useId() };
   const kind = f.decision?.kind;
@@ -42,17 +47,25 @@ export function ReviewRow({ docId, field: f, classNames, busy, error, onDecide }
   const shownValue = kind === "edited" ? f.decision?.value : f.proposed_value;
   const isClass = f.field_path.startsWith("class_of.");
 
+  const fail = (field: "value" | "source", msg: string) => { setFormError(msg); setErrorField(field); document.getElementById(field === "value" ? ids.value : ids.source)?.focus(); };
+  const focusEdit = () => decideRef.current?.querySelector<HTMLElement>("[aria-expanded]")?.focus();
+  const closeEdit = () => { setEditing(false); setFormError(null); setErrorField(null); };
+  useEffect(() => {
+    if (editing) { opened.current = true; document.getElementById(ids.value)?.focus(); }
+    else if (opened.current) { opened.current = false; focusEdit(); }
+  }, [editing]); // eslint-disable-line react-hooks/exhaustive-deps
   const submitEdit = () => {
     const parsed = parseValueInput(f.unit, raw);
-    if (!parsed.ok) { setFormError(UPLOAD.invalidValue); return; }
-    if (!source.trim()) { setFormError(UPLOAD.sourceRequired); return; }
-    if (isClass && classNames.length && !classNames.includes(String(parsed.value))) { setFormError(UPLOAD.unknownClass); return; }
-    setFormError(null); setEditing(false);
+    if (!parsed.ok) { fail("value", UPLOAD.invalidValue); return; }
+    if (!source.trim()) { fail("source", UPLOAD.sourceRequired); return; }
+    if (isClass && classNames.length && !classNames.includes(String(parsed.value))) { fail("value", UPLOAD.unknownClass); return; }
+    closeEdit();
     onDecide(decisionEdit(f, parsed.value, source.trim()));
   };
+  const invalid = (field: "value" | "source") => (formError && errorField === field ? { "aria-invalid": true as const, "aria-describedby": ids.err } : {});
 
   const valueInput = (() => {
-    const common = { id: ids.value, className: "min-h-11", disabled: busy, "aria-describedby": formError ? ids.err : undefined };
+    const common = { id: ids.value, className: "min-h-11", disabled: busy, ...invalid("value") };
     switch (f.unit) {
       case "cents": return <input {...common} inputMode="decimal" placeholder="0.00" value={raw} onChange={(e) => setRaw(e.target.value)} />;
       case "bp": return <input {...common} inputMode="decimal" min={0} max={100} placeholder="0" value={raw} onChange={(e) => setRaw(e.target.value)} />;
@@ -113,9 +126,9 @@ export function ReviewRow({ docId, field: f, classNames, busy, error, onDecide }
         ) : <span className="up-none">{UPLOAD.noQuote}</span>}
       </TableCell>
       <TableCell data-label={UPLOAD.colDecision} className="up-cell whitespace-normal align-top up-cell-decision">
-        <div className="up-decide" role="group" aria-label={`${UPLOAD.colDecision}: ${f.label}`}>
+        <div className="up-decide" role="group" aria-label={`${UPLOAD.colDecision}: ${f.label}`} ref={decideRef}>
           <Button type="button" variant={kind === "confirmed" ? "default" : "outline"} size="touch" aria-pressed={kind === "confirmed"} disabled={!canConfirm} aria-disabled={busy || undefined} onClick={() => { if (!busy) onDecide(decisionConfirm(f)); }}>{UPLOAD.looksRight}</Button>
-          <Button type="button" variant={kind === "edited" ? "default" : "outline"} size="touch" aria-pressed={kind === "edited"} aria-expanded={editing} aria-disabled={busy || undefined} onClick={() => { if (!busy) { setEditing((v) => !v); setFormError(null); } }}>{UPLOAD.edit}</Button>
+          <Button type="button" variant={kind === "edited" ? "default" : "outline"} size="touch" aria-pressed={kind === "edited"} aria-expanded={editing} aria-disabled={busy || undefined} onClick={() => { if (!busy) { if (editing) closeEdit(); else setEditing(true); } }}>{UPLOAD.edit}</Button>
           <Button type="button" variant={kind === "not_in_document" ? "default" : "outline"} size="touch" aria-pressed={kind === "not_in_document"} aria-disabled={busy || undefined} onClick={() => { if (!busy) onDecide(decisionNotInDocument(f)); }}>{UPLOAD.notInDocument}</Button>
         </div>
         {f.candidates.length > 0 && (
@@ -141,11 +154,11 @@ export function ReviewRow({ docId, field: f, classNames, busy, error, onDecide }
             <label htmlFor={ids.value}>{valueLabel}</label>
             {valueInput}
             <label htmlFor={ids.source}>{UPLOAD.sourceLabel} <span className="up-req">{UPLOAD.required}</span></label>
-            <input id={ids.source} className="min-h-11" value={source} onChange={(e) => setSource(e.target.value)} disabled={busy} placeholder={UPLOAD.sourceHint} />
+            <input id={ids.source} className="min-h-11" value={source} onChange={(e) => setSource(e.target.value)} disabled={busy} placeholder={UPLOAD.sourceHint} {...invalid("source")} />
             {formError && <p id={ids.err} role="alert" className="up-error">{formError}</p>}
             <div className="up-actions">
               <Button type="submit" size="touch" disabled={busy}>{UPLOAD.enterValue}</Button>
-              <Button type="button" variant="ghost" size="touch" onClick={() => { setEditing(false); setFormError(null); }}>{UPLOAD.cancelEdit}</Button>
+              <Button type="button" variant="ghost" size="touch" onClick={closeEdit}>{UPLOAD.cancelEdit}</Button>
             </div>
           </form>
         )}
