@@ -1272,6 +1272,9 @@ def compose_procedure_cost(ctx: Ctx, key: str, plan_choice: Optional[str]) -> tu
 
 # ---------- live lead (every intent, live mode) ----------
 LEAD_MAX_GRADE = 4.0
+# the insurance word being explained is not held against the reading level (its plain meaning sits beside it)
+_TERM_WORDS = re.compile(r"\b(deductibles?|insurance|coinsurance|copays?|maximum|annual|allowed|network|benefits?|coverage|covered|"
+                         r"evaluation|procedures?|frequency|estimate|dentures?|implants?|cleaning|x-rays?|extraction)\b", re.IGNORECASE)
 _ADVICE_OUT = re.compile(r"\b(should|must|need to|have to|recommend|suggest|consider|try|best|better|worse|worth|wait|skip|schedule|call|ask|check|choose|pick|compare|save|cheaper|instead|make sure|don't|do not forget|go to)\b", re.IGNORECASE)
 LEAD_SYSTEM = (
     "You write the first answer line in a dental cost app for a child of eight to understand. Use only the facts in the data block. "
@@ -1335,7 +1338,7 @@ def lead_ok(text: str, refs: list[dict], allowed: set[str]) -> bool:
         return False
     if _ADVICE_OUT.search(PLACEHOLDER.sub(" ", text)) or ISO_DATE.search(text):
         return False
-    return fk_grade(PLACEHOLDER.sub("it", text)) <= LEAD_MAX_GRADE
+    return fk_grade(_TERM_WORDS.sub("word", PLACEHOLDER.sub("it", text))) <= LEAD_MAX_GRADE
 
 
 def live_lead(ctx: Ctx, intent: str, blocks: list[dict], message: str) -> Optional[dict]:
