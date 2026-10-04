@@ -150,6 +150,17 @@ export function checkpointsForLine(line: LedgerLine, item: TreatmentItem | undef
 export interface ClaimRow { id: string; date: string; procedure_key: string; tooth?: string | null; dentist_fee_cents?: number | null; allowed_cents?: number | null; plan_paid_cents?: number | null; patient_paid_cents?: number | null; deductible_applied_cents?: number | null; source?: string }
 export const claimsOf = (claims: unknown[] | undefined | null): ClaimRow[] => (Array.isArray(claims) ? (claims as ClaimRow[]) : []);
 
+/**
+ * The allowed amount the drawer shows (numbers-4): the item's recorded figure with its own status; otherwise, on an estimate line whose
+ * engine trail resolved the allowed amount from the plan's own allowance schedule (a cited step, e.g. HB26 Appendix A), that engine figure
+ * as DOC; otherwise nothing (UNKNOWN). Never "Not provided" beside a total the engine computed from a cited allowance.
+ */
+export function allowedFigure(item: TreatmentItem | undefined, line: LedgerLine | undefined, allowedStep: { amountOut: number | null; stitch: string | null } | undefined, fallback: Evidence = "UNKNOWN"): { cents: number | null; evidence: Evidence; fromPlan: boolean } {
+  if (item?.allowed_cents != null) return { cents: item.allowed_cents, evidence: (item.allowed_status as Evidence) || "USER", fromPlan: false };
+  if (line?.status === "estimate" && allowedStep?.amountOut != null && allowedStep.stitch) return { cents: allowedStep.amountOut, evidence: "DOC", fromPlan: true };
+  return { cents: null, evidence: fallback, fromPlan: false };
+}
+
 /** Network words from the estimate's inputs. */
 export function networkWord(network: string | null | undefined): string | null {
   return network === "in" ? DRAWER.inNetwork : network === "out" ? DRAWER.outNetwork : null;

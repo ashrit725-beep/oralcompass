@@ -31,3 +31,15 @@ describe("CostTrail on the lighthouse", () => {
     for (const r of rows) expect(r).toMatch(/class="(badge|stitch)[ "]/);
   });
 });
+
+describe("unresolved estimate range scope (numbers-6)", () => {
+  const unresolved = { ...estimate, status: "unresolved", ledger: { ...estimate.ledger, status: "unresolved", lines: [], patient_total_cents: null, plan_total_cents: null },
+    movers: { range: [174000, 223000], movers: [{ unknown: "remaining deductible", impact_cents: null, zero_impact: false }, { unknown: "remaining annual maximum", impact_cents: null, zero_impact: false }], unresolved_reasons: [] },
+    missing_inputs: [{ input: "remaining deductible", how: "Enter it." }] } as unknown as SavedEstimate;
+  it("keeps the whole-estimate range out of one procedure's drawer and keeps it on the full trail", () => {
+    const one = renderToStaticMarkup(<CostTrail estimate={unresolved} stitches={[]} onSelect={() => {}} lineIndex={0} />);
+    expect(one).not.toContain("$1,740.00");
+    const all = renderToStaticMarkup(<CostTrail estimate={unresolved} stitches={[]} onSelect={() => {}} />);
+    expect(all).toContain("Between $1,740.00 and $2,230.00, because remaining deductible and remaining annual maximum were not provided.");
+  });
+});

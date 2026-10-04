@@ -10,8 +10,12 @@ import type { Benefits, CheckpointRule, Evidence, Stitch, TreatmentItem } from "
  *  - "you pay" is DOC only when the share step behind it is cited, else UNKNOWN; anything else unstitched is UNKNOWN.
  */
 export function checkpointEvidence(rule: CheckpointRule, stitch: Stitch | null | undefined, ctx: { item?: TreatmentItem; benefits?: Benefits | null; shareHasStitch: boolean }): Evidence {
-  if (stitch) return "DOC";
   const { item, benefits, shareHasStitch } = ctx;
+  // The network adjustment's dollars are fee − allowed amount: when the allowed amount is a recorded figure (a pre-treatment estimate
+  // response, an EOB), the adjustment wears that figure's badge even though the in-network clause is cited beside it (the stitch chip
+  // stays); otherwise the drawer's Allowance section says "You entered" while the pipeline's reef node says "From the plan document".
+  if (rule === "N" && item?.allowed_cents != null) return (item.allowed_status as Evidence) || "USER";
+  if (stitch) return "DOC";
   switch (rule) {
     case "fee": case "L": return "USER";
     case "N": return item?.allowed_cents != null ? ((item.allowed_status as Evidence) || "USER") : "UNKNOWN";

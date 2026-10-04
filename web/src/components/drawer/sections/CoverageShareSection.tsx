@@ -1,6 +1,6 @@
 import { StitchChip } from "@/components/Primitives";
 import { DRAWER } from "@/lib/copy/drawer";
-import { stitchForCheckpoint } from "@/lib/drawer";
+import { calcInputs, stitchForCheckpoint } from "@/lib/drawer";
 import { money } from "@/lib/stitches";
 import { docOf, Figure, Row, Section, type SectionProps } from "./shared";
 
@@ -9,7 +9,7 @@ import { docOf, Figure, Row, Section, type SectionProps } from "./shared";
  * deductible.") with its stitch, the plan share and your share from the trail's split, and a two-segment bar (8 px, water for the plan,
  * sand for you, labels in ink; `role="img"` carrying the same sentence). Omitted when the rule row has no plan-pays percentage.
  */
-export function CoverageShareSection({ trail, rule, plan, stitches, onSelectStitch }: SectionProps) {
+export function CoverageShareSection({ trail, rule, plan, stitches, onSelectStitch, item, estimate, benefits }: SectionProps) {
   if (rule?.plan_pays_pct == null) return null;
   const share = trail?.steps.find((s) => s.key === "share");
   const stitch = stitchForCheckpoint("CO", share?.stitch ?? null, rule, plan, stitches);
@@ -17,6 +17,8 @@ export function CoverageShareSection({ trail, rule, plan, stitches, onSelectStit
   const youPct = 100 - planPct;
   const split = share?.split;
   const category = rule.category ?? docOf(plan);
+  // the percentages are the document's; the dollars are that percentage applied to your figures (numbers-2: never a bare DOC badge)
+  const inputs = calcInputs(item, estimate, benefits);
   return (
     <Section k="share" title={DRAWER.sShare}>
       <p className="dsec-lede">
@@ -26,10 +28,10 @@ export function CoverageShareSection({ trail, rule, plan, stitches, onSelectStit
         <>
           <dl className="dsec-dl">
             <Row term={DRAWER.planShare} note={`${planPct}%`}>
-              <Figure cents={split.plan} evidence="DOC" stitch={stitch} onSelectStitch={onSelectStitch} className="fig-plan" />
+              <Figure cents={split.plan} evidence="DOC" calc inputs={inputs} calcLabel={null} stitch={stitch} onSelectStitch={onSelectStitch} className="fig-plan" />
             </Row>
             <Row term={DRAWER.yourShare} note={`${youPct}%`}>
-              <Figure cents={split.patient} evidence="DOC" stitch={stitch} onSelectStitch={onSelectStitch} className="fig-patient" />
+              <Figure cents={split.patient} evidence="DOC" calc inputs={inputs} calcLabel={null} stitch={stitch} onSelectStitch={onSelectStitch} className="fig-patient" />
             </Row>
           </dl>
           <div className="share-bar" role="img" aria-label={DRAWER.shareBar(planPct, money(split.plan), money(split.patient))}>

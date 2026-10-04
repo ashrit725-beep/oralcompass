@@ -76,7 +76,7 @@ export function Gauge({ label, meter, stitch, selectedStitch, onSelectStitch, us
           {(meter.afterCents != null || meter.afterWaiting) && (
             <>
               <dt><span className="cmp-tick-glyph" aria-hidden="true">▏</span> {COMPASS.afterPlanned}</dt>
-              <dd>{meter.afterCents == null ? <><span className="cmp-word">{COMPASS.waiting}</span> <EvidenceBadge status="UNKNOWN" /></> : <><Money cents={meter.afterCents} evidence={limitEvidence} badge={!stitch} />{stitch && <StitchChip stitch={stitch} selected={selectedStitch?.id === stitch.id} onSelect={onSelectStitch} />}</>}</dd>
+              <dd>{meter.afterCents == null ? <><span className="cmp-word">{COMPASS.waiting}</span> <EvidenceBadge status="UNKNOWN" /></> : <><Money cents={meter.afterCents} evidence={limitEvidence} calc />{stitch && <StitchChip stitch={stitch} selected={selectedStitch?.id === stitch.id} onSelect={onSelectStitch} />}</>}</dd>
             </>
           )}
         </dl>

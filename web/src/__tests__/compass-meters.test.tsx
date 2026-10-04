@@ -42,3 +42,13 @@ describe("compass headline evidence (orchestrator note 1)", () => {
     expect(answer).not.toMatch(/class="badge badge-doc"/);
   });
 });
+
+describe("after-planned figure (numbers-7)", () => {
+  it("reads as calculated, never as a bare 'From the plan document' figure", () => {
+    const g = renderToStaticMarkup(<Gauge label="Annual maximum" meter={meter({ afterCents: 16200, afterFraction: 0.9 })} usedWord="paid by the plan" />);
+    expect(g).toContain("$162.00");
+    const after = g.slice(g.indexOf("$162.00"));
+    expect(after).toMatch(/calculated/i);
+    expect(after.slice(0, 400)).not.toContain("From the plan document");
+  });
+});

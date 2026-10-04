@@ -1,3 +1,4 @@
+import { DRAWER } from "@/lib/copy/drawer";
 import { useMemo, useState } from "react";
 import { COMPASS } from "@/lib/copy/compass";
 import type { LandmarkId } from "@/lib/copy";
@@ -114,7 +115,7 @@ export function BenefitsCompass({ plan, benefits, estimate, stitches, compact = 
           <tr><th scope="row">{COMPASS.annualMax} {COMPASS.limit}</th><td>{vm.annualMax.unlimited ? COMPASS.unlimited : vm.annualMax.limitCents == null ? COMPASS.notStated : money(vm.annualMax.limitCents)}</td><td>{vm.annualMax.limitStatus}</td></tr>
           <tr><th scope="row">{COMPASS.annualMax} {COMPASS.used}</th><td>{vm.annualMax.usedCents == null ? COMPASS.notProvided : money(vm.annualMax.usedCents)}</td><td>{vm.annualMax.usedCents == null ? "UNKNOWN" : "USER"}</td></tr>
           <tr><th scope="row">{COMPASS.annualMax} {COMPASS.remaining}</th><td>{vm.annualMax.remainingCents == null ? COMPASS.notProvided : money(vm.annualMax.remainingCents)}</td><td>{vm.annualMax.remainingCents == null ? "UNKNOWN" : "USER"}</td></tr>
-          <tr><th scope="row">{COMPASS.annualMax} {COMPASS.afterPlanned}</th><td>{vm.annualMax.afterCents == null ? (vm.annualMax.afterWaiting ? COMPASS.waiting : COMPASS.notProvided) : money(vm.annualMax.afterCents)}</td><td>{vm.annualMax.afterCents == null ? "UNKNOWN" : vm.annualMax.limitStatus}</td></tr>
+          <tr><th scope="row">{COMPASS.annualMax} {COMPASS.afterPlanned}</th><td>{vm.annualMax.afterCents == null ? (vm.annualMax.afterWaiting ? COMPASS.waiting : COMPASS.notProvided) : money(vm.annualMax.afterCents)}</td><td>{vm.annualMax.afterCents == null ? "UNKNOWN" : `${DRAWER.calculatedShort} (${vm.annualMax.limitStatus} + USER)`}</td></tr>
           {vm.coverage.map((c) => <tr key={c.name}><th scope="row">{c.name}</th><td>{c.pctIn == null ? COMPASS.shareNotStated : COMPASS.planPays(String(c.pctIn))}</td><td>{c.statusIn}</td></tr>)}
         </tbody>
       </table></div>

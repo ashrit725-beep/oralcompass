@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calcInputs, checkpointAmountWords, drawerPlanRef, checkpointAriaName, checkpointsForLine, citeForRule, rangeWords, remainingBeforeLine, clockWords, conditionWords, missingForLine, rememberStitchAnchor, sectionForRule, stitchForCheckpoint, stitchScopeLabel, takeStitchAnchor } from "@/lib/drawer";
+import { allowedFigure, calcInputs, checkpointAmountWords, drawerPlanRef, checkpointAriaName, checkpointsForLine, citeForRule, rangeWords, remainingBeforeLine, clockWords, conditionWords, missingForLine, rememberStitchAnchor, sectionForRule, stitchForCheckpoint, stitchScopeLabel, takeStitchAnchor } from "@/lib/drawer";
 import { stepContextFor, stitchesForLine, stitchesFromClauses, stitchForStep, uniqueStitches } from "@/lib/stitches";
 import type { Benefits, Clause, CoverageRule, LedgerLine, PlanFixture, SavedEstimate, TreatmentItem } from "@/lib/types";
 import { DRAWER } from "@/lib/copy/drawer";
@@ -89,6 +89,15 @@ describe("checkpointsForLine", () => {
     expect(checkpointAriaName(cps[1])).toContain("change −$170.00");
     expect(checkpointAriaName(cps[1])).toContain("clause ML26");
     expect(cps[2].flags).toEqual([]);
+  });
+  it("badges the network adjustment with the recorded allowed amount's evidence, not the cited clause's (numbers-1)", () => {
+    const item = { id: "ti-a-rct-19", procedure_key: "root_canal_molar", dentist_fee_cents: 115000, quantity: 1, allowed_cents: 98000, allowed_status: "USER" } as unknown as TreatmentItem;
+    const cps = checkpointsForLine(alexLine, item, rule, plan, stitches);
+    const n = cps.find((c) => c.rule === "N")!;
+    expect(n.stitch).toBeDefined();                            // the in-network clause chip still shows
+    expect(n.badge).toBe("USER");                              // the dollars come from the entered allowed amount
+    expect(checkpointsForLine(alexLine, { ...item, allowed_status: "ASSUMED" } as TreatmentItem, rule, plan, stitches).find((c) => c.rule === "N")!.badge).toBe("ASSUMED");
+    expect(checkpointsForLine(alexLine, { ...item, allowed_cents: null, allowed_status: "DOC" } as unknown as TreatmentItem, rule, plan, stitches).find((c) => c.rule === "N")!.badge).toBe("DOC");
   });
   it("gives a not-covered line exactly fee, one closed checkpoint and you pay", () => {
     const nc: LedgerLine = { ...alexLine, status: "not_covered", steps: [{ label: "Not covered: excluded by the plan", cents: 55000, owner: "patient", rule: "X", stitch: "ML26#p26" }], patient_cents: 55000, plan_cents: 0 };
@@ -203,5 +212,23 @@ describe("demo-13: a table-row quote carries its section and plan option", () =>
     expect(s.section).toContain("Type II");
     expect(s.option).toBe("Classic");
     expect(DRAWER.clauseOption("Classic")).toContain("Classic column");
+  });
+});
+
+describe("allowedFigure (numbers-4)", () => {
+  const step = { amountOut: 100000, stitch: "HB26#p10" };
+  const est = { ...alexLine, status: "estimate" } as LedgerLine;
+  it("shows the engine's cited plan allowance as DOC when the item has no recorded allowed amount (Sam's crown, HB26 Appendix A)", () => {
+    const item = { allowed_cents: null, allowed_status: "UNKNOWN" } as unknown as TreatmentItem;
+    expect(allowedFigure(item, est, step)).toEqual({ cents: 100000, evidence: "DOC", fromPlan: true });
+  });
+  it("keeps the recorded figure and its own status first", () => {
+    const item = { allowed_cents: 98000, allowed_status: "USER" } as unknown as TreatmentItem;
+    expect(allowedFigure(item, est, step)).toEqual({ cents: 98000, evidence: "USER", fromPlan: false });
+  });
+  it("stays unknown on an unresolved line or an uncited step", () => {
+    const item = { allowed_cents: null, allowed_status: "UNKNOWN" } as unknown as TreatmentItem;
+    expect(allowedFigure(item, { ...est, status: "unresolved" } as LedgerLine, step).cents).toBeNull();
+    expect(allowedFigure(item, est, { amountOut: 100000, stitch: null })).toEqual({ cents: null, evidence: "UNKNOWN", fromPlan: false });
   });
 });

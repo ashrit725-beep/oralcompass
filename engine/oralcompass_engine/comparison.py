@@ -84,11 +84,24 @@ def grid(plans: list[PlanModel]) -> list[dict]:
     return rows
 
 
+def column_names(plans: list[PlanModel]) -> list[str]:
+    """The carrier-level name before " — ", widened with the option ("MetLife NCFlex Dental — High Option") when two columns would
+    otherwise read the same, and with the plan code as a last resort, so every figure in a differences sentence names its own column."""
+    short = [p.title.split(" — ")[0] if " — " in p.title else p.title for p in plans]
+    out = []
+    for p, s in zip(plans, short):
+        if short.count(s) > 1:
+            rest = p.title.split(" — ", 1)[1].split(",")[0].split(" (")[0].strip() if " — " in p.title else ""
+            s = f"{s} — {rest}" if rest else s
+        out.append(s)
+    return [f"{s} ({p.plan_code})" if out.count(s) > 1 else s for p, s in zip(plans, out)]
+
+
 def differences_sentence(topic: str, plans: list[PlanModel], cells: list[dict]) -> str:
     """Factual, both percentages for coinsurance rows, unknowns named, no adjectives. Plans in the user's order."""
     parts = []
-    for p, c in zip(plans, cells):
-        name = p.title.split(" — ")[0] if " — " in p.title else p.title
+    names = column_names(plans)
+    for name, c in zip(names, cells):
         if c["badge"] == "UNKNOWN":
             parts.append(f"{name}: {c['text'].lower()}")
         elif "pct" in c:
