@@ -31,6 +31,9 @@ export interface SectionProps {
   arrivedAt?: DrawerSectionKey;
   /** Additive: the Allowance section PATCHes an item and asks the host to re-estimate. */
   onRecordsChanged?: () => void;
+  /** Additive (finding demo-5): the plan's "what if" values and their setter; the Harbor Light shows the network hypothetical. */
+  hypotheticals?: Record<string, unknown>;
+  onHypotheticals?: (values: Record<string, unknown>) => void;
 }
 
 /** The section frame: `<section aria-labelledby>` + focusable `<h3>` (tabindex -1); collapsible sections render as `<details>` on request. */

@@ -1,7 +1,7 @@
 import NumberFlow, { type Format } from "@number-flow/react";
+import { BADGE_LABEL, DRAWER } from "@/lib/copy";
 import type { Evidence } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { BADGE_LABEL } from "@/lib/copy";
 import { EvidenceBadge } from "./Primitives";
 
 /**
@@ -18,6 +18,9 @@ export interface MoneyProps {
   className?: string;
   /** Hide the badge visually (e.g. inside a gauge whose legend carries it). The aria-label stays on the wrapper. */
   badge?: boolean;
+  /** An engine total (document rules applied to your figures): says "Calculated from the clauses cited" instead of a single evidence
+   *  badge (no seventh evidence status; the steps behind it carry their own badges and stitches). Hidden visually with `badge={false}`. */
+  calc?: boolean;
   /** Render a signed delta (−$12.00 / +$3.00). */
   signed?: boolean;
   id?: string;
@@ -29,7 +32,7 @@ export const NO_AMOUNT = "no amount";
 
 const FORMAT: Format = { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 };
 
-export function Money({ cents, evidence, className, badge = true, signed = false, id }: MoneyProps) {
+export function Money({ cents, evidence, className, badge = true, calc = false, signed = false, id }: MoneyProps) {
   const has = typeof cents === "number" && Number.isFinite(cents);
   return (
     <span id={id} className={cn("inline-flex items-baseline gap-1.5 align-baseline", className)}>
@@ -40,7 +43,8 @@ export function Money({ cents, evidence, className, badge = true, signed = false
           <><span aria-hidden="true">—</span><span className="sr-only">{NO_AMOUNT}</span></>
         )}
       </span>
-      {badge ? <EvidenceBadge status={evidence} /> : <span className="sr-only">{evidenceWords(evidence)}</span>}
+      {calc && has ? <span className={badge ? "fig-calc" : "sr-only"}>{DRAWER.calculated}</span>
+        : badge ? <EvidenceBadge status={evidence} /> : <span className="sr-only">{evidenceWords(evidence)}</span>}
     </span>
   );
 }

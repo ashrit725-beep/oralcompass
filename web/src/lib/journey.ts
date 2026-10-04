@@ -32,3 +32,18 @@ export function nextCheckpoint(journey: Journey, current?: { stageId: string; cp
 export function currentStageId(journey: Journey): string | null {
   return journey.stages.find((s) => s.checkpoints.some((c) => c.status !== "completed"))?.id ?? journey.stages[journey.stages.length - 1]?.id ?? null;
 }
+
+/** The labeled sample journeys offered on the start screen and in "Add another journey": `/journeys/samples` also lists the empty
+ *  template ("Your journey"), which is not a sample; it has its own "Start my journey (no documents yet)" / "Empty" entry. */
+export function labeledSamples<T extends { id: string }>(samples: T[]): T[] {
+  return samples.filter((s) => s.id !== "empty");
+}
+
+/** A journey's name for the closed Journey select, short enough for a 334 px phone control: "Sample journey — Alex Chen (fictional) on
+ *  the NCFlex Dental Classic Option 2026 (real public plan document)" → "Alex Chen (fictional) · sample". The page heading and the
+ *  select's title keep the full label. */
+export function shortJourneyLabel(label: string): string {
+  const m = /^Sample journey\s+[—-]\s+(.*)$/.exec(label.trim());
+  const name = (m ? m[1] : label).split(/\s+on the\s+/)[0].trim();
+  return m ? `${name} · sample` : name;
+}

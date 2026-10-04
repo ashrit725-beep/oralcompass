@@ -1,42 +1,71 @@
 import { useState } from "react";
-import { motion } from "motion/react";
-import { SHEET_SPRING, useReducedMotion } from "../lib/motion";
-import { ATTRIBUTION, UI, type LandmarkId } from "../lib/copy";
+import { ATTRIBUTION, DRAWER, UI, type LandmarkId } from "../lib/copy";
+import { PASSAGE } from "../lib/copy/passage";
 import { attributionLabel, dateLabel, nextCheckpoint, stageProgress, statusLabel } from "../lib/journey";
 import { money } from "../lib/stitches";
-import type { Checkpoint, JourneyLinks, JourneyView, Stage } from "../lib/types";
+import type { Checkpoint, JourneyLinks, JourneyView, SavedEstimate, Stage } from "../lib/types";
 import type { StageSelection as Selection } from "../lib/types";
 import { EvidenceBadge } from "./Primitives";
+import { Sheet } from "./Primitives/Sheet";
 
 interface Props {
   view: JourneyView; selection: Selection; onSelect: (s: Selection) => void; onOpenLandmark: (id: LandmarkId) => void; onOpenDocuments: () => void;
   onPatch: (cpId: string, body: { status?: string; completed_by?: string; date?: string; date_source?: string; note?: string }) => Promise<void>;
   onInstructions: (stageId: string, text: string, source: string, givenOn?: string) => Promise<void>;
   busy: boolean; mobile: boolean; onClose: () => void;
+  /** The live estimate (useAppData): the same figures the map, the Answers log and the Harbor Light show. The journey view's
+   *  `links.latest_estimate` is a snapshot taken when the journey was fetched and goes stale after a re-estimate. */
+  estimate: SavedEstimate | null;
+  /** Phone: where focus returns when the sheet closes (the stage or checkpoint button that opened it). */
+  returnFocus?: HTMLElement | null;
 }
 
-/** Desktop: side panel. Phone: bottom sheet. Shows the selected island or checkpoint: status, explanation, dates/amounts/documents, source, next action. */
+/**
+ * Desktop: side panel (a labelled region in the detail column). Phone: the shared modal `Sheet` (vaul over Radix Dialog: aria-modal,
+ * focus moves in and is trapped, the page behind is inert, scrim, scroll lock, drag or Escape to close, 44 × 44 close button, safe-area
+ * padding), so keyboard focus never lands on controls hidden under a fixed panel (WCAG 2.2 SC 2.4.11). It opens only when the person
+ * selects a stage or checkpoint. Shows the selected stage or checkpoint: status, explanation, dates/amounts/documents, source, next action.
+ */
 export function DetailPanel(props: Props) {
-  const { view, selection, mobile, onClose } = props;
-  const reduce = useReducedMotion();
+  const { view, selection, mobile, onClose, returnFocus } = props;
   const stage = view.journey.stages.find((s) => s.id === selection.stageId);
   if (!stage) return null;
   const cp = selection.cpId ? stage.checkpoints.find((c) => c.id === selection.cpId) : undefined;
+  const crumbs = <p className="crumbs">{stage.title} <span className="muted">· {stage.island}</span>{cp ? <> › {cp.label}</> : null}</p>;
+  // keyed: moving to another checkpoint or stage mounts a fresh form, so a date, attribution or instruction typed for one is never
+  // submitted for the next ("Next checkpoint" only changes props)
+  const body = cp ? <CheckpointDetail key={`${stage.id}:${cp.id}`} {...props} stage={stage} cp={cp} /> : <StageDetail key={stage.id} {...props} stage={stage} />;
+  if (mobile) {
+    return (
+      <Sheet open onOpenChange={(o) => { if (!o) onClose(); }} title={stage.title} returnFocus={returnFocus ?? undefined} className="detail-sheet" autoFocus>
+        {crumbs}
+        {body}
+      </Sheet>
+    );
+  }
   return (
-    // One entrance owner: on phones the sheet rises from the bottom edge on the sheet spring (no overshoot); on desktop the
-    // surrounding column in JourneyView owns drawer-rise, so the panel itself does not animate. Reduced motion: present at once.
-    <motion.aside className={`detail ${mobile ? "sheet" : "side"}`} role={mobile ? "dialog" : "region"} aria-labelledby="detail-h" aria-modal={mobile ? "false" : undefined}
-                  initial={mobile && !reduce ? { y: "100%" } : false} animate={{ y: 0 }} transition={SHEET_SPRING}>
+    // the surrounding column in JourneyView owns the entrance (drawer-rise); the panel itself does not animate
+    <aside className="detail side" role="region" aria-labelledby="detail-h">
       <div className="detail-bar">
-        <p className="crumbs">{stage.title} <span className="muted">· {stage.island}</span>{cp ? <> › {cp.label}</> : null}</p>
+        {crumbs}
         <button type="button" className="close" onClick={onClose} aria-label="Close details">×</button>
       </div>
-      {cp ? <CheckpointDetail {...props} stage={stage} cp={cp} /> : <StageDetail {...props} stage={stage} />}
-    </motion.aside>
+      {body}
+    </aside>
   );
 }
 
-function StageDetail({ view, stage, onSelect, onOpenLandmark, onInstructions, busy }: Props & { stage: Stage }) {
+/** "you pay $X · plan pays $Y" from the live estimate, labelled as calculated (engine arithmetic over cited clauses and your figures). */
+function EstimateFigures({ estimate }: { estimate: SavedEstimate }) {
+  const code = estimate.sources?.plan_document?.version_label ?? estimate.plan_code;
+  if (estimate.status !== "estimate" || estimate.user_estimated_payment_cents == null) return <>{code}: {PASSAGE.waitingInputs(estimate.missing_inputs.length)}</>;
+  return (
+    <>{code}: you pay <strong className="num">{money(estimate.user_estimated_payment_cents)}</strong> · plan pays <strong className="num">{money(estimate.insurer_estimated_payment_cents)}</strong>
+      {estimate.plan_payment_is_upper_bound ? " (upper bound)" : ""} <span className="fig-calc">{DRAWER.calculated}</span></>
+  );
+}
+
+function StageDetail({ view, stage, estimate, onSelect, onOpenLandmark, onInstructions, busy }: Props & { stage: Stage }) {
   const prog = stageProgress(stage);
   const items = (stage.linked_treatment_items ?? []).map((id) => view.links.treatment_items[id]).filter(Boolean);
   const [text, setText] = useState(""); const [source, setSource] = useState(""); const [given, setGiven] = useState("");
@@ -45,7 +74,6 @@ function StageDetail({ view, stage, onSelect, onOpenLandmark, onInstructions, bu
       <h2 id="detail-h">{stage.title}</h2>
       <p className="status-line"><strong className="num">{prog.label}</strong></p>
       <p>{stage.purpose}</p>
-      <p className="muted small">{UI.progressNote}</p>
       {stage.dates && <section className="block"><h3>{stage.dates.label}</h3><ul className="plain-list">{stage.dates.values.map((v) => <li key={v}>{v}</li>)}</ul><p className="src">Source: {stage.dates.source}</p></section>}
       {items.length > 0 && (
         <section className="block"><h3>Procedures on this island</h3>
@@ -55,9 +83,9 @@ function StageDetail({ view, stage, onSelect, onOpenLandmark, onInstructions, bu
           <p className="muted small">{UI.allowedNote}</p>
         </section>
       )}
-      {stage.finance.kind !== "none" && view.links.latest_estimate && (
+      {stage.finance.kind !== "none" && estimate && (
         <section className="block"><h3>Costs</h3>
-          <p>Latest estimate ({view.links.latest_estimate.plan_code}): you pay <strong className="num">{money(view.links.latest_estimate.user_estimated_payment_cents)}</strong> · plan pays <strong className="num">{money(view.links.latest_estimate.insurer_estimated_payment_cents)}</strong>{view.links.latest_estimate.status === "unresolved" ? " (unresolved: information missing)" : ""}</p>
+          <p>{PASSAGE.currentEstimate} <EstimateFigures estimate={estimate} /></p>
           <button type="button" onClick={() => onOpenLandmark("lighthouse")}>Open the cost breakdown</button>
         </section>
       )}
@@ -78,7 +106,7 @@ function StageDetail({ view, stage, onSelect, onOpenLandmark, onInstructions, bu
   );
 }
 
-function CheckpointDetail({ view, stage, cp, onSelect, onOpenLandmark, onOpenDocuments, onPatch, busy }: Props & { stage: Stage; cp: Checkpoint }) {
+function CheckpointDetail({ view, stage, cp, estimate, onSelect, onOpenLandmark, onOpenDocuments, onPatch, busy }: Props & { stage: Stage; cp: Checkpoint }) {
   const [date, setDate] = useState(cp.date?.value ?? ""); const [dateSource, setDateSource] = useState<string>(cp.date?.source ?? "user");
   const [who, setWho] = useState<"user" | "dental_team">("user");
   const next = nextCheckpoint(view.journey, { stageId: stage.id, cpId: cp.id });
@@ -95,7 +123,7 @@ function CheckpointDetail({ view, stage, cp, onSelect, onOpenLandmark, onOpenDoc
         {cp.source && <><dt>Source</dt><dd>{cp.source.label}{cp.source.doc ? ` (${cp.source.doc}${cp.source.page ? `, p.${cp.source.page}` : ""})` : ""}</dd></>}
         {linkedDoc && <><dt>Document</dt><dd>{linkedDoc.label} <button type="button" className="linklike" onClick={onOpenDocuments}>open in Documents</button></dd></>}
         {linkedItems.length > 0 && <><dt>Procedures</dt><dd>{linkedItems.map((t) => `${t.procedure_name ?? t.procedure_key}${t.tooth ? ` (tooth ${t.tooth})` : ""}`).join("; ")}</dd></>}
-        {cp.links?.estimate && view.links.latest_estimate && <><dt>Amounts</dt><dd>you pay {money(view.links.latest_estimate.user_estimated_payment_cents)} · plan pays {money(view.links.latest_estimate.insurer_estimated_payment_cents)} ({view.links.latest_estimate.plan_code})</dd></>}
+        {cp.links?.estimate && estimate && <><dt>Amounts</dt><dd><EstimateFigures estimate={estimate} /></dd></>}
         {cp.user_note && <><dt>Your note</dt><dd>{cp.user_note}</dd></>}
       </dl>
       <section className="block actions">

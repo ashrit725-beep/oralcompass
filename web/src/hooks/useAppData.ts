@@ -52,6 +52,11 @@ export function useAppData({ planNeeded = true }: UseAppDataOptions = {}) {
   const [tick, setTick] = useState(0);
   const viewRef = useRef<JourneyView | null>(null);
   viewRef.current = view;
+  /** "What if" values the person types for one plan (labelled ASSUMED by the engine). Keyed by plan ref: nothing transfers between plans,
+   *  and a plan switch starts with none. Records are never changed by them. */
+  const [hypo, setHypo] = useState<{ ref: PlanRef; values: Record<string, unknown> }>({ ref: "", values: {} });
+  const hypotheticals = useMemo(() => (hypo.ref === planRef ? hypo.values : {}), [hypo, planRef]);
+  const hypoKey = JSON.stringify(hypotheticals);
 
   const setErr = useCallback((flow: Flow, message: string | null) => setErrors((e) => (e[flow] === message ? e : { ...e, [flow]: message })), []);
   const { plan, rules, evidence, estimate } = committed;
@@ -121,7 +126,7 @@ export function useAppData({ planNeeded = true }: UseAppDataOptions = {}) {
     const timer = setTimeout(async () => {      // one task later: state bursts (records + tick) coalesce into one POST
       if (!planned) { setCommitted({ ...bundle, estimate: null }); setErr("estimate", null); return; }
       try {
-        const est = await api.estimateFromRecords(bundle.ref, items.filter((i) => i.status === "planned" || i.status === "scheduled").map((i) => i.id));
+        const est = await api.estimateFromRecords(bundle.ref, items.filter((i) => i.status === "planned" || i.status === "scheduled").map((i) => i.id), hypotheticals);
         if (!cancelled) { setCommitted({ ...bundle, estimate: est }); setErr("estimate", null); }
       } catch (e: any) {
         if (!cancelled) { setCommitted({ ...bundle, estimate: null }); setErr("estimate", `${UI.errorTitle}: ${e.message}`); }
@@ -129,11 +134,12 @@ export function useAppData({ planNeeded = true }: UseAppDataOptions = {}) {
     }, 0);
     return () => { cancelled = true; clearTimeout(timer); setEstimating(false); };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- `items` is read through its content key
-  }, [bundle, planRef, recordsKey, tick, setErr]);
+  }, [bundle, planRef, recordsKey, tick, hypoKey, setErr]);
 
   /** Select a plan (selecting the same plan again refreshes its model, e.g. after a new upload version is published). */
   const selectPlan = useCallback((ref: PlanRef) => { setPlanRef(ref); setPlanTick((t) => t + 1); }, []);
   const reestimate = useCallback(() => setTick((t) => t + 1), []);
+  const setHypotheticals = useCallback((values: Record<string, unknown>) => setHypo({ ref: planRef, values }), [planRef]);
 
   /** Switch the active journey (also follows its plan ref, as before). */
   const setView = useCallback((v: JourneyView | null) => { setViewState(v); if (v?.journey.plan_ref) setPlanRef(v.journey.plan_ref); }, []);
@@ -173,6 +179,6 @@ export function useAppData({ planNeeded = true }: UseAppDataOptions = {}) {
   const loading = loadingLabel({ base: baseLoading, plan: planLoading, estimate: estimating }, { base: "Connecting…", processing: UI.processing });
   const error = firstError(errors);
 
-  return { planRef, selectPlan, reestimate, estimate, plan, rules, evidence, stitches, benefits, items, journeys, view, setView, samples, procedures, loading, error, busy, startJourney, patch, instructions, loadBase, loadRecords, retry, resetPrivate, plans };
+  return { planRef, selectPlan, reestimate, hypotheticals, setHypotheticals, estimate, plan, rules, evidence, stitches, benefits, items, journeys, view, setView, samples, procedures, loading, error, busy, startJourney, patch, instructions, loadBase, loadRecords, retry, resetPrivate, plans };
 }
 export type AppData = ReturnType<typeof useAppData>;

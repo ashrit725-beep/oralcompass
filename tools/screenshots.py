@@ -63,6 +63,8 @@ def open_alex(page):
         page.wait_for_timeout(1200)
     else:
         sel = page.get_by_label("Journey", exact=True)
+        if sel.count() and not sel.first.is_visible() and page.locator("details.journey-switch > summary").count():
+            page.locator("details.journey-switch > summary").first.click(); page.wait_for_timeout(200)   # phones keep the pickers in a disclosure
         if sel.count():
             opts = sel.locator("option").all_inner_texts()
             tgt = next((o for o in opts if "Alex" in o), None)
@@ -108,11 +110,17 @@ def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-pref
     def close_sheet():
         if mobile and page.get_by_role("button", name="Close details").count():
             page.get_by_role("button", name="Close details").first.click(); page.wait_for_timeout(300)
+    def drawer_gone(ms: int = 2000) -> bool:
+        """Desktop: with nothing selected the detail column leaves (exit + the map's layout glide), so wait for the drawer to detach."""
+        try:
+            page.wait_for_function("!document.querySelector('.drawer')", timeout=ms); return True
+        except Exception:  # noqa: BLE001
+            return False
     def close_drawer():
         """Close whatever detail surface is open: the phone sheet, else Escape (clause card first, then the drawer)."""
         close_sheet()
         if page.locator(".drawer").count():
-            page.keyboard.press("Escape"); page.wait_for_timeout(300)
+            page.keyboard.press("Escape"); page.wait_for_timeout(300); drawer_gone()
         if page.locator(".drawer").count() and page.get_by_role("button", name="Close details").count():
             page.get_by_role("button", name="Close details").first.click(); page.wait_for_timeout(300)
     def drawer_h3s() -> list[str]:
@@ -124,6 +132,8 @@ def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-pref
 
     open_alex(page)
     shot("01-journey")
+    # nothing opens by itself: no stage panel, sheet or drawer at load, and the desktop map keeps the full width (no detail column)
+    check(f"{device}: no detail surface open at load", page.locator(".detail, .drawer, .passage-layout.has-detail").count() == 0)
     check(f"{device}: sample ribbon labels fictional records", page.get_by_text("Sample journey: fictional person and records").count() > 0)
     check(f"{device}: progress language", page.get_by_text("of", exact=False).filter(has_text="checkpoints completed").count() > 0)
 
@@ -133,9 +143,21 @@ def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-pref
     check(f"{device}: route has start and light", page.locator("button[aria-label^='Start ·']").count() > 0 and page.locator("button[aria-label^='Harbor Light ·']").count() > 0)
     # NumberFlow renders digits in a shadow root: the lozenge's aria-label and the custom element's data attribute carry the figures
     check(f"{device}: soundings printed", page.locator(".sounding[aria-label*='maximum left $672.00']").count() > 0 and page.locator(".sounding number-flow-react[data*='$672.00']").count() > 0)
+    if not mobile:   # findings layout-1 / slop-7: each lozenge holds its figures and covers no control on the chart
+        sd = page.evaluate("""(() => { const ctl = [...document.querySelectorAll('#passage-islands button')].map(b => b.getBoundingClientRect());
+          return [...document.querySelectorAll('#passage-islands .sounding')].map(s => { const r = s.getBoundingClientRect();
+            const spill = [...s.querySelectorAll('.amt')].some(a => a.getBoundingClientRect().right > r.right + 0.5);
+            const hit = ctl.some(c => c.left < r.right - 2 && r.left < c.right - 2 && c.top < r.bottom - 2 && r.top < c.bottom - 2);
+            return spill || hit; }).filter(Boolean).length; })()""")
+        check(f"{device}: soundings hold their figures and cover no control", sd == 0, f"bad={sd}")
     check(f"{device}: closed channel on marginal", page.locator("button[aria-label*='Occlusal night guard'][aria-label*='not covered']").count() > 0)
     END_STATE[device] = passage_names(page)
     shot("11-passage")
+    if mobile:   # money is never cut: every phone passage amount fits its box and the screen (trust test)
+        cut = page.evaluate("[...document.querySelectorAll('.passage-vertical-wrap .amt')].filter(e => { const r = e.getBoundingClientRect(), box = e.closest('.pv-amt, .pv-amt-line'), card = e.closest('button'); return (box && r.right > box.getBoundingClientRect().right + 0.5) || (card && r.right > card.getBoundingClientRect().right + 0.5) || r.right > document.documentElement.clientWidth + 0.5; }).map(e => e.closest('button')?.getAttribute('aria-label')?.slice(0, 40))")
+        check(f"{device}: phone passage amounts are not clipped", not cut, str(cut[:4]))
+        tap = page.evaluate("getComputedStyle(document.querySelector('.pv-card')).webkitTapHighlightColor")
+        check(f"{device}: phone cards use the on-palette pressed state (no grey tap rectangle)", tap in ("rgba(0, 0, 0, 0)", "transparent"), str(tap))
 
     # ---- shell (fix/web-shell): one main landmark, the phone dock, choose-then-commit, the desktop drawer pinned to the viewport ----
     shell = page.evaluate("""(() => { const tabs = [...document.querySelectorAll('[role=tab]')]; const vh = innerHeight;
@@ -165,6 +187,7 @@ def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-pref
     h3s = drawer_h3s()
     check(f"{device}: drawer opens with sections", page.locator(".drawer").count() > 0 and all(any(h.startswith(n) for h in h3s) for n in DRAWER_H3), "; ".join(h3s)[:200])
     if not mobile:
+        check(f"{device}: other island labels keep full contrast while one is selected", page.evaluate("[...document.querySelectorAll('.island-btn:not(.is-selected)')].every(b => getComputedStyle(b).opacity === '1')"))
         crumbs = page.locator(".drawer .crumbs, .drawer [class*='crumb']").first.inner_text() if page.locator(".drawer .crumbs, .drawer [class*='crumb']").count() else ""
         check(f"{device}: drawer is a labelled region with crumbs", page.locator("[role=region][aria-label='Procedure details']").count() > 0 and "Island 1 of 2" in crumbs and "Narrow Strait" in crumbs, crumbs[:80])
     hero1 = hero_text()
@@ -234,7 +257,7 @@ def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-pref
     card_closed = page.locator(".clause[role=dialog]").count() == 0 and page.locator(".drawer").count() > 0
     check(f"{device}: thread to clause", opened and ("60%" in quote or "Type II" in quote) and "25" in capt and card_closed, f"opened={opened} quote={quote[:40]!r} capt={capt[:30]!r} card_closed={card_closed}")
     if not mobile:
-        page.keyboard.press("Escape"); page.wait_for_timeout(400)
+        page.keyboard.press("Escape"); page.wait_for_timeout(400); drawer_gone()
         after = page.evaluate("document.activeElement && document.activeElement.getAttribute('aria-label')")
         check(f"{device}: escape closes drawer and returns focus", page.locator(".drawer").count() == 0 and (after or "").startswith("Root canal"), f"after={str(after)[:30]!r}")
     else:
@@ -279,6 +302,9 @@ def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-pref
     # select the 'Before your visit' stage then its 'Appointment information recorded' checkpoint (confirmed by the dental team)
     page.locator("button[aria-label^='Before your visit']").first.click()
     page.wait_for_timeout(400)
+    if mobile:   # the phone stage detail is a modal sheet: it holds focus and must be closed before the timeline behind it is used
+        check(f"{device}: stage detail is a modal sheet", page.locator("[role=dialog][aria-modal=true] h2#detail-h").count() == 1)
+        close_sheet()
     page.locator("button[aria-label^='Appointment information recorded']").first.click()
     page.wait_for_timeout(500)
     shot("02-checkpoint")
@@ -289,6 +315,7 @@ def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-pref
     # record a checkpoint as user-marked: 'Preparation instructions viewed' stays awaiting; mark 'Appointment recorded' on the visit stage
     close_sheet()
     page.locator("button[aria-label^='Your appointment']").first.click(); page.wait_for_timeout(300)
+    close_sheet()
     page.locator("button[aria-label^='Appointment recorded']").first.click(); page.wait_for_timeout(400)
     page.get_by_label("Date", exact=True).fill("2026-10-27")
     page.get_by_role("button", name="Record this checkpoint").click(); page.wait_for_timeout(900)
@@ -299,6 +326,7 @@ def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-pref
     # overview list (accessible equivalent): the route table first, then the stage tables
     page.get_by_role("button", name="Overview list").click(); page.wait_for_timeout(300)
     check(f"{device}: overview table present", page.locator("table.ov-table").count() >= 3)
+    check(f"{device}: skip link target exists in the overview segment", page.evaluate("(() => { const a = document.querySelector('a.skip-link'); return !!a && !!document.querySelector(a.getAttribute('href')); })()"))
     check(f"{device}: overview route table lists the islands", page.locator("table.ov-islands tr.ov-island").count() == 2 and page.locator("table.ov-islands number-flow-react[data*='$392.00']").count() > 0)
     shot("04-overview")
     page.get_by_role("button", name="Map view").click(); page.wait_for_timeout(300)

@@ -10,7 +10,7 @@ import { checkpointsForLine, itemFeeCents, missingForLine } from "@/lib/drawer";
 import { money } from "@/lib/stitches";
 import { stitchesForLine } from "@/lib/stitches";
 import { buildTrail } from "@/lib/trail";
-import type { CoverageRule, LedgerLine, MissingInput, PlanFixture, Stitch, TreatmentItem } from "@/lib/types";
+import type { Benefits, CoverageRule, LedgerLine, MissingInput, PlanFixture, Stitch, TreatmentItem } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { PipelineNode } from "./PipelineNode";
 
@@ -20,6 +20,8 @@ export interface CostPipelineProps {
   rule?: CoverageRule;
   plan: PlanFixture;
   stitches: Stitch[];
+  /** The plan's benefit record (remaining deductible / maximum): the same evidence inputs the map's checkpoints use. */
+  benefits?: Benefits | null;
   /** The saved estimate id: a new id re-fires the beams once (source → target, pipeline order) and announces "Estimate updated". */
   estimateId?: string;
   missing?: MissingInput[];
@@ -46,14 +48,14 @@ export const RECONCILE_WARN = UI.reconcileWarn;
  * settles in processing order (fee → allowed → deductible → share → maximum → you pay, 120 ms apart), the receipt rolling into place.
  * It runs once per line and estimate in a session (lib/drawRegistry), so reopening an island shows the settled ledger.
  */
-export function CostPipeline({ line, item, rule, plan, stitches, estimateId, missing = [], mobile = false, onSelectStitch, className, vertical = false }: CostPipelineProps) {
+export function CostPipeline({ line, item, rule, plan, stitches, benefits = null, estimateId, missing = [], mobile = false, onSelectStitch, className, vertical = false }: CostPipelineProps) {
   const reduce = useReducedMotion();
   const revealKey = `pipe:${line.treatment_item_id ?? line.label}:${estimateId ?? "e"}`;
   const [reveal] = useState(() => vertical && !reduce && !hasDrawn(revealKey));
   useEffect(() => { if (vertical) markDrawn(revealKey); }, [vertical, revealKey]);
   const trail = useMemo(() => buildTrail(line), [line]);
   const lineMissing = useMemo(() => missingForLine(missing, line), [missing, line]);
-  const cps = useMemo(() => checkpointsForLine(line, item, rule, plan, stitches, lineMissing), [line, item, rule, plan, stitches, lineMissing]);
+  const cps = useMemo(() => checkpointsForLine(line, item, rule, plan, stitches, lineMissing, benefits), [line, item, rule, plan, stitches, lineMissing, benefits]);
   const lineStitches = useMemo(() => stitchesForLine(line, stitches), [line, stitches]);
   const unresolved = line.status === "unresolved";
   const nodeCount = cps.length + (unresolved && item ? 1 : 0);

@@ -3,13 +3,14 @@ import { DRAWER } from "@/lib/copy/drawer";
 import { itemFeeCents } from "@/lib/drawer";
 import { stitchForCite } from "@/lib/stitches";
 import type { Evidence } from "@/lib/types";
+import { ToothEdit } from "@/components/journey/ToothEdit";
 import { docOf, Fact, Figure, Row, Section, type SectionProps } from "./shared";
 
 /**
  * Section 1 · Procedure (spec §4.4): name line, identifier (code as written on the estimate wins over the code printed in the document),
  * dates with their source words, the dentist's fee (USER, item source) and the plan category with its badge and stitch. Always rendered.
  */
-export function ProcedureSection({ island, item, rule, plan, stitches, onSelectStitch }: SectionProps) {
+export function ProcedureSection({ island, item, rule, plan, stitches, onSelectStitch, onRecordsChanged }: SectionProps) {
   const doc = docOf(plan);
   const printed = rule?.code_as_printed ?? null;
   const dates: { word: string; value: string }[] = [];
@@ -54,6 +55,7 @@ export function ProcedureSection({ island, item, rule, plan, stitches, onSelectS
           )}
         </Row>
       </dl>
+      {item && (item.status === "planned" || item.status === "scheduled") && <ToothEdit key={item.id} item={item} onRecordsChanged={onRecordsChanged} />}
     </Section>
   );
 }

@@ -36,7 +36,7 @@ export default function App() {
   const mobile = useMobile();
   const [tab, setTab] = useState<Tab>("journey");
   const data = useAppData({ planNeeded: tab !== "journey" });
-  const selection = useJourneySelection(data.view, !mobile);
+  const selection = useJourneySelection(data.view);
   const [landmark, setLandmark] = useState<LandmarkId | null>(null);
   const [stitch, setStitch] = useState<Stitch | undefined>();
 
@@ -68,7 +68,8 @@ export default function App() {
   return (
     <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)} className="app gap-0">
       <a href="#main" className="skip-link">{UI.skipToContent}</a>
-      {tab === "journey" && <a href="#passage-islands" className="skip-link">{PASSAGE.skipToRoute}</a>}
+      {/* the target exists in every segment of a loaded journey (map: the chart's controls; care timeline and overview: their content) */}
+      {tab === "journey" && data.view && <a href="#passage-islands" className="skip-link">{PASSAGE.skipToRoute}</a>}
       <header className="appbar">
         <div className="brand"><h1>{UI.appName}</h1><p className="tagline">{TAGLINE}</p></div>
         <div className="topnav">{mobile ? <Dock aria-label={UI.viewsLabel}>{list}</Dock> : list}</div>

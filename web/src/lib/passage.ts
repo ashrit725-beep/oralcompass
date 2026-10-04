@@ -12,10 +12,13 @@
  * binding 854 px plate width (addendum B1/B2/B3): arcs widen, zero-change markers collapse into one hollow "passed" marker, and dense
  * routes degrade to a compound marker per island, in that order. `collisions` is returned (and tested to be empty) rather than thrown.
  */
+import { checkpointEvidence } from "./checkpoints";
+import { stitchForCheckpoint } from "./drawer";
 import { CHECKPOINT_PLACE, CHECKPOINT_TERM, CLOSED_SUFFIX, GLYPH_FOR_RULE, LIGHT_PLACE, SLOT_ORDER, START_PLACE, categoryOf, placeName } from "./islands";
 import { PASSAGE } from "./copy/passage";
 import { stitchForLabel } from "./stitches";
 import { buildTrail, type TrailStep } from "./trail";
+import { isUpload } from "./types";
 import type {
   Benefits, CheckpointRule, Claim, CoverageRule, Evidence, InsuranceCheckpointVM, IslandVM, JourneyView, LedgerLine, MissingInput, PassageVM, PlanFixture,
   PlanRef, Procedure, SavedEstimate, Stitch, TreatmentItem,
@@ -41,6 +44,14 @@ const PLANNED = new Set(["planned", "scheduled"]);
 const networkWord = (n: string | null | undefined) => (n === "in" ? PASSAGE.inNetwork : n === "out" ? PASSAGE.outOfNetwork : PASSAGE.networkNotProvided);
 export const itemRef = (i: TreatmentItem) => i.seed_id ?? i.id;
 
+/** The plan code people read: a preset's code (ML26), or an uploaded plan's version label (UP1), never the internal
+ *  "upload:<content hash>" ref. Until the uploaded plan's model has loaded the words "your uploaded document" stand in. */
+export function planDisplayCode(planRef: PlanRef, plan: PlanFixture | null): string {
+  if (!planRef) return "—";
+  if (!isUpload(planRef)) return planRef;
+  return plan?.source_document?.document_type === "uploaded_plan_document" && plan.source_document.version_label ? plan.source_document.version_label : PASSAGE.uploadedPlan;
+}
+
 /** The engine's own label for an item (records.py `lines_from_items`), used to verify the index fallback. */
 export function expectedLineLabel(item: TreatmentItem, procedures: Procedure[]): string {
   const name = item.procedure_name || procedures.find((p) => p.key === item.procedure_key)?.name || item.procedure_key;
@@ -57,25 +68,16 @@ export function matchLine(lines: LedgerLine[], item: TreatmentItem, index: numbe
   return byIndex.label === expectedLineLabel(item, procedures) ? { line: byIndex, lineIndex: index } : { mismatch: true };
 }
 
-function badgeFor(rule: CheckpointRule, step: TrailStep | undefined, stitch: Stitch | undefined, item: TreatmentItem | undefined, benefits: Benefits | null, shareHasStitch: boolean): Evidence {
-  if (stitch) return "DOC";
-  switch (rule) {
-    case "fee": case "L": return "USER";
-    case "N": return item?.allowed_cents != null ? ((item.allowed_status as Evidence) || "USER") : "UNKNOWN";
-    case "D": return benefits?.remaining_deductible_cents != null ? "USER" : "UNKNOWN";
-    case "M": return benefits?.remaining_max_cents != null || benefits?.annual_max_unlimited ? "USER" : "UNKNOWN";
-    case "total": return shareHasStitch ? "DOC" : "UNKNOWN";
-    default: return step?.stitch ? "DOC" : "UNKNOWN";
-  }
-}
-
 const RULE_FLAG_WORDS: Partial<Record<CheckpointRule, RegExp>> = {
   N: /allowed amount|network/i, AB: /alternate/i, D: /deductible/i, CO: /class of|share/i, M: /annual maximum|maximum/i, W: /waiting/i,
 };
 
 /** Insurance checkpoints for one line: the trail steps in fixed slot order; Fee, Allowed, Deductible, Share, Maximum, You pay always present on an estimate line. */
-export function checkpointsFor(line: LedgerLine, islandId: string, stitches: Stitch[], item: TreatmentItem | undefined, benefits: Benefits | null, missing: MissingInput[]): InsuranceCheckpointVM[] {
+export function checkpointsFor(line: LedgerLine, islandId: string, stitches: Stitch[], item: TreatmentItem | undefined, benefits: Benefits | null, missing: MissingInput[], row?: CoverageRule, plan?: PlanFixture | null): InsuranceCheckpointVM[] {
   const trail = buildTrail(line);
+  // the clause behind a step: the coverage rule's exact cite first (as the drawer's pipeline resolves it), then the engine's step label
+  const resolve = (rule: CheckpointRule, label: string | null, engineRule: string): Stitch | undefined =>
+    (plan ? stitchForCheckpoint(rule, label, row, plan, stitches) : undefined) ?? stitchForLabel(label, engineRule, stitches);
   const mk = (rule: CheckpointRule, s: Partial<InsuranceCheckpointVM>): InsuranceCheckpointVM => ({
     key: `${islandId}:${rule}`, rule, term: CHECKPOINT_TERM[rule], place: CHECKPOINT_PLACE[rule], glyph: GLYPH_FOR_RULE[rule],
     amountIn: null, change: null, amountOut: null, owner: "info", explanation: "", stitchLabel: null, badge: "UNKNOWN", stepIndexes: [], flags: [],
@@ -87,14 +89,15 @@ export function checkpointsFor(line: LedgerLine, islandId: string, stitches: Sti
   if (line.status === "not_covered") {
     const x = line.steps[0];
     const rule: CheckpointRule = x?.rule === "W" ? "W" : x?.rule === "F" ? "F" : "X";
-    const st = stitchForLabel(x?.stitch ?? null, x?.rule ?? "X", stitches);
+    const st = resolve(rule, x?.stitch ?? null, x?.rule ?? "X");
     return [
       mk("fee", { amountOut: trail.fee, owner: "info", explanation: PASSAGE.feeExplanation, badge: "USER" }),
       mk(rule, { amountIn: trail.fee, change: 0, amountOut: line.patient_cents, owner: "patient", explanation: x?.label ?? "", stitchLabel: x?.stitch ?? null, stitch: st, badge: st ? "DOC" : "UNKNOWN", stepIndexes: x ? [0] : [], flags: line.flags }),
     ];
   }
   const byKey = new Map(trail.steps.map((s) => [s.key, s] as const));
-  const shareStitch = !!byKey.get("share")?.stitch;
+  const shareStep = byKey.get("share");
+  const shareStitch = !!(shareStep && resolve("CO", shareStep.stitch, shareStep.rule));
   const listed = line.steps.map((s, i) => ({ s, i })).filter(({ s }) => s.rule === "X" && /^Listed on your estimate/i.test(s.label));
   const out: InsuranceCheckpointVM[] = [];
   for (const rule of SLOT_ORDER) {
@@ -108,11 +111,11 @@ export function checkpointsFor(line: LedgerLine, islandId: string, stitches: Sti
     const step = byKey.get(key);
     if (!step) continue;                      // AB only when the engine produced one
     const stepIndexes = line.steps.map((s, i) => ({ s, i })).filter(({ s }) => (rule === "N" && s.rule === "N") || (rule === "AB" && s.rule === "AB") || (rule === "D" && s.rule === "D") || (rule === "CO" && s.rule === "CO") || (rule === "M" && s.rule === "M")).map(({ i }) => i);
-    const st = stitchForLabel(step.stitch, step.rule, stitches);
+    const st = resolve(rule, step.stitch, step.rule);
     const flags = line.flags.filter((f) => RULE_FLAG_WORDS[rule]?.test(f));
     out.push(mk(rule, {
       amountIn: step.amountIn, change: step.change == null ? null : step.change || 0, amountOut: step.amountOut, owner: step.owner, explanation: step.explanation, stitchLabel: step.stitch, stitch: st,
-      badge: badgeFor(rule, step, st, item, benefits, shareStitch), stepIndexes, flags, split: step.split,
+      badge: checkpointEvidence(rule, st, { item, benefits, shareHasStitch: shareStitch }), stepIndexes, flags, split: step.split,
     }));
   }
   return out;
@@ -150,7 +153,7 @@ export function buildPassage(inp: PassageInputs): PassageVM {
     return {
       id, kind: "procedure", state, order: i + 1, place: state === "not_covered" ? `${base}${CLOSED_SUFFIX}` : base, title, subtitle, category,
       itemId: item.id, item, line, lineIndex,
-      checkpoints: line ? checkpointsFor(line, id, stitches, item, benefits, missing) : [],
+      checkpoints: line ? checkpointsFor(line, id, stitches, item, benefits, missing, rules.find((r) => r.procedure_key === item.procedure_key), plan) : [],
       youPay: line?.status === "estimate" || line?.status === "not_covered" ? line.patient_cents : null,
       planPays: line?.status === "estimate" ? line.plan_cents : line?.status === "not_covered" ? line.plan_cents : null,
       upperBound: !!line?.plan_is_upper_bound, missing, notices,
@@ -214,7 +217,7 @@ export function buildPassage(inp: PassageInputs): PassageVM {
   if (estimate && networkStatus === "UNKNOWN") startNotices.push(PASSAGE.networkUnknown);
   const start: IslandVM = {
     id: "start", kind: "start", state: "frame", order: 0, place: planStage?.island ?? START_PLACE, title: planStage?.title ?? PASSAGE.startTitle,
-    subtitle: `${planRef || "—"} · ${networkWord(estimate?.inputs.network ?? (benefits as { network_default?: string } | null)?.network_default)}`, category: null,
+    subtitle: `${planDisplayCode(planRef, plan)} · ${networkWord(estimate?.inputs.network ?? (benefits as { network_default?: string } | null)?.network_default)}`, category: null,
     checkpoints: [], youPay: null, planPays: null, upperBound: false, missing: noLines ? globalMissing : [], notices: startNotices,
     soundingsAfter: benefits ? { deductible: benefits.remaining_deductible_cents ?? null, annualMax: benefits.remaining_max_cents ?? null, unlimited } : null,
     stageIds: planStage ? [planStage.id] : [],
@@ -256,7 +259,17 @@ function stitchForCiteLike(cite: { page: number; quote: string; doc?: string } |
 // ---------------------------------------------------------------------------------------------------------------------------------
 
 export type AnswerTarget = "stage" | "island" | "light" | "checkpoint" | "documents";
-export interface AnswerRow { key: string; dt: string; dd: string; title?: string; target: AnswerTarget }
+export type JourneySegment = "map" | "care" | "overview";
+
+/** Which segment of My journey shows the thing an Answers-log row names (null: it lives on another tab). Stages live in the Care
+ *  timeline segment on phones and in the map segment's care rail (or the care segment) on desktop; everything else is on the map. */
+export function answerSegment(target: AnswerTarget, mobile: boolean, current: JourneySegment): JourneySegment | null {
+  if (target === "documents") return null;
+  if (target === "stage") return mobile ? "care" : current === "overview" ? "map" : current;
+  return "map";
+}
+/** `calc`: the row prints engine totals, so it carries the "Calculated from the clauses cited" mark beside it (finding info-only-5). */
+export interface AnswerRow { key: string; dt: string; dd: string; title?: string; target: AnswerTarget; calc?: boolean }
 
 export function answersLog(vm: PassageVM, view: JourneyView | null, plan: PlanFixture | null, estimate: SavedEstimate | null, recalculating = false): AnswerRow[] {
   const s = (n: number) => (n === 1 ? "" : "s");
@@ -264,17 +277,21 @@ export function answersLog(vm: PassageVM, view: JourneyView | null, plan: PlanFi
   const where = cur ? `${cur.title} · ${cur.label}` : PASSAGE.noStages;
   const n = vm.islands.length;
   const route = n === 0 ? PASSAGE.noPlanned : `${n} ${PASSAGE.procedure}${s(n)}${vm.visited.length ? `, ${vm.visited.length} ${PASSAGE.completedOnStatement}` : ""}`;
-  let cost: string;
+  let cost: string, calc = false;
   if (recalculating) cost = PASSAGE.recalculating;
   else if (!estimate) cost = PASSAGE.noEstimate;
   else if (estimate.status !== "estimate" || estimate.user_estimated_payment_cents == null) cost = PASSAGE.waitingInputs(estimate.missing_inputs.length);
-  else cost = `${moneyText(estimate.user_estimated_payment_cents)} · ${PASSAGE.plan} ${moneyText(estimate.insurer_estimated_payment_cents)}${estimate.plan_payment_is_upper_bound ? ` ${PASSAGE.upperBoundParen}` : ""}`;
+  else {
+    const hypo = Object.keys(estimate.inputs?.hypotheticals ?? {}).length > 0;
+    cost = `${moneyText(estimate.user_estimated_payment_cents)} · ${PASSAGE.plan} ${moneyText(estimate.insurer_estimated_payment_cents)}${estimate.plan_payment_is_upper_bound ? ` ${PASSAGE.upperBoundParen}` : ""}${hypo ? ` ${PASSAGE.withHypothetical}` : ""}`;
+    calc = true;
+  }
   const rulesRow = `${vm.stepsCited} ${PASSAGE.step}${s(vm.stepsCited)} ${PASSAGE.cited} · ${vm.rulesNotStated} ${PASSAGE.rule}${s(vm.rulesNotStated)} ${PASSAGE.notStated}`;
   const from = plan ? `${plan.source_document.version_label} · ${plan.source_document.title}${plan.is_fictional ? ` · ${PASSAGE.fictional}` : ""}` : PASSAGE.noPlan;
   return [
     { key: "where", dt: PASSAGE.whereYouAre, dd: where, target: "stage" },
     { key: "route", dt: PASSAGE.onTheRoute, dd: route, target: "island" },
-    { key: "cost", dt: PASSAGE.estimatedYouPay, dd: cost, target: "light" },
+    { key: "cost", dt: PASSAGE.estimatedYouPay, dd: cost, target: "light", calc },
     { key: "rules", dt: PASSAGE.rulesApplied, dd: rulesRow, target: "checkpoint" },
     { key: "from", dt: PASSAGE.from, dd: from, title: from, target: "documents" },
   ];
@@ -282,6 +299,14 @@ export function answersLog(vm: PassageVM, view: JourneyView | null, plan: PlanFi
 /** Text money for accessible names and log rows (the visible figures on the map render through <Money>). */
 export const moneyText = (c: number | null | undefined) => (c == null ? "—" : `$${(c / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
 export const signedText = (c: number | null | undefined) => (c == null ? "—" : c < 0 ? `−${moneyText(-c)}` : c === 0 ? "$0.00" : `+${moneyText(c)}`);
+
+/** The visible name on a small chart chip (visited islets): the procedure's own name without its parenthetical or the clause after a
+ *  comma ("Adult cleaning (prophylaxis)" → "Adult cleaning"; "Resin composite filling, two surfaces, posterior tooth" → "Resin composite
+ *  filling"), so it fits two lines instead of being cut. The full name stays in the accessible name and the title. */
+export function chipTitle(title: string): string {
+  const short = title.replace(/\s*\([^)]*\)\s*/g, " ").split(",")[0].replace(/\s+/g, " ").trim();
+  return short || title;
+}
 
 /** The amount words on an island button (§3.2). */
 export function islandAmountText(isl: IslandVM): string {
@@ -334,6 +359,8 @@ export interface PassageLayout {
   w: number; h: number; mode: "desktop" | "phone"; dense: boolean; collapsed: boolean; plain: boolean;
   start: Pt; destination: Pt; startButton: Rect; destinationButton: Rect; destinationR: number;
   islands: IslandLayout[]; visited: SmallIslandLayout[]; visitedOverflow: number; visitedMore: Rect | null; marginal: SmallIslandLayout[]; marginalOverflow: number;
+  /** "+k more mentioned": the marginal islands past the ones drawn (null when none are hidden, or no clear spot on the lower margin). */
+  marginalMore: Rect | null;
   route: RouteSegment[]; soundings: SoundingLayout[]; controls: Rect[]; collisions: [string, string][];
 }
 export interface LayoutOptions { selected?: string | null; widthPx?: number }
@@ -448,14 +475,16 @@ export function layoutPassage(vm: PassageVM, mode: "desktop" | "phone", opts: La
   const destinationButton = rectAt(destination.x, destination.y + destinationR * 0.7 + u(36), u(170), btnH, "destination");
 
   // visited: a short column on the left shore above START (max 3, then "+k more"); marginal: lower margin right of centre (max 3, then +k)
-  // visited chips are 112 × 52 px so a two-line name fits ("Adult cleaning (prophylaxis)") instead of truncating to "Adult cleani…"
-  const visitedW = u(112), visitedH = u(52);
+  // visited chips are 128 × 52 px so a two-line short name fits ("Resin composite filling") instead of truncating
+  const visitedW = u(128), visitedH = u(52);
   const vTop = n === 3 ? 44 : 56, vPitch = visitedH + u(4), vCx = u(10) + visitedW / 2;
   const visited: SmallIslandLayout[] = vm.visited.slice(0, 3).map((v, j) => { const cx = vCx, cy = vTop + j * vPitch; return { id: v.id, cx, cy, r: 24, button: rectAt(cx, cy, visitedW, visitedH, v.id) }; });
   const visitedOverflow = Math.max(0, vm.visited.length - 3);
   const visitedMore = visitedOverflow ? rectAt(vCx, vTop + 3 * vPitch - (visitedH - btnH) / 2, visitedW, btnH, "visited:more") : null;
   const maxMarginal = n >= 7 ? 2 : 3;
-  const marginal: SmallIslandLayout[] = vm.marginal.slice(0, maxMarginal).map((m, j) => { const cx = n >= 7 ? 930 - j * 118 : 640 - j * 150, cy = n >= 7 ? 500 : 512; return { id: m.id, cx, cy, r: 36, button: rectAt(cx, cy + 28 + u(26), btnW, btnH, m.id) }; });
+  // marginal buttons step by their own width (+4 px): a fixed 150/118 pitch let the 152 px buttons overlap once two or three were drawn
+  const mPitch = btnW + u(4);
+  const marginal: SmallIslandLayout[] = vm.marginal.slice(0, maxMarginal).map((m, j) => { const cx = n >= 7 ? 930 - j * mPitch : 640 - j * mPitch, cy = n >= 7 ? 500 : 512; return { id: m.id, cx, cy, r: 36, button: rectAt(cx, cy + 28 + u(26), btnW, btnH, m.id) }; });
   const marginalOverflow = Math.max(0, vm.marginal.length - maxMarginal);
 
   // island plates and buttons (fixed), then arcs placed against everything already on the chart
@@ -492,6 +521,16 @@ export function layoutPassage(vm: PassageVM, mode: "desktop" | "phone", opts: La
       const x = xs.find((xx) => !blockers.some((f) => rectsIntersect(f, { ...m.button, x: xx })));
       if (x != null) m.button.x = x;
     }
+  }
+  // marginal islands past the 2–3 drawn get one "+k more" control on the lower margin (they were computed and silently dropped)
+  let marginalMore: Rect | null = null;
+  if (marginalOverflow > 0) {
+    const w = u(112), y = marginal.length ? marginal[marginal.length - 1].button.y : VB_H - btnH - 8;
+    for (let x = VB_W - 4 - w; x >= 4 && !marginalMore; x -= u(16)) {
+      const rc = { x, y, w, h: btnH, id: "marginal:more" };
+      if (!fixed.some((f) => rectsIntersect(f, rc))) marginalMore = rc;
+    }
+    if (marginalMore) fixed.push(marginalMore);
   }
   let collapsed = false, plain = false;
   const placedRects: Rect[] = [];
@@ -550,5 +589,5 @@ export function layoutPassage(vm: PassageVM, mode: "desktop" | "phone", opts: La
     soundings.push({ islandId: isl.id, x: best.x, y: best.y });
   });
 
-  return { w: VB_W, h: VB_H, mode, dense, collapsed, plain, start, destination, startButton, destinationButton, destinationR, islands, visited, visitedOverflow, visitedMore, marginal, marginalOverflow, route, soundings, controls, collisions: findCollisions(controls) };
+  return { w: VB_W, h: VB_H, mode, dense, collapsed, plain, start, destination, startButton, destinationButton, destinationR, islands, visited, visitedOverflow, visitedMore, marginal, marginalOverflow, marginalMore, route, soundings, controls, collisions: findCollisions(controls) };
 }

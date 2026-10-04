@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import alexJson from "../__fixtures__/passage/alex.json";
 import samJson from "../__fixtures__/passage/sam.json";
-import { BINDING_PX, TARGET_PX, VB_W, answersLog, buildPassage, checkpointAria, findCollisions, islandAmountText, layoutPassage, matchLine, moneyText, type PassageInputs } from "./passage";
+import { BINDING_PX, TARGET_PX, VB_W, answerSegment, chipTitle, answersLog, buildPassage, planDisplayCode, checkpointAria, findCollisions, islandAmountText, layoutPassage, matchLine, moneyText, type PassageInputs } from "./passage";
+import { checkpointsForLine } from "./drawer";
 import { stitchesFromClauses } from "./stitches";
 import type { Clause, CoverageRule, JourneyView, LedgerLine, PassageVM, PlanFixture, Procedure, SavedEstimate, TreatmentItem } from "./types";
 
@@ -48,7 +49,7 @@ describe("buildPassage — Alex on ML26 (CLAUDE.md rule 8: $902.00 you / $1,098.
     expect(cps.map((c) => c.rule)).toEqual(["fee", "N", "D", "CO", "M", "total"]);
     expect(cps[0].amountOut).toBe(115000);
     expect(cps[1].change).toBe(-17000); expect(cps[1].owner).toBe("nobody"); expect(cps[1].amountOut).toBe(98000);
-    expect(cps[2].change).toBe(0); expect(cps[2].stepIndexes).toEqual([]); expect(cps[2].badge).toBe("USER");   // met per the statement
+    expect(cps[2].change).toBe(0); expect(cps[2].stepIndexes).toEqual([]); expect(cps[2].badge).toBe("DOC"); expect(cps[2].stitch?.page).toBe(25);   // met per the statement; the deductible clause is cited (same as the pipeline)
     expect(cps[3].split).toEqual({ plan: 58800, patient: 39200, planPct: 60 });
     expect(cps[3].stitch?.doc).toBe("ML26"); expect(cps[3].stitch?.page).toBe(25); expect(cps[3].badge).toBe("DOC");
     expect(cps[4].change).toBe(0); expect(cps[4].stepIndexes).toEqual([]);
@@ -98,7 +99,7 @@ describe("buildPassage — Alex on ML26 (CLAUDE.md rule 8: $902.00 you / $1,098.
   it("checkpoint accessible names carry the whole fact", () => {
     const cps = vm.islands[0].checkpoints;
     expect(checkpointAria(cps[1])).toBe("Allowed amount: −$170.00, amount out $980.00, not owed by you, clause ML26 page 25");
-    expect(checkpointAria(cps[2])).toBe("Deductible: no change, amount out $980.00");
+    expect(checkpointAria(cps[2])).toBe("Deductible: no change, amount out $980.00, clause ML26 page 25");
     expect(checkpointAria(cps[3])).toBe("Plan share: plan 60% $588.00, you 40% $392.00, clause ML26 page 25");
     expect(checkpointAria(cps[5])).toBe("You pay: $392.00");
     expect(islandAmountText(vm.islands[0])).toBe("you pay $392.00");
@@ -260,5 +261,75 @@ describe("layoutPassage — 44 px targets at the 854 px plate (addendum B1/B2/B3
     const layout = layoutPassage(buildPassage(alex), "desktop");
     const cp = layout.controls.find((c) => c.id.endsWith(":CO"))!;
     expect(cp.w).toBeCloseTo(hitUnits, 5);
+  });
+});
+
+describe("plan code on the START pennant (finding demo-14)", () => {
+  it("shows an uploaded plan's version label, never the internal upload ref", () => {
+    const plan = { ...(alex.plan as PlanFixture), plan_code: "UP1", source_document: { ...(alex.plan as PlanFixture).source_document, version_label: "UP1", document_type: "uploaded_plan_document" } };
+    const vm = buildPassage({ ...alex, plan, planRef: "upload:c5fd44ebabc8d1e2" });
+    expect(vm.start.subtitle).toMatch(/^UP1 · /);
+    expect(vm.start.subtitle).not.toContain("upload:");
+    expect(planDisplayCode("upload:c5fd44ebabc8d1e2", null)).toBe("your uploaded document");
+    expect(planDisplayCode("ML26", alex.plan)).toBe("ML26");
+  });
+});
+
+describe("Answers-log jumps (finding web-correctness-1)", () => {
+  it("asks for the segment that shows the target once, and reports no switch when it is already showing", () => {
+    // from the Care timeline or the Overview list, island/light/checkpoint rows need the map: one switch, then focus
+    for (const t of ["island", "light", "checkpoint"] as const) {
+      expect(answerSegment(t, false, "care")).toBe("map");
+      expect(answerSegment(t, true, "overview")).toBe("map");
+      expect(answerSegment(t, false, "map")).toBe("map");          // already there: focus at once, nothing re-scheduled
+    }
+    expect(answerSegment("stage", true, "map")).toBe("care");
+    expect(answerSegment("stage", false, "care")).toBe("care");
+    expect(answerSegment("stage", false, "overview")).toBe("map");
+    expect(answerSegment("documents", false, "map")).toBeNull();
+  });
+});
+
+describe("visited chip names (findings layout-18, demo-9)", () => {
+  it("drop the parenthetical and the clause after a comma so the chip shows whole words, never an ellipsis", () => {
+    expect(chipTitle("Adult cleaning (prophylaxis)")).toBe("Adult cleaning");
+    expect(chipTitle("Bitewing x-rays (set)")).toBe("Bitewing x-rays");
+    expect(chipTitle("Resin composite filling, two surfaces, posterior tooth")).toBe("Resin composite filling");
+    expect(chipTitle("Periodic oral evaluation")).toBe("Periodic oral evaluation");
+  });
+});
+
+describe("overflow controls (finding web-correctness-30)", () => {
+  it("draws a '+k more mentioned' control for marginal islands past the ones on the chart, clear of every other control", () => {
+    const vm = buildPassage(alex);
+    const m = vm.marginal[0];
+    const five: PassageVM = { ...vm, marginal: Array.from({ length: 5 }, (_, i) => ({ ...m, id: `marginal:m${i}`, order: i + 1 })) };
+    const l = layoutPassage(five, "desktop");
+    expect(l.marginal).toHaveLength(3);
+    expect(l.marginalOverflow).toBe(2);
+    expect(l.marginalMore).not.toBeNull();
+    expect(l.collisions).toEqual([]);
+    expect(l.controls.some((c) => c.id === "marginal:more")).toBe(true);
+    expect(layoutPassage(vm, "desktop").marginalMore).toBeNull();          // nothing hidden, no control
+  });
+});
+
+describe("one checkpoint evidence rule for the map and the pipeline (finding web-correctness-25)", () => {
+  it("gives every checkpoint of a line the same badge and clause in both builders", () => {
+    const vm = buildPassage(alex);
+    for (const isl of vm.islands) {
+      const row = alex.rules.find((r) => r.procedure_key === isl.item!.procedure_key);
+      const pipe = checkpointsForLine(isl.line!, isl.item, row, alex.plan!, alex.stitches, [], alex.benefits);
+      expect(pipe.map((c) => [c.rule, c.badge, c.stitch?.id ?? null])).toEqual(isl.checkpoints.map((c) => [c.rule, c.badge, c.stitch?.id ?? null]));
+    }
+  });
+});
+
+describe("what if (finding demo-5)", () => {
+  it("the Answers log says when the estimate uses a hypothetical the person entered", () => {
+    const vm = buildPassage(alex);
+    const est = { ...alexEstimate, inputs: { ...alexEstimate.inputs, hypotheticals: { network: "out" } } };
+    expect(answersLog(vm, alex.journey, alex.plan, est).find((r) => r.key === "cost")?.dd).toBe("$902.00 · plan $1,098.00 (with a hypothetical you entered)");
+    expect(answersLog(vm, alex.journey, alex.plan, alexEstimate).find((r) => r.key === "cost")?.dd).toBe("$902.00 · plan $1,098.00");
   });
 });
