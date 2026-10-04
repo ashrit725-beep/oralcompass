@@ -98,3 +98,20 @@ describe("evidence beside journey figures (findings info-only-5, demo-8)", () =>
     expect(renderToStaticMarkup(<Money cents={4500} evidence="USER" badge={false} />)).not.toContain("Evidence: USER");
   });
 });
+
+describe("overview figures (finding web-correctness-26)", () => {
+  it("labels island totals as calculated and extends the fee by quantity through itemFeeCents", () => {
+    const items = f.items.map((i) => (i.status === "planned" || i.status === "scheduled" ? { ...i, quantity: 2 } : i));
+    const vm2 = buildPassage({ ...alex, items });
+    const html = renderToStaticMarkup(<OverviewList journey={f.view.journey} vm={vm2} onSelect={noop} />);
+    const route = html.slice(html.indexOf('class="ov-table ov-islands"'), html.indexOf("</table>", html.indexOf('class="ov-table ov-islands"')));
+    expect(route).toContain(">$2300.00<");                            // root canal $1,150.00 x 2, as the engine multiplies (mocked digits)
+    const rows = route.split('<tr class="ov-island').slice(1);
+    for (const r of rows) {
+      const cells = r.split("<td>");
+      expect(cells[5]).toContain("Calculated from the clauses cited"); // You pay
+      expect(cells[6]).toContain("Calculated from the clauses cited"); // Plan pays
+      expect(cells[5]).not.toContain("You entered");
+    }
+  });
+});

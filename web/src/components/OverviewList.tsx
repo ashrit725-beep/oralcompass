@@ -1,6 +1,8 @@
 import { UI } from "../lib/copy";
 import { PASSAGE } from "../lib/copy/passage";
 import { attributionLabel, dateLabel, stageProgress, statusLabel } from "../lib/journey";
+import { itemFeeCents } from "../lib/drawer";
+import { DRAWER } from "../lib/copy";
 import { islandAmountText, moneyText } from "../lib/passage";
 import type { InsuranceCheckpointVM, IslandVM, Journey, PassageVM, Stitch } from "../lib/types";
 import type { Selection } from "./atlas/JourneyMap";
@@ -22,6 +24,9 @@ function TableScroll({ label, children }: { label: string; children: React.React
   return <div className="ov-scroll" role="region" aria-label={PASSAGE.tableRegion(label)} tabIndex={0}>{children}</div>;
 }
 
+/** The evidence carried by an island total's own step (the "You pay" checkpoint, or the not-covered rule), kept for the data. */
+const totalEvidence = (isl: IslandVM) => (isl.checkpoints.find((c) => c.rule === "total") ?? isl.checkpoints.find((c) => c.rule === "X" || c.rule === "W" || c.rule === "F"))?.badge ?? "UNKNOWN";
+
 const OWNER_WORD: Record<InsuranceCheckpointVM["owner"], string> = { patient: PASSAGE.ownerPatient, plan: PASSAGE.ownerPlan, nobody: PASSAGE.ownerNobody, basis: PASSAGE.ownerBasis, info: PASSAGE.ownerInfo };
 
 function CheckpointTable({ isl, onSelectStitch }: { isl: IslandVM; onSelectStitch?: (s: Stitch) => void }) {
@@ -37,7 +42,8 @@ function CheckpointTable({ isl, onSelectStitch }: { isl: IslandVM; onSelectStitc
             <td>{cp.split ? <>{PASSAGE.plan} {cp.split.planPct}% <Money cents={cp.split.plan} evidence={cp.badge} badge={false} /> · {PASSAGE.you} {100 - cp.split.planPct}% <Money cents={cp.split.patient} evidence={cp.badge} badge={false} /></> : cp.change != null ? (cp.change === 0 ? PASSAGE.noChange : <Money cents={cp.change} evidence={cp.badge} badge={false} signed />) : "—"}</td>
             <td>{cp.amountOut != null ? <Money cents={cp.amountOut} evidence={cp.badge} badge={false} /> : "—"}</td>
             <td>{OWNER_WORD[cp.owner]}</td>
-            <td>{cp.stitch ? <><StitchChip stitch={cp.stitch} onSelect={onSelectStitch} /> <small className="where">{cp.stitch.doc} {cp.stitch.pageNote ?? `p.${cp.stitch.page}`}</small></> : <EvidenceBadge status={cp.badge} />}</td>
+            <td>{cp.stitch ? <><StitchChip stitch={cp.stitch} onSelect={onSelectStitch} /> <small className="where">{cp.stitch.doc} {cp.stitch.pageNote ?? `p.${cp.stitch.page}`}</small></>
+              : cp.rule === "total" && cp.amountOut != null ? <span className="fig-calc">{DRAWER.calculated}</span> : <EvidenceBadge status={cp.badge} />}</td>
           </tr>
         ))}
       </tbody>
@@ -69,17 +75,18 @@ export function OverviewList({ journey, onSelect, vm, planTitle, onSelectIsland,
                     <th scope="row"><button type="button" className="linklike" onClick={pick(isl.id)}>{isl.title}</button> <span className="muted">· {isl.place}</span></th>
                     <td>{isl.item?.tooth ?? "—"}</td>
                     <td>{isl.item?.status.replace(/_/g, " ")}{isl.state === "unresolved" ? ` · ${PASSAGE.waitingLower}` : isl.state === "not_covered" ? ` · ${PASSAGE.notCoveredLower}` : ""}</td>
-                    <td>{isl.item ? <Money cents={isl.item.dentist_fee_cents * (isl.item.quantity || 1)} evidence="USER" /> : "—"}</td>
+                    <td>{isl.item ? <Money cents={itemFeeCents(isl.item)} evidence="USER" /> : "—"}</td>
                     <td>{isl.item?.allowed_cents != null ? <Money cents={isl.item.allowed_cents} evidence={(isl.item.allowed_status as never) || "USER"} /> : n?.amountOut != null ? <Money cents={n.amountOut} evidence={n.badge} /> : <EvidenceBadge status="UNKNOWN" />}</td>
-                    <td>{isl.youPay != null ? <Money cents={isl.youPay} evidence={isl.checkpoints.find((c) => c.rule === "CO")?.badge ?? "USER"} /> : <span className="muted">{islandAmountText(isl)}</span>}</td>
-                    <td>{isl.planPays != null ? <Money cents={isl.planPays} evidence={isl.checkpoints.find((c) => c.rule === "CO")?.badge ?? "USER"} /> : "—"}{isl.upperBound ? ` ${PASSAGE.upperBoundParen}` : ""}</td>
+                    {/* engine results (document rules applied to your figures): calculated, not the Share step's badge and never "You entered" */}
+                    <td>{isl.youPay != null ? <Money cents={isl.youPay} evidence={totalEvidence(isl)} calc /> : <span className="muted">{islandAmountText(isl)}</span>}</td>
+                    <td>{isl.planPays != null ? <Money cents={isl.planPays} evidence={totalEvidence(isl)} calc /> : "—"}{isl.upperBound ? ` ${PASSAGE.upperBoundParen}` : ""}</td>
                     <td>{PASSAGE.stepsOf(isl.checkpoints.length)}</td>
                     <td>{isl.notices.length}</td>
                     <td className="ov-sound">{sound(isl)}</td>
                   </tr>
                 );
               })}
-              <tr className="ov-frame"><th scope="row"><button type="button" className="linklike" onClick={pick("destination")}>{vm.destination.title}</button> <span className="muted">· {vm.destination.subtitle}</span></th><td colSpan={4}>{vm.destination.notices[0] ?? ""}</td><td>{vm.destination.youPay != null ? <Money cents={vm.destination.youPay} evidence="DOC" /> : <span className="muted">{PASSAGE.waitingLower}</span>}</td><td>{vm.destination.planPays != null ? <Money cents={vm.destination.planPays} evidence="DOC" /> : "—"}{vm.destination.upperBound ? ` ${PASSAGE.upperBoundParen}` : ""}</td><td colSpan={2} /><td>{sound(vm.destination)}</td></tr>
+              <tr className="ov-frame"><th scope="row"><button type="button" className="linklike" onClick={pick("destination")}>{vm.destination.title}</button> <span className="muted">· {vm.destination.subtitle}</span></th><td colSpan={4}>{vm.destination.notices[0] ?? ""}</td><td>{vm.destination.youPay != null ? <Money cents={vm.destination.youPay} evidence="DOC" calc /> : <span className="muted">{PASSAGE.waitingLower}</span>}</td><td>{vm.destination.planPays != null ? <Money cents={vm.destination.planPays} evidence="DOC" calc /> : "—"}{vm.destination.upperBound ? ` ${PASSAGE.upperBoundParen}` : ""}</td><td colSpan={2} /><td>{sound(vm.destination)}</td></tr>
             </tbody>
           </table>
           </TableScroll>
@@ -97,7 +104,7 @@ export function OverviewList({ journey, onSelect, vm, planTitle, onSelectIsland,
                 <thead><tr><th scope="col">{PASSAGE.colProcedure}</th><th scope="col">{PASSAGE.colDate}</th><th scope="col">{PASSAGE.colTooth}</th><th scope="col">{PASSAGE.colFee}</th><th scope="col">{PASSAGE.colAllowed}</th><th scope="col">{PASSAGE.colPlanPaid}</th><th scope="col">{PASSAGE.colPatientPaid}</th></tr></thead>
                 <tbody>{vm.visited.map((v) => (
                   <tr key={v.id}><th scope="row"><button type="button" className="linklike" onClick={pick(v.id)}>{v.title}</button></th><td>{v.claim?.date ?? v.item?.appointment_date ?? "—"}</td><td>{v.claim?.tooth ?? v.item?.tooth ?? "—"}</td>
-                    <td>{v.claim?.dentist_fee_cents != null ? <Money cents={v.claim.dentist_fee_cents} evidence="USER" /> : v.item ? <Money cents={v.item.dentist_fee_cents} evidence="USER" /> : "—"}</td>
+                    <td>{v.claim?.dentist_fee_cents != null ? <Money cents={v.claim.dentist_fee_cents} evidence="USER" /> : v.item ? <Money cents={itemFeeCents(v.item)} evidence="USER" /> : "—"}</td>
                     <td>{v.claim?.allowed_cents != null ? <Money cents={v.claim.allowed_cents} evidence="USER" /> : "—"}</td>
                     <td>{v.claim ? <Money cents={v.claim.plan_paid_cents} evidence="USER" /> : <span className="muted">{PASSAGE.planPaidNotProvided}</span>}</td>
                     <td>{v.claim?.patient_paid_cents != null ? <Money cents={v.claim.patient_paid_cents} evidence="USER" /> : "—"}</td></tr>
