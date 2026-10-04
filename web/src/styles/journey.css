@@ -204,7 +204,8 @@
 
 /* ---- vertical passage (phone, spec §4.3) ---- */
 .passage-vertical-wrap { min-width: 0; }
-.pv-header { height: 150px; border-radius: var(--r-3); background: var(--water) url("/art/journey-backdrop.webp") center 40% / cover no-repeat; border: 1px solid var(--rule); margin-bottom: var(--s-3); }
+.pv-header { height: 150px; border-radius: var(--r-3); background: var(--water) url("/art/journey-backdrop-phone.webp") center / cover no-repeat;   /* 1200x500 phone crop of the backdrop (mobile-14) */
+  border: 1px solid var(--rule); margin-bottom: var(--s-3); }
 .passage-vertical { list-style: none; margin: 0; padding: 0 0 0 52px; position: relative; min-width: 0; }
 .passage-vertical::before { content: ""; position: absolute; left: 27px; top: 12px; bottom: 12px; border-left: 3px dashed var(--water-ink); }
 .pv-item { position: relative; margin: 0 0 var(--s-4); min-width: 0; }
