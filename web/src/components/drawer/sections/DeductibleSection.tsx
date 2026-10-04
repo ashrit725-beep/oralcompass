@@ -1,6 +1,6 @@
 import { UI } from "@/lib/copy";
 import { DRAWER } from "@/lib/copy/drawer";
-import { remainingBeforeLine, stitchForCheckpoint } from "@/lib/drawer";
+import { calcInputs, remainingBeforeLine, stitchForCheckpoint } from "@/lib/drawer";
 import { stitchForCite } from "@/lib/stitches";
 import { docOf, Fact, Figure, Row, Section, type SectionProps } from "./shared";
 
@@ -9,7 +9,7 @@ import { docOf, Fact, Figure, Row, Section, type SectionProps } from "./shared";
  * remaining before this procedure (USER + the server's derivation sentence), applied to this line (the D step; $0.00 is information) with
  * the checkpoint explanation, and remaining after (the engine's `remaining_after`). Omitted when the plan has no deductible field.
  */
-export function DeductibleSection({ island, line, trail, rule, plan, benefits, estimate, stitches, onSelectStitch }: SectionProps) {
+export function DeductibleSection({ island, line, item, trail, rule, plan, benefits, estimate, stitches, onSelectStitch }: SectionProps) {
   const doc = docOf(plan);
   const ded = plan.deductible_individual;
   if (!ded) return null;
@@ -38,7 +38,7 @@ export function DeductibleSection({ island, line, trail, rule, plan, benefits, e
         </Row>
         {dStep && (
           <Row term={DRAWER.appliedToLine} note={dStep.explanation}>
-            <Figure cents={dStep.change == null ? null : -dStep.change} evidence="DOC" stitch={dStitch} onSelectStitch={onSelectStitch} />
+            <Figure cents={dStep.change == null ? null : -dStep.change} evidence="DOC" calc inputs={calcInputs(item, estimate, benefits)} calcLabel={null} stitch={dStitch} onSelectStitch={onSelectStitch} />
           </Row>
         )}
         {line && line.status === "estimate" && (

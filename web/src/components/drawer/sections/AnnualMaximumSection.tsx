@@ -44,7 +44,7 @@ export function AnnualMaximumSection({ island, item, line, trail, rule, plan, be
         )}
         {mStep && (
           <Row term={DRAWER.beyondMax} note={mStep.explanation}>
-            {mStep.change ? <Figure cents={-mStep.change} evidence="DOC" stitch={mStitch} onSelectStitch={onSelectStitch} className="fig-patient" />
+            {mStep.change ? <Figure cents={-mStep.change} evidence="DOC" calc inputs={inputs} calcLabel={null} stitch={mStitch} onSelectStitch={onSelectStitch} className="fig-patient" />
               : <Fact evidence="DOC" stitch={mStitch} onSelectStitch={onSelectStitch}>{DRAWER.withinMax}</Fact>}
           </Row>
         )}
