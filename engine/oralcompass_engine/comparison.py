@@ -67,7 +67,7 @@ def grid(plans: list[PlanModel]) -> list[dict]:
                 if not p.frequency:
                     cells.append({"text": "Not stated in this document", "badge": "UNKNOWN", "cite": None})
                 else:
-                    cells.append({"text": "; ".join(f"{r.procedure_key}: {r.n} per {r.clock.replace('_', ' ')}" for r in p.frequency),
+                    cells.append({"text": "; ".join(f"{r.procedure_key.replace('_', ' ')}: {r.n} per {r.clock.replace('_', ' ')}" for r in p.frequency),
                                   "badge": "DOC", "cite": p.frequency[0].cite.label() if p.frequency[0].cite else None})
             elif topic == "Alternate-benefit clause":
                 ab = p.alternate_benefit
