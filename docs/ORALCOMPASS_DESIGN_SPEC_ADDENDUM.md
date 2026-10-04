@@ -145,3 +145,21 @@ All plates are WebP under `web/public/art/` (`ArtPlate` requests `.webp` → `.p
    `background-size` ≥ 600 px and a soft-light blend rather than a visible repeat.
 6. `fog-layer-1/2.webp` and `emblem.png` are unchanged from the first set.
 7. Page weight: backdrop 565 KB + three islands ≈ 1.6 MB + fog 480 KB; lazy-load fog, chest and paper; the backdrop is the LCP image (`fetchpriority="high"`).
+
+## D. Owner decisions on AI scope and production (2026-10-03, 22:05) — binding
+
+1. **Do not deploy yet.** Build everything deployment-ready (single container serving the API under `/api` and the built web app at `/`, Dockerfile,
+   Railway config, health check, production env template, `docs/DEPLOY.md`, a local production smoke test) and stop before any publish step.
+2. **Live AI with limits** on the eventual public deployment: the OpenRouter key (Claude Haiku 4.5) is used for document extraction, the treatment-plan
+   reader, the clause explainer and the assistant, guarded by per-visitor rate limits and a global daily cap (requests and estimated spend, env-configurable);
+   when a limit is hit the app falls back to demo/template behaviour and says so honestly. The key lives only in server env; never in the bundle or logs.
+3. **SQLite on a persistent volume**: an owner-scoped `SqliteRepo` with the same interface as `InMemoryRepo` (constant 404, ids-only audit), selected by
+   `ORALCOMPASS_STORE=sqlite` + `ORALCOMPASS_DB_PATH`; uploaded PDFs under `ORALCOMPASS_DATA_DIR` on the same volume. In-memory stays the default for tests.
+4. **Private per-visitor sessions replace the shared dev user** in production: the server issues an opaque random session id in a signed, HttpOnly,
+   Secure, SameSite=Lax cookie (secret from `ORALCOMPASS_SESSION_SECRET`); every owner-scoped read keys on it; "Delete all my data" clears it. The
+   `X-Dev-User` header remains for tests/local dev only (`ORALCOMPASS_DEV_AUTH=1`). No account system is built (judging criterion 7: describe, don't build).
+5. **"Full AI product" scope additions**: (a) an AI treatment-plan reader (paste the dentist's estimate text or upload a photo/PDF → the model extracts line
+   items; procedures map ONLY to the 16 fixed keys via `fixtures/procedure_codes.json` candidates and descriptor text, ambiguous ones offer choices; fees, teeth
+   and codes are kept as written; the user reviews and confirms before any treatment item is created; demo mode uses stored fixture estimates);
+   (b) an AI clause explainer for depth 1 of the clause card and drawer sections (one plain sentence ≤ 25 words per clause, grounded on the quote, runtime-linted,
+   cached per clause; demo mode uses the existing PLAIN templates). AI never produces amounts; the engine remains the only source of money.
