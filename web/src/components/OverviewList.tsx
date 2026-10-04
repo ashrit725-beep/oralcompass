@@ -17,10 +17,16 @@ export interface OverviewListProps {
   vm?: PassageVM; planTitle?: string; onSelectIsland?: (islandId: string, checkpointKey?: string) => void; onSelectStitch?: (s: Stitch) => void;
 }
 
+/** One real <table> inside a keyboard-focusable sideways scroller (the header and body stay one table, so the columns line up). */
+function TableScroll({ label, children }: { label: string; children: React.ReactNode }) {
+  return <div className="ov-scroll" role="region" aria-label={PASSAGE.tableRegion(label)} tabIndex={0}>{children}</div>;
+}
+
 const OWNER_WORD: Record<InsuranceCheckpointVM["owner"], string> = { patient: PASSAGE.ownerPatient, plan: PASSAGE.ownerPlan, nobody: PASSAGE.ownerNobody, basis: PASSAGE.ownerBasis, info: PASSAGE.ownerInfo };
 
 function CheckpointTable({ isl, onSelectStitch }: { isl: IslandVM; onSelectStitch?: (s: Stitch) => void }) {
   return (
+    <TableScroll label={PASSAGE.checkpointsOf(isl.title)}>
     <table className="ov-table ov-cps">
       <thead><tr><th scope="col">{PASSAGE.colTerm}</th><th scope="col">{PASSAGE.colAmountIn}</th><th scope="col">{PASSAGE.colChange}</th><th scope="col">{PASSAGE.colAmountOut}</th><th scope="col">{PASSAGE.colOwner}</th><th scope="col">{PASSAGE.colClause}</th></tr></thead>
       <tbody>
@@ -36,6 +42,7 @@ function CheckpointTable({ isl, onSelectStitch }: { isl: IslandVM; onSelectStitc
         ))}
       </tbody>
     </table>
+    </TableScroll>
   );
 }
 
@@ -49,6 +56,8 @@ export function OverviewList({ journey, onSelect, vm, planTitle, onSelectIsland,
         <section className="ov-route" aria-labelledby="ov-route-h">
           <h3 id="ov-route-h">{PASSAGE.routeTable}</h3>
           <p id="ov-route-sum" className="muted small">{PASSAGE.routeTableSummary(vm.islands.length, planTitle ?? "—", vm.totals.youPay != null ? moneyText(vm.totals.youPay) : PASSAGE.waitingLower)}</p>
+          <p className="ov-scroll-hint muted small">{PASSAGE.tableScrolls}</p>
+          <TableScroll label={PASSAGE.routeTable}>
           <table className="ov-table ov-islands" aria-describedby="ov-route-sum">
             <thead><tr><th scope="col">{PASSAGE.colProcedure}</th><th scope="col">{PASSAGE.colTooth}</th><th scope="col">{PASSAGE.colStatus}</th><th scope="col">{PASSAGE.colFee}</th><th scope="col">{PASSAGE.colAllowed}</th><th scope="col">{PASSAGE.colYouPay}</th><th scope="col">{PASSAGE.colPlanPays}</th><th scope="col">{PASSAGE.colCheckpoints}</th><th scope="col">{PASSAGE.colFlags}</th><th scope="col">{PASSAGE.colSoundings}</th></tr></thead>
             <tbody>
@@ -73,6 +82,7 @@ export function OverviewList({ journey, onSelect, vm, planTitle, onSelectIsland,
               <tr className="ov-frame"><th scope="row"><button type="button" className="linklike" onClick={pick("destination")}>{vm.destination.title}</button> <span className="muted">· {vm.destination.subtitle}</span></th><td colSpan={4}>{vm.destination.notices[0] ?? ""}</td><td>{vm.destination.youPay != null ? <Money cents={vm.destination.youPay} evidence="DOC" /> : <span className="muted">{PASSAGE.waitingLower}</span>}</td><td>{vm.destination.planPays != null ? <Money cents={vm.destination.planPays} evidence="DOC" /> : "—"}{vm.destination.upperBound ? ` ${PASSAGE.upperBoundParen}` : ""}</td><td colSpan={2} /><td>{sound(vm.destination)}</td></tr>
             </tbody>
           </table>
+          </TableScroll>
           {vm.islands.filter((i) => i.checkpoints.length).map((isl) => (
             <details key={isl.id} className="ov-cp-details">
               <summary>{PASSAGE.showCheckpoints}: {isl.title}</summary>
@@ -82,6 +92,7 @@ export function OverviewList({ journey, onSelect, vm, planTitle, onSelectIsland,
           {vm.visited.length > 0 && (
             <>
               <h3>{PASSAGE.visitedTable}</h3>
+              <TableScroll label={PASSAGE.visitedTable}>
               <table className="ov-table ov-visited">
                 <thead><tr><th scope="col">{PASSAGE.colProcedure}</th><th scope="col">{PASSAGE.colDate}</th><th scope="col">{PASSAGE.colTooth}</th><th scope="col">{PASSAGE.colFee}</th><th scope="col">{PASSAGE.colAllowed}</th><th scope="col">{PASSAGE.colPlanPaid}</th><th scope="col">{PASSAGE.colPatientPaid}</th></tr></thead>
                 <tbody>{vm.visited.map((v) => (
@@ -92,17 +103,20 @@ export function OverviewList({ journey, onSelect, vm, planTitle, onSelectIsland,
                     <td>{v.claim?.patient_paid_cents != null ? <Money cents={v.claim.patient_paid_cents} evidence="USER" /> : "—"}</td></tr>
                 ))}</tbody>
               </table>
+              </TableScroll>
             </>
           )}
           {vm.marginal.length > 0 && (
             <>
               <h3>{PASSAGE.marginalTable}</h3>
+              <TableScroll label={PASSAGE.marginalTable}>
               <table className="ov-table ov-marginal">
                 <thead><tr><th scope="col">{PASSAGE.colProcedure}</th><th scope="col">{PASSAGE.colRule}</th><th scope="col">{PASSAGE.colClause}</th></tr></thead>
                 <tbody>{vm.marginal.map((m) => (
                   <tr key={m.id}><th scope="row"><button type="button" className="linklike" onClick={pick(m.id)}>{m.title}</button> <span className="muted">· {m.place}</span></th><td>{m.checkpoints[0]?.term ?? PASSAGE.noEstimateCalculated}<br /><small className="note">{m.notices[0]}</small></td><td>{m.checkpoints[0]?.stitch ? <StitchChip stitch={m.checkpoints[0].stitch} onSelect={onSelectStitch} /> : <EvidenceBadge status={m.checkpoints[0]?.badge ?? "UNKNOWN"} />}</td></tr>
                 ))}</tbody>
               </table>
+              </TableScroll>
             </>
           )}
         </section>
@@ -112,7 +126,8 @@ export function OverviewList({ journey, onSelect, vm, planTitle, onSelectIsland,
         {journey.stages.map((s) => (
           <li key={s.id}>
             <h3><button type="button" className="linklike" onClick={() => onSelect({ stageId: s.id })}>{s.title}</button> <span className="muted">· {s.island} · {stageProgress(s).label}</span></h3>
-            <table className="ov-table">
+            <TableScroll label={s.title}>
+            <table className="ov-table ov-stage">
               <thead><tr><th scope="col">Checkpoint</th><th scope="col">Status</th><th scope="col">Recorded by</th><th scope="col">Date</th><th scope="col">Source</th></tr></thead>
               <tbody>
                 {s.checkpoints.map((c) => (
@@ -123,6 +138,7 @@ export function OverviewList({ journey, onSelect, vm, planTitle, onSelectIsland,
                 ))}
               </tbody>
             </table>
+            </TableScroll>
           </li>
         ))}
       </ol>

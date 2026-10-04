@@ -255,14 +255,29 @@
 /* ---- overview tables ---- */
 .ov-route { margin: .5rem 0 1rem; }
 .ov-route h3 { margin-top: 1rem; }
-.ov-islands, .ov-cps, .ov-visited, .ov-marginal { display: block; overflow-x: auto; }
-.ov-islands thead, .ov-islands tbody, .ov-cps thead, .ov-cps tbody, .ov-visited thead, .ov-visited tbody, .ov-marginal thead, .ov-marginal tbody { display: table; width: 100%; min-width: 720px; }
-.ov-cps thead, .ov-cps tbody { min-width: 640px; }
-.ov-visited thead, .ov-visited tbody, .ov-marginal thead, .ov-marginal tbody { min-width: 560px; }
+/* each table stays ONE real table (header and body share their columns) inside a focusable sideways scroller; the edge shadows
+   appear only on the side that has more columns (background-attachment local/scroll), and phones print a one-line hint */
+.ov-scroll { max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; margin: .3rem 0 1rem; border-radius: var(--r-1);
+  background:
+    linear-gradient(to right, var(--paper) 40%, transparent) left / 28px 100% no-repeat local,
+    linear-gradient(to left, var(--paper) 40%, transparent) right / 28px 100% no-repeat local,
+    radial-gradient(farthest-side at 0 50%, color-mix(in srgb, var(--ink) 24%, transparent), transparent) left / 12px 100% no-repeat scroll,
+    radial-gradient(farthest-side at 100% 50%, color-mix(in srgb, var(--ink) 24%, transparent), transparent) right / 12px 100% no-repeat scroll; }
+.ov-scroll:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.ov-scroll > .ov-table { margin: 0; }
+.ov-table.ov-islands { min-width: 960px; }
+.ov-table.ov-cps { min-width: 640px; }
+.ov-table.ov-visited, .ov-table.ov-marginal, .ov-table.ov-stage { min-width: 560px; }
+.ov-table th, .ov-table td { vertical-align: baseline; }
+.ov-scroll-hint { display: none; margin: 0 0 .25rem; }
+@media (max-width: 760px) { .ov-scroll-hint { display: block; } }
 .ov-frame th, .ov-frame td { background: var(--paper-deep); }
 .ov-cp-details { margin: .25rem 0 .75rem; }
 .ov-cp-details summary { cursor: pointer; min-height: 44px; padding: 10px 0; font-weight: 600; }
-.ov-sound { font-size: .85rem; color: var(--ink-soft); white-space: nowrap; }
+.ov-sound { font-size: .85rem; color: var(--ink-soft); min-width: 11rem; }
+.ov-table .linklike { text-align: left; }
+/* a figure's badge drops under it when the column is narrow, so the route table fits a desktop column instead of scrolling */
+.ov-table td > .inline-flex { flex-wrap: wrap; row-gap: 2px; }
 
 .pv-mini.pv-marginal .pv-amt { min-width: 0; max-width: 9rem; white-space: normal; text-align: right; }   /* words ("not covered") may wrap; a fixed length, not a circular percentage */
 /* care rail (delight pass mo-20d): on desktop every stage card fits the column instead of the last one being cut at the edge */
