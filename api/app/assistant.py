@@ -25,7 +25,7 @@ from typing import Any, Literal, Optional
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from oralcompass_engine.models import PlanModel
 from oralcompass_engine.rules import coverage_rules
@@ -50,8 +50,8 @@ log = logging.getLogger("oralcompass.assistant")
 router = APIRouter()
 
 INTENTS = ("explain_step", "explain_clause", "where_from", "what_if_requested", "advice_request", "out_of_scope", "clarify",
-           "define_term", "journey_total", "remaining_benefits", "line_by_name")
-JOURNEY_INTENTS = ("define_term", "journey_total", "remaining_benefits", "line_by_name")
+           "define_term", "journey_total", "remaining_benefits", "line_by_name", "compare_terms", "document_overview")
+JOURNEY_INTENTS = ("define_term", "journey_total", "remaining_benefits", "line_by_name", "compare_terms", "document_overview")
 ADVICE_KEYWORDS = ("should", "worth", "recommend", "best", "better", "skip", "wait", "which plan", "do i need")
 CLINICAL_KEYWORDS = ("hurt", "pain", "painful", "safe", "infection", "antibiotic", "numb", "heal", "healing", "anesthesia", "anaesthesia", "symptom", "bleed",
                      "swelling", "medication", "ibuprofen", "diagnos", "necessary", "urgent")
@@ -85,6 +85,16 @@ class AssistScope(BaseModel):
     checkpoint_key: Optional[str] = None
     stitch: Optional[str] = None
     journey_id: Optional[str] = None
+    compare: Optional[list[str]] = Field(default=None, min_length=1, max_length=3)   # plan_refs selected on Compare (owner-scoped in load_scope)
+
+    @field_validator("compare")
+    @classmethod
+    def _compare_refs(cls, v):
+        if v is None:
+            return v
+        if any(not isinstance(r, str) or not 0 < len(r) <= 80 for r in v):
+            raise ValueError("compare holds 1 to 3 plan references")
+        return list(dict.fromkeys(v))
 
 
 class AssistIn(BaseModel):
@@ -102,14 +112,24 @@ def line_total_ref(line_index: int, which: str) -> dict:
     return {"kind": "line_total", "line_index": line_index, "which": which}
 
 
-def field_ref(path: str) -> dict:
-    return {"kind": "field", "path": path}
+def estimate_total_ref(which: str) -> dict:
+    """The estimate's totals (patient | plan): the same numbers as the journey facts line, with the calculated label."""
+    return {"kind": "estimate_total", "which": which}
 
 
-def clause_ref(stitch: str, rule: Optional[str] = None) -> dict:
+def field_ref(path: str, plan_ref: Optional[str] = None) -> dict:
+    out = {"kind": "field", "path": path}
+    if plan_ref:                                   # a compared plan's own field (Compare tab): rendered with that plan's badge
+        out["plan_ref"] = plan_ref
+    return out
+
+
+def clause_ref(stitch: str, rule: Optional[str] = None, plan_ref: Optional[str] = None) -> dict:
     out = {"kind": "clause", "stitch": stitch}
     if rule:
         out["rule"] = rule
+    if plan_ref:
+        out["plan_ref"] = plan_ref
     return out
 
 
@@ -119,10 +139,13 @@ def ref_id(ref: dict) -> str:
         return f"step:{ref.get('line_index')}:{ref.get('step_index')}"
     if k == "line_total":
         return f"line_total:{ref.get('line_index')}:{ref.get('which')}"
+    if k == "estimate_total":
+        return f"estimate_total:{ref.get('which')}"
+    pre = f"{ref['plan_ref']}/" if ref.get("plan_ref") else ""
     if k == "field":
-        return f"field:{ref.get('path')}"
+        return f"field:{pre}{ref.get('path')}"
     if k == "clause":
-        return f"clause:{ref.get('stitch')}"
+        return f"clause:{pre}{ref.get('stitch')}"
     return "unknown"
 
 
@@ -146,6 +169,7 @@ class Ctx:
     step_rule: Optional[str] = None
     tools_used: list[str] = field(default_factory=list)
     refs_by_id: dict[str, dict] = field(default_factory=dict)
+    compared: list[tuple[str, PlanModel, list[dict]]] = field(default_factory=list)
     ref_notes: dict[str, str] = field(default_factory=dict)
 
     def allow(self, ref: dict, note: str = "") -> dict:
@@ -308,6 +332,9 @@ def load_scope(user: User, scope: AssistScope) -> Ctx:
             scope.line_index = ids.index(ctx.item["id"])
     if scope.journey_id:
         repo.get_owned(user.sub, "journey", scope.journey_id)
+    for ref in scope.compare or []:                # each compared plan: a preset or an owned, published upload; anything else is the 404
+        cplan, _cmeta, ccls, cref = resolve_plan_ref(user, ref)
+        ctx.compared.append((cref, cplan, ccls))
     if ctx.estimate and scope.line_index is not None:
         if scope.line_index >= len(ctx.lines):
             raise HTTPException(status_code=404, detail=NOT_FOUND)
@@ -373,7 +400,16 @@ def gather(ctx: Ctx, message: str) -> dict:
                 ctx.allow(field_ref(f"benefits.{k}"), "from your benefit statement")
         facts["benefits"] = {"source_date": (ctx.benefits.get("source") or {}).get("date"), "derivation": ctx.benefits.get("derivation"),
                              "remaining_deductible_cents": ctx.benefits.get("remaining_deductible_cents"), "remaining_max_cents": ctx.benefits.get("remaining_max_cents")}
+    for cref, cplan, ccls in ctx.compared:
+        for attr in ("deductible_individual", "annual_max"):
+            if getattr(cplan, attr).known:
+                ctx.allow(field_ref(f"plan.{attr}", cref), f"{cref} plan document figure")
+        ctx.allow(field_ref("plan.annual_max_unlimited", cref), f"whether {cref} states no annual maximum")
+        for c in ccls:
+            ctx.allow(clause_ref(f"{c['doc']}#p{c['page']}", plan_ref=cref), f"{cref} {c['field']}")
     if ctx.estimate:
+        ctx.allow(estimate_total_ref("patient"), "what you pay for the planned work (calculated)")
+        ctx.allow(estimate_total_ref("plan"), "what the plan pays for the planned work (calculated)")
         ctx.allow(field_ref("estimate.inputs.hypotheticals"), "hypotheticals entered on this estimate")
         ctx.allow(field_ref("estimate.missing_inputs"), "inputs the estimate is waiting for")
         ctx.allow(field_ref("estimate.ledger.not_provided"), "inputs not provided")
@@ -873,9 +909,24 @@ def ask_live(ctx: Ctx, facts: dict, message: str, intent_hint: str) -> tuple[str
 
 
 # ---------- journey-level intents + the plain-words lead (kind "simple") ----------
-_REMAINING_RE = re.compile(r"\b(left|remaining|remain|used up|still have)\b")
-_TOTAL_RE = re.compile(r"\b(in total|total|altogether|all together|how much (do|will|would) i (owe|pay)|what (do|will) i (owe|pay))\b")
-_DEFINE_RE = re.compile(r"\b(what(?:'?s| is| are| does)|mean|meaning|define|explain)\b")
+_REMAINING_RE = re.compile(r"\b(left|remaining|remain|used up|still have|meet|met)\b")
+_TOTAL_RE = re.compile(r"\b(in total|total|altogether|all together|how much (do|will|would) i (owe|pay)|what (do|will) i (owe|pay)|all of (this|it)|everything)\b")
+_DEFINE_RE = re.compile(r"\b(what(?:'?s| is| are| does)|when (?:does|is|do)|mean|meaning|define|explain)\b")
+
+
+_OVERVIEW_RE = re.compile(r"\b(this|the|my) (document|plan document|booklet|paper|papers)\b.{0,30}\b(cover|covers|about|say|include|includes)\b"
+                          r"|\bwhat(?:'?s| is) in (this|the|my) (document|booklet)\b")
+_COMPARE_WORDS = re.compile(r"\b(compare|compared|comparison|differ|difference|different|versus|vs|each plan|these plans|both plans)\b")
+_COMPARE_FIELDS = {"plan.deductible_individual": "deductible", "plan.annual_max": "annual maximum"}
+
+
+def _compare_field(low: str) -> Optional[str]:
+    """The plan field a Compare question is about: a glossary term with a plan value, asked as a comparison (or with no other topic)."""
+    key = lookup_term(low)
+    pf = (GLOSSARY.get(key) or {}).get("plan_field") if key else None
+    if pf in _COMPARE_FIELDS and (_COMPARE_WORDS.search(low) or not _DEFINE_RE.search(low)):
+        return pf
+    return None
 
 
 def _named_lines(ctx: Ctx, low: str) -> list[int]:
@@ -893,15 +944,74 @@ def intent_for_journey(low: str, ctx: Ctx) -> Optional[str]:
     """Journey-level questions (no line, no clause in scope), classified deterministically: remaining, totals, a named line, then a glossary term."""
     if ctx.scope.stitch or ctx.scope.line_index is not None or ctx.scope.step_key or ctx.scope.checkpoint_key:
         return None
+    if ctx.compared and _compare_field(low):
+        return "compare_terms"
+    if _OVERVIEW_RE.search(low):
+        return "document_overview"
     if _REMAINING_RE.search(low) and re.search(r"\b(max|maximum|deductible|deductable|benefits?)\b", low):
         return "remaining_benefits"
-    if ctx.estimate is not None and _TOTAL_RE.search(low) and not _named_lines(ctx, low):
+    if _TOTAL_RE.search(low) and (ctx.estimate is None or not _named_lines(ctx, low)):
         return "journey_total"
-    if ctx.estimate is not None and _named_lines(ctx, low) and re.search(r"\b(why|cost|costs|price|pay|owe|expensive|how much)\b", low):
+    if ctx.estimate is not None and _named_lines(ctx, low) and re.search(r"\b(why|cost|costs|price|pay|owe|expensive|how much|what about|that much)\b", low):
         return "line_by_name"
     if lookup_term(low) and (_DEFINE_RE.search(low) or len(low.split()) <= 4):
         return "define_term"
     return None
+
+
+def _plan_label(ref: str) -> str:
+    return "you uploaded" if ref.startswith("upload:") else ref
+
+
+def line_reason(line: dict) -> str:
+    """The one main reason a line costs what it does: not covered, waiting, then the largest part of your share among the
+    maximum, the alternate benefit and the deductible; otherwise the plan's share."""
+    status = line.get("status")
+    if status == "not_covered":
+        return "not_covered"
+    if status == "unresolved":
+        return "waiting"
+    parts = {"maximum": 0, "alternate": 0, "deductible": 0}
+    for st in line.get("steps", []):
+        c = st.get("cents") or 0
+        if not isinstance(c, (int, float)) or st.get("owner") not in ("patient", "you", None):
+            continue
+        key = {"M": "maximum", "AB": "alternate", "D": "deductible"}.get(st.get("rule"))
+        if key:
+            parts[key] += abs(c)
+    patient = line.get("patient_cents") or 0
+    best = max(parts, key=lambda k: parts[k])
+    if parts[best] > 0 and parts[best] * 2 >= patient:      # more than half of what you pay comes from this one step
+        return best
+    return "share"
+
+
+# ---------- readability: Flesch-Kincaid grade, no dependency ----------
+_FK_WORD = re.compile(r"[A-Za-z]+(?:'[A-Za-z]+)?")
+
+
+def _syllables(word: str) -> int:
+    w = word.lower()
+    if len(w) <= 3:
+        return 1
+    w = re.sub(r"(?:[^laeiouy]es|[^laeiouy]ed|[^laeiouy]e)$", "", w)
+    w = re.sub(r"^y", "", w)
+    return max(1, len(re.findall(r"[aeiouy]{1,2}", w)))
+
+
+def fk_grade(text: str) -> float:
+    """Flesch-Kincaid grade level of a lead. Each {{ref:n}} counts as one two-syllable word ("amount")."""
+    t = PLACEHOLDER.sub(" amount ", text or "")
+    t = re.sub(r"\{\w+\}", " thing ", t)
+    words = _FK_WORD.findall(t)
+    if not words:
+        return 0.0
+    sentences = max(1, len([x for x in re.split(r"[.!?]+", t) if _FK_WORD.search(x)]))
+    syl = sum(_syllables(w) for w in words)
+    return 0.39 * (len(words) / sentences) + 11.8 * (syl / len(words)) - 15.59
+
+
+FK_MAX_LIVE = 9.0
 
 
 def _simple(text: str, refs: Optional[list[dict]] = None) -> Optional[dict]:
@@ -945,18 +1055,65 @@ def compose_journey(ctx: Ctx, intent: str, message: str, style: str) -> tuple[Op
         lines = ctx.lines
         if not lines:
             return _simple(S["no_estimate"][1 if simpler else 0]), []
-        names = [(L.get("label") or "treatment").lower() for L in lines]
-        if len(lines) == 1:
-            refs = [line_total_ref(0, "patient"), line_total_ref(0, "plan")]
-            tpl = S["total_simpler_one"] if simpler else S["total_one"]
-            return _simple(fill(tpl, name=names[0]), refs[:1] if simpler else refs), []
-        you = [line_total_ref(i, "patient") for i in range(len(lines))]
-        plan = [line_total_ref(i, "plan") for i in range(len(lines))]
-        you_parts = join_words([f"{{{{ref:{i}}}}} for the {n}" for i, n in enumerate(names)])
+        you, plan = estimate_total_ref("patient"), estimate_total_ref("plan")
+        details = [{"type": "sentence", "text": fill(S["total_line_detail"], name=(L.get("label") or "treatment").lower()),
+                    "refs": [line_total_ref(i, "patient"), line_total_ref(i, "plan")]} for i, L in enumerate(lines)]
         if simpler:
-            return _simple(fill(S["total_simpler_many"], parts=you_parts), you), []
-        plan_parts = join_words([f"{{{{ref:{len(lines) + i}}}}} for the {n}" for i, n in enumerate(names)])
-        return _simple(fill(S["total_many_you"], parts=you_parts) + " " + fill(S["total_many_plan"], parts=plan_parts), you + plan), []
+            return _simple(S["total_estimate_simpler"], [you]), details
+        return _simple(S["total_estimate"], [you, plan]), details
+    if intent == "line_by_name":
+        named = _named_lines(ctx, low)
+        if len(named) >= 2:                          # two procedures named: both, briefly, instead of a clarifying question
+            a, b = named[0], named[1]
+            na, nb = ((ctx.lines[k].get("label") or "treatment").lower() for k in (a, b))
+            refs = [line_total_ref(a, "patient"), line_total_ref(b, "patient"), line_total_ref(a, "plan"), line_total_ref(b, "plan")]
+            details = [{"type": "sentence", "text": fill(S["total_line_detail"], name=n) + " " + T.LINE_REASON[line_reason(ctx.lines[k])],
+                        "refs": [line_total_ref(k, "patient"), line_total_ref(k, "plan")]} for k, n in ((a, na), (b, nb))]
+            if simpler:
+                return _simple(fill(S["two_lines_simpler"], a=na, b=nb), refs[:2]), details
+            return _simple(fill(S["two_lines"], a=na, b=nb), refs), details
+        return None, []
+    if intent == "compare_terms":
+        pf = _compare_field(low) or "plan.deductible_individual"
+        attr = pf.split(".", 1)[1]
+        plans = [(ctx.plan_ref, ctx.plan, ctx.clauses)] + [c for c in ctx.compared if c[0] != ctx.plan_ref]
+        parts, refs, details = [], [], []
+        for cref, cplan, ccls in plans[:3]:
+            label = _plan_label(cref)
+            v = getattr(cplan, attr)
+            if attr == "annual_max" and cplan.annual_max_unlimited:
+                ref = field_ref("plan.annual_max_unlimited", cref)
+            elif v.known:
+                ref = field_ref(pf, cref)
+            else:
+                parts.append(fill(S["compare_unstated"], plan=label))
+                continue
+            parts.append(S["compare_part"].format(n=len(refs), plan=label))
+            refs.append(ref)
+            cl = [clause_ref(f"{c['doc']}#p{c['page']}", plan_ref=cref) for c in ccls if c["field"].split(".")[0] == attr][:1]
+            details.append({"type": "sentence", "text": f"{label}: {{{{ref:0}}}}, from its own plan papers.", "refs": [ref] + cl})
+        joined = join_words(parts)
+        term = _COMPARE_FIELDS[pf]
+        if simpler:
+            return _simple(fill(S["compare_simpler"], parts=joined), refs), details
+        return _simple(fill(S["compare"], term=term, parts=joined), refs), details
+    if intent == "document_overview":
+        topics, seen, details = [], set(), []
+        for c in ctx.clauses:
+            head = re.split(r"[.\[]", c["field"])[0]
+            if head in seen or head not in T.CLAUSE_TOPICS or head in ("premium_monthly", "unsupported_rules", "procedure_codes"):
+                continue
+            seen.add(head)
+            topic = T.OVERVIEW_TOPICS.get(head) or fill(T.CLAUSE_TOPICS[head], name="each treatment")
+            topics.append(topic)
+            heading = re.sub(r"\s*[\u2014\u2013]\s*", ", ", (c.get("section") or "").strip())
+            text = heading if heading and not MONEY_IN_TEXT.search(heading) and "$" not in heading and "%" not in heading else topic.capitalize()
+            details.append({"type": "sentence", "text": text.rstrip(".") + ".", "refs": [clause_ref(f"{c['doc']}#p{c['page']}")]})
+        if not topics:
+            return _simple(S["doc_overview_none"][1 if simpler else 0]), []
+        if simpler:
+            return _simple(S["doc_overview_simpler"]), details
+        return _simple(fill(S["doc_overview"], plan=_plan_label(ctx.plan_ref), topics=join_words(topics[:4])), []), details
     if intent == "remaining_benefits":
         now_max = field_ref("benefits.remaining_max_cents")
         now_ded = field_ref("benefits.remaining_deductible_cents")
@@ -965,6 +1122,10 @@ def compose_journey(ctx: Ctx, intent: str, message: str, style: str) -> tuple[Op
             last = len(ctx.lines) - 1
             cand = field_ref(f"estimate.ledger.lines[{last}].remaining_after.annual_max_cents")
             after_max = cand if _known(ctx, cand) else None
+        if re.search(r"\bdeduct", low) and _known(ctx, now_ded):     # a deductible question leads with the deductible
+            if simpler:
+                return _simple(S["remaining_ded_simpler"], [now_ded]), []
+            return _simple(S["remaining_ded"], [now_ded]), [{"type": "sentence", "text": S["remaining_max"], "refs": [now_max]}] if _known(ctx, now_max) else []
         if not _known(ctx, now_max):
             return _simple(S["remaining_none"][1 if simpler else 0]), []
         if simpler:
@@ -978,18 +1139,51 @@ def compose_journey(ctx: Ctx, intent: str, message: str, style: str) -> tuple[Op
     return None, []
 
 
-def lead_block(ctx: Ctx, intent: str, style: str, blocks: list[dict]) -> Optional[dict]:
-    """The plain-words lead for the step/clause intents and the refusals: a fixed everyday sentence, or the first detail sentence."""
+def line_lead(ctx: Ctx, i: int, style: str) -> Optional[dict]:
+    L = ctx.lines[i]
+    name = (L.get("label") or "treatment").lower()
+    refs = [line_total_ref(i, "patient"), line_total_ref(i, "plan")]
+    if style == "simpler":
+        return _simple(fill(T.SIMPLE["line_simpler"], name=name), refs[:1])
+    return _simple(fill(T.SIMPLE["line"], name=name) + " " + T.LINE_REASON[line_reason(L)], refs)
+
+
+def lead_block(ctx: Ctx, intent: str, style: str, blocks: list[dict], live: bool = False) -> Optional[dict]:
+    """The plain-words lead: a fixed everyday sentence per intent (and rule), with its own simpler variant. In live mode the model's first
+    sentence may lead instead when it reads at grade 9 or lower (Flesch-Kincaid); otherwise the template leads."""
     i = 1 if style == "simpler" else 0
     if intent in ("advice_request", "out_of_scope", "what_if_requested", "clarify"):
         return _simple(T.SIMPLE[intent][i])
     if intent == "line_by_name" and ctx.line_index is not None:
-        refs = [line_total_ref(ctx.line_index, "patient"), line_total_ref(ctx.line_index, "plan")]
-        name = (ctx.line or {}).get("label", "treatment").lower()
-        return _simple(fill(T.SIMPLE["line_simpler" if style == "simpler" else "line"], name=name), refs[:1] if style == "simpler" else refs)
+        return line_lead(ctx, ctx.line_index, style)
     first = next((b for b in blocks if b.get("type") == "sentence" and b.get("text")), None)
+    if live and first is not None and style != "simpler":
+        cand = _first_sentence(first["text"])
+        if fk_grade(cand) <= FK_MAX_LIVE:
+            got = _simple(cand, first.get("refs"))
+            if got is not None:
+                return got
+    if ctx.estimate is None and intent in ("explain_step", "where_from"):
+        return _simple(T.SIMPLE["no_estimate"][i])
+    rule = ctx.step_rule
+    if intent == "explain_clause":
+        return _simple(T.CLAUSE_LEAD[i])
+    if intent == "where_from":
+        return _simple(T.WHERE_LEAD.get(rule or "", T.WHERE_LEAD["default"])[i])
+    if intent == "explain_step":
+        if ctx.line is not None:
+            if ctx.line.get("status") == "not_covered":
+                rule = "X"
+            elif ctx.line.get("status") == "unresolved":
+                rule = "W"
+        if rule in T.STEP_LEAD and rule != "total":
+            return _simple(T.STEP_LEAD[rule][i])
+        if ctx.line_index is not None:
+            name = (ctx.line or {}).get("label", "treatment").lower()
+            refs = [line_total_ref(ctx.line_index, "patient"), line_total_ref(ctx.line_index, "plan")]
+            return _simple(fill(T.STEP_LEAD["total"][i], name=name), refs[:1] if i else refs)
     if first is None:
-        return _simple(T.SIMPLE["no_estimate"][i]) if ctx.estimate is None else None
+        return None
     return _simple(_first_sentence(first["text"]), first.get("refs"))
 
 
@@ -997,7 +1191,7 @@ def with_lead(ctx: Ctx, resp: dict, style: str) -> dict:
     blocks = resp.get("blocks") or []
     if blocks and blocks[0].get("kind") == "simple":
         return resp
-    lead = lead_block(ctx, resp.get("intent", ""), style, blocks)
+    lead = lead_block(ctx, resp.get("intent", ""), style, blocks, live=resp.get("mode") == "live")
     if lead is not None:
         resp["blocks"] = [lead] + blocks
     return resp
@@ -1026,7 +1220,12 @@ def ask(body: AssistIn, request: Request, user: User = Depends(current_user)):
         resp["suggested"] = suggestions_for(ctx, intent); resp["ribbon"] = ASSIST_RIBBON_DEMO
         return with_lead(ctx, resp, body.style)
 
-    if intent in ("define_term", "journey_total", "remaining_benefits"):    # journey level: deterministic in every mode, refs only
+    if intent == "line_by_name" and len(_named_lines(ctx, message.lower())) >= 2:
+        lead, details = compose_journey(ctx, intent, message, body.style)
+        resp["blocks"] = ([lead] if lead else []) + details
+        resp["suggested"] = suggestions_for(ctx, intent); resp["ribbon"] = ASSIST_RIBBON_DEMO; resp["tools_used"] = list(ctx.tools_used)
+        return with_lead(ctx, resp, body.style)
+    if intent in ("define_term", "journey_total", "remaining_benefits", "compare_terms", "document_overview"):    # journey level: deterministic in every mode, refs only
         lead, details = compose_journey(ctx, intent, message, body.style)
         resp["blocks"] = ([lead] if lead else []) + details
         if not resp["blocks"]:

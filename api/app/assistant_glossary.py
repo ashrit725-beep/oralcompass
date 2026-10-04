@@ -45,7 +45,7 @@ GLOSSARY: dict[str, GlossaryEntry] = {
         "aka": ["plan share", "plan's share", "coinsurance", "co-insurance", "co insurance", "coinsurence", "covered percentage",
                 "plan percentage", "benefit percentage", "percentage the plan pays"],
         "simple": ("Plan share is the part of the allowed amount the plan pays, and coinsurance is the part you pay. "
-                   "Both are written as percentages, and the split can differ for cleanings, fillings and crowns."),
+                   "Your plan lists both, and the split can differ for cleanings, fillings and crowns."),
         "simpler": "Plan share is the part the plan pays, and the rest is yours to pay.",
         "plan_field": None,
     },
@@ -72,7 +72,7 @@ GLOSSARY: dict[str, GlossaryEntry] = {
     "waiting_period": {
         "term": "waiting period",
         "aka": ["waiting period", "wait period", "waiting time", "waiting periods"],
-        "simple": ("A waiting period is a stretch of time after your coverage starts when the plan does not yet pay for some kinds of care. "
+        "simple": ("A waiting period is a stretch of time after your plan starts when it does not yet pay for some care. "
                    "It often applies to bigger work, such as crowns, and care done before it ends is not paid by the plan."),
         "simpler": "A waiting period is the time after you join before the plan pays for some care.",
         "plan_field": None,
@@ -80,7 +80,7 @@ GLOSSARY: dict[str, GlossaryEntry] = {
     "frequency_limit": {
         "term": "frequency limit",
         "aka": ["frequency limit", "frequency limitation", "frequency", "frequency rule", "limit on how often", "how often the plan pays"],
-        "simple": ("A frequency limit is how often the plan will pay for the same kind of care, such as how many cleanings a year it covers. "
+        "simple": ("A frequency limit is how often the plan will pay for the same care, like how many cleanings a year. "
                    "If you have that care again sooner, the plan does not pay for the extra visit."),
         "simpler": "A frequency limit is how often the plan pays for the same kind of care.",
         "plan_field": None,
@@ -99,9 +99,9 @@ GLOSSARY: dict[str, GlossaryEntry] = {
         "aka": ["alternate benefit", "alternative benefit", "alternate benefits", "least costly alternative", "least expensive alternative",
                 "least costly alternative treatment", "lcat", "less costly service", "less costly alternative", "alternate treatment",
                 "downgrade", "downgrading"],
-        "simple": ("An alternate benefit means the plan pays only what a less costly treatment for the same problem would cost, such as "
-                   "a metal crown in place of a white one. You pay the difference in price."),
-        "simpler": "An alternate benefit means the plan pays for a less costly option, and you pay the difference.",
+        "simple": ("An alternate benefit means the plan pays only for a less costly fix, like a metal crown. "
+                   "You pay the difference in price."),
+        "simpler": "An alternate benefit pays for a less costly fix.",
         "plan_field": None,
     },
     "exclusion": {
@@ -116,8 +116,8 @@ GLOSSARY: dict[str, GlossaryEntry] = {
         "term": "pre-treatment estimate",
         "aka": ["pre-treatment estimate", "pretreatment estimate", "pre treatment estimate", "predetermination", "pre-determination",
                 "pre determination", "predetermination of benefits", "pre-estimate", "preestimate"],
-        "simple": ("A pre-treatment estimate (or predetermination) is a note from your plan, before the work is done, about what it "
-                   "expects to pay. It is not a promise, and the plan decides when the claim comes in."),
+        "simple": ("A pre-treatment estimate is a note from your plan, sent before the work, about what it "
+                   "thinks it will pay. It is not a promise, and the plan decides when the claim comes in."),
         "simpler": "A pre-treatment estimate is the plan's note, before the work, about what it may pay.",
         "plan_field": None,
     },
@@ -165,9 +165,9 @@ GLOSSARY: dict[str, GlossaryEntry] = {
     "benefit_year": {
         "term": "benefit year",
         "aka": ["benefit year", "plan year", "calendar year", "benefit period", "coverage year"],
-        "simple": ("The benefit year is the year your plan uses to count your deductible and yearly maximum. "
+        "simple": ("The benefit year is the year your plan uses to count what you have used. "
                    "For many plans it runs from January to December, and both start over when a new one begins."),
-        "simpler": "The benefit year is the plan's year, and your deductible starts over when a new one begins.",
+        "simpler": "Your costs start over each benefit year.",
         "plan_field": None,
     },
     "coverage_class": {
@@ -175,7 +175,7 @@ GLOSSARY: dict[str, GlossaryEntry] = {
         "aka": ["coverage class", "class of service", "service class", "class i", "class ii", "class iii", "class a", "class b", "class c",
                 "type i", "type ii", "type iii", "preventive services", "basic services", "major services", "preventive care",
                 "basic care", "major care"],
-        "simple": ("A coverage class is a group of dental care, such as preventive, basic or major, that the plan pays the same way. "
+        "simple": ("A coverage class is a group of dental care, like basic or major care, that the plan pays the same way. "
                    "Plans may call these classes or types, and each one has its own plan share."),
         "simpler": "A coverage class is a group of dental care that the plan pays the same way.",
         "plan_field": None,
@@ -183,9 +183,9 @@ GLOSSARY: dict[str, GlossaryEntry] = {
     "network_adjustment": {
         "term": "network adjustment",
         "aka": ["network adjustment", "write off", "write-off", "writeoff", "network discount", "contractual adjustment"],
-        "simple": ("A network adjustment is the part of an in-network dentist's charge above the allowed amount. "
+        "simple": ("A network adjustment is the part of an in-network dentist's price above what the plan allows. "
                    "Nobody pays it: the dentist agreed to take it off the bill."),
-        "simpler": "A network adjustment is the amount an in-network dentist takes off the bill, so no one pays it.",
+        "simpler": "A network adjustment is taken off the bill, so no one pays it.",
         "plan_field": None,
     },
     "out_of_pocket": {
@@ -193,7 +193,7 @@ GLOSSARY: dict[str, GlossaryEntry] = {
         "aka": ["out of pocket", "out-of-pocket", "oop", "out of pocket cost", "out of pocket costs"],
         "simple": ("Out of pocket means the money you pay yourself, not the plan. "
                    "In OralCompass it is the amount shown as what you pay."),
-        "simpler": "Out of pocket is the money that comes from you, not the plan.",
+        "simpler": "Out of pocket is money that comes from you.",
         "plan_field": None,
     },
     "claim": {
