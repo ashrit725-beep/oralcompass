@@ -1,8 +1,8 @@
-"""The ONE demo fixture (spec §7): every number shown in the demo and the comparison beat must equal these.
+"""The ONE demo fixture (spec §7): every number shown in the demo must equal these.
 Sam's benefits (fixtures/users/sam.json): deductible met $50/$50; plan paid $745 of $1,500 → remaining $755 (derived)."""
 from copy import deepcopy
 
-from oralcompass_engine import Evidence, MemberState, V, compare, compute_ledger, load_fixture_set, range_and_movers
+from oralcompass_engine import Evidence, MemberState, V, compute_ledger, load_fixture_set, range_and_movers
 
 PLANS, EST, SAM = load_fixture_set()
 HB, DD, ML = PLANS["HB26"], PLANS["DD24"], PLANS["ML26"]
@@ -28,14 +28,6 @@ def test_harborview_deductible_unknown_range():
     assert r["range"] == (64000, 66500)
     m = {x["unknown"]: x for x in r["movers"]}
     assert m["remaining deductible"]["impact_cents"] == 2500
-
-
-def test_comparison_nothing_transferred():
-    out = compare([HB, DD, ML], EST, {"HB26": SAM})
-    assert out["columns"] == ["HB26", "DD24", "ML26"]
-    assert out["ledgers"]["HB26"].patient_total_cents == 64000
-    assert out["ledgers"]["DD24"].status == "unresolved" and out["ledgers"]["ML26"].status == "unresolved"
-    assert "remaining deductible" in out["ledgers"]["DD24"].not_provided
 
 
 def test_delta_with_user_hypotheticals_is_upper_bound():
@@ -73,12 +65,3 @@ def test_metlife_with_hypotheticals_flags_unknowns():
     assert (L2.patient_total_cents, L2.plan_total_cents) == (15000, 15000) and any("AMBIGUOUS" in f for f in L2.flags)
 
 
-def test_grid_differences_print_both_percentages_and_unknowns():
-    out = compare([HB, DD, ML], EST, {"HB26": SAM})
-    basic = next(r for r in out["grid"] if r["topic"].startswith("Basic"))
-    assert "pays 80% of the allowed amount (you pay 20%)" in basic["differences"] and "pays 60% of the allowed amount (you pay 40%)" in basic["differences"]
-    waiting = next(r for r in out["grid"] if r["topic"] == "Waiting periods")
-    assert waiting["cells"][0]["text"] == "None stated" and "12 months" in waiting["cells"][1]["text"] and waiting["cells"][2]["badge"] == "UNKNOWN"
-    premium = next(r for r in out["grid"] if r["topic"].startswith("Premium"))
-    assert premium["cells"][0]["text"] == "$31.00" and premium["cells"][1]["badge"] == "AMBIGUOUS"   # DD24 premium: 2020-revision highlights sheet, plan year not printed
-    assert premium["cells"][2]["text"] == "$37.94"   # ML26 Classic employee-only, 2026 guide p.24

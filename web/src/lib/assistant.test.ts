@@ -132,7 +132,7 @@ describe("scope, suggestions, ribbons, tools", () => {
     expect(ribbonFor({ mode: "demo", ribbon: demo, intent: "explain_step" }, "demo")).toEqual({ text: demo, tone: "demo" });
     expect(ribbonFor({ mode: "demo", ribbon: demo, intent: "advice_request" }, "live")).toMatchObject({ tone: "template" });
     // journey-level answers are composed from the engine's figures in every mode: on a live server they read "Fixed template", not "Demo mode"
-    for (const intent of ["define_term", "journey_total", "remaining_benefits", "line_by_name", "compare_terms", "document_overview"])
+    for (const intent of ["define_term", "journey_total", "remaining_benefits", "line_by_name", "document_overview"])
       expect(ribbonFor({ mode: "demo", ribbon: demo, intent }, "live")).toEqual({ text: ASSIST.fixedTemplate, tone: "template" });
     expect(ribbonFor({ mode: "demo", ribbon: demo, intent: "journey_total" }, "demo")).toEqual({ text: demo, tone: "demo" });
     expect(ribbonFor({ mode: "live", ribbon: null, intent: "explain_step", model: "anthropic/claude-haiku-4.5" }, "live")).toMatchObject({ tone: "live" });
@@ -199,7 +199,7 @@ describe("the shell's payloads are scoped to the question (web-correctness-34)",
     expect("planRef" in same).toBe(false);
     expect(scopedProvided(ctx, { plan_ref: "ML26", estimate_id: "est-2" }).estimate).toBeUndefined();   // a different estimate: fetched by id
     expect(scopedProvided(ctx, { plan_ref: "ML26" }).estimate).toBeUndefined();
-    const other = scopedProvided(ctx, { plan_ref: "FM26H" });                                           // a Compare clause about another plan
+    const other = scopedProvided(ctx, { plan_ref: "FM26H" });                                           // a clause about another plan
     expect(other).toEqual({ items });
     expect(scopedProvided(null, { plan_ref: "ML26" })).toEqual({});
   });

@@ -28,7 +28,7 @@ if os.getenv("ORALCOMPASS_ENV") != "production":
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "engine"))
 
-from oralcompass_engine import (Evidence, EstimateLine, MemberState, V, compare, compute_ledger, range_and_movers)  # noqa: E402
+from oralcompass_engine import (Evidence, EstimateLine, MemberState, V, compute_ledger, range_and_movers)  # noqa: E402
 
 from .auth import User, current_user  # noqa: E402
 from .extraction import FixtureExtractor  # noqa: E402
@@ -48,7 +48,7 @@ extractor = FixtureExtractor()
 from .data import PLANS as PRESETS, PROC_BY_KEY  # noqa: E402  (one load of the plan fixtures for the whole API)
 PRESET_META = {code: extractor.by_code[code] for code in PRESETS}
 
-from .templates import FOOTER, COMPARISON_BANNER, PRESET_BANNER  # noqa: E402
+from .templates import FOOTER, PRESET_BANNER  # noqa: E402
 from . import assistant, journeys, notifications, records, uploads  # noqa: E402
 
 @app.exception_handler(RequestValidationError)
@@ -126,12 +126,6 @@ class EstimateIn(BaseModel):
     state: StateIn = StateIn()
     dos_rule: str = "completion"
     order: str = "listed"
-
-
-class ComparisonIn(BaseModel):
-    plan_refs: list[str] = Field(min_length=2, max_length=3)
-    lines: list[LineIn] = Field(max_length=MAX_LINES)
-    states: dict[str, StateIn] = {}     # keyed by plan_ref; a missing key means nothing entered for that plan
 
 
 class DocumentIn(BaseModel):
@@ -225,30 +219,6 @@ def get_estimate(est_id: str, user: User = Depends(current_user)):
     return repo.get_owned(user.sub, "estimate", est_id)
 
 
-# ---------- comparisons ----------
-@app.post("/comparisons", status_code=201)
-def create_comparison(body: ComparisonIn, user: User = Depends(current_user)):
-    plans = [resolve_plan(user, r) for r in body.plan_refs]
-    by_ref = {uploads.norm_ref(r): p for r, p in zip(body.plan_refs, plans)}
-    lines = [l.to_line() for l in body.lines]
-    # engine keys states by plan_code; map refs -> codes (each ref resolved once)
-    code_states = {}
-    for ref, s in body.states.items():
-        plan = by_ref.get(uploads.norm_ref(ref)) or resolve_plan(user, ref)
-        code_states[plan.plan_code] = s.to_state()
-    out = compare(plans, lines, code_states)
-    for row in out["grid"]:
-        row["differences"] = guard(row["differences"])["text"]      # runtime advice guard on generated sentences
-    item = repo.put(user.sub, "comparison", {"plan_refs": body.plan_refs, "result": jsonable_encoder(out), "footer": FOOTER,
-                                              "banner": COMPARISON_BANNER})
-    return item
-
-
-@app.get("/comparisons/{cmp_id}")
-def get_comparison(cmp_id: str, user: User = Depends(current_user)):
-    return repo.get_owned(user.sub, "comparison", cmp_id)
-
-
 # ---------- account ----------
 @app.get("/me/export")
 def export_me(user: User = Depends(current_user)):
@@ -256,7 +226,7 @@ def export_me(user: User = Depends(current_user)):
     return {rtype: repo.list_owned(user.sub, rtype) for rtype in EXPORT_TYPES}
 
 
-EXPORT_TYPES = ("document", "plan_version", "estimate", "comparison", "benefits", "treatment_item", "saved_estimate", "journey", "push_subscription")
+EXPORT_TYPES = ("document", "plan_version", "estimate", "benefits", "treatment_item", "saved_estimate", "journey", "push_subscription")
 
 
 def _delete_owner_files(sub: str) -> int:

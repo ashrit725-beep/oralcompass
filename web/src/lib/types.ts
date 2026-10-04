@@ -52,9 +52,6 @@ export interface Ledger {
 export interface Movers { range: [number, number] | null; movers: { unknown: string; impact_cents: number | null; zero_impact: boolean }[]; unresolved_reasons: string[] }
 export interface EstimateResponse { id: string; plan_ref: string; ledger: Ledger; movers: Movers; footer: string }
 
-export interface GridCell { text: string; badge: Evidence; cite: string | null; quote?: string; pct?: number }
-export interface GridRow { topic: string; cells: GridCell[]; differences: string }
-export interface ComparisonResponse { id: string; plan_refs: string[]; result: { columns: string[]; grid: GridRow[]; ledgers: Record<string, Ledger>; note: string }; footer: string; banner: string }
 
 /** A stitch is one cited sentence in one document: scoped id = `${doc}#${n}` where n is assigned in page order. */
 export interface Stitch { id: string; doc: string; n: number; page: number; quote: string; topic: string; ruleCodes: string[]; pageNote?: string; /** additive: the document section the quote sits in (e.g. a table row) */ section?: string; /** additive: the plan option column the fact was read from (e.g. "Classic") */ option?: string }
@@ -145,7 +142,7 @@ export interface MapSelection { islandId: string; checkpointKey?: string }
 /** Care-stage selection (a stage, optionally one of its checkpoints) from the Care timeline or the Overview list. */
 export interface StageSelection { stageId: string; cpId?: string }
 export interface JourneySelection { stage?: StageSelection; island?: MapSelection }
-export interface AssistScope { plan_ref: PlanRef; estimate_id?: string; treatment_item_id?: string; line_index?: number; step_key?: string; checkpoint_key?: string; stitch?: string; journey_id?: string; /** Compare tab: the 1–3 plan refs currently compared (owner-scoped and validated by the API). */ compare?: string[] }
+export interface AssistScope { plan_ref: PlanRef; estimate_id?: string; treatment_item_id?: string; line_index?: number; step_key?: string; checkpoint_key?: string; stitch?: string; journey_id?: string; }
 export type AssistRef = { kind: "step"; line_index: number; step_index: number; label: string } | { kind: "line_total"; line_index: number; which: "patient" | "plan" } | { kind: "field"; path: string } | { kind: "clause"; stitch: string; rule?: string } | { kind: "estimate_total"; which: "patient" | "plan" };
 export type AssistBlock = { type: "sentence"; text: string; refs: AssistRef[] } | { type: "clarify"; text?: string; options: { label: string; scope_patch: Partial<AssistScope> }[] } | { type: "template"; key: "advice_question" | "out_of_scope"; label?: string; text: string };
 export interface AssistResponse { mode: "demo" | "live"; model?: string; ribbon?: string | null; intent: string; blocks: AssistBlock[]; suggested: string[]; guard: { dropped: number; grounding_failures: number }; tools_used: string[] }

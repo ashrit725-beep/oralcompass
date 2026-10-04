@@ -28,7 +28,7 @@ export const PLAIN: Record<string, string> = {
   cost: "From the dentist's fee to what you pay, one rule at a time; every step is tied to the clause that produced it.",
 };
 
-export const NAV = { journey: "My journey", plan: "My plan", compare: "Compare", documents: "Documents" } as const;
+export const NAV = { journey: "My journey", plan: "My plan", documents: "Documents" } as const;
 
 export const LANDMARKS = [
   { id: "harbor", term: "Your plan", place: "The harbor", topic: "plan" },
@@ -59,7 +59,6 @@ export const UI = {
   depth: ["Plain words", "Your numbers", "Exact wording"],
   usageNotFromPlan: "Not from the plan document",
   availabilityBanner: "Listed here means the document is public, not that you are eligible to enroll.",
-  comparisonNote: "Columns are in the order you selected. Inputs are entered for each plan separately; nothing is copied between plans.",
   fictional: "Fictional demonstration plan",
   sampleRibbon: "Sample journey: fictional person and records",
   upperBound: "Plan payment shown is an upper bound: the alternate allowance is not stated in this document.",

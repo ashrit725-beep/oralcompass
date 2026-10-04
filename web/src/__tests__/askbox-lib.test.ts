@@ -49,7 +49,7 @@ describe("boxSuggestions: four everyday chips per tab", () => {
     expect(boxSuggestions("journey", { estimate: { ...alex.estimate, ledger: { ...alex.estimate.ledger, lines } } as SavedEstimate, items: alex.items })[1]).toBe("What do I pay for the root canal?");
   });
   it("the other tabs use their own fixed chips", () => {
-    for (const tab of ["plan", "compare", "documents"] as const) {
+    for (const tab of ["plan", "documents"] as const) {
       expect(boxSuggestions(tab, data)).toEqual(ASSIST.boxChips[tab]);
       expect(ASSIST.boxChips[tab]).toHaveLength(4);
     }
@@ -87,12 +87,3 @@ describe("journey totals resolve from the engine, labelled calculated", () => {
   });
 });
 
-import { askBoxScope as _askBoxScope, compareScope as _compareScope } from "@/lib/assistant";
-describe("scope.compare (Compare tab)", () => {
-  it("passes the compared plans, deduplicated, at most three; none leaves compare off", () => {
-    expect(_compareScope(["ML26", "ml26", "HB26", "FM26H", "UP1"])).toEqual(["ML26", "HB26", "FM26H"]);
-    expect(_compareScope([])).toBeUndefined();
-    expect(_askBoxScope("ML26", null, "j1", ["ML26", "HB26"])).toEqual({ plan_ref: "ML26", journey_id: "j1", compare: ["ML26", "HB26"] });
-    expect(_askBoxScope("ML26", null, "j1", null)).toEqual({ plan_ref: "ML26", journey_id: "j1" });
-  });
-});

@@ -1,5 +1,5 @@
 import type {
-  AssistResponse, AssistScope, Benefits, ComparisonResponse, CoverageRule, EstimateResponse, ExtractionStatus, JourneyView, PlanEvidence, PlanFixture, PlanRef, PlanSummary,
+  AssistResponse, AssistScope, Benefits, CoverageRule, EstimateResponse, ExtractionStatus, JourneyView, PlanEvidence, PlanFixture, PlanRef, PlanSummary,
   PrivateDocument, Procedure, ReviewDecision, SavedEstimate, SourceItem, TreatmentItem, UploadResponse, UploadedPlanSummary,
 } from "./types";
 import { isUpload, uploadId } from "./types";
@@ -121,8 +121,6 @@ export const api = {
   treatmentPlanSamples: () => req<{ items: ReadSample[] }>("/me/treatment-plans/samples"),
   confirmTreatmentPlan: (items: ConfirmItem[]) => post<{ created: TreatmentItem[]; source: string }>("/me/treatment-plans/confirm", { items }),
   explain: (body: ExplainRequest) => post<ExplainResponse>("/me/explain", body),
-  // legacy (explicit lines/state) — used by Compare
   estimate: (body: unknown) => post<EstimateResponse>("/estimates", body),
-  comparison: (body: unknown) => post<ComparisonResponse>("/comparisons", body),
   fixturePlan: async (code: string) => (await fetch(`/fixtures/plans/${code.toLowerCase()}.json`)).json() as Promise<PlanFixture>,
 };

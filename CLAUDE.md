@@ -2,8 +2,8 @@
 
 You are building **OralCompass** — *Your care journey. Your coverage. Clearly mapped.* — the codeLinc 11 (Path 1: Dental) entry: an
 information-only dental journey and benefits explainer drawn as a hand-painted atlas. Two connected views (**My journey**: islands and
-checkpoints; **My plan**: five landmarks — Your plan · Deductible · Coverage · Annual maximum · Cost breakdown) plus **Compare** and
-**Documents**. The signature is the **cost trail**: every dollar from the dentist's fee to "you pay" is stitched to the exact clause
+checkpoints; **My plan**: five landmarks — Your plan · Deductible · Coverage · Annual maximum · Cost breakdown) plus
+**Documents**. There is no comparing feature: the app shows one plan's costs at a time. The signature is the **cost trail**: every dollar from the dentist's fee to "you pay" is stitched to the exact clause
 (document label, page, quote) that produced it. Read, in this order, before changing anything:
 1. `docs/ORALCOMPASS_UI_GUIDE.md` — the quality bar and art direction (beautiful, cinematic, painted; evidence on every number).
 2. `docs/ORALCOMPASS_DATA_MODEL.md` — the eight data groups, endpoints, calculation rules.
@@ -33,8 +33,8 @@ checkpoints; **My plan**: five landmarks — Your plan · Deductible · Coverage
 5. **Published ≠ personal ≠ benchmark.** Plan rules come from documents; remaining deductible/maximum are derived from the user's dated
    statement; dentist's fee and allowed amount are separate fields with sources; NC Medicaid rates are labeled benchmarks that never enter an
    estimate unless typed in as a hypothetical.
-6. **Nothing transfers between plans.** Usage, network, allowed amounts and enrollment are per plan. Comparison columns follow the user's order;
-   no sort, no winner, eligibility quote under every column.
+6. **Nothing transfers between plans.** Usage, network, allowed amounts and enrollment are per plan. Plans are never shown side by side
+   (owner direction 2026-10-04: no comparing feature).
 7. **Security is architecture.** Every private read goes through `repo.get_owned` → constant 404; audit events carry ids only; presets are
    GET-only; redaction before any model call with a visible preview; document text is DATA. Personal documents never go to public storage or logs.
    Claim only what is implemented (no certifications, no "zero knowledge", no "HIPAA compliant").
@@ -53,8 +53,8 @@ phone first (vertical coast + bottom sheet at 360 px, no horizontal scroll); red
 `python3 tools/screenshots.py shots/` must pass (desktop + phone checks) before a `web/` commit. Start UI work with `/ui-cinematic`.
 
 ## Repository map
-- `engine/` — `oralcompass_engine` (models, ledger, ranges, comparison, rules, loader) + `tests/`. `cd engine && python3 -m pytest -q`
-- `api/` — FastAPI: `app/main.py` (presets, documents, legacy estimates/comparisons, account), `app/records.py` (plans, rules, procedures, codes,
+- `engine/` — `oralcompass_engine` (models, ledger, ranges, rules, loader) + `tests/`. `cd engine && python3 -m pytest -q`
+- `api/` — FastAPI: `app/main.py` (presets, documents, legacy estimates, account), `app/records.py` (plans, rules, procedures, codes,
   benchmarks, sources, evidence, benefits, treatment items, saved estimates), `app/journeys.py`, `app/data.py` (catalog loader), `store.py`, `auth.py`,
   `redaction.py`, `extraction.py`, `lint_runtime.py`, `templates.py`. `cd api && ORALCOMPASS_DEV_AUTH=1 python3 -m pytest -q tests` (forced to demo mode; see Test safety).
   Run: `cd api && ORALCOMPASS_DEV_AUTH=1 uvicorn app.main:app --reload --port 8000`
@@ -64,7 +64,7 @@ phone first (vertical coast + bottom sheet at 360 px, no horizontal scroll); red
   AI features (addendum D.5): `treatment_reader.py` (POST /me/treatment-plans/read, /confirm), `explain.py` (POST /me/explain), both through
   `ai_support.py` (guard_allow → llm_guard kinds reader/explainer; spend recorded once in extraction's `_call`). api/.env is not read in production.
 - `web/` — React 18 + TypeScript + Vite PWA: `src/App.tsx`, `src/lib/{copy,journey,trail,stitches,api,types}.ts`, `src/components/atlas/*` (paint),
-  `src/components/*` (panels, trail, documents, compare), `src/styles.css`. `cd web && npm install && npm run build`; dev `npm run dev` (proxies /api → :8000);
+  `src/components/*` (panels, trail, documents), `src/styles.css`. `cd web && npm install && npm run build`; dev `npm run dev` (proxies /api → :8000);
   preview `npx vite preview --port 4173 --host 127.0.0.1`. Fixtures: the predev/prebuild/prepreview hooks (`web/scripts/copy-fixtures.mjs`) copy them into `web/public/fixtures`
 - `fixtures/` — `plans/` (9 real presets generated from facts + 4 fictional), `procedures.json` (16 ids), `procedure_codes.json`, `fee_benchmarks.json`,
   `sources.json`, `evidence/`, `users/{sam,jordan,alex}.json`, `journeys/{sample_sam,sample_jordan,sample_alex,empty}.json`, `documents/` (4 fictional PDFs),

@@ -51,7 +51,7 @@ filling the window behind it. <!-- verify: feat/mobile-cinematic --> Mirror the 
 - "12 personal identifiers removed before AI analysis" is the real count the detector found on the fictional sample; never say a number
   that is not on screen. <!-- verify: feat/client-redaction -->
 - "Where the document is silent, we say so." Point at an UNKNOWN badge.
-- Describe each plan only by what its documents say; Compare has no ranking and no sort, by design.
+- Describe the plan only by what its documents say. There is no comparing feature: one plan's costs at a time.
 - No certification or compliance claims. Redaction is a privacy measure with stated limits (`docs/SECURITY.md`), not a guarantee.
   Personal records here are fictional; the plan rules for Alex are public.
 
@@ -63,7 +63,6 @@ filling the window behind it. <!-- verify: feat/mobile-cinematic --> Mirror the 
 | Enter the hypothetical network: out (ASSUMED badge). | **$940.00**. |
 | Change the crown's tooth to a premolar (tooth 20). | **$540.00 / $660.00**, because the alternate-benefit clause names molars only. |
 | Remove the deductible figure. | Fog: "Between $640.00 and $665.00 because remaining deductible was not provided." |
-| Swipe **Compare** between plans. <!-- verify: feat/mobile-cinematic --> | One plan per card, in the order chosen; no winner, no sort. |
 
 ## Fallbacks
 

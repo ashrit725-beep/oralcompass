@@ -4,7 +4,7 @@
 Opens every view and every open state (start screen, journey map with no selection, each island / START / Harbor Light / visited / marginal
 drawer, the procedure drawer with every section expanded, the clause card at each depth, the inline assistant with an answer, the care
 timeline and a stage/checkpoint detail, the overview list, My plan with each landmark open, the compass and the add-procedure / reader
-panel, the fog state (FM26H) on My plan, the journey and the drawer, Compare with a clause popover, Documents with its clause card and
+panel, the fog state (FM26H) on My plan, the journey and the drawer, Documents with its clause card and
 reminders, and every upload wizard step including the review table and the published state) on four devices (mobile-only app:
 the phone layout is the only layout):
 
@@ -715,16 +715,6 @@ def walk(pw, device: dict) -> dict:
         page.locator("label.plan-pick select").first.select_option("ML26"); page.wait_for_timeout(1400)
         close_all()
     step("fog", fog)
-
-    # ---- Compare
-    def compare():
-        close_all(); tab("Compare", 2500)
-        A.audit("compare")
-        page.locator("table.grid tbody button[aria-expanded]").first.click(); page.wait_for_timeout(700)
-        A.audit("compare: clause popover")
-        close_all()
-        if page.locator("[data-slot=popover-content]").count(): page.keyboard.press("Escape"); page.wait_for_timeout(300)
-    step("compare", compare)
 
     # ---- Documents, clause card, reminders
     def documents():

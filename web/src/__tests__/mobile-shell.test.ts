@@ -23,7 +23,7 @@ describe("mobile-only shell: no desktop branch is left", () => {
     expect(app).not.toMatch(/useMobile|matchMedia|innerWidth/);
     expect(app).toMatch(/<Dock aria-label=\{UI\.viewsLabel\}/);
     expect(app).toMatch(/className="cinema" aria-hidden="true"/);
-    for (const tab of ["journey", "plan", "compare", "documents"]) expect(app).toContain(`data-view="${tab}"`);
+    for (const tab of ["journey", "plan", "documents"]) expect(app).toContain(`data-view="${tab}"`);
   });
   it("useMobile is pinned to the phone branch", async () => {
     const { useMobile } = await import("@/hooks/useMobile");

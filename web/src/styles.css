@@ -233,18 +233,6 @@ label { display: flex; flex-direction: column; gap: .25rem; font-size: .9rem; co
 .missing.compact { font-size: .9rem; } .missing ul { margin: .3rem 0 0; padding-left: 1.1rem; }
 .range { font-weight: 600; }
 
-/* ---- compare ---- */
-.pickers { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: .75rem; margin: .75rem 0; }
-/* The comparison table only (`table.grid`): the bare `.grid` selector also matched Tailwind's `grid` display utility on every shadcn Dialog,
-   RubberSegment thumb layer and Popover (640 px minimum on phones); scoped at integration, 2026-10-03. */
-.compare .banner { font-weight: 600; } table.grid { width: 100%; border-collapse: collapse; font-size: .9rem; min-width: 640px; }
-table.grid th, table.grid td { text-align: left; vertical-align: top; padding: .5rem; border-bottom: 1px solid var(--rule); }
-table.grid thead th { background: var(--paper-deep); position: sticky; top: 0; }
-.differences td { background: rgba(197, 154, 60, .08); font-style: italic; }
-.rails { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: .75rem; }
-.rail { background: var(--paper-deep); border: 1px solid var(--rule); border-radius: 12px; padding: .75rem; }
-.rail .hero .total { font-size: 1.6rem; }
-
 /* ---- documents ---- */
 .documents { display: grid; gap: 1.25rem; grid-template-columns: minmax(0, 1.5fr) minmax(280px, 1fr); }
 .doc-plan { grid-row: span 3; } .doc-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .5rem 1rem; align-items: end; }
@@ -450,13 +438,6 @@ summary { min-height: 32px; padding-block: 4px; }
 .delete-hold { margin-top: var(--s-4); padding-top: var(--s-3); border-top: 1px solid var(--rule); display: grid; gap: var(--s-2); justify-items: start; }
 .delete-hold-why { margin: 0; max-width: 60ch; font-size: 14px; color: var(--ink-soft); }
 .delete-hold-btn { border: 1px solid var(--terracotta) !important; min-height: 44px; }
-/* Compare (delight pass mo-20c): one banner, a real heading, no visual duplicate rows */
-.cv-banner { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); margin: 0 0 var(--s-2); font-size: 15px; color: var(--ink); }
-table.grid tr.differences td { padding: 0; border: 0; height: 0; }
-table.grid tbody tr:not(.differences) { transition: background-color var(--dur-micro) var(--ease-standard); }
-table.grid tbody tr:not(.differences):focus-within { background: color-mix(in srgb, var(--parchment) 60%, transparent); }
-@media (hover: hover) { table.grid tbody tr:not(.differences):hover { background: color-mix(in srgb, var(--parchment) 60%, transparent); } }   /* no sticky hover tint after a tap on touch screens */
-.compare > h3 { margin-top: var(--s-5); }
 
 /* ---- custom radio + checkbox (motionsites technique 8, adapted): an ink ring with a terracotta dot / an ink-filled square with a paper
    tick. Only colour changes, 150 ms; no scale pop. The ring is a pseudo-element, so any larger hit box around the input keeps working. ---- */
@@ -473,20 +454,13 @@ input[type="radio"]:disabled, input[type="checkbox"]:disabled { cursor: not-allo
 @media (prefers-reduced-motion: reduce) { input[type="radio"]::before, input[type="checkbox"]::before, input[type="checkbox"]::after { transition: none; } }
 
 /* ---- press feedback (motionsites technique 9, adapted): the phone dock tab inverts to ink-on-paper while pressed (scale .97 / 120 ms is
-   above); Compare's column-header controls do the same. No overshoot; reduced motion keeps the colour change and drops the scale. ---- */
+   above). No overshoot; reduced motion keeps the colour change and drops the scale. ---- */
 .dock [role="tab"]:active { background: var(--ink); color: var(--paper); }
-.compare .grid thead th :is(button, select) { transition: color var(--dur-micro) var(--ease-standard), background-color var(--dur-micro) var(--ease-standard), transform var(--dur-micro) var(--ease-standard); }
-@media (hover: hover) { .compare .grid thead th button:hover { background: var(--ink); color: var(--paper); } }   /* no sticky hover tint after a tap on touch screens */
-.compare .grid thead th :is(button, select):active { background: var(--ink); color: var(--paper); }
-@media (prefers-reduced-motion: no-preference) { .compare .grid thead th button:active { transform: scale(.97); } }
 
 /* fin/mobile-plan: the source-inventory URLs are standalone links (not inline prose), so on touch screens they get a 44 px tall target;
    long URLs wrap anywhere instead of pushing the card wider. */
 /* phone layout, always on (mobile-only app) */
   .doc-sources .sources a[href] { display: inline-block; min-height: 44px; padding-block: .6rem; overflow-wrap: anywhere; }
-/* fin/mobile-plan: below 760 px (phones, including iPhone landscape at 664 px) the Compare plan pickers stack one per row, so the closed
-   select shows the whole option text instead of three 190 px slivers ("MetLife NCFlex Dental · Cla…"). */
-.pickers { grid-template-columns: minmax(0, 1fr); }
 
 /* ==== the mobile-only shell (owner direction 2026-10-04: "its solely a mobile app" / "its fully a mobile app") ====================
    Unlayered on purpose: these rules beat every layered rule and utility, so no component can bring a desktop layout back.

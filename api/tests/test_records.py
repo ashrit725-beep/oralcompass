@@ -210,10 +210,8 @@ def test_journey_bodies_are_typed():
 
 
 def test_authored_labels_carry_no_em_dash():
-    """slop-2: authored journey labels, banners and comparison topics use colons and commas (real document titles stay verbatim)."""
+    """slop-2: authored journey labels and banners use colons and commas (real document titles stay verbatim)."""
     h = {"X-Dev-User": "labels"}
     samples = client.get("/journeys/samples", headers=h).json()
     assert all("—" not in s["label"] for s in samples["items"]) and "—" not in samples["note"]
     assert "—" not in client.get("/plans", headers=h).json()["banner"]
-    from oralcompass_engine.comparison import TOPICS
-    assert all("—" not in t for t in TOPICS)
