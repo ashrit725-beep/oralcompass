@@ -35,3 +35,19 @@ Merged with --no-ff onto build/journey-v2 (516bc60, 674e077, ff956e1, 9656e8b). 
 | `ingest_sources.py --check` | validation_errors: [] |
 | API `pytest -q tests` | 2 failed, 384 passed, 106 skipped. Both failures are `test_explain.py::test_live_once_for_real_when_the_stored_key_and_network_allow` (directly and inside the SqliteRepo re-run in `test_store_backends.py`). That test calls the live provider with the stored key and network; api/ is unchanged by these branches. |
 | `tools/screenshots.py` walk | Not run at merge (deadline). fu/walk reported 240 of 242 checks against the merged app: open fails are the Pixel 7 review-count position (y=447 of 839) and the wide upload dialog not found. |
+
+## rm/* merge round (2026-10-04, 07:29)
+
+Merged (--no-ff, in order): rm/redaction, rm/ask-ui, rm/ask-api, rm/bedrock, rm/docs-ui (conflicts resolved: DocumentsView uses
+docs-ui's `fieldPathLabel` general map, `needsLabels` kept for its test; upload.ts keeps both imports; styles.css takes docs-ui's
+`--bottom-chrome` token), rm/fixtures, rm/mobile (assistant.css conflict: dropped an orphan comment), rm/art. Dropped: none.
+Live model-call tests (`test_live_once_for_real_when_the_stored_key_and_network_allow` in test_explain.py and
+test_treatment_reader.py) are now `@pytest.mark.live_llm`: skipped unless ORALCOMPASS_RUN_LIVE_TESTS=1.
+
+Final gate (actual output tails):
+- web `npm test`: Test Files 51 passed (51); Tests 562 passed (562)
+- api `ORALCOMPASS_DEV_AUTH=1 pytest -q tests`: 523 passed, 3 skipped, 5 warnings in 127.04s
+- engine `pytest -q`: 22 passed in 0.08s
+- `advice_lint.py web/src/lib api/app/templates.py api/app/assistant_templates.py api/app/assistant_glossary.py`: 0 violation(s)
+- web `npm run lint:copy`: 0 violation(s)
+- web `npm run check:bundle`: OK-bundle main=139.0KB
