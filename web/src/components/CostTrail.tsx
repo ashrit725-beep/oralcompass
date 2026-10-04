@@ -106,7 +106,7 @@ export function CostTrail({ estimate, stitches, selected, onSelect, prominentSco
               </tr>
             );
           })}
-          <tr className="line-total"><th scope="row">Line: you pay · plan pays</th><td className="amt">{money(line.patient_cents)} · {money(line.plan_cents)} <span className="calc-note">{PLAN.calculatedShort}</span></td></tr>
+          <tr className="line-total"><th scope="row">Line: you pay · plan pays</th><td className="amt">{money(line.patient_cents)} · {money(line.plan_cents)} <EvidenceBadge status={estimate.assumptions.length ? "ASSUMED" : "DOC"} /> <span className="calc-note">{PLAN.calculatedShort}</span></td></tr>
         </tbody></table>
       </details>
       {!one && estimate.ledger.order_note && <p className="note">{estimate.ledger.order_note}</p>}
