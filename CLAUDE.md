@@ -65,7 +65,7 @@ phone first (vertical coast + bottom sheet at 360 px, no horizontal scroll); red
   `ai_support.py` (guard_allow → llm_guard kinds reader/explainer; spend recorded once in extraction's `_call`). api/.env is not read in production.
 - `web/` — React 18 + TypeScript + Vite PWA: `src/App.tsx`, `src/lib/{copy,journey,trail,stitches,api,types}.ts`, `src/components/atlas/*` (paint),
   `src/components/*` (panels, trail, documents, compare), `src/styles.css`. `cd web && npm install && npm run build`; dev `npm run dev` (proxies /api → :8000);
-  preview `npx vite preview --port 4173 --host 127.0.0.1`. Copy fixtures: `cp ../fixtures/plans/*.json public/fixtures/plans/ && cp ../fixtures/documents/*.pdf public/fixtures/documents/`
+  preview `npx vite preview --port 4173 --host 127.0.0.1`. Fixtures: the predev/prebuild/prepreview hooks (`web/scripts/copy-fixtures.mjs`) copy them into `web/public/fixtures`
 - `fixtures/` — `plans/` (9 real presets generated from facts + 4 fictional), `procedures.json` (16 ids), `procedure_codes.json`, `fee_benchmarks.json`,
   `sources.json`, `evidence/`, `users/{sam,jordan,alex}.json`, `journeys/{sample_sam,sample_jordan,sample_alex,empty}.json`, `documents/` (4 fictional PDFs),
   `ingest_report.json`, `audit_report.json`.

@@ -4,14 +4,18 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "predev": "node scripts/copy-fixtures.mjs",
     "dev": "vite",
+    "prebuild": "node scripts/copy-fixtures.mjs",
     "build": "tsc --noEmit && vite build",
+    "prepreview": "node scripts/copy-fixtures.mjs",
     "preview": "vite preview",
     "lint": "eslint src",
     "lint:copy": "python3 ../tools/advice_lint.py src/lib src/components src/views",
     "check:engines": "node scripts/check-engines.mjs",
     "check:bundle": "vite build && node scripts/check-bundle.mjs",
-    "test": "vitest run"
+    "test": "vitest run",
+    "copy:fixtures": "node scripts/copy-fixtures.mjs"
   },
   "dependencies": {
     "@number-flow/react": "^0.6.2",

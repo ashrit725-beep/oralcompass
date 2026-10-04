@@ -35,8 +35,7 @@ All paths relative to the repository root. `web/node_modules` is per checkout (p
 ```sh
 # one-time per worktree
 cd web && npm install
-mkdir -p public/fixtures/plans public/fixtures/documents
-cp ../fixtures/plans/*.json public/fixtures/plans/ && cp ../fixtures/documents/*.pdf public/fixtures/documents/   # web/public/fixtures is gitignored
+npm run copy:fixtures   # optional: predev / prebuild / prepreview already copy ../fixtures/plans/*.json and ../fixtures/documents/*.pdf into the gitignored web/public/fixtures
 
 # web checks (run all four before you commit)
 cd web && npm run build            # tsc --noEmit && vite build
@@ -483,7 +482,7 @@ before the first call; the per-response `mode`/`ribbon` remain authoritative.
 
 ## 4. Notes from the foundation agent (verbatim)
 
-- ENVIRONMENT: `cd web && npm install` (node_modules is per worktree). `web/public/fixtures/` is gitignored; copy fixtures before running screenshots: `cp ../fixtures/plans/*.json public/fixtures/plans/ && cp ../fixtures/documents/*.pdf public/fixtures/documents/`. Run the preview as `npx vite preview --port 4173 --host 127.0.0.1` (default binding is IPv6-only here and screenshots.py targets 127.0.0.1). API from the worktree: `cd api && ORALCOMPASS_DEV_AUTH=1 python3 -m uvicorn app.main:app --port 8000`.
+- ENVIRONMENT: `cd web && npm install` (node_modules is per worktree). `web/public/fixtures/` is gitignored and filled automatically by `web/scripts/copy-fixtures.mjs` (the predev, prebuild and prepreview hooks; `npm run copy:fixtures` by hand); a plain `npx vite preview` of an existing build needs no copy because the build already carries them in dist/fixtures. Run the preview as `npx vite preview --port 4173 --host 127.0.0.1` (default binding is IPv6-only here and screenshots.py targets 127.0.0.1). API from the worktree: `cd api && ORALCOMPASS_DEV_AUTH=1 python3 -m uvicorn app.main:app --port 8000`.
 - DO NOT run `npx shadcn add --overwrite` casually: the CLI (v4.21) rewrites src/lib/utils.ts to `export { cn } from "cn"`, re-adds the `cn` npm package, and overwrote button.tsx/textarea.tsx/hover-card.tsx during this run; it also downgraded lucide-react to 0.475 and added @hugeicons/*. After any add: restore utils.ts, `npm rm cn`, check lucide-react is ^1.51, re-run the generic patch sweep, run `npm run check:engines`.
 - CASCADE: Tailwind layers order is theme < base < components < utilities; all hand-written CSS is inside `@layer components`, so utilities on the same element win. A UA-restoration block at the top of @layer components re-enables paragraph/list margins, list markers, link underlines and inline SVG that preflight resets. The legacy global pill rule `button:not(...)` now also excludes `[data-slot]` (every shadcn primitive) and `.unstyled` — give any vendored/hand-written <button> the class `unstyled` or it will be painted ink with a 999px radius.
 - TOKENS: the :root block in styles.css is the only colour source. Spec §5.1 semantic aliases are added (--bg, --surface, --text, --border, --accent=gold, --select, --you-pay, --plan-pays, --basis, --nobody, --owner-*, --fog, --focus, --s-*, --r-*, --shadow-1..3, --dur-*, --ease-*). Two naming conflicts resolved: existing `--muted` is a TEXT colour, shadcn's muted surface is `--muted-bg` (=parchment); spec reserves `--accent` for gold, so shadcn's hover/accent surface is `--accent-surface` (=sand) and `bg-accent` compiles to sand, `text-accent`-style gold must use `text-gold`. Palette utilities available: bg/text/border/stroke/fill-{paper,paper-deep,parchment,ink,ink-soft,ink-muted,sea,sea-light,sea-ink,sage,sage-light,forest,sand,gold,gold-soft,terracotta,wood,rule,ok,warn,danger,you-pay,plan-pays,basis,nobody}; radius tokens radius-sm/md/lg/xl/2xl/3xl/4xl; shadows shadow-paper, shadow-1/2/3; `font-serif`/`font-heading` = --serif, `font-sans` = --sans.
@@ -515,7 +514,7 @@ before the first call; the per-response `mode`/`ribbon` remain authoritative.
 5. The plan's acceptance grep `slate-` false-positives on Tailwind `translate-*` (dialog, button, switch, tooltip); use `\<slate-`.
 6. `tools/screenshots.py` was edited (4 lines): nav clicks use `get_by_role('tab', ...)`. Any other script that located the nav via role=button must do the same.
 7. vitest is pinned to `^3` (vitest 5 requires vite >= 6; the project is on vite 5.4). Upgrading vite is a separate decision.
-8. `web/public/fixtures/` is gitignored and populated locally; `shots/*` output is untracked.
+8. `web/public/fixtures/` is gitignored and populated by `web/scripts/copy-fixtures.mjs` (npm pre-hooks; the Dockerfile web stage copies fixtures/plans and fixtures/documents so the hook works there too); `shots/*` output is untracked.
 9. `styles.css` still lists `.view > *` in the prefers-reduced-motion selector list (harmless; the rule it referenced is gone).
 10. Kokonut `file-upload` and `ai-prompt` were substantially rewritten (controlled upload, scope selector, no logos); their props differ from the
     upstream docs. Read the header comments before using them.

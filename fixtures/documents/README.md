@@ -16,7 +16,7 @@ Rules:
   fixture `web/src/lib/__fixtures__/sample-statement-text.ts`). `python3 tools/make_sample_statement.py --check` verifies the sample is current.
 - In demo mode (`ORALCOMPASS_LLM_PROVIDER=none`, or no key) an upload whose SHA-256 matches a fixture runs the full extraction with no
   model call; quotes are still verified against the uploaded file's text layer.
-- The web app serves these files at `/fixtures/documents/<name>.pdf` (`api/app/server.py` in production; in development copy them into
-  `web/public/fixtures/documents/`, see `docs/WEB_FOUNDATION_NOTES.md`).
+- The web app serves these files at `/fixtures/documents/<name>.pdf` (`api/app/server.py` in production; in development the web npm hooks copy them
+  into `web/public/fixtures/documents/` via `web/scripts/copy-fixtures.mjs`, see `docs/WEB_FOUNDATION_NOTES.md`).
 - The certificates carry one deliberately injected sentence on p.11 (a security test: it must be ignored, never used as a rule). The
   sample statement carries none.
