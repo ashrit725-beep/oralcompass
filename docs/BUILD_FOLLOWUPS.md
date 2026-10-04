@@ -56,6 +56,23 @@ statically; `vite.config.ts` splits react/radix/vaul into `ui-vendor` (main 121 
 19. OPEN — Web Push subscribe/unsubscribe and "Send a test push" unverified end to end (headless Chromium denies Notification permission).
 20. OPEN — Live-mode extraction of the 14-page fixture took ~5 min on one run; the screenshot walk runs the API in demo mode (`ORALCOMPASS_LLM_PROVIDER=demo`).
 
+## AI features (addendum D.5; AI-features branch, 2026-10-03)
+21. DONE — Treatment-plan reader: `api/app/treatment_reader.py` (POST `/me/treatment-plans/read`, `/confirm`, GET `/samples`), web `components/plan/TreatmentPlanReader.tsx`
+   inside the importer. Demo reads only the two stored fictional estimates; live verified with Haiku 4.5 (Alex's pasted text → 2 items D3330/D2740; a rendered photo of
+   Sam's estimate → 2 items, the crown with the cast-crown alternative). Tests `api/tests/test_treatment_reader.py`; walk check "treatment-plan reader reads the stored estimate".
+22. DONE — Clause explainer: `api/app/explain.py` (POST `/me/explain`), web `components/PlainWords.tsx` in ClauseCard depth 1 and each drawer clause-evidence item.
+   Tests `api/tests/test_explain.py` (PLAIN parity with `web/src/lib/copy.ts`), `web/src/__tests__/explain.test.ts`; walk check "clause explainer labels its plain sentence".
+23. OPEN (merge) — `api/app/llm_guard.py` comes from the production branch; `ai_support.guard_allow/guard_record` import it lazily (absent → allowed; refusal or error →
+   demo fallback, labelled). After the merge, confirm the guard's `allow` return shape (bool, tuple or dict are all handled) and add the two kinds
+   (`treatment_reader`, `explain`) to its limits. The explainer cache uses `repo.list_owned` (O(n) per owner); swap for a keyed get once the SqliteRepo lands.
+24. DEFERRED (privacy, stated in the UI) — a photo cannot be regex-redacted before reading: in live mode the image reaches the model; the server redacts the model's answer
+   and the ribbon says so. A scanned PDF is rendered to page images the same way. An OCR-then-redact step would close this.
+25. DEFERRED (model) — clause fragments without context (e.g. ML26 p.25 "Not eligible for dependent children under age 14", an unsupported-rules row) can be restated
+   too broadly ("…are not eligible for coverage"). The explainer now passes the clause's `section` and rejects "this service"-style referents; fragments with no section
+   still read broadly. A per-field context hint (which procedure a limitation belongs to) would tighten it.
+26. DONE — "Start my journey (no documents yet)" crashed the app (`fixtures/journeys/empty.json` stage had no `linked_treatment_items`; `lib/passage.ts` called `.some`
+   on undefined). Fixture completed and the web guards a missing list; the "Add a journey" select no longer lists "empty" twice.
+
 ## Docs / presentation (filled by the polish pass)
 - README quick start must cover: `api/.env` from `api/.env.example`, demo mode vs live mode, `npm install` (Tailwind/shadcn stack), `web/THIRD_PARTY_NOTICES.md`,
   Tailwind v4 browser floor, the screenshot walk, the demo script (`docs/ORALCOMPASS_DESIGN_SPEC.md` §11) and the judging-criteria map (`docs/JUDGING_CRITERIA.md`).
