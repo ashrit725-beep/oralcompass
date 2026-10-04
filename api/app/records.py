@@ -1,5 +1,9 @@
 """Private records: user benefits (usage with source + date), treatment items, saved estimates, documents. Every read/write is
-owner-scoped through the store. Remaining benefits are DERIVED from stored usage and the plan's stated limits — never stored as truth."""
+owner-scoped through the store. Remaining benefits are DERIVED from stored usage and the plan's stated limits — never stored as truth.
+
+Plan references: a preset code ("ML26") or a published upload ("upload:<document_id>", URL-encoded in paths). Both resolve through
+`uploads.resolve_plan_ref`; benefits and saved estimates are keyed by the plan reference, so nothing transfers between a preset
+and an upload (or between two uploads)."""
 from __future__ import annotations
 
 from datetime import date, datetime, timezone
@@ -9,15 +13,16 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel, Field
 
-from oralcompass_engine import Evidence, EstimateLine, MemberState, V, compute_ledger, range_and_movers
+from oralcompass_engine import Evidence, EstimateLine, MemberState, PlanModel, V, compute_ledger, range_and_movers
 from oralcompass_engine.rules import coverage_rules
 
 from .auth import User, current_user
 from .data import (CODES_BY_KEY, FEE_BENCHMARKS, PLANS, PLAN_META, PROC_BY_KEY, PROCEDURES, PROCEDURE_CODES, SAMPLE_USERS, SOURCE_BY_ID, SOURCES,
-                   INGEST_REPORT, AUDIT_REPORT, clauses, documents_for_plan, evidence_rows, plan_summary)
+                   INGEST_REPORT, AUDIT_REPORT, clauses, documents_for_meta, documents_for_plan, evidence_rows, plan_summary)
 from .templates import BENCHMARK_NOTE
 from .store import NOT_FOUND, repo
 from .templates import FOOTER
+from .uploads import norm_ref, resolve_plan_ref
 
 router = APIRouter()
 
@@ -69,16 +74,15 @@ class TreatmentItemIn(BaseModel):
 
 
 class EstimateRequest(BaseModel):
-    plan_code: str
+    plan_code: str                                   # a plan reference: preset code or "upload:<document_id>"
     treatment_item_ids: list[str] = []               # defaults to all items with status planned/scheduled
     dos_rule: Optional[str] = None                   # defaults to the plan's stated rule (or completion)
     hypotheticals: dict = {}                         # {remaining_deductible_cents, remaining_max_cents, network, enrolled_months} — labeled ASSUMED
 
 
 # ---------- helpers ----------
-def derived_benefits(plan_code: str, b: dict) -> dict:
-    plan = PLANS[plan_code]
-    out = {"plan_code": plan_code, **b}
+def derived_benefits(plan: PlanModel, b: dict, plan_ref: str) -> dict:
+    out = {**b, "plan_code": plan_ref}
     ded = plan.deductible_individual
     mx = plan.annual_max
     src_label = (b.get("source") or {}).get("label", "not provided")
@@ -146,6 +150,7 @@ def member_state(plan_code: str, b: Optional[dict], items: list[dict], hypo: dic
 
 
 def lines_from_items(items: list[dict]) -> list[EstimateLine]:
+    """One EstimateLine per treatment item, in the items' order (the ledger keeps this order, so line i ↔ items[i])."""
     out = []
     for i in items:
         name = i.get("procedure_name") or PROC_BY_KEY.get(i["procedure_key"], {}).get("name", i["procedure_key"])
@@ -153,6 +158,10 @@ def lines_from_items(items: list[dict]) -> list[EstimateLine]:
         out.append(EstimateLine(i["procedure_key"], name + (f" (tooth {i['tooth']})" if i.get("tooth") else ""), i.get("tooth"), i["dentist_fee_cents"] * i.get("quantity", 1),
                                 date.fromisoformat(comp) if comp else None, date.fromisoformat(i["planned_prep"]) if i.get("planned_prep") else None, []))
     return out
+
+
+def _benefits_record(sub: str, plan_ref: str) -> Optional[dict]:
+    return next((x for x in repo.list_owned(sub, "benefits") if x["plan_code"] == plan_ref), None)
 
 
 # ---------- public catalogs ----------
@@ -265,31 +274,37 @@ def data_report(user: User = Depends(current_user)):
             "audit": {"counts": AUDIT_REPORT.get("counts"), "findings_by_severity": AUDIT_REPORT.get("findings_by_severity")}}
 
 
-# ---------- user benefits ----------
+# ---------- user benefits (keyed by plan reference; nothing transfers between a preset and an upload) ----------
 @router.get("/me/benefits")
 def list_benefits(user: User = Depends(current_user)):
-    return [derived_benefits(b["plan_code"], b) for b in repo.list_owned(user.sub, "benefits")]
+    out = []
+    for b in repo.list_owned(user.sub, "benefits"):
+        try:
+            res = resolve_plan_ref(user, b["plan_code"])
+        except HTTPException:
+            continue                      # a benefits record whose plan can no longer be resolved is not shown as derived truth
+        out.append(derived_benefits(res.plan, b, res.ref))
+    return out
 
 
-@router.get("/me/benefits/{plan_code}")
-def get_benefits(plan_code: str, user: User = Depends(current_user)):
-    b = next((x for x in repo.list_owned(user.sub, "benefits") if x["plan_code"] == plan_code.upper()), None)
+@router.get("/me/benefits/{plan_ref:path}")
+def get_benefits(plan_ref: str, user: User = Depends(current_user)):
+    res = resolve_plan_ref(user, plan_ref)           # a foreign upload ref is a denied, audited read before anything else
+    b = _benefits_record(user.sub, res.ref)
     if not b:
         raise HTTPException(status_code=404, detail=NOT_FOUND)
-    return derived_benefits(plan_code.upper(), b)
+    return derived_benefits(res.plan, b, res.ref)
 
 
-@router.put("/me/benefits/{plan_code}")
-def put_benefits(plan_code: str, body: BenefitsIn, user: User = Depends(current_user)):
-    code = plan_code.upper()
-    if code not in PLANS:
-        raise HTTPException(status_code=404, detail=NOT_FOUND)
-    existing = next((x for x in repo.list_owned(user.sub, "benefits") if x["plan_code"] == code), None)
-    rec = {**(existing or {}), "plan_code": code, **body.model_dump(), "plan_version_sha256": PLAN_META[code]["source_document"].get("sha256", ""),
+@router.put("/me/benefits/{plan_ref:path}")
+def put_benefits(plan_ref: str, body: BenefitsIn, user: User = Depends(current_user)):
+    res = resolve_plan_ref(user, plan_ref)
+    existing = _benefits_record(user.sub, res.ref)
+    rec = {**(existing or {}), "plan_code": res.ref, **body.model_dump(), "plan_version_sha256": res.sha256, "plan_version_label": res.version_label,
            "updated_at": datetime.now(timezone.utc).isoformat()}
     rec["claims"] = [c if isinstance(c, dict) else c.model_dump() for c in rec["claims"]]
     item = repo.put(user.sub, "benefits", rec)
-    return derived_benefits(code, item)
+    return derived_benefits(res.plan, item, res.ref)
 
 
 # ---------- treatment items ----------
@@ -316,10 +331,8 @@ def patch_item(tid: str, body: dict, user: User = Depends(current_user)):
 # ---------- saved estimates from records ----------
 @router.post("/me/estimates", status_code=201)
 def estimate_from_records(body: EstimateRequest, user: User = Depends(current_user)):
-    code = body.plan_code.upper()
-    if code not in PLANS:
-        raise HTTPException(status_code=404, detail=NOT_FOUND)
-    plan = PLANS[code]
+    res = resolve_plan_ref(user, body.plan_code)
+    plan, ref = res.plan, res.ref
     items = repo.list_owned(user.sub, "treatment_item")
     if body.treatment_item_ids:
         items = [i for i in items if i["id"] in body.treatment_item_ids]
@@ -327,10 +340,10 @@ def estimate_from_records(body: EstimateRequest, user: User = Depends(current_us
         items = [i for i in items if i.get("status") in ("planned", "scheduled")]
     if not items:
         raise HTTPException(status_code=422, detail={"error": "no_treatment_items"})
-    b_raw = next((x for x in repo.list_owned(user.sub, "benefits") if x["plan_code"] == code), None)
-    b = derived_benefits(code, b_raw) if b_raw else None
+    b_raw = _benefits_record(user.sub, ref)
+    b = derived_benefits(plan, b_raw, ref) if b_raw else None
     as_of = date.today()
-    state, assumptions = member_state(code, b, items, body.hypotheticals, as_of)
+    state, assumptions = member_state(ref, b, items, body.hypotheticals, as_of)
     dos = body.dos_rule or (plan.dos_rule.value if plan.dos_rule.known else "completion")
     lines = lines_from_items(items)
     ledger = compute_ledger(plan, lines, state, dos)
@@ -347,15 +360,20 @@ def estimate_from_records(body: EstimateRequest, user: User = Depends(current_us
                 missing_inputs.append({"input": f"allowed amount — {L.label}", "how": "The plan document prints no fee schedule. Enter the allowed amount from a pre-treatment estimate response or an EOB, with its source; without it the line stays unresolved.", "line": L.label})
             if "class of" in f and "not stated" in f:
                 missing_inputs.append({"input": f"coverage class — {L.label}", "how": "The pages read do not place this procedure in a class. The line stays unresolved until the plan document (or the plan) states it.", "line": L.label})
+    ledger_json = jsonable_encoder(ledger)
+    # the engine keeps the listed order, so ledger line i is treatment item i: stamp the record ids on the serialized lines (engine untouched)
+    for line_json, item in zip(ledger_json["lines"], items):
+        line_json["treatment_item_id"] = item["id"]
+        line_json["procedure_key"] = item["procedure_key"]
     rec = {
-        "plan_code": code, "plan_version_sha256": PLAN_META[code]["source_document"].get("sha256", ""), "calculated_at": datetime.now(timezone.utc).isoformat(),
+        "plan_code": ref, "plan_ref": ref, "plan_version_label": res.version_label, "plan_version_sha256": res.sha256, "calculated_at": datetime.now(timezone.utc).isoformat(),
         "inputs": {"treatment_item_ids": [i["id"] for i in items], "benefits_snapshot": b, "hypotheticals": body.hypotheticals, "dos_rule": dos,
                    "network": state.network.value, "network_status": state.network.status.value},
-        "ledger": jsonable_encoder(ledger), "movers": jsonable_encoder(movers),
+        "ledger": ledger_json, "movers": jsonable_encoder(movers),
         "insurer_estimated_payment_cents": ledger.plan_total_cents, "user_estimated_payment_cents": ledger.patient_total_cents,
         "plan_payment_is_upper_bound": ledger.plan_total_is_upper_bound, "assumptions": assumptions + ledger.assumptions, "unknowns": unknowns, "missing_inputs": missing_inputs,
         "status": ledger.status, "footer": FOOTER,
-        "sources": {"plan_document": documents_for_plan(code)[0], "evidence_endpoint": f"/plans/{code}/evidence"},
+        "sources": {"plan_document": documents_for_meta(res.meta)[0], "evidence_endpoint": res.evidence_endpoint},
     }
     return repo.put(user.sub, "saved_estimate", rec)
 
