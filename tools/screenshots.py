@@ -560,6 +560,9 @@ def upload_walk(page, device: str, shot):
         let a = b.parentElement; while (a && !/hidden|clip/.test(getComputedStyle(a).overflow)) a = a.parentElement; if (!a) return 0;
         const r = b.getBoundingClientRect(), c = a.getBoundingClientRect(); return Math.round(Math.max(0, r.bottom - c.bottom, c.top - r.top)); })()""")
     check(f"{device}: upload choose button not clipped", cut == 0, f"cut={cut}px")
+    # a11y-15: the hidden native file input is not a tab stop and not a second control for screen readers
+    fi = page.evaluate("(() => { const i = document.querySelector('[role=dialog] input[type=file]'); return i ? [i.tabIndex, i.getAttribute('aria-hidden')] : null; })()")
+    check(f"{device}: upload file input out of the tab order", fi == [-1, "true"], str(fi))
     # layout-7: the stepper pane re-measures when its content grows (the type alert), so the mode line below it stays visible
     page.wait_for_timeout(500)
     hidden = page.evaluate("""(() => { const c = document.querySelector('[role=dialog] .up-stepper-content'); const m = c && c.querySelector('.up-mode-line'); if (!c || !m) return -1;

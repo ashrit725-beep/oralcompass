@@ -194,9 +194,11 @@ export default function FileUpload({
                     <span>{labels.choose}</span>
                     <Upload className="h-4 w-4" aria-hidden="true" />
                   </button>
+                  {/* a11y-15: the visible button is the one control; the native input is not a second, invisible tab stop */}
                   <input
                     accept={acceptedFileTypes?.join(",")}
-                    aria-label={labels.choose}
+                    aria-hidden="true"
+                    tabIndex={-1}
                     className="sr-only"
                     onChange={handleFileInputChange}
                     ref={fileInputRef}
