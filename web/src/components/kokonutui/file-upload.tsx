@@ -10,7 +10,7 @@
  * and never slices the Choose button; AnimatePresence `mode="wait"` keeps one pane mounted at a time.
  */
 
-import { Upload } from "lucide-react";
+import { FileText, Upload } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { type DragEvent, useCallback, useId, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
@@ -67,7 +67,7 @@ export const formatBytes = (bytes: number, decimals = 2): string => {
   return `${Number.parseFloat((bytes / k ** i).toFixed(dm))} ${unit}`;
 };
 
-/** One sea arc on a sand track; determinate when `progress` is given, otherwise a static three-quarter arc. */
+/** One sea arc on a sand track while a file is prepared; determinate when `progress` is given, otherwise a static three-quarter arc. */
 const UploadArc = ({ progress, label }: { progress: number | null; label: string }) => {
   const r = 42, c = 2 * Math.PI * r;
   const p = progress == null ? 0.75 : Math.max(0, Math.min(1, progress / 100));
@@ -181,7 +181,8 @@ export default function FileUpload({
                   key="dropzone"
                   transition={{ duration: 0.2 }}
                 >
-                  <div className="mb-4"><UploadArc progress={null} label="" /></div>
+                  {/* layout-27: a static document glyph while idle; the arc appears only once a file is being prepared */}
+                  <FileText className="mb-4 h-12 w-12 text-ink-soft" strokeWidth={1.25} aria-hidden="true" />
                   <div className="mb-4 space-y-1.5 text-center">
                     <p className="font-serif text-lg text-ink">{labels.hint}</p>
                     {labels.limits && <p className="text-xs text-ink-soft">{labels.limits(formatBytes(maxFileSize))}</p>}
