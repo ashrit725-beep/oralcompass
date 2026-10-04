@@ -6,6 +6,7 @@ vi.mock("@number-flow/react", () => ({ default: ({ value }: { value: number }) =
 import { renderToStaticMarkup } from "react-dom/server";
 import alexJson from "../__fixtures__/passage/alex.json";
 import { OverviewList } from "@/components/OverviewList";
+import { labeledSamples } from "@/lib/journey";
 import { buildPassage, type PassageInputs } from "@/lib/passage";
 import { stitchesFromClauses } from "@/lib/stitches";
 import type { Clause, CoverageRule, JourneyView, PlanFixture, Procedure, SavedEstimate, TreatmentItem } from "@/lib/types";
@@ -34,5 +35,12 @@ describe("OverviewList tables (findings layout-19, mobile-9, layout-5, layout-23
     const head = visited.slice(0, visited.indexOf("</thead>"));
     const firstRow = visited.slice(visited.indexOf("<tbody>"), visited.indexOf("</tr>", visited.indexOf("<tbody>")));
     expect((head.match(/<th /g) ?? []).length).toBe((firstRow.match(/<t[hd][ >]/g) ?? []).length);
+  });
+});
+
+describe("start screen samples (finding demo-12)", () => {
+  it("never offers the empty template as a labeled sample journey", () => {
+    const api = [{ id: "sample-alex", label: "Sample journey — Alex Chen (fictional)" }, { id: "sample-sam", label: "Sample journey — Sam Rivera (fictional)" }, { id: "empty", label: "Your journey" }];
+    expect(labeledSamples(api).map((s) => s.id)).toEqual(["sample-alex", "sample-sam"]);
   });
 });

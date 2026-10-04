@@ -67,3 +67,9 @@ export function nextCheckpoint(journey: Journey, current?: { stageId: string; cp
 export function currentStageId(journey: Journey): string | null {
   return journey.stages.find((s) => s.checkpoints.some((c) => c.status !== "completed"))?.id ?? journey.stages[journey.stages.length - 1]?.id ?? null;
 }
+
+/** The labeled sample journeys offered on the start screen and in "Add another journey": `/journeys/samples` also lists the empty
+ *  template ("Your journey"), which is not a sample; it has its own "Start my journey (no documents yet)" / "Empty" entry. */
+export function labeledSamples<T extends { id: string }>(samples: T[]): T[] {
+  return samples.filter((s) => s.id !== "empty");
+}

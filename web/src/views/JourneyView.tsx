@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent }
 import { AnimatePresence, motion } from "motion/react";
 import { PASSAGE } from "@/lib/copy/passage";
 import { UI, type LandmarkId } from "@/lib/copy";
-import { currentStageId } from "@/lib/journey";
+import { currentStageId, labeledSamples } from "@/lib/journey";
 import { transitions, useReducedMotion } from "@/lib/motion";
 import { buildPassage, denseFrom, itemRef, type AnswerTarget } from "@/lib/passage";
 import type { MapSelection, Stage, Stitch } from "@/lib/types";
@@ -104,7 +104,7 @@ export function JourneyView({ data, selection, mobile, onOpenLandmark, onOpenDoc
         <p>{UI.newUserBody}</p>
         <div className="start-actions">
           <button type="button" disabled={busy} onClick={() => startJourney("empty")}>Start my journey (no documents yet)</button>
-          {samples.map((s) => <button key={s.id} type="button" className="secondary" disabled={busy} onClick={() => startJourney(s.id)}>{UI.loadSample}: {s.label.replace("Sample journey — ", "")}</button>)}
+          {labeledSamples(samples).map((s) => <button key={s.id} type="button" className="secondary" disabled={busy} onClick={() => startJourney(s.id)}>{UI.loadSample}: {s.label.replace("Sample journey — ", "")}</button>)}
         </div>
         <p className="muted small">Plan presets: {plans.length} ({realCount} from public plan documents, {plans.length - realCount} fictional demonstration plans). {UI.availabilityBanner}</p>
       </section>
@@ -144,7 +144,7 @@ export function JourneyView({ data, selection, mobile, onOpenLandmark, onOpenDoc
           <div className="journey-pickers">
             {journeys && journeys.length > 0 && samples.length > 0 && <select aria-label="Journey" title={headingLabel(view.journey.label)} value={view.id} onChange={(e) => { const v = journeys.find((j) => j.id === e.target.value); if (v) setView(v); }}>
               {journeys.map((j) => <option key={j.id} value={j.id}>{headingLabel(j.journey.label)}</option>)}</select>}
-            <select className="add-journey" aria-label="Add a journey" value="" onChange={(e) => e.target.value && startJourney(e.target.value)}><option value="">Add another journey…</option><option value="empty">Empty (no documents yet)</option>{samples.filter((s) => s.id !== "empty").map((s) => <option key={s.id} value={s.id}>{headingLabel(s.label)}</option>)}</select>
+            <select className="add-journey" aria-label="Add a journey" value="" onChange={(e) => e.target.value && startJourney(e.target.value)}><option value="">Add another journey…</option><option value="empty">Empty (no documents yet)</option>{labeledSamples(samples).map((s) => <option key={s.id} value={s.id}>{headingLabel(s.label)}</option>)}</select>
           </div>
         </div>
         {!plan && <p className="hint">{PASSAGE.noPlanSelected}</p>}
