@@ -236,3 +236,16 @@ export const DOC_WORDS: { kind: Record<string, string>; status: Record<string, s
   status: { cited_facts_verified_in_text: "figures checked against the document text", typed_by_user: "figures typed by you",
     cached: "read earlier", uploaded: "uploaded, not read yet" },
 };
+
+/** My plan as a painted passage (owner direction 05:58 / 06:00: the plan map in the journey's concept, full-bleed, phone only). */
+export const PLAN_MAP = {
+  mapLabel: "Plan map: five landmarks on one route",
+  documentSection: "Plan document",
+  youPay: "you pay",
+  plan: "plan",
+  planPays: "plan pays",
+  calculated: "calculated",
+  upperBound: "(upper bound)",
+  noPlanned: "no planned procedures",
+  waiting: "Waiting for information",
+} as const;

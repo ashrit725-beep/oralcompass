@@ -671,12 +671,12 @@ def walk(pw, device: dict) -> dict:
         cmp = page.locator(".compass").first
         if cmp.count():
             cmp.scroll_into_view_if_needed(); A.audit("my plan: compass", scope=".compass")
-        lm = page.locator(".landmark-btn, .landmark-row")
+        lm = page.locator(".pa-stop")   # the painted plan map's five stops (phone-only app; the flat atlas buttons are gone)
         for k in range(lm.count()):
             def one(k=k):
                 close_all()
-                b = page.locator(".landmark-btn, .landmark-row").nth(k)
-                term = b.locator(".lm-term").inner_text().strip()
+                b = page.locator(".pa-stop").nth(k)
+                term = b.locator(".pa-term").inner_text().strip()
                 b.scroll_into_view_if_needed(); b.click(); page.wait_for_timeout(900)
                 A.audit(f"my plan landmark: {term}")
                 close_all()
