@@ -82,6 +82,8 @@ const PLATE_SRC: Record<LandmarkId, string> = {
 };
 const ROUTE_KEY = "plan-route";
 const SEG_START = 0.25, SEG_GAP = 0.34;   // seconds: segment i starts at SEG_START + i × SEG_GAP and draws for 0.7 s (RouteLine)
+// measure before paint in the browser (no 390 px first frame on a 320 px phone); a plain effect where there is no layout (tests, SSR)
+const useMeasureEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
 const arrival = (i: number) => (i === 0 ? 0.05 : SEG_START + (i - 1) * SEG_GAP + 0.55);
 
 function Bridge() {
@@ -108,7 +110,7 @@ export function PlanAtlas({ selected, onSelect, stops, label = "Plan map" }: Pla
   const [camY, setCamY] = useState(0);
   const layout = planLayout(width);
 
-  useLayoutEffect(() => {
+  useMeasureEffect(() => {
     const el = rootRef.current;
     if (!el) return;
     const read = () => { const w = el.clientWidth; if (w > 0) setWidth(w); };

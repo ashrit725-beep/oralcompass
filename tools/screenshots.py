@@ -359,12 +359,17 @@ def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-pref
     # ---- My plan: selector, compass, landmarks (spec §12 "select plan", "answers from the compass", "depth dial", "benefit statement") ----
     page.get_by_role("tab", name="My plan").click(); page.wait_for_timeout(800)
     shot("05-plan")
-    if not mobile:
-        page.locator("select[aria-label='Carrier']").select_option(label="Metropolitan Life Insurance Company (MetLife)"); page.wait_for_timeout(300)
-        page.locator("select[aria-label='Plan name']").select_option(label="NCFlex Dental Plan (State of North Carolina), Classic Option"); page.wait_for_timeout(1200)
-        picked = page.locator("label.plan-pick select").first.input_value()
-        year_disabled = page.evaluate("document.querySelector(\"select[aria-label='Plan year']\").disabled")
-        check(f"{device}: plan selector cascades", picked == "ML26" and year_disabled, f"picked={picked} year disabled={year_disabled}")
+    # (the desktop carrier → plan → year cascade check was removed with the cascade: owner direction 06:00, the app is phone-only and
+    #  the grouped `label.plan-pick select` is the one plan control on every width)
+    def close_plan_sheet():
+        """My plan's landmark detail is the bottom sheet on every width (phone-only app), so it is closed on every device."""
+        btn = page.locator("[data-slot=drawer-content]").get_by_role("button", name="Close details")
+        if btn.count():
+            btn.first.click(); page.wait_for_timeout(400)
+    # the painted plan map (Passage concept): five landmark stops on the route, full-bleed in the stage, no box around the painting
+    stage = page.evaluate("""(() => { const s = document.querySelector('[data-cinematic-stage]'); if (!s) return null; const cs = getComputedStyle(s); const r = s.getBoundingClientRect();
+      return { stops: document.querySelectorAll('.pa-stop').length, radius: cs.borderTopLeftRadius, border: cs.borderTopWidth, bleed: Math.round(r.left) <= Math.round(s.parentElement.getBoundingClientRect().left) - 8 || Math.round(r.left) === 0 }; })()""")
+    check(f"{device}: plan map is full-bleed with five painted stops", bool(stage) and stage["stops"] == 5 and stage["radius"] in ("0px", "") and stage["border"] in ("0px", "") and stage["bleed"], str(stage))
     radios = page.get_by_role("radio", name=re.compile("^(Preset plan|Your uploaded document)"))
     boxes = [radios.nth(i).bounding_box() for i in range(radios.count())]
     radios.filter(has_text="Your uploaded document").first.click(); page.wait_for_timeout(400)
@@ -413,7 +418,7 @@ def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-pref
             page.get_by_role("button", name="Close clause card").click(); page.wait_for_timeout(300)
     chip_back = page.evaluate("(() => { const a = document.activeElement; return !!a && a.dataset.walkMark === '1'; })()")
     check(f"{device}: landmark stitch keeps focus across its card", bool(chip_label) and chip_back, f"chip={str(chip_label)[:40]!r} back={chip_back}")
-    close_sheet()
+    close_plan_sheet()
     # benefit statement form at depth 2 on the bridge (figures identical to the seeded statement, so nothing downstream changes)
     page.locator("button[aria-label^='Deductible']").first.click(); page.wait_for_timeout(400)
     page.get_by_role("radio", name="Your numbers").first.click(); page.wait_for_timeout(400)
@@ -435,7 +440,7 @@ def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-pref
     check(f"{device}: benefit statement", bbox is not None and bbox["height"] >= 44 and fields_ok and alert_ok and deriv.count() > 0 and deriv.locator(".badge", has_text="You entered").count() >= 1 and live_ok,
           f"btn={bbox and round(bbox['height'])} fields={fields_ok} alert={alert_ok} derivation={deriv.count()} live={live!r}")
     shot("24-benefit-statement")
-    close_sheet()
+    close_plan_sheet()
     # the lighthouse → cost trail
     page.locator("button[aria-label^='Cost breakdown']").first.click(); page.wait_for_timeout(1200)
     shot("06-lighthouse")
@@ -444,22 +449,22 @@ def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-pref
     check(f"{device}: trail step cites ML26 page", page.locator(".ts-clause", has_text="ML26").count() > 0)
     check(f"{device}: unknown rules flagged, not assumed", page.get_by_text("waiting period: not found", exact=False).count() > 0)
     # deductible landmark with depth 3 (exact wording) — on the phone the bottom sheet is closed first, as a person would
-    close_sheet()
+    close_plan_sheet()
     page.locator("button[aria-label^='Deductible']").first.click(); page.wait_for_timeout(400)
     page.get_by_role("radio", name="Exact wording").click(); page.wait_for_timeout(300)
     check(f"{device}: exact wording quotes the guide", page.get_by_text("Calendar-Year Deductible", exact=False).count() > 0)
     shot("07-deductible-wording")
     # switch plan to a FEDVIP preset → nothing transfers → waiting for information
-    close_sheet()
+    close_plan_sheet()
     page.locator("label.plan-pick select").first.select_option("FM26H"); page.wait_for_timeout(1500)
-    close_sheet()
+    close_plan_sheet()
     q2 = page.locator(".compass .cmp-q").first.inner_text() if page.locator(".compass .cmp-q").count() else ""
     fill_visible = page.evaluate("[...document.querySelectorAll('.compass .cmp-ne .cmp-fill')].some(f => f.offsetWidth > 0 && getComputedStyle(f).visibility !== 'hidden')")
     check(f"{device}: compass without a stated maximum", q2 == "Is there a dollar maximum? The document states none." and not fill_visible and page.locator(".compass .cmp-meter.is-empty").count() > 0, f"q={q2[:60]!r} fill={fill_visible} empty={page.locator('.compass .cmp-meter.is-empty').count()}")
     page.locator("button[aria-label^='Cost breakdown']").first.click(); page.wait_for_timeout(600)
     check(f"{device}: other plan shows missing inputs (nothing transfers)", page.get_by_text("waiting for information", exact=False).count() > 0)
     shot("08-missing-inputs")
-    close_sheet()
+    close_plan_sheet()
     # the same unresolved estimate on the Passage: fog over every planned island, START pennant, a fogged drawer
     page.get_by_role("tab", name="My journey").click(); page.wait_for_timeout(1200)
     fogged = page.locator(".island-btn.is-fog, .pv-card.is-fog").count()

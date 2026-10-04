@@ -21,8 +21,9 @@
 @keyframes cstage-establish { from { transform: scale(1.06); } to { transform: scale(1); } }
 @keyframes cstage-drift { from { transform: scale(1); } to { transform: scale(1.02); } }
 .cstage-vignette { position: absolute; inset: 0; z-index: 1; pointer-events: none; background: radial-gradient(ellipse 120% 90% at 50% 42%, transparent 58%, rgba(35, 48, 61, .30) 100%); }
+/* AA on the painting: the scrim stays ≥ 90 % parchment under every line of text and fades only inside the 40 px bottom padding */
 .cstage-title { position: relative; z-index: 3; padding: 18px 16px 40px; transition: opacity var(--dur-standard) var(--ease-standard);
-  background: linear-gradient(to bottom, color-mix(in srgb, var(--paper) 95%, transparent) 0%, color-mix(in srgb, var(--paper) 90%, transparent) 62%, transparent 100%); }
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--paper) 95%, transparent) 0, color-mix(in srgb, var(--paper) 90%, transparent) calc(100% - 40px), transparent 100%); }
 .cstage[data-camera="focus"] .cstage-title { opacity: 0; }
 /* while the camera is in focus (a bottom sheet is open over the page) the painting may travel past the stage's edges, so the selected
    stop can rise into the strip above the sheet even when the stage starts lower on the screen */
@@ -93,6 +94,7 @@
 
 /* ---- the landmark bottom sheet ---- */
 .pa-sheet-place { margin-left: 6px; font-family: var(--serif); font-style: italic; font-weight: 400; font-size: 15px; color: var(--ink-soft); }
+.plan-sheet { max-width: 480px; margin-inline: auto; }   /* a wide screen shows the phone app in its 480 px column; the sheet rises inside it */
 .plan-sheet .lm-kicker { display: none; }    /* the sheet title already names the place */
 .plan-sheet #lm-h { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 .plan-sheet .landmark .lm-head { margin-bottom: var(--s-3); }
