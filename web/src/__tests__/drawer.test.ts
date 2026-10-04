@@ -90,6 +90,15 @@ describe("checkpointsForLine", () => {
     expect(checkpointAriaName(cps[1])).toContain("clause ML26");
     expect(cps[2].flags).toEqual([]);
   });
+  it("badges the network adjustment with the recorded allowed amount's evidence, not the cited clause's (numbers-1)", () => {
+    const item = { id: "ti-a-rct-19", procedure_key: "root_canal_molar", dentist_fee_cents: 115000, quantity: 1, allowed_cents: 98000, allowed_status: "USER" } as unknown as TreatmentItem;
+    const cps = checkpointsForLine(alexLine, item, rule, plan, stitches);
+    const n = cps.find((c) => c.rule === "N")!;
+    expect(n.stitch).toBeDefined();                            // the in-network clause chip still shows
+    expect(n.badge).toBe("USER");                              // the dollars come from the entered allowed amount
+    expect(checkpointsForLine(alexLine, { ...item, allowed_status: "ASSUMED" } as TreatmentItem, rule, plan, stitches).find((c) => c.rule === "N")!.badge).toBe("ASSUMED");
+    expect(checkpointsForLine(alexLine, { ...item, allowed_cents: null, allowed_status: "DOC" } as unknown as TreatmentItem, rule, plan, stitches).find((c) => c.rule === "N")!.badge).toBe("DOC");
+  });
   it("gives a not-covered line exactly fee, one closed checkpoint and you pay", () => {
     const nc: LedgerLine = { ...alexLine, status: "not_covered", steps: [{ label: "Not covered: excluded by the plan", cents: 55000, owner: "patient", rule: "X", stitch: "ML26#p26" }], patient_cents: 55000, plan_cents: 0 };
     const cps = checkpointsForLine(nc, undefined, undefined, plan, stitches);
