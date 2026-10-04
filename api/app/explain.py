@@ -21,7 +21,7 @@ import logging
 import re
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from . import ai_support
@@ -174,8 +174,8 @@ def write_sentence(clause: dict, topic: str) -> str:
 
 # ---------------------------------------------------------------- endpoint
 @router.post("/me/explain")
-def explain(body: ExplainIn, user: User = Depends(current_user)):
-    ai_support.local_rate_limit(user.sub, KIND, RATE_N, RATE_WINDOW_S)
+def explain(body: ExplainIn, request: Request, user: User = Depends(current_user)):
+    ai_support.local_rate_limit(user.sub, KIND, RATE_N, RATE_WINDOW_S, request)
     res = resolve_plan_ref(user, body.plan_ref)            # owner-scoped; a foreign upload is a constant 404
     clause = select_clause(clauses_from_meta(res.meta), body)
     topic = topic_of(clause["field"])

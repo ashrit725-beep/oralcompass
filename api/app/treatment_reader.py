@@ -453,7 +453,7 @@ def _finish(items: list[dict]) -> list[dict]:
 # ---------------------------------------------------------------- endpoints
 @router.post("/me/treatment-plans/read")
 async def read_treatment_plan(request: Request, user: User = Depends(current_user)):
-    ai_support.local_rate_limit(user.sub, KIND, RATE_N, RATE_WINDOW_S)
+    ai_support.local_rate_limit(user.sub, KIND, RATE_N, RATE_WINDOW_S, request)
     source, text, images, note, image_consent = await _read_input(request)
     if text is not None and len(text) > MAX_TEXT_CHARS:
         raise HTTPException(status_code=422, detail={"error": "text_too_long", "max_chars": MAX_TEXT_CHARS})

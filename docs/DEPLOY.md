@@ -140,8 +140,13 @@ python3 -m uvicorn app.server:app --host 127.0.0.1 --port 8080 --no-access-log
   Records of abandoned sessions are not expired automatically.
 - **Encryption at rest** is whatever the platform's volume provides; the app does not add per-user keys (the SAM skeleton's KMS design in
   `infra/template.yaml` is not what this container uses).
-- **Rate limits are per session.** A visitor who discards cookies gets a fresh per-visitor allowance; the global daily request and spend caps
-  are the backstop. Spend is an estimate from reported token usage, not the provider's bill.
+- **Rate limits are per session, plus a coarse per-network allowance.** The in-process limiters (assistant, reader, explainer, uploads) also
+  count per network address (the right-most `X-Forwarded-For` entry the platform's proxy adds) at three times one visitor's allowance, and
+  sweep expired keys; the live-AI guard's per-visitor counters are still per session, with the global daily request and spend caps as the
+  backstop. Spend is an estimate from reported token usage, not the provider's bill.
+- **Storage caps, not expiry.** Uploads are capped per visitor (10 files, 160 MB) and for the whole volume (`ORALCOMPASS_DATA_MAX_BYTES`,
+  default 768 MB; beyond it uploads get 507 "storage_full"). Abandoned sessions' files are not expired automatically, so a full volume
+  needs an operator to clear old data.
 - **No CSRF token.** State-changing requests rely on SameSite=Lax cookies plus JSON/multipart bodies from the same origin; there is no CORS
   configuration that would admit another origin.
 - **No malware scanning** of uploaded PDFs (they are parsed with PyMuPDF and never served to anyone but their owner).

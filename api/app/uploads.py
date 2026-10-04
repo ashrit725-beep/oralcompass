@@ -25,7 +25,7 @@ from pathlib import Path
 from typing import Any, Literal, Optional
 
 from starlette.concurrency import run_in_threadpool
-from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, Response, UploadFile
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, Request, Response, UploadFile
 from pydantic import BaseModel, Field
 
 from .auth import User, current_user
@@ -47,6 +47,9 @@ log = logging.getLogger("oralcompass.uploads")
 MAX_BYTES = 32 * 1024 * 1024
 MAX_PAGES = 100
 MAX_PREVIEW_IN = 400_000
+MAX_UPLOADS_PER_OWNER = 10                       # stored plan PDFs per visitor (security-6)
+MAX_OWNER_BYTES = 160 * 1024 * 1024              # their total size
+UPLOAD_RATE_N, UPLOAD_RATE_WINDOW_S = 20, 3600   # uploads per visitor per hour (and 3x that per network address outside dev auth)
 PREVIEW_CHARS = 4000
 DEFAULT_DATA_DIR = Path(__file__).resolve().parents[1] / ".data"          # api/.data (gitignored); production: S3 users/<sub>/docs/
 fixtures = FixtureExtractor()
@@ -56,6 +59,20 @@ _PLAN_CACHE: dict[str, PlanModel] = {}      # plan_version id → PlanModel (ver
 # ---------------------------------------------------------------- helpers
 def data_dir() -> Path:
     return Path(os.getenv("ORALCOMPASS_DATA_DIR") or DEFAULT_DATA_DIR)
+
+
+def max_data_bytes() -> int:
+    """Total bytes every visitor's stored files may take under data_dir (ORALCOMPASS_DATA_MAX_BYTES; default 768 MB of a 1 GB volume), so
+    uploads stop with an honest 507 before the volume (and with it the database) is full."""
+    try:
+        return int(os.getenv("ORALCOMPASS_DATA_MAX_BYTES") or 768 * 1024 * 1024)
+    except ValueError:
+        return 768 * 1024 * 1024
+
+
+def _stored_bytes() -> int:
+    base = data_dir()
+    return sum(p.stat().st_size for p in base.rglob("*.pdf") if p.is_file()) if base.is_dir() else 0
 
 
 def doc_path(sub: str, doc_id: str) -> Path:
@@ -145,8 +162,13 @@ class ReviewIn(BaseModel):
 
 # ---------------------------------------------------------------- upload + redaction
 @router.post("/me/documents/upload", status_code=201)
-async def upload_document(file: UploadFile = File(...), sha256: str = Form(...), pages: int = Form(...), text_preview: str = Form(""),
+async def upload_document(request: Request, file: UploadFile = File(...), sha256: str = Form(...), pages: int = Form(...), text_preview: str = Form(""),
                           user: User = Depends(current_user)):
+    from .ai_support import local_rate_limit
+    local_rate_limit(user.sub, "upload", UPLOAD_RATE_N, UPLOAD_RATE_WINDOW_S, request)
+    owned = [d for d in repo.list_owned(user.sub, "document") if d.get("kind") == "upload"]
+    if len(owned) >= MAX_UPLOADS_PER_OWNER:
+        raise HTTPException(status_code=429, detail={"error": "upload_quota", "max_uploads": MAX_UPLOADS_PER_OWNER})
     chunks, size = [], 0
     while True:
         chunk = await file.read(1024 * 1024)
@@ -173,6 +195,11 @@ async def upload_document(file: UploadFile = File(...), sha256: str = Form(...),
     if n_pages > MAX_PAGES:
         raise HTTPException(status_code=422, detail={"error": "too_many_pages", "max_pages": MAX_PAGES})
 
+    if sum(int(d.get("size_bytes") or 0) for d in owned) + size > MAX_OWNER_BYTES:
+        raise HTTPException(status_code=429, detail={"error": "upload_quota", "max_bytes": MAX_OWNER_BYTES})
+    if await run_in_threadpool(_stored_bytes) + size > max_data_bytes():
+        log.warning("upload refused: storage cap reached")
+        raise HTTPException(status_code=507, detail={"error": "storage_full"})
     doc_id = uuid.uuid4().hex
     path = doc_path(user.sub, doc_id)
     path.parent.mkdir(parents=True, exist_ok=True)

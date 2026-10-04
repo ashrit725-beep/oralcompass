@@ -19,19 +19,18 @@ import json
 import logging
 import os
 import re
-import time
-from collections import deque
 from dataclasses import dataclass, field
 from datetime import date
 from typing import Any, Optional
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from oralcompass_engine.models import PlanModel
 from oralcompass_engine.rules import coverage_rules
 
+from . import ai_support
 from . import assistant_templates as T
 from .auth import User, current_user
 from . import uploads
@@ -64,21 +63,13 @@ MONEY_IN_TEXT = re.compile(r"\$\s?\d|\d\s?%|\d\s*(?:dollars|percent|cents)\b|\b(
 ISO_DATE = re.compile(r"\b\d{4}-\d{2}-\d{2}\b")
 PLACEHOLDER = re.compile(r"\{\{ref:(\d+)\}\}")
 
-_RATE: dict[str, deque] = {}
-
-
 def reset_rate_limits() -> None:            # tests
-    _RATE.clear()
+    ai_support.reset_rate_limits()
 
 
-def _rate_limit(sub: str) -> None:
-    now = time.monotonic()
-    q = _RATE.setdefault(sub, deque())
-    while q and now - q[0] > RATE_LIMIT_WINDOW_S:
-        q.popleft()
-    if len(q) >= RATE_LIMIT_N:
-        raise HTTPException(status_code=429, detail={"error": "rate_limited"})
-    q.append(now)
+def _rate_limit(sub: str, request: Optional[Request] = None) -> None:
+    """30 questions per 10 minutes per visitor, plus the per-network allowance (ai_support.local_rate_limit, shared with the AI features)."""
+    ai_support.local_rate_limit(sub, "assistant", RATE_LIMIT_N, RATE_LIMIT_WINDOW_S, request)
 
 
 # ---------- request / response ----------
@@ -874,8 +865,8 @@ def ask_live(ctx: Ctx, facts: dict, message: str, intent_hint: str) -> tuple[str
 
 # ---------- endpoint ----------
 @router.post("/me/assistant")
-def ask(body: AssistIn, user: User = Depends(current_user)):
-    _rate_limit(user.sub)
+def ask(body: AssistIn, request: Request, user: User = Depends(current_user)):
+    _rate_limit(user.sub, request)
     ctx = load_scope(user, body.scope)
     message = body.message.strip()
     topic = question_topic(message)

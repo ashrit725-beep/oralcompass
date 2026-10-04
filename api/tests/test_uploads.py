@@ -734,3 +734,16 @@ def test_a_stale_in_progress_extraction_can_be_restarted_and_publishes_get_uniqu
     [t.join() for t in threads]
     assert sorted(labels) == ["UP1", "UP2"]
     assert sorted(repo.get_owned(sub, "document", up["id"])["published_versions"]) == ["UP1", "UP2"]
+
+
+def test_upload_quotas_per_owner_and_for_the_whole_volume(monkeypatch):
+    """security-6: a visitor's stored uploads are capped, and uploads stop with 507 before the data volume fills."""
+    h = H("quota-owner")
+    monkeypatch.setattr(uploads, "MAX_UPLOADS_PER_OWNER", 2)
+    for i in range(2):
+        assert upload(h, make_pdf([f"page {i}"])).status_code == 201
+    r = upload(h, make_pdf(["page 3"]))
+    assert r.status_code == 429 and r.json()["detail"]["error"] == "upload_quota"
+    monkeypatch.setenv("ORALCOMPASS_DATA_MAX_BYTES", "1")
+    r = upload(H("quota-volume"), make_pdf(["page"]))
+    assert r.status_code == 507 and r.json()["detail"]["error"] == "storage_full"

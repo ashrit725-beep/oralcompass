@@ -158,3 +158,28 @@ def test_extraction_falls_back_to_demo_when_the_daily_cap_is_reached(monkeypatch
     assert st["mode"] == "demo" and st["ribbon"] == LLM_LIMIT_EXTRACTION_RIBBON and st["limit_reached"] == "daily_requests_cap"
     h = client.get("/health").json()
     assert h["llm_cap_reached"] is True and "OPENROUTER" not in json.dumps(h) and "test-key" not in json.dumps(h)
+
+
+def test_local_limiter_has_a_network_key_and_forgets_expired_sessions(monkeypatch):
+    """api-correctness-26 / security-6: dropping the cookie does not reset the per-network allowance; expired keys are swept."""
+    from types import SimpleNamespace
+    from fastapi import HTTPException
+    from app import ai_support
+    ai_support.reset_rate_limits()
+    monkeypatch.setattr(ai_support, "dev_mode", lambda: False)
+    req = SimpleNamespace(headers={"x-forwarded-for": "198.51.100.7, 203.0.113.9"}, client=SimpleNamespace(host="10.0.0.1"))
+    assert ai_support.client_key(req) == "203.0.113.9"
+    for i in range(3 * 2):                                  # n=2 per session, 3x per network: six fresh "sessions" pass
+        ai_support.local_rate_limit(f"fresh-session-{i}", "assistant", 2, 600, req)
+    with pytest.raises(HTTPException) as e:
+        ai_support.local_rate_limit("fresh-session-new", "assistant", 2, 600, req)
+    assert e.value.status_code == 429
+    clock = [1000.0]
+    monkeypatch.setattr(ai_support.time, "monotonic", lambda: clock[0])
+    ai_support.reset_rate_limits()
+    for i in range(300):
+        ai_support.local_rate_limit(f"s{i}", "explain", 5, 60)
+    clock[0] += 120
+    for i in range(ai_support._PRUNE_EVERY):
+        ai_support.local_rate_limit("one-active", "explain", 10_000, 60)
+    assert len(ai_support._RATE) <= 2
