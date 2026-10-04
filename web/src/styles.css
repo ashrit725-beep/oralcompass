@@ -130,23 +130,15 @@ label { display: flex; flex-direction: column; gap: .25rem; font-size: .9rem; co
 /* ---- maps ---- */
 .map { position: relative; width: 100%; border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); border: 1px solid var(--rule); background: var(--water); }
 .map-paint { display: block; width: 100%; height: auto; }
-.map-controls { position: absolute; inset: 0; }
-.map-controls > div { display: contents; }
-.island-btn, .landmark-btn { position: absolute; transform: translate(-50%, -50%); background: rgba(246, 240, 227, .92); border: 1px solid var(--rule); border-radius: 10px; padding: .35rem .6rem; cursor: pointer; text-align: center; color: var(--ink); box-shadow: 0 2px 8px rgba(35, 48, 61, .15); min-width: 120px; }
-.island-btn-title, .lm-term { display: block; font-family: var(--serif); font-weight: 600; font-size: .95rem; }
-.island-btn-progress, .lm-sum { display: block; font-size: .78rem; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
-.lm-place { display: block; font-size: .75rem; font-style: italic; color: var(--ink-soft); font-family: var(--serif); }
-.island-btn.is-selected, .landmark-btn.is-selected { border-color: var(--terracotta); box-shadow: 0 0 0 3px rgba(184, 106, 75, .35); }
+.island-btn { position: absolute; transform: translate(-50%, -50%); background: rgba(246, 240, 227, .92); border: 1px solid var(--rule); border-radius: 10px; padding: .35rem .6rem; cursor: pointer; text-align: center; color: var(--ink); box-shadow: 0 2px 8px rgba(35, 48, 61, .15); min-width: 120px; }
+.island-btn-title { display: block; font-family: var(--serif); font-weight: 600; font-size: .95rem; }
+.island-btn-progress { display: block; font-size: .78rem; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+.island-btn.is-selected { border-color: var(--terracotta); box-shadow: 0 0 0 3px rgba(184, 106, 75, .35); }
 .island-btn.is-current { border-color: var(--gold); }
 .cp-btn { position: absolute; transform: translate(-50%, -50%); width: 26px; height: 26px; border-radius: 50%; border: 1.5px solid var(--ink); background: var(--paper); color: var(--ink); font-size: .8rem; line-height: 1; cursor: pointer; display: grid; place-items: center; padding: 0; }
 .cp-btn.cp-completed { background: var(--gold); } .cp-btn.cp-current { background: var(--terracotta); color: var(--paper); }
 .cp-btn.cp-awaiting_info { border-style: dashed; } .cp-btn.is-selected { box-shadow: 0 0 0 3px rgba(184, 106, 75, .45); }
-.landmark-list { list-style: none; margin: 0; padding: .4rem; background: var(--paper-deep); display: grid; gap: .35rem; position: relative; }
-.landmark-row { width: 100%; display: grid; grid-template-columns: 1fr auto; gap: 0 .6rem; text-align: left; background: var(--paper); border: 1px solid var(--rule); border-radius: 10px; padding: .45rem .7rem; cursor: pointer; color: var(--ink); }
-.landmark-row .lm-place { grid-column: 1; } .landmark-row .lm-sum { grid-column: 2; grid-row: 1 / span 2; align-self: center; font-size: .85rem; }
-.landmark-row.is-selected { border-color: var(--terracotta); box-shadow: 0 0 0 3px rgba(184, 106, 75, .3); }
 .map.is-compact .map-paint { max-height: 190px; object-fit: cover; }
-.map-legend { display: flex; gap: 1rem; flex-wrap: wrap; font-size: .8rem; color: var(--ink-soft); padding: .4rem .75rem; margin: 0; background: var(--paper-deep); position: relative; }
 .route { animation: march 18s linear infinite; }
 @keyframes march { to { stroke-dashoffset: -160; } }
 .beam { animation: beam 7s ease-in-out infinite; transform-origin: 10px -46px; }
@@ -160,14 +152,8 @@ label { display: flex; flex-direction: column; gap: .25rem; font-size: .9rem; co
 @media (prefers-reduced-motion: reduce) { .route, .beam, .ripples, .clouds, .view > * { animation: none !important; } * { scroll-behavior: auto !important; } }
 
 /* ---- journey layout ---- */
-.journey-layout, .plan-layout { display: grid; grid-template-columns: minmax(0, 1fr) 420px; gap: 1rem; align-items: start; }
-.journey-head h2 { margin-bottom: .2rem; } .progress-line { margin: 0 0 .5rem; }
-.toggles { display: flex; gap: .5rem; flex-wrap: wrap; align-items: center; margin-bottom: .75rem; }
-.toggles button { background: transparent !important; color: var(--ink) !important; border: 1px solid var(--rule) !important; }
-.toggles button[aria-pressed="true"] { background: var(--parchment) !important; border-color: var(--gold) !important; }
 .detail { background: var(--paper-deep); border: 1px solid var(--rule); border-radius: var(--radius); box-shadow: var(--shadow); max-height: calc(100vh - 140px); overflow: auto; scroll-padding-top: 4rem; }
 .detail.is-empty { display: none; }
-.detail-bar { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: .6rem .9rem; border-bottom: 1px solid var(--rule); position: sticky; top: 0; background: var(--paper-deep); z-index: 1; }
 .crumbs { margin: 0; font-size: .85rem; color: var(--ink-soft); }
 .close { flex: none; background: transparent; border: 1px solid var(--rule); border-radius: 50%; width: 32px; height: 32px; cursor: pointer; color: var(--ink); font-size: 1.1rem; line-height: 1; }
 .detail-body { padding: .9rem 1rem 1.2rem; }
@@ -185,27 +171,12 @@ label { display: flex; flex-direction: column; gap: .25rem; font-size: .9rem; co
 .actions { display: flex; flex-direction: column; gap: .5rem; }
 .nav-next .muted { margin: .3rem 0 0; }
 
-/* ---- vertical journey (phone) ---- */
-.journey-vertical { list-style: none; margin: 0; padding: 0 0 0 1.1rem; border-left: 3px dashed var(--water-ink); }
-.jv-stage { margin: 0 0 1rem; position: relative; }
-.jv-stage::before { content: ""; position: absolute; left: -1.1rem; top: .9rem; width: 18px; height: 14px; transform: translateX(-50%); border-radius: 50%; background: var(--sage); border: 2px solid var(--forest); }
-.jv-stage.is-current::before { background: var(--terracotta); border-color: var(--ink); }
-.jv-stage-btn { width: 100%; text-align: left; background: var(--paper-deep); border: 1px solid var(--rule); border-radius: 12px; padding: .6rem .8rem; cursor: pointer; color: var(--ink); display: grid; }
-.jv-stage-btn.is-selected { border-color: var(--terracotta); box-shadow: 0 0 0 3px rgba(184, 106, 75, .3); }
-.jv-title { font-family: var(--serif); font-weight: 600; } .jv-island { font-style: italic; font-size: .85rem; color: var(--ink-soft); font-family: var(--serif); } .jv-progress { font-size: .85rem; color: var(--ink-soft); }
-.jv-cps { list-style: none; margin: .4rem 0 0 .6rem; padding: 0; }
-.jv-cp { width: 100%; display: grid; grid-template-columns: 26px 1fr auto; gap: .5rem; align-items: center; text-align: left; background: transparent; border: 0; border-bottom: 1px solid var(--rule); padding: .5rem .3rem; cursor: pointer; color: var(--ink); }
-.jv-cp.is-selected { background: rgba(197, 154, 60, .14); border-radius: 8px; }
-.jv-mark { width: 24px; height: 24px; border-radius: 50%; border: 1.5px solid var(--ink); display: grid; place-items: center; font-size: .75rem; background: var(--paper); }
-.cp-completed .jv-mark { background: var(--gold); } .cp-current .jv-mark { background: var(--terracotta); color: var(--paper); } .cp-awaiting_info .jv-mark { border-style: dashed; }
-.jv-status { font-size: .8rem; color: var(--ink-soft); }
 
 /* ---- overview ---- */
 .ov-stages { padding-left: 1.2rem; } .ov-table { width: 100%; border-collapse: collapse; font-size: .9rem; margin: .3rem 0 1rem; }
 .ov-table th, .ov-table td { text-align: left; padding: .35rem .5rem; border-bottom: 1px solid var(--rule); vertical-align: top; }
 
 /* ---- plan view ---- */
-.plan-head { display: flex; flex-wrap: wrap; align-items: end; gap: .75rem 1.25rem; margin-bottom: .75rem; }
 .plan-pick select { max-width: 100%; }
 .landmark .lm-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: .4rem 1rem; }
 .lm-kicker { margin: 0; font-family: var(--serif); font-style: italic; color: var(--ink-soft); width: 100%; }
@@ -261,10 +232,9 @@ label { display: flex; flex-direction: column; gap: .25rem; font-size: .9rem; co
 .pickers { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: .75rem; margin: .75rem 0; }
 /* The comparison table only (`table.grid`): the bare `.grid` selector also matched Tailwind's `grid` display utility on every shadcn Dialog,
    RubberSegment thumb layer and Popover (640 px minimum on phones); scoped at integration, 2026-10-03. */
-.compare .banner { font-weight: 600; } .grid-scroll { overflow: auto; scroll-padding-top: 3.5rem; } table.grid { width: 100%; border-collapse: collapse; font-size: .9rem; min-width: 640px; }
+.compare .banner { font-weight: 600; } table.grid { width: 100%; border-collapse: collapse; font-size: .9rem; min-width: 640px; }
 table.grid th, table.grid td { text-align: left; vertical-align: top; padding: .5rem; border-bottom: 1px solid var(--rule); }
 table.grid thead th { background: var(--paper-deep); position: sticky; top: 0; }
-.plan-h small { display: block; font-weight: 400; color: var(--ink-soft); }
 .differences td { background: rgba(197, 154, 60, .08); font-style: italic; }
 .rails { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: .75rem; }
 .rail { background: var(--paper-deep); border: 1px solid var(--rule); border-radius: 12px; padding: .75rem; }
@@ -312,20 +282,17 @@ table.grid thead th { background: var(--paper-deep); position: sticky; top: 0; }
 /* ---- phone ---- */
 /* phone layout, always on (mobile-only app) */
   .view { padding: 1rem; }
-  .journey-layout, .plan-layout, .documents { grid-template-columns: minmax(0, 1fr); }
+  .documents { grid-template-columns: minmax(0, 1fr); }
   .detail.sheet { position: fixed; left: 0; right: 0; bottom: 0; margin-inline: auto; max-width: var(--col); max-height: 72vh; max-height: 72dvh; border-radius: 18px 18px 0 0; z-index: 15; box-shadow: 0 -10px 30px rgba(35, 48, 61, .25); padding-bottom: env(safe-area-inset-bottom, 0px); }
   .detail.sheet::before { content: ""; display: block; width: 44px; height: 4px; border-radius: 2px; background: var(--rule); margin: .4rem auto 0; }
   .facts li { grid-template-columns: 1fr; }
-  .island-btn, .landmark-btn { min-width: 96px; padding: .25rem .4rem; }
-  .island-btn-title, .lm-term { font-size: .85rem; }
   .total { font-size: 1.8rem; }
   .clause { bottom: 0; left: 0; right: 0; margin-inline: auto; width: auto; max-width: var(--col); border-radius: 18px 18px 0 0; max-height: calc(100vh - 1rem); max-height: calc(100dvh - env(safe-area-inset-top) - 1rem); padding-bottom: calc(.8rem + env(safe-area-inset-bottom)); }
   .topnav { display: contents; }   /* holds only the dock, which is fixed to the bottom of the app column */
   .appbar .ribbon { order: 5; }
 
 /* long option labels must never widen the page: selects shrink inside their column (no clipping guard on .view; demo-2, slop-5) */
-.toggles select, .plan-pick select, .pickers select { max-width: 100%; min-width: 0; }
-.toggles select { width: 100%; } .toggles { flex-direction: column; align-items: stretch; } .toggles button { width: 100%; }
+.plan-pick select, .pickers select { max-width: 100%; min-width: 0; }
 
 /* ---- native selects (layout-17, mobile-4): WebKit ignores min-height and padding on an appearance:auto select (it rendered 22 px on
    iPhone); appearance:none gives every engine the same box, and a token-coloured chevron replaces the native one ---- */
@@ -343,16 +310,14 @@ select:not([multiple]):not([size]) {
 .pv-mini:not(.pv-marginal) .pv-amt { max-width: none; }
 .ov-scroll { overflow-x: auto; max-width: 100%; }
 /* choose, then commit (a11y-16) */
-.add-journey-form, .island-strip-select { display: flex; gap: var(--s-2); align-items: stretch; min-width: 0; }
-.add-journey-form select, .island-strip-select select { flex: 1 1 auto; min-width: 0; width: auto; }
-.add-journey-form button, .island-strip-select button { flex: none; }
+.add-journey-form { display: flex; gap: var(--s-2); align-items: stretch; min-width: 0; }
+.add-journey-form select { flex: 1 1 auto; min-width: 0; width: auto; }
+.add-journey-form button { flex: none; }
 .journey-pickers .add-journey-form { flex: 0 1 300px; }
 .journey-pickers .add-journey-form select.add-journey { flex: 1 1 auto; max-width: none; }
 .journey-pickers .add-journey-form { flex: none; width: 100%; }
 
 /* ---- the shell: one content column (layout-21; since the mobile-only direction, the 480 px app column) ---- */
-/* My plan uses the full width until a landmark opens (the 420 px column exists only while the detail panel shows) */
-.plan-layout:has(> .detail.is-empty) { grid-template-columns: minmax(0, 1fr); }
 /* the loading banner is an overlay: inserting and removing an in-flow row above <main> shifted the page (mobile-18) */
 .processing { position: fixed; top: calc(var(--s-3) + env(safe-area-inset-top)); right: calc(var(--col-inset) + var(--s-4)); z-index: 30; margin: 0; max-width: min(420px, calc(100% - 2rem)); padding: var(--s-2) var(--s-3); background: var(--paper-deep); border: 1px solid var(--rule); border-radius: var(--r-3); box-shadow: var(--shadow-2); pointer-events: none; }
 .start-pending { min-height: 60vh; }

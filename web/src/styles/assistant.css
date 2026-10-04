@@ -110,6 +110,5 @@
 .askbox-sheet-foot textarea { min-height: 72px !important; }   /* over the composer's min-h-12 utility */
 @media (prefers-reduced-motion: reduce) { .ask-scrim { animation: none; } }
 /* the AskBox chunk normally arrives before the journey data; if not, this keeps the card's place so the map does not move */
-.askbox-pending { min-height: 176px; margin: var(--s-4) 0; border: 1px solid var(--rule); border-radius: var(--r-4); background: var(--paper-deep); }
 /* "Calculated from the clauses cited" wraps inside answers (it is nowrap in the drawer's figure rows) */
 .as-answer .fig-calc { white-space: normal; }
