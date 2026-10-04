@@ -44,7 +44,7 @@ describe("My plan 'Your plan' landmark: plan name and option are one text run", 
     const plan: PlanFixture = JSON.parse(readFileSync(join(__dirname, "../../../fixtures/plans/ml26.json"), "utf8"));
     const summary = { title: "NCFlex Dental Plan", plan_name: "NCFlex Dental Plan (State of North Carolina)", option: "Classic Option", insurer: "MetLife" } as unknown as PlanSummary;
     const html = renderToStaticMarkup(
-      <LandmarkContent landmark="harbor" plan={plan} summary={summary} benefits={null} rules={[]} estimate={null} stitches={[]} selected={undefined} onSelect={() => {}} planRef="ML26" />,
+      <LandmarkContent landmark="harbor" plan={plan} summary={summary} benefits={null} rules={[]} estimate={null} stitches={[]} selected={undefined} onSelect={() => {}} onOpenDocuments={() => {}} onBenefitsSaved={() => {}} planRef="ML26" />,
     );
     expect(html).toContain("<strong>NCFlex Dental Plan (State of North Carolina), Classic Option</strong>");
     expect(html).not.toMatch(/<\/strong><span>, Classic Option/);
