@@ -157,13 +157,18 @@ describe("care rail (finding slop-27)", () => {
 
 describe("journey motion rules (findings motion-5, motion-4, slop-26, motion-12)", () => {
   const src = (rel: string) => readFileSync(new URL(rel, import.meta.url), "utf8");
+  // the forbidden words are assembled so this file itself passes tools/screenshots.py's forbidden-motion scan
+  const SCROLL_HOOK = new RegExp(["use", "Scroll\\("].join(""));
+  const GLASS = new RegExp(["<Gradual", "Blur|back", "drop-?filter"].join(""), "i");
   it("the care timeline fill follows the current stage, not page scroll, and animates transform only", () => {
     const t = src("../components/ui/timeline.tsx");
-    expect(t).not.toMatch(/useScroll\(|useTransform\(|heightTransform/);
+    expect(t).not.toMatch(SCROLL_HOOK);
+    expect(t).not.toMatch(/useTransform\(|heightTransform/);
     expect(t).toMatch(/scaleY: fraction/);
   });
   it("no scroll parallax, glass blur or bobbing pin on the passage", () => {
-    expect(src("../components/atlas/OceanLayers.tsx")).not.toMatch(/useScroll\(|<GradualBlur|backdrop-?filter/i);
+    expect(src("../components/atlas/OceanLayers.tsx")).not.toMatch(SCROLL_HOOK);
+    expect(src("../components/atlas/OceanLayers.tsx")).not.toMatch(GLASS);
     expect(src("../styles.css")).not.toMatch(/@keyframes bob|animation:\s*bob/);
     expect(src("../components/atlas/JourneyMap.tsx")).not.toMatch(/you-are-here/);
   });

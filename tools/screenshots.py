@@ -110,11 +110,17 @@ def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-pref
     def close_sheet():
         if mobile and page.get_by_role("button", name="Close details").count():
             page.get_by_role("button", name="Close details").first.click(); page.wait_for_timeout(300)
+    def drawer_gone(ms: int = 2000) -> bool:
+        """Desktop: with nothing selected the detail column leaves (exit + the map's layout glide), so wait for the drawer to detach."""
+        try:
+            page.wait_for_function("!document.querySelector('.drawer')", timeout=ms); return True
+        except Exception:  # noqa: BLE001
+            return False
     def close_drawer():
         """Close whatever detail surface is open: the phone sheet, else Escape (clause card first, then the drawer)."""
         close_sheet()
         if page.locator(".drawer").count():
-            page.keyboard.press("Escape"); page.wait_for_timeout(300)
+            page.keyboard.press("Escape"); page.wait_for_timeout(300); drawer_gone()
         if page.locator(".drawer").count() and page.get_by_role("button", name="Close details").count():
             page.get_by_role("button", name="Close details").first.click(); page.wait_for_timeout(300)
     def drawer_h3s() -> list[str]:
@@ -228,7 +234,7 @@ def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-pref
     card_closed = page.locator(".clause[role=dialog]").count() == 0 and page.locator(".drawer").count() > 0
     check(f"{device}: thread to clause", opened and ("60%" in quote or "Type II" in quote) and "25" in capt and card_closed, f"opened={opened} quote={quote[:40]!r} capt={capt[:30]!r} card_closed={card_closed}")
     if not mobile:
-        page.keyboard.press("Escape"); page.wait_for_timeout(400)
+        page.keyboard.press("Escape"); page.wait_for_timeout(400); drawer_gone()
         after = page.evaluate("document.activeElement && document.activeElement.getAttribute('aria-label')")
         check(f"{device}: escape closes drawer and returns focus", page.locator(".drawer").count() == 0 and (after or "").startswith("Root canal"), f"after={str(after)[:30]!r}")
     else:
