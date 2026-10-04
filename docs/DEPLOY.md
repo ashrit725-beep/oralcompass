@@ -42,7 +42,9 @@ Visitors are identified by a private per-visitor session (`api/app/sessions.py`)
    |---|---|
    | `ORALCOMPASS_SESSION_SECRET` | **required secret** — `python3 -c "import secrets; print(secrets.token_urlsafe(48))"` |
    | `OPENROUTER_API_KEY` | secret, for live AI; leave unset for demo mode |
-   | `ORALCOMPASS_LLM_PROVIDER` | `openrouter` (or `none` to force demo mode) |
+   | `ORALCOMPASS_LLM_PROVIDER` | `bedrock`, `openrouter`, an ordered chain such as `bedrock,openrouter`, or `none` to force demo mode |
+   | `AWS_BEARER_TOKEN_BEDROCK` | secret, a Bedrock API key (see "Amazon Bedrock" below) |
+   | `AWS_REGION`, `ORALCOMPASS_BEDROCK_MODEL` | e.g. `us-east-2` and `us.anthropic.claude-haiku-4-5-20251001-v1:0` |
    | `ORALCOMPASS_LLM_MODEL` | `anthropic/claude-haiku-4.5` |
    | `ORALCOMPASS_LLM_DAILY_REQUESTS`, `ORALCOMPASS_LLM_DAILY_USD` | the global daily caps (defaults 300 requests, $2.00) |
    | `RAILWAY_RUN_UID` | `0` — Railway mounts volumes owned by root; the entrypoint then hands `/data` to uid 10001 and drops root before starting the server |
@@ -101,6 +103,26 @@ ORALCOMPASS_ENV=production ORALCOMPASS_STORE=sqlite ORALCOMPASS_DB_PATH=/tmp/oc/
 ORALCOMPASS_SESSION_SECRET=... ORALCOMPASS_LLM_PROVIDER=none \
 python3 -m uvicorn app.server:app --host 127.0.0.1 --port 8080 --no-access-log
 ```
+
+## Amazon Bedrock (live AI without OpenRouter)
+
+`api/app/llm_providers.py` calls the Bedrock Converse API (`POST https://bedrock-runtime.{AWS_REGION}.amazonaws.com/model/{model}/converse`)
+over the standard library, so there is no boto3 dependency. Structured answers use one forced tool whose input schema is the call site's
+JSON schema. Every live call site (plan extraction, treatment-plan reader, clause explainer, assistant) goes through the same chain.
+
+1. **Credentials.** Either a Bedrock API key (Bedrock console, "API keys": a short-term key lasts up to 12 hours, a long-term key is tied
+   to an IAM user and can be revoked) set as `AWS_BEARER_TOKEN_BEDROCK`, or IAM credentials used to mint one. The server reads only the
+   bearer token; it never sees an IAM secret key.
+2. **Region and model.** `AWS_REGION` is the region you call; `ORALCOMPASS_BEDROCK_MODEL` is the model id or a cross-region inference
+   profile id (Claude Haiku 4.5 in the US: `us.anthropic.claude-haiku-4-5-20251001-v1:0`). The `global.` profile needs its own access.
+3. **Model access and the Anthropic use-case form.** Anthropic models need the one-time use-case form (Bedrock console, "Model access"
+   or the model catalog) before the first call. Until then Bedrock answers 403/404; the server logs "bedrock configuration problem" with
+   the HTTP status and AWS error type only, and moves to the next provider.
+4. **Quotas.** New accounts can have a low "tokens per day" quota per model (Service Quotas → Amazon Bedrock → "Model invocation max tokens
+   per day" for the model). When it is used up Bedrock answers HTTP 429 `ThrottlingException` "Too many tokens per day"; the chain then tries
+   OpenRouter, and if every provider is at its limit the app shows the fixed explanations with the notice "Live AI is unavailable right now
+   (provider limit reached); showing fixed explanations." Request a quota increase in Service Quotas.
+5. **Check.** `/api/health` reports `llm_mode` and `llm_providers` (names only, in chain order); it never returns a key.
 
 ## Verifying before a deploy
 

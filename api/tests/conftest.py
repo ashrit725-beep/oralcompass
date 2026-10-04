@@ -18,6 +18,7 @@ _ALLOW_LIVE = os.environ.get("ORALCOMPASS_ALLOW_LIVE_LLM") == "1"
 if not _ALLOW_LIVE:
     os.environ["ORALCOMPASS_LLM_PROVIDER"] = "none"
     os.environ["OPENROUTER_API_KEY"] = ""
+    os.environ["AWS_BEARER_TOKEN_BEDROCK"] = ""
 os.environ.setdefault("ORALCOMPASS_STORE", "memory")
 if os.environ["ORALCOMPASS_STORE"] == "sqlite" and not os.environ.get("ORALCOMPASS_DB_PATH"):
     os.environ["ORALCOMPASS_DB_PATH"] = str(Path(tempfile.mkdtemp(prefix="oralcompass-test-db-")) / "oralcompass.db")
@@ -70,6 +71,12 @@ def _demo_mode_and_no_model_network(request, monkeypatch):
     from app import assistant, extraction
     monkeypatch.setenv("ORALCOMPASS_LLM_PROVIDER", "none")
     monkeypatch.setenv("OPENROUTER_API_KEY", "")
+    monkeypatch.setenv("AWS_BEARER_TOKEN_BEDROCK", "")
+    from app import llm_providers
+
+    def _refuse_bedrock(req, timeout):
+        raise _NoNetwork(f"a test tried a real model call to {req.host}; set llm_providers._OPENER_OVERRIDE or mark it live_llm")
+    monkeypatch.setattr(llm_providers, "_OPENER_OVERRIDE", _refuse_bedrock)
     monkeypatch.setattr(extraction, "_TRANSPORT_OVERRIDE", httpx.MockTransport(_refuse))
     monkeypatch.setattr(assistant, "live_client", lambda: httpx.Client(timeout=5, transport=httpx.MockTransport(_refuse)))
     yield

@@ -30,6 +30,7 @@ from .data import clauses_from_meta
 from .extraction import ModelUnavailable, looks_like_injection, normalize
 from .lint_runtime import guard
 from .store import NOT_FOUND, repo
+from .templates import LIVE_AI_PROVIDER_LIMIT
 from .templates import EXPLAIN_LABEL_DEMO, EXPLAIN_LABEL_FALLBACK, EXPLAIN_LABEL_LIVE, EXPLAIN_PLAIN, EXPLAIN_PLAIN_DEFAULT
 from .uploads import resolve_plan_ref
 
@@ -194,8 +195,10 @@ def explain(body: ExplainIn, request: Request, user: User = Depends(current_user
         return {**out, "label": EXPLAIN_LABEL_FALLBACK, "reason": "limit"}
     try:
         sentence = write_sentence(clause, topic)
-    except ModelUnavailable:
+    except ModelUnavailable as e:
         log.warning("explain live call failed; template shown")
+        if getattr(e, "limited", False):              # every provider in the chain is at its limit: say so plainly
+            return {**out, "label": EXPLAIN_LABEL_FALLBACK, "reason": "provider_limit", "notice": LIVE_AI_PROVIDER_LIMIT}
         return {**out, "label": EXPLAIN_LABEL_FALLBACK, "reason": "model_unavailable"}
     failed = check_sentence(sentence, clause["quote"])
     if failed:

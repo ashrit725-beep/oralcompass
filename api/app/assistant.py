@@ -44,6 +44,8 @@ from .templates import (ADVICE_AMOUNTS, ADVICE_LINE_STATUS, ADVICE_RULE_ROW, ADV
                         ADVICE_STEPS_CITED_ONE, ADVICE_STEPS_UNCITED, ASSIST_RIBBON_DEMO, ASSIST_RIBBON_LIVE_FALLBACK, LLM_LIMIT_RIBBON,
                         advice_question_response, join_words)
 from . import llm_guard
+from . import llm_providers
+from .templates import LIVE_AI_PROVIDER_LIMIT
 from .assistant_glossary import GLOSSARY, lookup_term
 
 log = logging.getLogger("oralcompass.assistant")
@@ -876,30 +878,33 @@ def _redacted_facts(ctx: Ctx, facts: dict) -> dict:
 
 
 def ask_live(ctx: Ctx, facts: dict, message: str, intent_hint: str) -> tuple[str, list[dict]]:
-    """One OpenRouter chat completion with a strict JSON schema. Raises on any failure; the caller falls back to the demo composition."""
+    """One live completion through the provider chain (Bedrock and/or OpenRouter) with a strict JSON schema. Raises on any failure; the caller
+    falls back to the demo composition."""
     body = {
         "model": llm_model(), "max_tokens": 600, "temperature": 0,
         "messages": [{"role": "system", "content": LIVE_SYSTEM},
                      {"role": "user", "content": json.dumps({"data": _redacted_facts(ctx, facts), "intent_hint": intent_hint, "question": redact(message)[0]}, default=str)}],
         "response_format": {"type": "json_schema", "json_schema": {"name": "assist_answer", "strict": True, "schema": LIVE_SCHEMA}},
     }
-    headers = {"Authorization": f"Bearer {os.environ['OPENROUTER_API_KEY']}", "HTTP-Referer": "https://oralcompass.local", "X-OpenRouter-Title": "OralCompass",
-               "Content-Type": "application/json"}
-    with live_client() as client:
-        r = client.post(OPENROUTER_URL, json=body, headers=headers, timeout=LIVE_TIMEOUT_S)
-    r.raise_for_status()
-    payload = r.json()
-    try:                                                # estimated spend for the daily cap (provider-reported usage when present)
-        llm_guard.record("assistant", *llm_guard.usage_tokens(payload, fallback_in=len(json.dumps(body, default=str)) // 4, fallback_out=body["max_tokens"]))
-    except Exception:
-        pass
-    content = payload["choices"][0]["message"]["content"]
-    if isinstance(content, list):
-        content = "".join(part.get("text", "") for part in content if isinstance(part, dict))
-    content = content.strip()
-    if content.startswith("```"):
-        content = re.sub(r"^```(?:json)?\s*|\s*```$", "", content)
-    parsed = json.loads(content)
+    def _openrouter() -> dict:                         # the OpenRouter member of the provider chain (llm_providers)
+        headers = {"Authorization": f"Bearer {os.environ['OPENROUTER_API_KEY']}", "HTTP-Referer": "https://oralcompass.local", "X-OpenRouter-Title": "OralCompass",
+                   "Content-Type": "application/json"}
+        with live_client() as client:
+            r = client.post(OPENROUTER_URL, json=body, headers=headers, timeout=LIVE_TIMEOUT_S)
+        r.raise_for_status()
+        payload = r.json()
+        try:                                                # estimated spend for the daily cap (provider-reported usage when present)
+            llm_guard.record("assistant", *llm_guard.usage_tokens(payload, fallback_in=len(json.dumps(body, default=str)) // 4, fallback_out=body["max_tokens"]))
+        except Exception:
+            pass
+        content = payload["choices"][0]["message"]["content"]
+        if isinstance(content, list):
+            content = "".join(part.get("text", "") for part in content if isinstance(part, dict))
+        content = content.strip()
+        if content.startswith("```"):
+            content = re.sub(r"^```(?:json)?\s*|\s*```$", "", content)
+        return json.loads(content)
+    parsed = llm_providers.run_chain(body["messages"], "assist_answer", LIVE_SCHEMA, body["max_tokens"], LIVE_TIMEOUT_S, "assistant", openrouter=_openrouter)
     intent = parsed.get("intent") if parsed.get("intent") in INTENTS else intent_hint
     sentences = []
     for s in parsed.get("sentences", [])[:4]:
@@ -1277,7 +1282,7 @@ def ask(body: AssistIn, request: Request, user: User = Depends(current_user)):
             resp["mode"], resp["model"], resp["intent"] = "live", llm_model(), live_intent
         except Exception as e:                       # timeout, HTTP error, malformed JSON: never the message, never the body
             log.warning("assistant live call failed (%s); demo template shown", type(e).__name__)
-            resp["mode"] = "demo"; resp["ribbon"] = ASSIST_RIBBON_LIVE_FALLBACK
+            resp["mode"] = "demo"; resp["ribbon"] = LIVE_AI_PROVIDER_LIMIT if getattr(e, "limited", False) else ASSIST_RIBBON_LIVE_FALLBACK
             sentences = []
     if not sentences and (mode == "demo" or resp["mode"] == "demo"):
         sentences = compose_demo(ctx, compose_intent, facts, message)
