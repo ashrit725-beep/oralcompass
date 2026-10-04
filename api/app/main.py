@@ -232,7 +232,7 @@ def delete_me(user: User = Depends(current_user)):
 
 @app.get("/me/audit")
 def my_audit(user: User = Depends(current_user)):
-    return [e for e in repo.audit if e["sub"] == user.sub]
+    return repo.audit_for(user.sub)
 
 
 @app.get("/health")
