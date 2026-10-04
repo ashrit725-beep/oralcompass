@@ -14,7 +14,14 @@
 .drawer-title { margin: 0; font-family: var(--serif); font-size: 22px; line-height: 28px; font-weight: 600; color: var(--text); white-space: normal; }
 .drawer-title-wrap:focus-visible, .dsec-h:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 2px; }
 .drawer-subtitle { margin: 2px 0 0; font-size: 13px; line-height: 18px; color: var(--text-soft); }
-.drawer-lede { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 6px; margin: var(--s-2) 0 0; font-size: 15px; }
+.drawer-lede { display: flex; flex-direction: column; gap: 2px; margin: var(--s-2) 0 0; font-size: 15px; }
+.drawer-lede-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 6px; margin: 0; }
+.drawer-lede-term-plan { font-size: 13px; color: var(--text-soft); }
+/* remaining strip: an unboxed caption line (no card, no separator glyphs that can orphan at a wrap) */
+.drawer-remaining { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 14px; margin: var(--s-2) 0 0; font-size: 13px; line-height: 20px; color: var(--text-soft); }
+.drawer-remaining-k { font-weight: 500; color: var(--text); }
+.drawer-remaining-item { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 4px; }
+.drawer-remaining .fig .amt { font-size: 14px; line-height: 20px; color: var(--text); }
 .drawer-lede-term { font-family: var(--serif); font-weight: 600; }
 .drawer-lede-amt .amt { font-size: 18px; line-height: 24px; font-weight: 600; color: var(--you-pay); }
 .drawer-lede-unresolved .fig-waiting { color: var(--text-soft); }
@@ -23,7 +30,8 @@
 .drawer-sheet .drawer-bar { min-height: 0; margin-top: var(--s-1); }
 
 /* checkpoint strip: 32 px glyph chips in trail order, 44 px hit area, terracotta ring when selected */
-.cp-strip { list-style: none; display: flex; flex-wrap: wrap; gap: var(--s-2); margin: var(--s-3) 0 0; padding: 0; }
+.cp-strip { list-style: none; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-2); margin: var(--s-3) 0 0; padding: 0; }
+.cp-strip .cp-chip { width: 100%; }
 .cp-chip { display: inline-flex; align-items: center; gap: 4px; min-height: 32px; padding: 4px 8px 4px 6px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--paper); color: var(--text); font-size: 12px; line-height: 16px; cursor: pointer; position: relative; transition: background-color var(--dur-micro) var(--ease-standard); }
 .cp-chip::before { content: ""; position: absolute; inset: -6px 0; }   /* 44 px hit area without widening the strip */
 .cp-chip:hover { background: var(--parchment); }
@@ -52,7 +60,7 @@ details[open] > .dsec-summary .dsec-toggle { transform: rotate(-135deg); margin-
 .dsec-list { margin: 0; padding-left: 1.1rem; } .dsec-list li { margin: 2px 0; }
 .dsec-rules { list-style: none; padding: 0; } .dsec-rules li { margin: var(--s-1) 0; }
 .dsec-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-3); margin: 0 0 var(--s-2); }
-.dsec-pair-cell { background: var(--paper); border: 1px solid var(--border); border-radius: var(--r-3); padding: var(--s-3); display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.dsec-pair-cell { margin: 0; display: flex; flex-direction: column; gap: 2px; min-width: 0; }   /* rows of the section, not cards inside the drawer card */
 .dsec-pair-cell .amt { font-size: 18px; line-height: 24px; font-weight: 600; }
 .dsec-related { margin-top: var(--s-3); }
 .drawer .mono { font-family: var(--mono); }
@@ -185,10 +193,15 @@ details[open] > .dsec-summary .dsec-toggle { transform: rotate(-135deg); margin-
 .trail-one .receipt td.amt .stitch, .trail-one .receipt td.amt .badge { display: inline-flex; margin-top: 2px; }
 .harbor-table th:first-child { width: 36%; }
 .harbor-table th:last-child { width: 20%; }
-/* Phone sheet: the four-column table scrolls sideways instead of clipping the evidence badges inside 70 px cells (island names still wrap). */
-.drawer-sheet .harbor-table { display: block; max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-.drawer-sheet .harbor-table thead, .drawer-sheet .harbor-table tbody, .drawer-sheet .harbor-table tr { display: table; width: 100%; min-width: 440px; table-layout: fixed; }
-.drawer-sheet .harbor-table td:nth-child(2) .badge, .drawer-sheet .harbor-table td:nth-child(3) .badge { white-space: nowrap; }
+/* Phone sheet (layout-10, demo-11): each island stacks into its own block (name on one line, then "You pay", "Plan pays" and "Status",
+   each labelled by its column name from data-label), so no figure, badge or stitch shares a 70 px cell or overlaps the next column. */
+.drawer-sheet .harbor-table, .drawer-sheet .harbor-table tbody, .drawer-sheet .harbor-table tr, .drawer-sheet .harbor-table th, .drawer-sheet .harbor-table td { display: block; width: auto; }
+.drawer-sheet .harbor-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.drawer-sheet .harbor-table tr { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 12px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.drawer-sheet .harbor-table th[scope="row"] { grid-column: 1 / -1; width: auto; border: 0; padding: 0; }
+.drawer-sheet .harbor-table td { border: 0; padding: 0; min-width: 0; }
+.drawer-sheet .harbor-table td:last-child { grid-column: 1 / -1; color: var(--text-soft); font-size: 13px; }
+.drawer-sheet .harbor-table td::before { content: attr(data-label); display: block; font-size: 12px; line-height: 16px; color: var(--text-soft); }
 .clause-in-sheet { overflow-wrap: break-word; }
 /* The term ("coinsurance") keeps its word and takes a full row; the chip, badge and close wrap around it. `!important` because the base
    `.clause header h3 { flex: 1 }` in styles.css outranks this layered sheet (computed flex stayed `1 1 0%`, 43 px wide at 360). */

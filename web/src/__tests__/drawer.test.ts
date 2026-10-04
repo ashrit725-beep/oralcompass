@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { checkpointAmountWords, checkpointAriaName, checkpointsForLine, citeForRule, clockWords, conditionWords, missingForLine, rememberStitchAnchor, sectionForRule, stitchForCheckpoint, stitchScopeLabel, takeStitchAnchor } from "@/lib/drawer";
+import { calcInputs, checkpointAmountWords, checkpointAriaName, checkpointsForLine, citeForRule, rangeWords, remainingBeforeLine, clockWords, conditionWords, missingForLine, rememberStitchAnchor, sectionForRule, stitchForCheckpoint, stitchScopeLabel, takeStitchAnchor } from "@/lib/drawer";
 import { stepContextFor, stitchesForLine, stitchesFromClauses, stitchForStep, uniqueStitches } from "@/lib/stitches";
-import type { Clause, CoverageRule, LedgerLine, PlanFixture } from "@/lib/types";
+import type { Benefits, Clause, CoverageRule, LedgerLine, PlanFixture, SavedEstimate, TreatmentItem } from "@/lib/types";
+import { DRAWER } from "@/lib/copy/drawer";
 
 /** Alex's root canal line as the API returns it (api/app/records.py → engine): no D step (deductible met), no M step (within the maximum). */
 const alexLine: LedgerLine = {
@@ -138,5 +139,51 @@ describe("demo-3: a coinsurance step cites its own class row", () => {
   it("leaves non-CO steps and lines without a rule row on the page lookup", () => {
     expect(stepContextFor({ procedure_key: "unknown" }, [rule])).toBeUndefined();
     expect(stitchForStep(alexLine.steps[0], st, { coverageCite: rule.coverage_cite })?.quote).toBe(st[0].quote);
+  });
+});
+
+describe("demo-4: remaining before a line follows the route", () => {
+  const crownLine: LedgerLine = { ...alexLine, label: "Crown", plan_cents: 51000, patient_cents: 51000, remaining_after: { deductible_cents: 0, annual_max_cents: 16200 }, procedure_key: "crown" };
+  const lines = [alexLine, crownLine];
+  const benefits = { remaining_deductible_cents: 0, remaining_max_cents: 126000 } as unknown as Benefits;
+  it("starts the first line from the statement and later lines from the previous line's remaining_after", () => {
+    expect(remainingBeforeLine("max", 0, lines, benefits)).toEqual({ cents: 126000, calculated: false });
+    expect(remainingBeforeLine("max", 1, lines, benefits)).toEqual({ cents: 67200, calculated: true });   // $672.00, not the statement's $1,260.00
+    expect(remainingBeforeLine("deductible", 1, lines, benefits)).toEqual({ cents: 0, calculated: true });
+    expect(remainingBeforeLine("max", undefined, lines, benefits).cents).toBe(126000);
+  });
+  it("reconciles: before − consumed = after for the crown", () => {
+    const before = remainingBeforeLine("max", 1, lines, benefits).cents ?? 0;
+    expect(before - crownLine.plan_cents!).toBe(crownLine.remaining_after.annual_max_cents);
+  });
+});
+
+describe("orchestrator note 1: calculated totals list the evidence of their inputs", () => {
+  it("names USER for entered figures and ASSUMED for hypotheticals, never DOC", () => {
+    const item = { id: "i", procedure_key: "crown", quantity: 1, dentist_fee_cents: 100000, allowed_cents: 90000, allowed_status: "USER", status: "planned" } as unknown as TreatmentItem;
+    expect(calcInputs(item, null)).toEqual(["USER"]);
+    expect(calcInputs({ ...item, allowed_status: "ASSUMED" }, null)).toEqual(["USER", "ASSUMED"]);
+    const est = { inputs: { treatment_item_ids: ["i"], hypotheticals: {} }, assumptions: ["network assumed in"] } as unknown as SavedEstimate;
+    expect(calcInputs(undefined, est)).toEqual(["USER", "ASSUMED"]);
+    expect(calcInputs(item, null)).not.toContain("DOC");
+  });
+});
+
+describe("demo-15: the movers range sentence never prints an empty cause", () => {
+  it("names the measured movers, else every unknown input, else no 'because' clause", () => {
+    expect(rangeWords([64000, 66500], [{ unknown: "remaining deductible", impact_cents: 2500, zero_impact: false }])).toContain("because remaining deductible was not provided");
+    const multi = rangeWords([64000, 120000], [{ unknown: "remaining deductible", impact_cents: null, zero_impact: false }, { unknown: "enrollment date", impact_cents: null, zero_impact: false }]);
+    expect(multi).toContain("remaining deductible and enrollment date");
+    expect(multi).not.toMatch(/because\s+was/);
+    expect(rangeWords([64000, 120000], [])).toBe("Between $640.00 and $1,200.00.");
+  });
+});
+
+describe("demo-16 / slop-18: Harbor Light words", () => {
+  it("agrees the verb for one stage, lists stage progress and does not repeat the place in the crumbs", () => {
+    expect(DRAWER.afterRouteStages(1)).toMatch(/^1 care stage follows the route/);
+    expect(DRAWER.afterRouteStages(2)).toMatch(/^2 care stages follow the route/);
+    expect(DRAWER.stageProgress("Follow-up", 0, 2)).toBe("Follow-up · 0 of 2 checkpoints completed");
+    expect(DRAWER.crumbsLight("Harbor Light")).not.toContain("Harbor Light");
   });
 });

@@ -66,22 +66,29 @@ export function Section({ k, title, children, collapsible, defaultOpen = true, c
  * sibling; `roll` switches to `Money`/NumberFlow where the amount re-measures on a new estimate. `null` cents render the em dash plus the
  * waiting words with the UNKNOWN badge, never $0.00.
  */
-export function Figure({ cents, evidence, stitch, stitches, onSelectStitch, signed: isSigned, waiting = true, className, hero, roll, calc }: {
+export function Figure({ cents, evidence, stitch, stitches, onSelectStitch, signed: isSigned, waiting = true, className, hero, roll, calc, inputs, calcLabel }: {
   cents: number | null | undefined; evidence: Evidence; stitch?: Stitch | null; stitches?: Stitch[]; onSelectStitch?: (s: Stitch) => void; signed?: boolean; waiting?: boolean; className?: string; hero?: boolean; roll?: boolean;
-  /** An engine total (document rules applied to your figures): instead of a single evidence badge it says it was calculated and carries
-   *  the stitches of the clauses behind it (orchestrator note 1; no seventh evidence status). Falls back to the badge without stitches. */
+  /** An engine total (document rules applied to your figures): instead of a single evidence badge it says it was calculated, carries the
+   *  stitches of the clauses behind it and the badges of the figures it used (`inputs`, e.g. USER for what you entered). Orchestrator
+   *  note 1; no seventh evidence status. Falls back to `evidence` when there is neither a stitch nor an input to show. */
   calc?: boolean;
+  /** The evidence of the non-document figures a calculated total used (see `calcInputs` in lib/drawer.ts). */
+  inputs?: Evidence[];
+  /** Caption for a calculated figure; `null` hides it (table cells, where the table caption says it once). */
+  calcLabel?: string | null;
 }) {
   const missing = cents == null;
   const chips = (stitches ?? (stitch ? [stitch] : [])).filter(Boolean) as Stitch[];
-  const asCalc = !!calc && !missing && chips.length > 0 && !!onSelectStitch;
+  const inputBadges = [...new Set(inputs ?? [])];
+  const asCalc = !!calc && !missing && ((chips.length > 0 && !!onSelectStitch) || inputBadges.length > 0);
   const text = missing ? "—" : isSigned ? signed(cents) : money(cents);
+  const label = calcLabel === undefined ? DRAWER.calculated : calcLabel;
   return (
-    <span className={cn("fig", hero && "fig-hero", missing && "fig-missing", className)} data-amount={missing ? undefined : text}>
-      {roll && !missing ? <Money cents={cents} evidence={evidence} signed={isSigned} /> : (
+    <span className={cn("fig", hero && "fig-hero", missing && "fig-missing", asCalc && "fig-calculated", className)} data-amount={missing ? undefined : text}>
+      {roll && !missing && !asCalc ? <Money cents={cents} evidence={evidence} signed={isSigned} /> : (
         <>
           <span className="amt font-sans tabular-nums text-ink" aria-label={missing ? DRAWER.noAmount : undefined}>{text}</span>
-          {asCalc ? <span className="fig-calc">{DRAWER.calculated}</span> : <EvidenceBadge status={missing ? "UNKNOWN" : evidence} />}
+          {asCalc ? <>{label ? <span className="fig-calc">{label}</span> : null}{inputBadges.map((e) => <EvidenceBadge key={e} status={e} />)}</> : <EvidenceBadge status={missing ? "UNKNOWN" : evidence} />}
         </>
       )}
       {missing && waiting ? <span className="fig-waiting">{DRAWER.waitingInfo}</span> : null}
