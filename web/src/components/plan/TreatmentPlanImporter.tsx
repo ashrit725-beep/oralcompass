@@ -6,6 +6,7 @@ import { dollarsToCents } from "@/lib/plan-catalog";
 import type { Procedure, TreatmentItem } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { EvidenceBadge } from "@/components/Primitives";
+import { TreatmentPlanReader } from "./TreatmentPlanReader";
 
 /**
  * TreatmentPlanImporter (spec §4.5 "Add a procedure"): one treatment item typed from the dentist's estimate. The `<select>` lists only the
@@ -13,6 +14,8 @@ import { EvidenceBadge } from "@/components/Primitives";
  * tooth field appears only when `tooth_or_area_relevant`. Dentist's fee and allowed amount are separate fields; an allowed amount needs
  * its source. Submits `POST /me/treatment-items` and hands the created item to the caller, which re-estimates. Codes appear only as
  * written on the user's own estimate (`code_as_written`, UI.codesNote). Nothing is computed here beyond dollars → cents.
+ * Above the form, `TreatmentPlanReader` reads a whole estimate (pasted text, photo or PDF; addendum D.5a); the lines the user ticks are
+ * created in one request and `onAdded` is called once with the last of them, so the caller re-estimates once.
  */
 export interface TreatmentPlanImporterProps {
   procedures: Procedure[];
@@ -70,8 +73,10 @@ export function TreatmentPlanImporter({ procedures, onAdded, compact }: Treatmen
   const describe = (k: string) => (errors[k] ? `${id}-${k}-e` : undefined);
 
   return (
+    <div className={`tpi ${compact ? "is-compact" : ""}`}>
+    <TreatmentPlanReader onConfirmed={(items) => { if (items.length) onAdded(items[items.length - 1]); }} />
     <form className={`tpi-form ${compact ? "is-compact" : ""}`} onSubmit={submit} aria-labelledby={`${id}-h`} noValidate>
-      <h4 id={`${id}-h`} className="bs-h">{PLAN.addTitle}</h4>
+      <h4 id={`${id}-h`} className="bs-h">{PLAN.readManualTitle}</h4>
       <p className="bs-note">{PLAN.addIntro}</p>
       <div className="bs-grid">
         <label className="bs-span">{PLAN.addProcedure}
@@ -108,6 +113,7 @@ export function TreatmentPlanImporter({ procedures, onAdded, compact }: Treatmen
       </div>
       {message && <p className="bs-status" role="status">{message}</p>}
     </form>
+    </div>
   );
 }
 

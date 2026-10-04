@@ -1,13 +1,14 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { motion, useReducedMotion } from "motion/react";
-import { PLAIN, UI } from "../lib/copy";
+import { UI } from "../lib/copy";
 import { takeStitchAnchor } from "../lib/drawer";
 import { transitions } from "../lib/motion";
 import { money } from "../lib/stitches";
 import type { AssistScope, LedgerLine, Stitch } from "../lib/types";
 import { AskAboutStep } from "./assistant/AskAboutStep";
 import { DepthDial, EvidenceBadge, StitchChip } from "./Primitives";
+import { PlainWords } from "./PlainWords";
 
 interface Props {
   stitch: Stitch; lines: LedgerLine[]; onClose: () => void; onOpenOnPage: (s: Stitch) => void;
@@ -32,8 +33,6 @@ export function ClauseCard({ stitch, lines, onClose, onOpenOnPage, askSlot, askS
   const cardRef = useRef<HTMLElement>(null);
   const opener = useRef<HTMLElement | null>(null);
   const [thread, setThread] = useState<string | null>(null);
-  const topicKey = stitch.topic.startsWith("class:") ? "coinsurance" : stitch.topic;
-  const plain = PLAIN[topicKey] ?? "This sentence states a rule of your plan.";
   const affected = lines.flatMap((l) => l.steps.filter((s) => s.stitch?.endsWith(`#p${stitch.page}`) && stitch.ruleCodes.includes(s.rule)).map((s) => ({ line: l.label, step: s })));
 
   // On the phone the card is pressed from inside the modal bottom sheet (vaul over Radix Dialog): a card outside that dialog would sit under
@@ -79,7 +78,7 @@ export function ClauseCard({ stitch, lines, onClose, onOpenOnPage, askSlot, askS
           <button type="button" className="close" onClick={onClose} aria-label="Close clause card">×</button>
         </header>
         <DepthDial depth={depth} onChange={setDepth} />
-        {depth === 1 && <p className="plain">{plain}</p>}
+        {depth === 1 && <PlainWords planRef={askScope?.plan_ref} stitch={stitch} eyebrow={false} />}
         {depth === 2 && (
           affected.length ? (
             <table className="mini"><caption>In this scenario</caption><tbody>

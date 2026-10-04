@@ -3,6 +3,7 @@ import type {
   PrivateDocument, Procedure, ReviewDecision, SavedEstimate, SourceItem, TreatmentItem, UploadResponse, UploadedPlanSummary,
 } from "./types";
 import { isUpload, uploadId } from "./types";
+import type { ConfirmItem, ExplainRequest, ExplainResponse, ReadResponse, ReadSample } from "./ai-types";
 
 const DEV_USER = "demo-user";   // dev auth only (ORALCOMPASS_DEV_AUTH=1 on the API); production sends the Cognito JWT.
 
@@ -91,6 +92,12 @@ export const api = {
   publish: (id: string) => post<{ plan_ref: PlanRef; version_label: string; published_at: string; sha256: string; summary: UploadedPlanSummary }>(`/me/documents/${id}/publish`, {}),
   // grounded assistant (spec §8.2; api/app/assistant.py)
   ask: (body: { message: string; scope: AssistScope }) => post<AssistResponse>("/me/assistant", body),
+  // AI treatment-plan reader and clause explainer (addendum D.5; api/app/treatment_reader.py, api/app/explain.py)
+  readTreatmentPlanText: (text: string) => post<ReadResponse>("/me/treatment-plans/read", { text }),
+  readTreatmentPlanFile: (file: File) => multipart<ReadResponse>("/me/treatment-plans/read", { file }),
+  treatmentPlanSamples: () => req<{ items: ReadSample[] }>("/me/treatment-plans/samples"),
+  confirmTreatmentPlan: (items: ConfirmItem[]) => post<{ created: TreatmentItem[]; source: string }>("/me/treatment-plans/confirm", { items }),
+  explain: (body: ExplainRequest) => post<ExplainResponse>("/me/explain", body),
   // legacy (explicit lines/state) — used by Compare
   estimate: (body: unknown) => post<EstimateResponse>("/estimates", body),
   comparison: (body: unknown) => post<ComparisonResponse>("/comparisons", body),
