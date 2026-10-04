@@ -38,12 +38,13 @@
    of a dead third of the page. A landmark opens the detail column as before (the compass then sits under the atlas). ---- */
 @media (min-width: 761px) { .plan-layout.is-solo { grid-template-columns: minmax(0, 1fr); } }
 @media (min-width: 1200px) {
-  .plan-layout.is-solo .plan-main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto auto auto auto 1fr; column-gap: var(--s-5); align-items: start; }
+  .plan-layout.is-solo .plan-main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto auto auto auto auto 1fr; column-gap: var(--s-5); align-items: start; }
   .plan-layout.is-solo .plan-main > * { grid-column: 1; }
   .plan-layout.is-solo .plan-main > .plan-head { grid-row: 1; }
-  .plan-layout.is-solo .plan-main > .plan-map { grid-row: 2; margin-top: var(--s-4); }
-  .plan-layout.is-solo .plan-main > .hint { grid-row: 3; }
-  .plan-layout.is-solo .plan-main > .plan-add { grid-row: 4; }
+  .plan-layout.is-solo .plan-main > .askbox, .plan-layout.is-solo .plan-main > .askbox-pending { grid-row: 2; }   /* "Ask in plain words" under the plan selector */
+  .plan-layout.is-solo .plan-main > .plan-map { grid-row: 3; margin-top: var(--s-4); }
+  .plan-layout.is-solo .plan-main > .hint { grid-row: 4; }
+  .plan-layout.is-solo .plan-main > .plan-add { grid-row: 5; }
   .plan-layout.is-solo .plan-main > .compass { grid-column: 2; grid-row: 1 / -1; margin-top: 0; }
 }
 
@@ -93,6 +94,9 @@
 .cmp-figures { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: var(--s-1) var(--s-3); margin: 0; font-size: .95rem; align-items: baseline; }
 .cmp-figures dt { color: var(--ink-soft); } .cmp-figures dd { margin: 0; min-width: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-1) var(--s-2); }
 .cmp-figures dd > span, .cmp-limit > span, .cmp-a > span, .cmp-strip-item > span { flex-wrap: wrap; }   /* <Money> is an inline-flex pair; let the badge drop to the next line at 360 px */
+/* the calculated label ("Calculated from the clauses cited", nowrap in drawer.css) wraps inside the compass figures: unwrapped it pushed the
+   page 50 px wider than the viewport on desktop and phone (found by the AskBox walk on My plan) */
+.cmp-figures .fig-calc { white-space: normal; }
 /* the phone landmark rows opt out of the legacy pill-button rule (styles.css) through `.unstyled`; restore their own look */
 .landmark-list .landmark-row.unstyled { background: var(--paper); color: var(--ink); border: 1px solid var(--rule); border-radius: 10px; padding: .45rem .7rem; min-height: 44px; }
 .landmark-list .landmark-row.unstyled.is-selected { border-color: var(--terracotta); box-shadow: 0 0 0 3px var(--select-ring); }

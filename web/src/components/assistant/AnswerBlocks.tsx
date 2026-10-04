@@ -1,5 +1,5 @@
 import { motion } from "motion/react";
-import { EASE } from "@/lib/motion";
+import { EASE, useReducedMotion } from "@/lib/motion";
 import { Suspense, lazy, type ReactNode } from "react";
 import { Money } from "@/components/Money";
 import { EvidenceBadge, StitchChip } from "@/components/Primitives";
@@ -52,12 +52,15 @@ export function Chip({ r, data, scope, onOpenStitch, onOpenStep }: { r: AssistRe
 /** Answer reveal (motionsites technique 2, adapted): each block rises 4 px and fades in over 500 ms on the soft-landing ease, in reading
  *  order 80 ms apart (capped at four steps), and the citation chips land 120 ms after their sentence. Mount-only; the end state is the
  *  plain layout, and MotionConfig reducedMotion="user" drops the rise. */
-const reveal = (i: number, extra = 0) => ({
+const revealMotion = (i: number, extra = 0) => ({
   initial: { opacity: 0, y: 4 }, animate: { opacity: 1, y: 0 },
   transition: { duration: 0.5, ease: EASE.land, delay: Math.min(i, 4) * 0.08 + extra },
 });
 
 export function AnswerBlocks({ blocks, data, scope, onOpenStitch, onOpenStep, onClarify, mark = true }: AnswerBlocksProps) {
+  const reduce = useReducedMotion();
+  // reduced motion renders the end state at once (no fade either)
+  const reveal = (i: number, extra = 0) => (reduce ? { initial: false as const } : revealMotion(i, extra));
   let marked = !mark;
   return (
     <div className="as-blocks">
