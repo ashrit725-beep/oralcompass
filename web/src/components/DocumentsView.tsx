@@ -49,7 +49,8 @@ export function DocumentsView({ planCode, plans, onPlan, evidence, stitches, sel
   const primary = evidence?.documents[0];
   const carriers = groupPlans(plans);
   const refreshUploads = () => api.myPlans().then((r) => setUploads(r.items as UploadSummary[])).catch(() => setUploads([]));
-  useEffect(() => { api.myDocuments().then(setMine).catch(() => setMine([])); api.sources().then((r) => setSources(r.items)).catch(() => setSources([])); refreshUploads(); }, [planCode]);
+  const refreshMine = () => api.myDocuments().then(setMine).catch(() => setMine([]));
+  useEffect(() => { refreshMine(); api.sources().then((r) => setSources(r.items)).catch(() => setSources([])); refreshUploads(); }, [planCode]);
 
   // an uploaded plan's PDF is private: fetched with the owner header into an object URL, revoked when the page changes
   const ownedPath = primary?.has_stored_pdf && primary.stored_path?.startsWith("/me/") ? primary.stored_path : null;
@@ -167,7 +168,9 @@ export function DocumentsView({ planCode, plans, onPlan, evidence, stitches, sel
 
       <section className="doc-mine" aria-labelledby="mine-h">
         <h2 id="mine-h">{PLAN.docsMine}</h2>
-        {uploadSlot ?? <UploadWizard planRef={planCode} onPublished={(s, ref) => { refreshUploads(); onPublished?.(s, ref); }} onUsePlan={onPlan} />}
+        {/* "Your documents" lists a new upload (with its server count) once the dialog closes or the version is published */}
+        {uploadSlot ?? <UploadWizard planRef={planCode} onPublished={(s, ref) => { refreshUploads(); refreshMine(); onPublished?.(s, ref); }} onUsePlan={onPlan}
+                                     onOpenChange={(open) => { if (!open) refreshMine(); }} />}
         <RemindersPanel refreshKey={planCode} />
         {mine === null ? <p className="muted">{UI.processing}</p> : mine.length === 0 ? <p className="muted">{PLAN.docsNoPrivate}</p> : (
           <ul className="plain-list">{mine.map((d) => <li key={d.id}><strong>{d.label ?? d.filename}</strong> <span className="muted">· {d.type ?? "upload"} · {d.extraction_status ?? UI.notStated}</span>
