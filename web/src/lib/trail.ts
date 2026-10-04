@@ -9,6 +9,8 @@ export interface TrailStep {
 export interface Trail { steps: TrailStep[]; fee: number | null; youPay: number | null; planPays: number | null; reconciles: boolean | null; status: LedgerLine["status"]; upperBound: boolean }
 
 const find = (steps: Step[], pred: (s: Step) => boolean) => steps.find(pred);
+/** The percentage the engine printed in a step label ("Plan pays 60% before the annual maximum", "Your share (40% of …)"). */
+const pctIn = (s: Step | undefined): number | undefined => { const m = s ? /(\d+(?:\.\d+)?)%/.exec(s.label) : null; return m ? Number(m[1]) : undefined; };
 
 /** Reconstruct the trail from an engine ledger line. The engine's steps are the truth; this only arranges them in the fixed trail order. */
 export function buildTrail(line: LedgerLine): Trail {
@@ -44,7 +46,10 @@ export function buildTrail(line: LedgerLine): Trail {
   const allowed = basis - (abBasis?.cents ?? 0);          // abBasis.cents is negative: −(allowed − basis)
   const fee = allowed + (net?.cents ?? 0);
   const planPay = planPre - (beyond?.cents ?? 0);
-  const planPct = after > 0 ? Math.round((planPre / after) * 100) : 0;
+  // The rule's percentage as the engine applied it (its CO step labels), not a ratio of rounded dollars: a deductible that absorbs the whole
+  // line (after = 0) used to print "plan pays 0% / you 100%" beside "Your plan lists Type II at 60%" (web-correctness-11).
+  const patPct = pctIn(coPat);
+  const planPct = pctIn(coPlan) ?? (patPct != null ? 100 - patPct : after > 0 ? Math.round((planPre / after) * 100) : 0);
   const netOwedByYou = net?.owner === "patient";
   const steps: TrailStep[] = [
     { key: "fee", title: TRAIL.fee, amountIn: null, change: null, amountOut: fee, owner: "info", rule: "fee", explanation: "What the dentist charges, as written on the estimate.", stitch: null },
@@ -55,7 +60,9 @@ export function buildTrail(line: LedgerLine): Trail {
   steps.push({ key: "deductible", title: TRAIL.deductible, amountIn: basis, change: -dedC, amountOut: after, owner: "patient", rule: "D", stitch: ded?.stitch ?? null,
                explanation: dedC ? "Applied to your remaining deductible — your share." : "No deductible applied to this line (waived for this class, or already met per your records)." });
   steps.push({ key: "share", title: TRAIL.share, amountIn: after, change: -patCo, amountOut: planPre, owner: "plan", rule: "CO", stitch: coPlan?.stitch ?? coPat?.stitch ?? null, split: { plan: planPre, patient: patCo, planPct },
-               explanation: `The plan pays ${planPct}% of the amount after the deductible; your share is ${100 - planPct}%.` });
+               explanation: after === 0 && (coPlan || coPat)
+                 ? `Nothing remains after the deductible, so the ${planPct}% plan share moves no money on this line.`
+                 : `The plan pays ${planPct}% of the amount after the deductible; your share is ${100 - planPct}%.` });
   steps.push({ key: "max", title: TRAIL.max, amountIn: planPre, change: -(beyond?.cents ?? 0), amountOut: planPay, owner: beyond ? "patient" : "plan", rule: "M", stitch: beyond?.stitch ?? null,
                explanation: beyond ? "Part of the plan share exceeds the plan's remaining annual maximum — that part is your share." : "Within the plan's remaining annual maximum (or no maximum applies) — no adjustment." });
   const extra = listed.reduce((a, s) => a + s.cents, 0);
