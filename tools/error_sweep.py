@@ -290,20 +290,27 @@ class Sweep:
     def plan(self):
         self.tab("My plan")
         p = self.page
+        try:
+            self.action = "plan: open Deductible landmark, 'Your numbers'"
+            p.locator("button[aria-label^='Deductible']").first.click(timeout=3000); self.wait(400)
+            p.get_by_role("radio", name="Your numbers").first.click(timeout=3000); self.wait(400)
+        except PWError:
+            pass
         form = p.locator("form").filter(has=p.get_by_label("Statement date (required)", exact=False))
         if form.count():
             try:
                 self.action = "plan: submit benefit statement with invalid input"
-                form.get_by_label("Deductible met so far this benefit year (dollars)", exact=False).fill("-5")
-                form.locator("button[type=submit]").first.click(timeout=2000); self.wait(500)
+                form.get_by_label("Statement (label, required)", exact=False).fill("")
+                form.get_by_role("button", name="Record these figures").click(timeout=2000); self.wait(500)
                 self.action = "plan: submit benefit statement with valid input"
                 form.get_by_label("Deductible met so far this benefit year (dollars)", exact=False).fill("25.00")
                 form.get_by_label("Paid by the plan so far this benefit year (dollars)", exact=False).fill("240.00")
                 form.get_by_label("Statement (label, required)", exact=False).fill("Benefit statement dated 2026-09-20 (error sweep)")
                 form.get_by_label("Statement date (required)", exact=False).fill("2026-09-20")
-                form.locator("button[type=submit]").first.click(timeout=2000); self.wait(1200)
-            except PWError:
-                pass
+                form.get_by_role("button", name="Record these figures").click(timeout=2000); self.wait(1200)
+            except PWError as e:
+                note("sweep", f"benefit form step failed: {str(e).splitlines()[0][:160]}", f"{self.label} / {self.action}")
+        self.close_overlays()
         self.click_all("My plan")
         self.cycle_selects("My plan")
 
@@ -317,28 +324,28 @@ class Sweep:
         self.tab("Documents")
         p = self.page
         self.click_all("Documents", limit=50)
-        # upload wizard: a .txt (rejected with a visible message), then the fixture PDF (demo extraction)
+        # upload wizard: a .txt (rejected with a visible message), then the fixture PDF (redaction preview -> demo extraction -> review)
         self.tab("Documents")
-        inp = p.locator("input[type=file]")
-        if inp.count():
+        try:
+            self.action = "upload: open 'Add a plan document'"
+            p.get_by_role("button", name="Add a plan document").first.click(timeout=3000); self.wait(700)
             txt = Path(tempfile.gettempdir()) / "oralcompass-sweep.txt"
             txt.write_text("not a pdf")
-            try:
-                self.action = "upload: choose a .txt file"
-                inp.first.set_input_files(str(txt)); self.wait(800)
-                pdf = ROOT / "fixtures" / "documents" / "nw26_certificate.pdf"
-                self.action = "upload: choose the fixture PDF"
-                p.locator("input[type=file]").first.set_input_files(str(pdf)); self.wait(1200)
-                for label in ("Upload", "Continue", "Start extraction", "Extract", "Next"):
-                    b = p.get_by_role("button", name=label, exact=True)
-                    if b.count() and b.first.is_visible() and b.first.is_enabled():
-                        self.action = f"upload: click '{label}'"
-                        b.first.click(timeout=2000); self.wait(1500)
-                # switch tabs during extraction polling, then come back
-                self.tab("My journey"); self.wait(600); self.tab("Documents")
-                p.wait_for_timeout(6000)
-            except PWError:
-                pass
+            self.action = "upload: choose a .txt file"
+            p.locator("input[type=file]").first.set_input_files(str(txt)); self.wait(800)
+            self.action = "upload: choose the fixture PDF"
+            p.locator("input[type=file]").first.set_input_files(str(ROOT / "fixtures" / "documents" / "harborview_certificate.pdf"))
+            p.wait_for_selector("text=Removed before any model call", timeout=30000); self.wait(300)
+            self.action = "upload: continue with redactions (extraction polling)"
+            p.get_by_role("button", name="Continue with these redactions").click(timeout=3000); self.wait(800)
+            p.wait_for_selector("text=Review the fields", timeout=120000); self.wait(400)
+            self.action = "upload: open the review table"
+            p.get_by_role("button", name="Review the fields").click(timeout=3000); self.wait(1000)
+            self.action = "upload: Escape the wizard mid-review"
+            self.esc(); self.close_overlays()
+        except PWError as e:
+            note("sweep", f"upload wizard step failed: {str(e).splitlines()[0][:160]}", f"{self.label} / {self.action}")
+            self.close_overlays()
         self.cycle_selects("Documents")
 
     def lifecycle(self, phone: bool):
