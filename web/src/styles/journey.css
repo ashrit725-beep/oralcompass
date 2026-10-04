@@ -328,3 +328,5 @@
   .pv-station:active .pv-label, .pv-cp:active .cp-visual, .care-stage-btn:active { scale: none; }
   .journey-details > summary::after, .journey-overview > summary::after { transition: none; }
 }
+/* the plates are <picture>s (lib/art-srcset): the wrapper adds no box, the <img> keeps its own layout */
+.cin-drift > picture, .pa-plate > picture { display: contents; }

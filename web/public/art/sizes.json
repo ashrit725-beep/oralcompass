@@ -1,0 +1,354 @@
+{
+  "benefits-chest": {
+    "w": 1254,
+    "h": 1254,
+    "src": "/art/benefits-chest.webp",
+    "bytes": 435838,
+    "variants": [
+      {
+        "w": 480,
+        "h": 480,
+        "webp": "/art/benefits-chest-480.webp",
+        "bytes": 48834,
+        "avif": "/art/benefits-chest-480.avif",
+        "avifBytes": 25391
+      },
+      {
+        "w": 720,
+        "h": 720,
+        "webp": "/art/benefits-chest-720.webp",
+        "bytes": 109580,
+        "avif": "/art/benefits-chest-720.avif",
+        "avifBytes": 57008
+      },
+      {
+        "w": 960,
+        "h": 960,
+        "webp": "/art/benefits-chest-960.webp",
+        "bytes": 186714,
+        "avif": "/art/benefits-chest-960.avif",
+        "avifBytes": 90409
+      }
+    ]
+  },
+  "fog-layer-1": {
+    "w": 2000,
+    "h": 667,
+    "src": "/art/fog-layer-1.webp",
+    "bytes": 220628,
+    "variants": [
+      {
+        "w": 480,
+        "h": 160,
+        "webp": "/art/fog-layer-1-480.webp",
+        "bytes": 14864,
+        "avif": "/art/fog-layer-1-480.avif",
+        "avifBytes": 4872
+      },
+      {
+        "w": 720,
+        "h": 240,
+        "webp": "/art/fog-layer-1-720.webp",
+        "bytes": 27728,
+        "avif": "/art/fog-layer-1-720.avif",
+        "avifBytes": 8084
+      },
+      {
+        "w": 960,
+        "h": 320,
+        "webp": "/art/fog-layer-1-960.webp",
+        "bytes": 43318,
+        "avif": "/art/fog-layer-1-960.avif",
+        "avifBytes": 11796
+      }
+    ]
+  },
+  "fog-layer-2": {
+    "w": 2000,
+    "h": 667,
+    "src": "/art/fog-layer-2.webp",
+    "bytes": 272240,
+    "variants": [
+      {
+        "w": 480,
+        "h": 160,
+        "webp": "/art/fog-layer-2-480.webp",
+        "bytes": 17918,
+        "avif": "/art/fog-layer-2-480.avif",
+        "avifBytes": 6301
+      },
+      {
+        "w": 720,
+        "h": 240,
+        "webp": "/art/fog-layer-2-720.webp",
+        "bytes": 33892,
+        "avif": "/art/fog-layer-2-720.avif",
+        "avifBytes": 10196
+      },
+      {
+        "w": 960,
+        "h": 320,
+        "webp": "/art/fog-layer-2-960.webp",
+        "bytes": 52966,
+        "avif": "/art/fog-layer-2-960.avif",
+        "avifBytes": 14754
+      }
+    ]
+  },
+  "island-generic": {
+    "w": 1422,
+    "h": 1106,
+    "src": "/art/island-generic.webp",
+    "bytes": 552696,
+    "variants": [
+      {
+        "w": 480,
+        "h": 373,
+        "webp": "/art/island-generic-480.webp",
+        "bytes": 51992,
+        "avif": "/art/island-generic-480.avif",
+        "avifBytes": 30298
+      },
+      {
+        "w": 720,
+        "h": 560,
+        "webp": "/art/island-generic-720.webp",
+        "bytes": 110220,
+        "avif": "/art/island-generic-720.avif",
+        "avifBytes": 64438
+      },
+      {
+        "w": 960,
+        "h": 747,
+        "webp": "/art/island-generic-960.webp",
+        "bytes": 197446,
+        "avif": "/art/island-generic-960.avif",
+        "avifBytes": 102942
+      }
+    ]
+  },
+  "island-lighthouse": {
+    "w": 1421,
+    "h": 1107,
+    "src": "/art/island-lighthouse.webp",
+    "bytes": 536472,
+    "variants": [
+      {
+        "w": 480,
+        "h": 374,
+        "webp": "/art/island-lighthouse-480.webp",
+        "bytes": 55058,
+        "avif": "/art/island-lighthouse-480.avif",
+        "avifBytes": 31434
+      },
+      {
+        "w": 720,
+        "h": 561,
+        "webp": "/art/island-lighthouse-720.webp",
+        "bytes": 114406,
+        "avif": "/art/island-lighthouse-720.avif",
+        "avifBytes": 65628
+      },
+      {
+        "w": 960,
+        "h": 748,
+        "webp": "/art/island-lighthouse-960.webp",
+        "bytes": 201940,
+        "avif": "/art/island-lighthouse-960.avif",
+        "avifBytes": 103320
+      }
+    ]
+  },
+  "island-major": {
+    "w": 1422,
+    "h": 1106,
+    "src": "/art/island-major.webp",
+    "bytes": 537514,
+    "variants": [
+      {
+        "w": 480,
+        "h": 373,
+        "webp": "/art/island-major-480.webp",
+        "bytes": 51250,
+        "avif": "/art/island-major-480.avif",
+        "avifBytes": 25361
+      },
+      {
+        "w": 720,
+        "h": 560,
+        "webp": "/art/island-major-720.webp",
+        "bytes": 107948,
+        "avif": "/art/island-major-720.avif",
+        "avifBytes": 52168
+      },
+      {
+        "w": 960,
+        "h": 747,
+        "webp": "/art/island-major-960.webp",
+        "bytes": 196830,
+        "avif": "/art/island-major-960.avif",
+        "avifBytes": 84368
+      }
+    ]
+  },
+  "journey-backdrop-phone": {
+    "w": 1200,
+    "h": 500,
+    "src": "/art/journey-backdrop-phone.webp",
+    "bytes": 72720,
+    "variants": [
+      {
+        "w": 480,
+        "h": 200,
+        "webp": "/art/journey-backdrop-phone-480.webp",
+        "bytes": 18880,
+        "avif": "/art/journey-backdrop-phone-480.avif",
+        "avifBytes": 15248
+      },
+      {
+        "w": 720,
+        "h": 300,
+        "webp": "/art/journey-backdrop-phone-720.webp",
+        "bytes": 32804,
+        "avif": "/art/journey-backdrop-phone-720.avif",
+        "avifBytes": 26056
+      },
+      {
+        "w": 960,
+        "h": 400,
+        "webp": "/art/journey-backdrop-phone-960.webp",
+        "bytes": 45738,
+        "avif": "/art/journey-backdrop-phone-960.avif",
+        "avifBytes": 34063
+      }
+    ]
+  },
+  "journey-backdrop": {
+    "w": 2400,
+    "h": 1350,
+    "src": "/art/journey-backdrop.webp",
+    "bytes": 578246,
+    "variants": [
+      {
+        "w": 480,
+        "h": 270,
+        "webp": "/art/journey-backdrop-480.webp",
+        "bytes": 27120,
+        "avif": "/art/journey-backdrop-480.avif",
+        "avifBytes": 21146
+      },
+      {
+        "w": 720,
+        "h": 405,
+        "webp": "/art/journey-backdrop-720.webp",
+        "bytes": 59322,
+        "avif": "/art/journey-backdrop-720.avif",
+        "avifBytes": 45540
+      },
+      {
+        "w": 960,
+        "h": 540,
+        "webp": "/art/journey-backdrop-960.webp",
+        "bytes": 102518,
+        "avif": "/art/journey-backdrop-960.avif",
+        "avifBytes": 82549
+      }
+    ]
+  },
+  "journey-passage": {
+    "w": 1080,
+    "h": 1920,
+    "src": "/art/journey-passage.webp",
+    "bytes": 284074,
+    "variants": [
+      {
+        "w": 480,
+        "h": 853,
+        "webp": "/art/journey-passage-480.webp",
+        "bytes": 79450,
+        "avif": "/art/journey-passage-480.avif",
+        "avifBytes": 63172
+      },
+      {
+        "w": 720,
+        "h": 1280,
+        "webp": "/art/journey-passage-720.webp",
+        "bytes": 156020,
+        "avif": "/art/journey-passage-720.avif",
+        "avifBytes": 124543
+      },
+      {
+        "w": 960,
+        "h": 1707,
+        "webp": "/art/journey-passage-960.webp",
+        "bytes": 228544,
+        "avif": "/art/journey-passage-960.avif",
+        "avifBytes": 175204
+      }
+    ]
+  },
+  "paper-texture": {
+    "w": 1254,
+    "h": 1254,
+    "src": "/art/paper-texture.webp",
+    "bytes": 323176,
+    "variants": [
+      {
+        "w": 480,
+        "h": 480,
+        "webp": "/art/paper-texture-480.webp",
+        "bytes": 11344,
+        "avif": "/art/paper-texture-480.avif",
+        "avifBytes": 5563
+      },
+      {
+        "w": 720,
+        "h": 720,
+        "webp": "/art/paper-texture-720.webp",
+        "bytes": 33266,
+        "avif": "/art/paper-texture-720.avif",
+        "avifBytes": 18549
+      },
+      {
+        "w": 960,
+        "h": 960,
+        "webp": "/art/paper-texture-960.webp",
+        "bytes": 69716,
+        "avif": "/art/paper-texture-960.avif",
+        "avifBytes": 41471
+      }
+    ]
+  },
+  "plan-passage": {
+    "w": 1080,
+    "h": 1920,
+    "src": "/art/plan-passage.webp",
+    "bytes": 283150,
+    "variants": [
+      {
+        "w": 480,
+        "h": 853,
+        "webp": "/art/plan-passage-480.webp",
+        "bytes": 79792,
+        "avif": "/art/plan-passage-480.avif",
+        "avifBytes": 63452
+      },
+      {
+        "w": 720,
+        "h": 1280,
+        "webp": "/art/plan-passage-720.webp",
+        "bytes": 155698,
+        "avif": "/art/plan-passage-720.avif",
+        "avifBytes": 124887
+      },
+      {
+        "w": 960,
+        "h": 1707,
+        "webp": "/art/plan-passage-960.webp",
+        "bytes": 229616,
+        "avif": "/art/plan-passage-960.avif",
+        "avifBytes": 175304
+      }
+    ]
+  }
+}

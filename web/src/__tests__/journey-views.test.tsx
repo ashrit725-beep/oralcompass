@@ -173,7 +173,8 @@ describe("CinematicStage (shared by My journey and My plan)", () => {
     expect(html).toContain(`<h2 id="${id}" tabindex="-1" class="cin-title-h">Your plan</h2>`);
     expect(html).toContain("facts line");
     expect(html).toMatch(/<div class="cin-plate[^"]*" aria-hidden="true">/);
-    expect(html).toContain('src="/art/plan-passage.webp"');
+    expect(html).toContain('/art/plan-passage.webp 1080w');   // the original, as the widest WebP candidate (ArtPicture: no img src)
+    expect(html).toContain('/art/plan-passage-960.avif 960w');
     expect((html.match(/<img [^>]*alt=""/g) ?? []).length).toBeGreaterThanOrEqual(1);
     expect(html).toContain('<div id="map-layer"></div>');
   });
