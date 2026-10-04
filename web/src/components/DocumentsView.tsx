@@ -168,7 +168,7 @@ export function DocumentsView({ planCode, plans, onPlan, evidence, stitches, sel
         {uploadSlot ?? <UploadWizard planRef={planCode} onPublished={(s, ref) => { refreshUploads(); onPublished?.(s, ref); }} onUsePlan={onPlan} />}
         <RemindersPanel refreshKey={planCode} />
         {mine === null ? <p className="muted">{UI.processing}</p> : mine.length === 0 ? <p className="muted">{PLAN.docsNoPrivate}</p> : (
-          <ul className="plain-list">{mine.map((d) => <li key={d.id}><strong>{d.label ?? d.filename}</strong> <span className="muted">· {d.type ?? "upload"} · {d.extraction_status ?? UI.notStated}</span>
+          <ul className="plain-list">{mine.map((d) => <li key={d.id}><strong>{d.label ?? d.filename}</strong> <span className="muted">· {PLAN.docsSlug(d.type ?? "upload")} · {d.extraction_status ? PLAN.docsSlug(d.extraction_status) : UI.notStated}</span>
             {(d.fields_needing_confirmation?.length ?? 0) > 0 && <ul className="small">{d.fields_needing_confirmation!.map((f) => <li key={f}><EvidenceBadge status="AMBIGUOUS" /> {PLAN.docsNeedsConfirmation} {f}</li>)}</ul>}
             {d.redaction_preview && <p className="small muted">{PLAN.docsRedactionRemoved} {d.redaction_preview.removed.join(", ") || PLAN.docsNothing}</p>}</li>)}</ul>
         )}
