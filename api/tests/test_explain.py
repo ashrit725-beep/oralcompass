@@ -150,6 +150,7 @@ def test_live_explainer_reserves_and_records_spend_with_the_guard(monkeypatch):
     assert again["cached"] is True and llm_guard.status()["requests_today"] == after["requests_today"]
 
 
+@pytest.mark.live_llm
 def test_live_once_for_real_when_the_stored_key_and_network_allow(monkeypatch):
     from dotenv import dotenv_values
     vals = dotenv_values(Path(__file__).resolve().parents[1] / ".env")

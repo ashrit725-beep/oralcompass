@@ -14,7 +14,7 @@ os.environ["ORALCOMPASS_DEV_AUTH"] = "1"
 # environment. These are set before app.main imports, and load_dotenv(override=False) never replaces a variable that already exists,
 # so api/.env cannot switch the suite to live. A test that needs a real model call opts in with @pytest.mark.live_llm (skipped unless
 # ORALCOMPASS_ALLOW_LIVE_LLM=1). Tests that mock a live call set provider + a fake key + an httpx.MockTransport themselves.
-_ALLOW_LIVE = os.environ.get("ORALCOMPASS_ALLOW_LIVE_LLM") == "1"
+_ALLOW_LIVE = "1" in (os.environ.get("ORALCOMPASS_ALLOW_LIVE_LLM"), os.environ.get("ORALCOMPASS_RUN_LIVE_TESTS"))
 if not _ALLOW_LIVE:
     os.environ["ORALCOMPASS_LLM_PROVIDER"] = "none"
     os.environ["OPENROUTER_API_KEY"] = ""
@@ -41,13 +41,13 @@ def _fresh_llm_guard():
 
 
 def pytest_configure(config):
-    config.addinivalue_line("markers", "live_llm: makes a real model call; skipped unless ORALCOMPASS_ALLOW_LIVE_LLM=1")
+    config.addinivalue_line("markers", "live_llm: makes a real model call; skipped unless ORALCOMPASS_RUN_LIVE_TESTS=1 (or ORALCOMPASS_ALLOW_LIVE_LLM=1)")
 
 
 def pytest_collection_modifyitems(config, items):
     if _ALLOW_LIVE:
         return
-    skip = pytest.mark.skip(reason="live model call: set ORALCOMPASS_ALLOW_LIVE_LLM=1 to run")
+    skip = pytest.mark.skip(reason="live model call: set ORALCOMPASS_RUN_LIVE_TESTS=1 to run")
     for item in items:
         if "live_llm" in item.keywords:
             item.add_marker(skip)

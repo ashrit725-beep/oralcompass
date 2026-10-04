@@ -309,6 +309,7 @@ def test_mapping_rules():
     assert treatment_reader.parse_fee("USD 300") == 30000 and treatment_reader.parse_fee("about 300 dollars") is None
 
 
+@pytest.mark.live_llm
 def test_live_once_for_real_when_the_stored_key_and_network_allow(monkeypatch):
     from dotenv import dotenv_values
     vals = dotenv_values(Path(__file__).resolve().parents[1] / ".env")
