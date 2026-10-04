@@ -170,7 +170,7 @@ details[open] > .dsec-summary .dsec-toggle { transform: rotate(-135deg); margin-
 .evidence-quote { grid-column: 2; font-family: var(--serif); font-style: italic; font-size: 15px; line-height: 24px; }
 .evidence-where { grid-column: 2; font-size: 12px; line-height: 16px; color: var(--text-soft); }
 .evidence-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2) var(--s-3); margin-top: var(--s-3); }
-.evidence-source { font-size: 14px; }
+.evidence-source { font-size: 14px; display: inline-flex; align-items: center; min-height: 44px; }   /* 44 px target on phones */
 
 /* ---- harbor light ---- */
 .harbor-table { width: 100%; border-collapse: collapse; font-size: 14px; line-height: 20px; margin: var(--s-2) 0; }
@@ -199,7 +199,7 @@ details[open] > .dsec-summary .dsec-toggle { transform: rotate(-135deg); margin-
 /* Phone sheet (layout-10, demo-11): each island stacks into its own block (name on one line, then "You pay", "Plan pays" and "Status",
    each labelled by its column name from data-label), so no figure, badge or stitch shares a 70 px cell or overlaps the next column. */
 .drawer-sheet .harbor-table, .drawer-sheet .harbor-table tbody, .drawer-sheet .harbor-table tr, .drawer-sheet .harbor-table th, .drawer-sheet .harbor-table td { display: block; width: auto; }
-.drawer-sheet .harbor-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.drawer-sheet .harbor-table thead { display: none; }   /* each cell names its column itself (data-label); the explicit ARIA roles keep the table semantics */
 .drawer-sheet .harbor-table tr { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 12px; padding: 8px 0; border-bottom: 1px solid var(--border); }
 .drawer-sheet .harbor-table th[scope="row"] { grid-column: 1 / -1; width: auto; border: 0; padding: 0; }
 .drawer-sheet .harbor-table td { border: 0; padding: 0; min-width: 0; }
@@ -239,7 +239,7 @@ details[open] > .dsec-summary .dsec-toggle { transform: rotate(-135deg); margin-
 
 /* stitch chips on touch screens (mobile-7): the chip keeps its look but its target grows to 32 px tall with a 44 px hit area, and the rows
    that hold several chips space them 8 px apart so neighbouring hit areas do not overlap. Applies app-wide (drawer.css is global). */
-@media (pointer: coarse) {
+@media (pointer: coarse), (max-width: 760px) {
   .stitch { position: relative; min-height: 32px; }
   .stitch::after { content: ""; position: absolute; inset: -6px 0; }
   .fig, .fact, .node-mark, .eq-row, .evidence-item { column-gap: 8px; }
@@ -250,3 +250,4 @@ details[open] > .dsec-summary .dsec-toggle { transform: rotate(-135deg); margin-
 .trail-one .ts-amounts-inline .amt { white-space: normal; }
 .eq-row > * { min-width: 0; max-width: 100%; }
 .cp-strip .cp-chip-term { overflow-wrap: normal; word-break: normal; }   /* "Deductible" keeps its word (the drawer's overflow-wrap: anywhere split it) */
+.harbor-table td .fig .amt { font-size: 14px; line-height: 20px; }   /* cell figures share the row's baseline with the island name */

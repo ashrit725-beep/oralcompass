@@ -49,8 +49,8 @@ export function Sheet({ open, onOpenChange, title, description, originRect, retu
         onOpenAutoFocus={(e) => { e.preventDefault(); (e.currentTarget as HTMLElement | null)?.querySelector<HTMLElement>('[data-slot="drawer-title"]')?.focus({ preventScroll: true }); }}
       >
         <div className="sticky top-0 z-10 flex min-h-12 items-center justify-between gap-2 border-b border-rule bg-paper-deep px-4">
-          {/* two lines at most, balanced, instead of an ellipsis that cut the procedure name (layout-11) */}
-          <DrawerTitle tabIndex={-1} className="min-w-0 py-2 line-clamp-2 [text-wrap:balance] outline-none focus-visible:outline-3 focus-visible:outline-ring">{title}</DrawerTitle>
+          {/* the whole name, wrapped and balanced, never an ellipsis (layout-11); 20 px keeps the longest procedure names to two lines at 360 px */}
+          <DrawerTitle tabIndex={-1} className="min-w-0 py-2 text-[20px] leading-[26px] [text-wrap:balance] outline-none focus-visible:outline-3 focus-visible:outline-ring">{title}</DrawerTitle>
           <DrawerClose asChild>
             <Button variant="ghost" size="icon-touch" aria-label={closeLabel} className="-mr-2 shrink-0"><X aria-hidden="true" /></Button>
           </DrawerClose>

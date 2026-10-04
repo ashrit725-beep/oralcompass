@@ -51,20 +51,21 @@ export function HarborSections({ island, vm, rules, benefits, estimate, stitches
       {vm.islands.length > 0 && (
         <Section k="calculation" title={DRAWER.sPerIsland}>
           <p className="dsec-note">{DRAWER.harborTableNote}</p>
-          <table className="harbor-table">
-            <thead><tr><th scope="col">{DRAWER.island}</th><th scope="col">{DRAWER.youPay}</th><th scope="col">{DRAWER.planPaysRow}</th><th scope="col">{DRAWER.status}</th></tr></thead>
-            <tbody>
+          {/* explicit roles: the phone sheet restyles the rows as blocks, which drops native table semantics in Chromium and WebKit */}
+          <table className="harbor-table" role="table">
+            <thead role="rowgroup"><tr role="row"><th scope="col" role="columnheader">{DRAWER.island}</th><th scope="col" role="columnheader">{DRAWER.youPay}</th><th scope="col" role="columnheader">{DRAWER.planPaysRow}</th><th scope="col" role="columnheader">{DRAWER.status}</th></tr></thead>
+            <tbody role="rowgroup">
               {vm.islands.map((i) => {
                 const known = i.state === "estimate" || i.state === "not_covered";
                 const st = known ? cellStitch(i, rules, stitches) : undefined;
                 const cellInputs = st ? [] : calcInputs(i.item, estimate, benefits);
                 return (
-                  <tr key={i.id} className={`island-${i.state}`}>
-                    <th scope="row">{i.title}{i.subtitle ? <span className="muted"> · {i.subtitle}</span> : null}</th>
+                  <tr key={i.id} role="row" className={`island-${i.state}`}>
+                    <th scope="row" role="rowheader">{i.title}{i.subtitle ? <span className="muted"> · {i.subtitle}</span> : null}</th>
                     {/* data-label: the column name shown above each figure when the phone stacks the row (drawer.css) */}
-                    <td data-label={DRAWER.youPay}><Figure cents={i.youPay} evidence={known ? "USER" : "UNKNOWN"} calc={known} inputs={cellInputs} calcLabel={null} stitch={st} onSelectStitch={onSelectStitch} waiting={false} className="fig-patient" /></td>
-                    <td data-label={DRAWER.planPaysRow}><Figure cents={i.planPays} evidence={known ? "USER" : "UNKNOWN"} calc={known} inputs={cellInputs} calcLabel={null} stitch={st} onSelectStitch={onSelectStitch} waiting={false} className="fig-plan" /></td>
-                    <td data-label={DRAWER.status}>{statusWord(i)}{i.upperBound ? ` ${DRAWER.upperBoundWord}` : ""}</td>
+                    <td role="cell" data-label={DRAWER.youPay}><Figure cents={i.youPay} evidence={known ? "USER" : "UNKNOWN"} calc={known} inputs={cellInputs} calcLabel={null} stitch={st} onSelectStitch={onSelectStitch} waiting={false} className="fig-patient" /></td>
+                    <td role="cell" data-label={DRAWER.planPaysRow}><Figure cents={i.planPays} evidence={known ? "USER" : "UNKNOWN"} calc={known} inputs={cellInputs} calcLabel={null} stitch={st} onSelectStitch={onSelectStitch} waiting={false} className="fig-plan" /></td>
+                    <td role="cell" data-label={DRAWER.status}>{statusWord(i)}{i.upperBound ? ` ${DRAWER.upperBoundWord}` : ""}</td>
                   </tr>
                 );
               })}
