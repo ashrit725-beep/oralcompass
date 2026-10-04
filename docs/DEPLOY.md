@@ -125,6 +125,8 @@ python3 -m uvicorn app.server:app --host 127.0.0.1 --port 8080 --no-access-log
 - **Logs**: one JSON line per request (request id, method, path, status, duration, bytes in); uvicorn's access log is off (it would print
   query strings and client addresses). Session ids, document text, names and amounts are never logged.
 - **Sessions**: signed cookie, hashed owner key, tamper → new empty session, constant 404 across visitors.
+- **Images sent to a model**: only after the visitor confirms the notice, re-encoded without metadata and bounded in size; never in demo
+  mode (`docs/SECURITY.md`).
 - **Live-AI cost guard** (`api/app/llm_guard.py`): per-visitor limits (extraction 5/day, treatment-plan reader 10/day, clause explainer 60/day,
   assistant 30 per 10 minutes), a global daily request cap and an estimated-spend cap priced from the model's per-token rates, persisted in
   SQLite and reset at UTC midnight. A refused call falls back to the demo/template path with the ribbon "The live model limit for today has

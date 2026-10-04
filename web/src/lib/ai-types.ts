@@ -17,6 +17,8 @@ export interface ReadResponse {
   mode: "demo" | "live"; model?: string; source: "text" | "pdf" | "image"; items: ReadItem[]; ignored_text: string[];
   redaction: { removed: string[]; image_not_redacted: boolean }; ribbon: string | null; note: string | null; stages: ReadStage[];
   fixture: string | null; dropped_unverified: number; limited?: string;
+  /** live mode, photo or scan: nothing was sent; show `image_notice` and resend with consent after the visitor confirms */
+  needs_image_consent?: boolean; image_notice?: string;
 }
 export interface ReadSample { id: string; label: string; text: string }
 export interface ConfirmItem { procedure_key: string; procedure_as_written: string; tooth: string | null; quantity: number; fee_cents: number; code_as_written: string | null; date_as_written?: string | null }

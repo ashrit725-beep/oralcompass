@@ -39,6 +39,8 @@ export function TreatmentPlanReader({ onConfirmed }: TreatmentPlanReaderProps) {
   const [rows, setRows] = useState<Row[]>([]);
   const [confirming, setConfirming] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  // live mode, photo or scan: the server holds it until the visitor confirms the notice (nothing is sent before that; docs/SECURITY.md)
+  const [pendingImage, setPendingImage] = useState<File | null>(null);
   // The section usually sits in a closed <details>: nothing is fetched and no file input exists until it has been visible once.
   const rootRef = useRef<HTMLElement>(null);
   const seen = useInView(rootRef, { once: true });
@@ -64,9 +66,10 @@ export function TreatmentPlanReader({ onConfirmed }: TreatmentPlanReaderProps) {
     setBusy("text"); setError(null); setMessage(null); setResult(null);
     try { show(await api.readTreatmentPlanText(text)); } catch (e) { fail(e); } finally { setBusy(null); }
   }
-  async function readFile(f: File) {
-    setFile(f); setBusy("file"); setError(null); setMessage(null); setResult(null);
-    try { show(await api.readTreatmentPlanFile(f)); } catch (e) { fail(e); } finally { setBusy(null); setFile(null); }
+  async function readFile(f: File, imageConsent = false) {
+    setFile(f); setBusy("file"); setError(null); setMessage(null); setResult(null); setPendingImage(null);
+    try { const res = await api.readTreatmentPlanFile(f, imageConsent); show(res); if (res.needs_image_consent) setPendingImage(f); }
+    catch (e) { fail(e); } finally { setBusy(null); setFile(null); }
   }
 
   const items = result?.items ?? [];
@@ -134,6 +137,9 @@ export function TreatmentPlanReader({ onConfirmed }: TreatmentPlanReaderProps) {
             <p className={cn("tpr-ribbon", result.mode === "live" && "is-live")}>
               {result.ribbon && <span>{result.ribbon}</span>}{result.ribbon && result.note ? " " : null}{result.note && <span>{result.note}</span>}
             </p>
+          )}
+          {result.needs_image_consent && pendingImage && (
+            <div className="bs-actions"><Button type="button" size="touch" onClick={() => readFile(pendingImage, true)} disabled={!!busy}>{PLAN.readImageSend}</Button></div>
           )}
           <ol className="tpr-stages" aria-label={PLAN.readStagesTitle}>
             {result.stages.map((s) => <li key={s.key} className={s.done ? "is-done" : "is-not"}><span aria-hidden="true">{s.done ? "✓" : "·"}</span> {s.label}</li>)}

@@ -23,6 +23,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Literal, Optional
 
+from starlette.concurrency import run_in_threadpool
 from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, Response, UploadFile
 from pydantic import BaseModel, Field
 
@@ -160,11 +161,11 @@ async def upload_document(file: UploadFile = File(...), sha256: str = Form(...),
         raise HTTPException(status_code=422, detail={"error": "too_many_pages", "max_pages": MAX_PAGES})
     if len(text_preview) > MAX_PREVIEW_IN:
         raise HTTPException(status_code=422, detail={"error": "text_preview_too_large", "max_chars": MAX_PREVIEW_IN})
-    digest = hashlib.sha256(data).hexdigest()
+    digest = await run_in_threadpool(lambda: hashlib.sha256(data).hexdigest())     # hashing and PDF parsing stay off the event loop
     if digest != sha256.strip().lower():
         raise HTTPException(status_code=422, detail={"error": "sha256_mismatch"})
     try:
-        n_pages = page_count(data)
+        n_pages = await run_in_threadpool(page_count, data)
     except Exception:
         raise HTTPException(status_code=415, detail={"error": "unreadable_pdf"})
     if n_pages > MAX_PAGES:
@@ -178,11 +179,12 @@ async def upload_document(file: UploadFile = File(...), sha256: str = Form(...),
         os.chmod(path, 0o600)
     except OSError:
         pass
-    page_texts, _ = read_text(path)
+    page_texts, _ = await run_in_threadpool(read_text, path)
+    preview = await run_in_threadpool(_preview, page_texts, [], text_preview)
     filename = _safe_name(file.filename)
     item = repo.put(user.sub, "document", {
         "id": doc_id, "kind": "upload", "type": "plan_document_upload", "filename": filename, "label": filename, "sha256": digest, "pages": n_pages,
-        "size_bytes": size, "uploaded_at": _now(), "extraction_status": "uploaded", "redaction_preview": _preview(page_texts, [], text_preview),
+        "size_bytes": size, "uploaded_at": _now(), "extraction_status": "uploaded", "redaction_preview": preview,
         "extra_terms": [], "demo_fixture_match": fixtures.extract(digest) is not None, "extraction": None, "plan_model": None,
         "published_versions": [], "latest_version_id": None, "fields_needing_confirmation": [],
     })

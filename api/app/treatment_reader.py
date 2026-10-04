@@ -31,6 +31,7 @@ from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
+from starlette.concurrency import run_in_threadpool
 
 from . import ai_support
 from .auth import User, current_user
@@ -39,7 +40,7 @@ from .extraction import (NOT_STATED_RULE, VOCAB, ModelUnavailable, _ANCHORS, _GE
 from .redaction import redact
 from .templates import (READER_CODE_NOT_LISTED, READER_CONFIRM_SOURCE, READER_DEMO_CANNOT_READ, READER_DESCRIPTION_DIFFERS, READER_LIMIT_NOTE,
                         READER_MATCH_AMBIGUOUS, READER_MATCH_CODE, READER_MATCH_DESCRIPTOR, READER_MODEL_FAILED, READER_NO_LINES, READER_NOT_MATCHED,
-                        READER_RIBBON_DEMO, READER_RIBBON_LIVE, READER_RIBBON_LIVE_IMAGE, READER_SCANNED_PDF, READER_STAGE_LABELS)
+                        READER_IMAGE_NOTICE, READER_RIBBON_DEMO, READER_RIBBON_LIVE, READER_RIBBON_LIVE_IMAGE, READER_SCANNED_PDF, READER_STAGE_LABELS)
 
 router = APIRouter()
 log = logging.getLogger("oralcompass.treatment_reader")
@@ -49,6 +50,8 @@ MAX_BYTES = 10 * 1024 * 1024
 MAX_TEXT_CHARS = 20_000
 MAX_PDF_PAGES = 20
 MAX_IMAGE_PAGES = 3
+MAX_RENDER_PIXELS = 4_000_000          # a rendered page or a re-encoded photo is at most ~4 megapixels (security-2)
+MAX_INPUT_IMAGE_PIXELS = 40_000_000    # a photo larger than this (by its header) is refused before it is decoded
 MAX_ITEMS = 40
 LLM_TIMEOUT_S = 60.0
 RATE_N, RATE_WINDOW_S = 20, 600
@@ -306,19 +309,21 @@ def read_live(redacted_text: Optional[str], images: list[tuple[str, bytes]]) -> 
 
 
 # ---------------------------------------------------------------- input
-async def _read_input(request: Request) -> tuple[str, Optional[str], list[tuple[str, bytes]], Optional[str]]:
-    """→ (source, text, images, note). source: text | pdf | image."""
+async def _read_input(request: Request) -> tuple[str, Optional[str], list[tuple[str, bytes]], Optional[str], bool]:
+    """→ (source, text, images, note, image_consent). source: text | pdf | image. image_consent is the multipart field `image_consent`
+    ("1"/"true"), sent only after the visitor confirmed READER_IMAGE_NOTICE; without it no image leaves the server."""
     declared = request.headers.get("content-length")
     if declared and declared.isdigit() and int(declared) > MAX_BYTES + 64 * 1024:
         raise HTTPException(status_code=413, detail={"error": "file_too_large", "max_bytes": MAX_BYTES})
     ctype = (request.headers.get("content-type") or "").lower()
     if ctype.startswith("multipart/form-data"):
         form = await request.form()
+        consent = str(form.get("image_consent") or "").strip().lower() in ("1", "true", "yes")
         f = form.get("file")
         if f is None or not hasattr(f, "read"):
             text = form.get("text")
             if isinstance(text, str):
-                return "text", text, [], None
+                return "text", text, [], None, False
             raise HTTPException(status_code=422, detail={"error": "file_or_text_required"})
         data = await f.read(MAX_BYTES + 1)
         if len(data) > MAX_BYTES:
@@ -327,9 +332,9 @@ async def _read_input(request: Request) -> tuple[str, Optional[str], list[tuple[
         if mime == "application/pdf" or data.startswith(b"%PDF-"):
             if not data.startswith(b"%PDF-"):
                 raise HTTPException(status_code=415, detail={"error": "unsupported_type"})
-            return _read_pdf(data)
+            return (*(await run_in_threadpool(_read_pdf, data)), consent)       # PDF parsing and rendering stay off the event loop
         if mime in IMAGE_TYPES and data.startswith(IMAGE_TYPES[mime]) and (mime != "image/webp" or data[8:12] == b"WEBP"):
-            return "image", None, [(mime, data)], None
+            return "image", None, [(mime, data)], None, consent
         raise HTTPException(status_code=415, detail={"error": "unsupported_type", "accepted": ["image/png", "image/jpeg", "image/webp", "application/pdf"]})
     try:
         body = await request.json()
@@ -338,7 +343,7 @@ async def _read_input(request: Request) -> tuple[str, Optional[str], list[tuple[
     text = body.get("text") if isinstance(body, dict) else None
     if not isinstance(text, str) or not text.strip():
         raise HTTPException(status_code=422, detail={"error": "file_or_text_required"})
-    return "text", text, [], None
+    return "text", text, [], None, False
 
 
 def _read_pdf(data: bytes) -> tuple[str, Optional[str], list[tuple[str, bytes]], Optional[str]]:
@@ -353,8 +358,80 @@ def _read_pdf(data: bytes) -> tuple[str, Optional[str], list[tuple[str, bytes]],
         text = "\n".join(doc[i].get_text() for i in range(doc.page_count))
         if len(text.strip()) >= 20:
             return "pdf", text, [], None
-        images = [("image/png", doc[i].get_pixmap(dpi=150).tobytes("png")) for i in range(min(doc.page_count, MAX_IMAGE_PAGES))]
+        images = [("image/png", _render_bounded(doc[i], 150)) for i in range(min(doc.page_count, MAX_IMAGE_PAGES))]
         return "pdf_scanned", None, images, READER_SCANNED_PDF
+    finally:
+        doc.close()
+
+
+def _render_bounded(page, dpi: float) -> bytes:
+    """Render one page as PNG at `dpi`, scaled down so the bitmap stays under MAX_RENDER_PIXELS whatever the page's MediaBox says
+    (a few-hundred-byte PDF can declare a 14400 pt page: rendered as is, that is gigabytes)."""
+    import pymupdf
+    w_pt, h_pt = max(1.0, float(page.rect.width)), max(1.0, float(page.rect.height))
+    zoom = dpi / 72.0
+    if (w_pt * zoom) * (h_pt * zoom) > MAX_RENDER_PIXELS:
+        zoom = (MAX_RENDER_PIXELS / (w_pt * h_pt)) ** 0.5
+    try:
+        return page.get_pixmap(matrix=pymupdf.Matrix(zoom, zoom)).tobytes("png")
+    except MemoryError:
+        raise HTTPException(status_code=422, detail={"error": "page_too_large"})
+
+
+def _strip_webp_metadata(data: bytes) -> bytes:
+    """Drop the EXIF / XMP / ICC chunks of a RIFF WebP file and clear their flags in VP8X; the image chunks are kept byte for byte."""
+    if len(data) < 12 or data[:4] != b"RIFF" or data[8:12] != b"WEBP":
+        raise HTTPException(status_code=415, detail={"error": "unsupported_type"})
+    out, i = [], 12
+    while i + 8 <= len(data):
+        tag, size = data[i:i + 4], int.from_bytes(data[i + 4:i + 8], "little")
+        chunk = data[i:i + 8 + size + (size & 1)]
+        if tag == b"VP8X" and size >= 10:
+            chunk = chunk[:8] + bytes([chunk[8] & ~(0x08 | 0x04 | 0x20)]) + chunk[9:]
+        if tag not in (b"EXIF", b"XMP ", b"ICCP"):
+            out.append(chunk)
+        i += 8 + size + (size & 1)
+    body = b"".join(out)
+    return b"RIFF" + (len(body) + 4).to_bytes(4, "little") + b"WEBP" + body
+
+
+def _image_size(mime: str, data: bytes) -> Optional[tuple[int, int]]:
+    """Pixel width and height read from a PNG IHDR or a JPEG SOFn header (no decoding); None when the header is not found."""
+    if mime == "image/png" and len(data) >= 24 and data[12:16] == b"IHDR":
+        return int.from_bytes(data[16:20], "big"), int.from_bytes(data[20:24], "big")
+    if mime == "image/jpeg":
+        i = 2
+        while i + 9 < len(data):
+            if data[i] != 0xFF:
+                i += 1
+                continue
+            marker = data[i + 1]
+            if marker in (0xD8, 0x01) or 0xD0 <= marker <= 0xD7 or marker == 0xFF:
+                i += 1 if marker == 0xFF else 2
+                continue
+            seg = int.from_bytes(data[i + 2:i + 4], "big")
+            if marker in (0xC0, 0xC1, 0xC2, 0xC3, 0xC5, 0xC6, 0xC7, 0xC9, 0xCA, 0xCB, 0xCD, 0xCE, 0xCF):
+                return int.from_bytes(data[i + 7:i + 9], "big"), int.from_bytes(data[i + 5:i + 7], "big")
+            i += 2 + seg
+    return None
+
+
+def sanitize_image(mime: str, data: bytes) -> tuple[str, bytes]:
+    """Before a photo leaves the server: PNG/JPEG are decoded and re-encoded as a bounded PNG (EXIF, GPS, camera and every other
+    metadata block are gone, and the bitmap is at most MAX_RENDER_PIXELS); WebP keeps its image chunks and loses its metadata chunks."""
+    if mime == "image/webp":
+        return mime, _strip_webp_metadata(data)
+    import pymupdf
+    try:
+        doc = pymupdf.open(stream=data, filetype="png" if mime == "image/png" else "jpeg")
+    except Exception:
+        raise HTTPException(status_code=415, detail={"error": "unreadable_image"})
+    try:
+        page = doc[0]
+        w_px, h_px = _image_size(mime, data) or (page.rect.width * 96 / 72, page.rect.height * 96 / 72)   # from the header, not decoded
+        if float(w_px) * float(h_px) > MAX_INPUT_IMAGE_PIXELS:
+            raise HTTPException(status_code=422, detail={"error": "image_too_large"})
+        return "image/png", _render_bounded(page, 72.0 * float(w_px) / max(1.0, float(page.rect.width)))
     finally:
         doc.close()
 
@@ -377,10 +454,10 @@ def _finish(items: list[dict]) -> list[dict]:
 @router.post("/me/treatment-plans/read")
 async def read_treatment_plan(request: Request, user: User = Depends(current_user)):
     ai_support.local_rate_limit(user.sub, KIND, RATE_N, RATE_WINDOW_S)
-    source, text, images, note = await _read_input(request)
+    source, text, images, note, image_consent = await _read_input(request)
     if text is not None and len(text) > MAX_TEXT_CHARS:
         raise HTTPException(status_code=422, detail={"error": "text_too_long", "max_chars": MAX_TEXT_CHARS})
-    redacted, removed = redact(text) if text is not None else (None, [])
+    redacted, removed = (await run_in_threadpool(redact, text)) if text is not None else (None, [])
     ignored_server = []
     if redacted:
         for s in re.split(r"(?<=[.!?])\s+|\n", redacted):
@@ -392,11 +469,18 @@ async def read_treatment_plan(request: Request, user: User = Depends(current_use
                             "stages": _stages("redacting", skipped), "fixture": None, "dropped_unverified": 0}
     mode = ai_support.llm_mode()
     reason = None
+    if mode == "live" and images and not image_consent:
+        # an image cannot be redacted: nothing leaves the server until the visitor has read the notice and confirmed (privacy, item 11)
+        resp.update({"needs_image_consent": True, "image_notice": READER_IMAGE_NOTICE, "note": " ".join(x for x in (note, READER_IMAGE_NOTICE) if x),
+                     "stages": _stages("reading", skipped)})
+        log.info("treatment plan read mode=live source=%s held for image consent", resp["source"])
+        return resp
     if mode == "live":
         ok, reason = ai_support.guard_allow(user.sub, KIND)
         if ok:
             try:
-                raw = read_live(redacted, images)
+                sent = await run_in_threadpool(lambda: [sanitize_image(m, d) for m, d in images])    # EXIF/GPS stripped, bitmap bounded
+                raw = await run_in_threadpool(read_live, redacted, sent)
                 items, ignored, dropped = items_from_model(raw, redacted)
                 resp.update({"mode": "live", "model": ai_support.llm_model(), "ribbon": READER_RIBBON_LIVE_IMAGE if images else READER_RIBBON_LIVE,
                              "items": _finish(items), "ignored_text": ignored_server + [i for i in ignored if i not in ignored_server], "dropped_unverified": dropped,

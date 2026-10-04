@@ -107,6 +107,7 @@ export const PLAN = {
   readFileLimits: (max: string) => `PNG, JPEG, WebP or PDF, up to ${max}`,
   readFileTooLarge: "The file is larger than 10 MB.",
   readFileWrongType: "Only PNG, JPEG or WebP images and PDF files are read.",
+  readImageSend: "Send the image to the model",
   readImageNote: "A photo cannot be redacted before reading. In live mode the image itself reaches the model; the server removes personal details from the model's answer.",
   readWorking: "Reading the estimate. Personal details are removed before anything reaches a model.",
   readStagesTitle: "Stages that ran",

@@ -21,7 +21,7 @@ from fastapi.testclient import TestClient  # noqa: E402
 
 from app import ai_support, extraction, llm_guard, treatment_reader  # noqa: E402
 from app.main import app  # noqa: E402
-from app.templates import READER_DEMO_CANNOT_READ, READER_LIMIT_NOTE, READER_RIBBON_DEMO, READER_RIBBON_LIVE, READER_RIBBON_LIVE_IMAGE  # noqa: E402
+from app.templates import READER_DEMO_CANNOT_READ, READER_LIMIT_NOTE, READER_RIBBON_DEMO, READER_RIBBON_LIVE, READER_IMAGE_NOTICE, READER_RIBBON_LIVE_IMAGE  # noqa: E402
 
 client = TestClient(app)
 H = lambda sub: {"X-Dev-User": sub}          # noqa: E731
@@ -175,7 +175,10 @@ def test_live_mocked_image_sends_an_image_part_and_says_it_was_not_redacted(monk
                       "ignored_text": []})
 
     live(monkeypatch, handler)
-    j = client.post("/me/treatment-plans/read", files={"file": ("estimate.png", png_bytes(), "image/png")}, headers=H("tr-live")).json()
+    # without the visitor's confirmation nothing leaves the server: the response carries the notice and no model call is made
+    held = client.post("/me/treatment-plans/read", files={"file": ("estimate.png", png_bytes(), "image/png")}, headers=H("tr-live")).json()
+    assert held["needs_image_consent"] is True and held["image_notice"] == READER_IMAGE_NOTICE and held["items"] == [] and "body" not in seen
+    j = client.post("/me/treatment-plans/read", files={"file": ("estimate.png", png_bytes(), "image/png")}, data={"image_consent": "1"}, headers=H("tr-live")).json()
     parts = seen["body"]["messages"][1]["content"]
     assert isinstance(parts, list) and parts[1]["type"] == "image_url" and parts[1]["image_url"]["url"].startswith("data:image/png;base64,")
     assert j["mode"] == "live" and j["ribbon"] == READER_RIBBON_LIVE_IMAGE and j["source"] == "image"
@@ -261,3 +264,69 @@ def test_live_once_for_real_when_the_stored_key_and_network_allow(monkeypatch):
     got = sorted((i["procedure_key"], i["tooth"], i["fee_cents"], i["code_as_written"]) for i in j["items"])
     assert got == [("crown", "19", 125000, "D2740"), ("root_canal_molar", "19", 115000, "D3330")]
     assert "Alex Chen" not in json.dumps(j)
+
+
+def test_image_metadata_is_stripped_and_renders_are_bounded(monkeypatch):
+    """Privacy item 11 (EXIF/GPS never leave the server) and security-2 (a tiny PDF with a huge page cannot exhaust memory)."""
+    import base64
+    from PIL import Image
+    from app.treatment_reader import MAX_RENDER_PIXELS, _read_pdf, sanitize_image
+    im = Image.new("RGB", (64, 48), "white")
+    exif = im.getexif()
+    exif[0x010F] = "SECRETCAM"
+    for fmt, mime in (("JPEG", "image/jpeg"), ("PNG", "image/png"), ("WEBP", "image/webp")):
+        buf = io.BytesIO()
+        im.save(buf, fmt, exif=exif.tobytes())
+        assert b"SECRETCAM" in buf.getvalue()
+        out_mime, out = sanitize_image(mime, buf.getvalue())
+        assert b"SECRETCAM" not in out and Image.open(io.BytesIO(out)).size == (64, 48)
+    seen = {}
+
+    def handler(request):
+        seen["body"] = json.loads(request.content)
+        return reply({"items": [], "ignored_text": []})
+
+    live(monkeypatch, handler)
+    buf = io.BytesIO()
+    im.save(buf, "JPEG", exif=exif.tobytes())
+    client.post("/me/treatment-plans/read", files={"file": ("p.jpg", buf.getvalue(), "image/jpeg")}, data={"image_consent": "1"}, headers=H("tr-exif"))
+    sent = base64.b64decode(seen["body"]["messages"][1]["content"][1]["image_url"]["url"].split(",", 1)[1])
+    assert b"SECRETCAM" not in sent
+    doc = pymupdf.open()
+    for _ in range(3):
+        doc.new_page(width=14400, height=14400)
+    tiny = doc.tobytes()
+    doc.close()
+    source, _, images, _ = _read_pdf(tiny)
+    assert len(tiny) < 2000 and source == "pdf_scanned" and len(images) == 3
+    for _, png in images:
+        w, h = Image.open(io.BytesIO(png)).size
+        assert w * h <= MAX_RENDER_PIXELS * 1.01
+
+
+def test_a_slow_live_read_does_not_block_other_requests(monkeypatch):
+    """api-correctness-23: model and PDF work run in a worker thread, so /health answers while a read is in flight."""
+    import asyncio
+    import time as _time
+    from app import treatment_reader
+    live(monkeypatch, lambda request: reply({"items": [], "ignored_text": []}))
+
+    def slow_read_live(redacted, images):
+        _time.sleep(0.8)
+        return {"items": [], "ignored_text": []}
+
+    monkeypatch.setattr(treatment_reader, "read_live", slow_read_live)
+
+    async def run():
+        done = []
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://t") as c:
+            async def read():
+                await c.post("/me/treatment-plans/read", json={"text": "Crown porcelain $1,200.00"}, headers=H("tr-slow")); done.append("read")
+
+            async def health():
+                await asyncio.sleep(0.1)
+                await c.get("/health"); done.append("health")
+            await asyncio.gather(read(), health())
+        return done
+
+    assert asyncio.run(run()) == ["health", "read"]
