@@ -12,7 +12,7 @@ import type { Checkpoint, Journey, Progress, Stage, StageSelection } from "@/lib
  * label (`Appointment information recorded: Completed, confirmed by your dental team`) so tools/screenshots.py keeps working.
  * Clicking opens the existing DetailPanel with its forms.
  */
-export interface CareTimelineProps { journey: Journey; progress: Progress; selected: StageSelection | null; onSelect: (s: StageSelection, el?: HTMLElement | null) => void; currentStageId: string | null; /** Ignored: the phone timeline is the only layout (mobile-only app). */ mobile?: boolean; linkedIsland?: (stage: Stage) => string | null; onShowOnChart?: (islandId: string) => void }
+export interface CareTimelineProps { journey: Journey; progress: Progress; selected: StageSelection | null; onSelect: (s: StageSelection, el?: HTMLElement | null) => void; currentStageId: string | null; linkedIsland?: (stage: Stage) => string | null; onShowOnChart?: (islandId: string) => void }
 
 const GLYPH: Record<Checkpoint["status"], string> = { completed: "M5 12.5l4.5 4.5L19 7", current: "", upcoming: "", awaiting_info: "M9.5 9a2.5 2.5 0 1 1 3.8 2.1c-.8.5-1.3 1-1.3 1.9M12 17v.5" };
 

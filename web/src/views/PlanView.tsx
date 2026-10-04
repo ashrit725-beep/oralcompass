@@ -20,8 +20,6 @@ import { UploadWizard } from "@/components/upload/UploadWizard";
 
 export interface PlanViewProps {
   data: AppData;
-  /** Unused: the app is phone-only (owner direction 06:00); kept optional so the shell can drop it without a type break. */
-  mobile?: boolean;
   landmark: LandmarkId | null;
   onLandmark: (id: LandmarkId | null) => void;
   stitch: Stitch | undefined;

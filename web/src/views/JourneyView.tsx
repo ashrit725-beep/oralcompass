@@ -18,8 +18,6 @@ import { OverviewList } from "@/components/OverviewList";
 export interface JourneyViewProps {
   data: AppData;
   selection: JourneySelectionApi;
-  /** Ignored: OralCompass is a mobile app and the phone layout is the only layout (owner direction "its fully a mobile app"). */
-  mobile?: boolean;
   onOpenLandmark: (id: LandmarkId) => void;
   onOpenDocuments: () => void;
   /** Opens the ClauseCard for a stitch pressed on the passage or in the drawer (wired by App). */
