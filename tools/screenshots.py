@@ -545,7 +545,7 @@ def upload_walk(page, device: str, shot):
     page.get_by_role("button", name="Review the fields").click(); page.wait_for_timeout(800)
     confirmed = page.locator(".up-row[data-confidence=confirmed]").count()
     decided = page.locator(".up-row[data-decided]").count()
-    hb_disabled = page.evaluate("(() => { const b = document.querySelector('.hb-root'); return !!b && (b.disabled || b.getAttribute('aria-disabled') === 'true'); })()")
+    hb_disabled = page.evaluate("(() => { const b = document.querySelector('[role=dialog] .hb-root'); return !!b && (b.disabled || b.getAttribute('aria-disabled') === 'true'); })()")
     check(f"{device}: fixture pdf extracts in demo mode", stage_rows == 7 and confirmed >= 8 and decided == 0 and hb_disabled, f"stages={stage_rows} confirmed={confirmed} decided={decided} hold disabled={hb_disabled}")
     un_up = page.evaluate("[...document.querySelectorAll('.up-table .amt')].filter(a => !a.parentElement.querySelector('.badge')).length")
     check(f"{device}: every amount in the review table badged", un_up == 0, f"{un_up} unbadged")
@@ -557,7 +557,7 @@ def upload_walk(page, device: str, shot):
         if not row.count(): row = page.locator(".up-row:not([data-decided])").first
         if not row.count(): break
         row.get_by_role("button", name="Not in document").first.click(); page.wait_for_timeout(500)
-    page.locator(".hb-root").first.focus()
+    page.locator("[role=dialog] .hb-root").first.focus()
     page.keyboard.down("Space"); page.wait_for_timeout(1100); page.keyboard.up("Space")
     page.wait_for_selector("text=/Published as UP\\d+/", timeout=30000); page.wait_for_timeout(600)
     label = re.search(r"Published as (UP\d+)", page.locator("body").inner_text())

@@ -757,7 +757,7 @@ def walk(pw, device: dict) -> dict:
             if not row.count(): break
             row.get_by_role("button", name="Not in document").first.click(); page.wait_for_timeout(400)
         A.audit("upload 4: review table decided")
-        page.locator(".hb-root").first.focus()
+        page.locator("[role=dialog] .hb-root").first.focus()
         page.keyboard.down("Space"); page.wait_for_timeout(1200); page.keyboard.up("Space")
         page.wait_for_selector("text=/Published as UP\\d+/", timeout=30000); page.wait_for_timeout(600)
         A.audit("upload 5: published")

@@ -65,9 +65,12 @@ ul, ol, menu { list-style: revert; margin: revert; padding: revert; }
 a { text-decoration-line: underline; }
 svg:not(.map-paint) { display: inline; vertical-align: baseline; }
 * { box-sizing: border-box; }
-html, body, #root { height: 100%; }
-body {
-  margin: 0; background: var(--paper); color: var(--ink); font-family: var(--sans); font-size: 16px; line-height: 1.5;
+html, body { height: 100%; } #root { min-height: 100%; }
+/* The paper light sits on a fixed layer behind the app: as a body background sized to the viewport it left a hard seam at y = 100vh
+   in every full-page view (delight pass mo-20a). */
+body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--sans); font-size: 16px; line-height: 1.5; isolation: isolate; }
+body::before {
+  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
   background-image: radial-gradient(ellipse at 20% 0%, rgba(255, 255, 255, .55), transparent 55%), radial-gradient(ellipse at 90% 100%, rgba(197, 154, 60, .10), transparent 50%);
 }
 h1, h2, h3, h4 { font-family: var(--serif); font-weight: 600; letter-spacing: .01em; color: var(--ink); margin: 0 0 .35em; }

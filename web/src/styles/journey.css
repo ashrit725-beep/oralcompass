@@ -53,8 +53,8 @@
   .journey-controls { flex-direction: column; align-items: stretch; gap: var(--s-2); }
   .segmented { display: grid; width: 100%; }
   .segmented > button.seg-btn { min-height: 44px; padding: 0 var(--s-2); font-size: 14px; }
-  .journey-pickers { flex-direction: column; }
-  .journey-pickers select, .journey-pickers select.add-journey { max-width: none; flex: 1 1 auto; width: 100%; }
+  .journey-pickers { flex-direction: column; flex: none; }
+  .journey-pickers select, .journey-pickers select.add-journey { max-width: none; flex: none; width: 100%; height: auto; min-height: 44px; }
 }
 
 /* ---- the passage plate ---- */
@@ -264,3 +264,8 @@
 .ov-sound { font-size: .85rem; color: var(--ink-soft); white-space: nowrap; }
 
 .pv-mini.pv-marginal .pv-amt { max-width: 55%; white-space: normal; text-align: right; }   /* "not covered" wraps instead of clipping at 360 px */
+/* care rail (delight pass mo-20d): on desktop every stage card fits the column instead of the last one being cut at the edge */
+@media (min-width: 1100px) {
+  .care-rail { overflow-x: visible; gap: var(--s-2); }
+  .care-card { flex: 1 1 0; min-width: 0; padding: var(--s-3); }
+}

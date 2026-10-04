@@ -126,7 +126,7 @@ def upload_and_publish(page) -> None:
             break
         row.get_by_role("button", name="Not in document").first.click()
         page.wait_for_timeout(400)
-    page.locator(".hb-root").first.focus()
+    page.locator("[role=dialog] .hb-root").first.focus()
     page.keyboard.down("Space")
     page.wait_for_timeout(1100)
     page.keyboard.up("Space")
