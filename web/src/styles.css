@@ -302,7 +302,7 @@ table.grid thead th { background: var(--paper-deep); position: sticky; top: 0; }
 @media (max-width: 760px) {
   .view { padding: 1rem; }
   .journey-layout, .plan-layout, .documents { grid-template-columns: minmax(0, 1fr); }
-  .detail.sheet { position: fixed; left: 0; right: 0; bottom: 0; max-height: 72vh; border-radius: 18px 18px 0 0; z-index: 15; box-shadow: 0 -10px 30px rgba(35, 48, 61, .25); padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .detail.sheet { position: fixed; left: 0; right: 0; bottom: 0; max-height: 72vh; max-height: 72dvh; border-radius: 18px 18px 0 0; z-index: 15; box-shadow: 0 -10px 30px rgba(35, 48, 61, .25); padding-bottom: env(safe-area-inset-bottom, 0px); }
   .detail.sheet::before { content: ""; display: block; width: 44px; height: 4px; border-radius: 2px; background: var(--rule); margin: .4rem auto 0; }
   .facts li { grid-template-columns: 1fr; }
   .island-btn, .landmark-btn { min-width: 96px; padding: .25rem .4rem; }
