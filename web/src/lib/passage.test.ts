@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import alexJson from "./__fixtures__/alex.json";
-import samJson from "./__fixtures__/sam.json";
+import alexJson from "../__fixtures__/passage/alex.json";
+import samJson from "../__fixtures__/passage/sam.json";
 import { BINDING_PX, TARGET_PX, VB_W, answersLog, buildPassage, checkpointAria, findCollisions, islandAmountText, layoutPassage, matchLine, moneyText, type PassageInputs } from "./passage";
 import { stitchesFromClauses } from "./stitches";
 import type { Clause, CoverageRule, JourneyView, LedgerLine, PassageVM, PlanFixture, Procedure, SavedEstimate, TreatmentItem } from "./types";

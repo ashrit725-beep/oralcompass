@@ -373,8 +373,8 @@ export function islandCentres(n: number): Pt[] {
 export function framePoints(n: number): { start: Pt; destination: Pt; destinationR: number } {
   if (n === 0) return { start: { x: 180, y: 380 }, destination: { x: 820, y: 380 }, destinationR: 58 };
   if (n === 1) return { start: { x: 150, y: 390 }, destination: { x: 840, y: 400 }, destinationR: 58 };
-  if (n === 2) return { start: { x: 130, y: 400 }, destination: { x: 820, y: 410 }, destinationR: 58 };
-  if (n === 3) return { start: { x: 160, y: 478 }, destination: { x: 850, y: 460 }, destinationR: 56 };
+  if (n === 2) return { start: { x: 118, y: 400 }, destination: { x: 820, y: 410 }, destinationR: 58 };
+  if (n === 3) return { start: { x: 150, y: 518 }, destination: { x: 850, y: 460 }, destinationR: 56 };
   if (n >= 7) return { start: { x: 110, y: 370 }, destination: { x: 870, y: 380 }, destinationR: 50 };
   return { start: { x: 120, y: 400 }, destination: { x: 860, y: 430 }, destinationR: 56 };
 }
@@ -442,7 +442,7 @@ export function layoutPassage(vm: PassageVM, mode: "desktop" | "phone", opts: La
   const { start, destination, destinationR } = framePoints(n);
   const selected = opts.selected ?? null;
   const dense = denseFrom(n);
-  const btnW = u(dense ? 104 : 120), btnH = hit;
+  const btnW = u(dense ? 104 : 128), btnH = hit, islH = u(dense ? 44 : 60);
   const startButton = rectAt(start.x, start.y + u(46), u(150), btnH, "start");
   const destinationButton = rectAt(destination.x, destination.y + destinationR * 0.7 + u(36), u(170), btnH, "destination");
 
@@ -453,7 +453,7 @@ export function layoutPassage(vm: PassageVM, mode: "desktop" | "phone", opts: La
   const visitedOverflow = Math.max(0, vm.visited.length - 3);
   const visitedMore = visitedOverflow ? rectAt(60, vTop + 3 * vPitch, visitedW, btnH, "visited:more") : null;
   const maxMarginal = n >= 7 ? 2 : 3;
-  const marginal: SmallIslandLayout[] = vm.marginal.slice(0, maxMarginal).map((m, j) => { const cx = n >= 7 ? 930 - j * 118 : 640 - j * 150, cy = n >= 7 ? 500 : 505; return { id: m.id, cx, cy, r: 36, button: rectAt(cx, cy + 28 + u(26), btnW, btnH, m.id) }; });
+  const marginal: SmallIslandLayout[] = vm.marginal.slice(0, maxMarginal).map((m, j) => { const cx = n >= 7 ? 930 - j * 118 : 640 - j * 150, cy = n >= 7 ? 500 : 512; return { id: m.id, cx, cy, r: 36, button: rectAt(cx, cy + 28 + u(26), btnW, btnH, m.id) }; });
   const marginalOverflow = Math.max(0, vm.marginal.length - maxMarginal);
 
   // island plates and buttons (fixed), then arcs placed against everything already on the chart
@@ -464,12 +464,12 @@ export function layoutPassage(vm: PassageVM, mode: "desktop" | "phone", opts: La
     const major = isl.category === "major" || isl.category === "major_excluded";
     const scale = major ? 3.4 : 3;
     const plate = { x: cx - (scale * r) / 2, y: cy - (scale * r * PLATE_ASPECT) / 2, w: scale * r, h: scale * r * PLATE_ASPECT, slot: major ? "island-major" : "island-generic", scale };
-    let button = rectAt(cx, cy + r * 0.75 + u(36), btnW, btnH, isl.id);
+    let button = rectAt(cx, cy + r * 0.75 + u(36) + (islH - btnH) / 2, btnW, islH, isl.id);
     // dense: a button that would touch its neighbour's drops to a second row (or rises above the plate near the bottom edge)
     const prev = i > 0 ? placedButtons[i - 1] : null;
     if (prev && rectsIntersect(prev, button)) {
-      const down = prev.y + prev.h + 4 + btnH / 2;
-      button = down + btnH / 2 <= VB_H - 4 ? rectAt(cx, down, btnW, btnH, isl.id) : rectAt(cx, cy - r * 0.75 - u(36), btnW, btnH, isl.id);
+      const down = prev.y + prev.h + 4 + islH / 2;
+      button = down + islH / 2 <= VB_H - 4 ? rectAt(cx, down, btnW, islH, isl.id) : rectAt(cx, cy - r * 0.75 - u(36), btnW, islH, isl.id);
     }
     placedButtons.push(button);
     return { isl, cx, cy, plate, button };
@@ -507,7 +507,7 @@ export function layoutPassage(vm: PassageVM, mode: "desktop" | "phone", opts: La
   }
 
   // soundings (two-line lozenge, 120 × 44 px) midway along each leg, probed against the controls; never printed on a control
-  const soundW = u(124), soundH = hit;
+  const soundW = u(140), soundH = hit;
   const soundings: SoundingLayout[] = [];
   islands.forEach((isl, i) => {
     if (!vm.islands[i].soundingsAfter) return;
