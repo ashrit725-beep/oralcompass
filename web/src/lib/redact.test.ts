@@ -160,6 +160,7 @@ const POSITIVE: [string, [IdentifierCategory, string][]][] = [
   ["Winston Salem, NC 27101-1234", [["address", "Winston Salem, NC 27101-1234"]]],
   ["Raleigh NC 27601", [["address", "Raleigh NC 27601"]]],
   ["1902 Harbor Light Lane\nWilmington, NC 28401", [["address", "1902 Harbor Light Lane"], ["address", "Wilmington, NC 28401"]]],
+  ["Robin Ashby 12 Oak Ct", [["address", "12 Oak Ct"]]],
   // member IDs
   ["Member ID: HB26-4471-902", [["member_id", "HB26-4471-902"]]],
   ["Member ID #: W123456789", [["member_id", "W123456789"]]],
@@ -512,6 +513,7 @@ describe("linear time", () => {
     ["dob labels", fill("DOB: 1/1/")],
     ["dear", fill("Dear Aaaa Bbbb ")],
     ["newlines", fill("Member ID:\n")],
+    ["carrier addresses", fill("Dental Group 12 Aaaa St Bbbb, NC 12345 ")],
     ["mixed", fill("Member ID: HB26-44 Group No. 1 $1, 910-555 Patient: Aa Bb DOB 7/19 a@b. ")],
   ];
   it.each(hostile)("%s", (_label, text) => {

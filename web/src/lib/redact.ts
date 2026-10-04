@@ -266,20 +266,31 @@ function nameCheck(minWords: number) {
     }
     if (kept < minWords) return null;
     if (kept === 1 && CALENDAR_WORDS.has(value.slice(0, end - start).replace(/[.'’]+$/u, "").toLowerCase())) return null;
-    // A trailing honorific-like single letter without a period is not part of a name ("Avery Rowan A" in a table).
     return { start, end };
   };
 }
 
 /** The words right before an address on its line name an organisation ("Delta Dental Insurance Company 1130 ...", "Northside Dental Group, 12 Main St"). */
 const ORG_BEFORE =
-  /(?:Company|Co\.|Insurance|Inc\.?|LLC|L\.L\.C\.|Corporation|Corp\.?|Dental(?:\s{1,3}of(?:\s{1,3}\p{Lu}[\p{L}.]{1,20}){1,3})?|Dentistry|Orthodontics|Benefits|Administrators?|Department|Dept\.?|Office|Clinic|Hospital|University|College|Association|Center|Centre|Group|Plan|Program|Services|Attn:?\s{0,3}Claims|by)[\s,:;–-]{0,4}$/u;
+  /(?<![\p{L}\p{N}])(?:Company|Co\.|Insurance|Inc\.?|LLC|L\.L\.C\.|Corporation|Corp\.?|Dental(?:\s{1,3}of(?:\s{1,3}\p{Lu}[\p{L}.]{1,20}){1,3})?|Dentistry|Orthodontics|Benefits|Administrators?|Department|Dept\.?|Office|Clinic|Hospital|University|College|Association|Center|Centre|Group|Plan|Program|Services|Attn:?\s{0,3}Claims|by)[\s,:;–-]{0,4}$/u;
 
 function lineBefore(page: string, start: number, max = 60): string {
   const from = Math.max(0, start - max);
   const chunk = page.slice(from, start);
   const nl = chunk.lastIndexOf("\n");
   return nl >= 0 ? chunk.slice(nl + 1) : chunk;
+}
+
+/** The largest value in an ascending list that is ≤ x, or -1 (binary search: a page full of carrier addresses stays linear). */
+function lastAtOrBefore(sorted: readonly number[], x: number): number {
+  let lo = 0;
+  let hi = sorted.length - 1;
+  let best = -1;
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1;
+    if (sorted[mid] <= x) { best = sorted[mid]; lo = mid + 1; } else hi = mid - 1;
+  }
+  return best;
 }
 
 function cityCheck(value: string, page: string, start: number, state: PageState): Checked | null {
@@ -299,7 +310,8 @@ function cityCheck(value: string, page: string, start: number, state: PageState)
   const s0 = start + offset;
   const end = start + value.length;
   // The city line of an institutional street address, or one written right after an organisation's name or a P.O. Box, is the carrier's.
-  const gapAfterInstitution = state.institutionalEnds.some((e) => e <= s0 && s0 - e <= 4 && /^[\s,]*$/u.test(page.slice(e, s0)));
+  const e = lastAtOrBefore(state.institutionalEnds, s0);
+  const gapAfterInstitution = e >= 0 && s0 - e <= 4 && /^[\s,]*$/u.test(page.slice(e, s0));
   if (gapAfterInstitution || ORG_BEFORE.test(lineBefore(page, s0)) || /(?:P\.?\s?O\.?|Post\s+Office)\s*Box\b/iu.test(page.slice(Math.max(0, s0 - 40), s0))) {
     return { start: s0, end, ignore: true };
   }
