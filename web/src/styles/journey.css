@@ -145,7 +145,7 @@
 .lg-mark.tone-marginal { border-style: dashed; border-color: var(--ink-soft); }
 
 /* ---- soundings lozenge (ink on parchment) ---- */
-.sounding { margin: 0; pointer-events: none; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0 8px; align-items: center; width: 160px; min-height: 44px; padding: 4px 8px; background: var(--parchment); color: var(--ink); border: 1px solid var(--rule); border-radius: var(--r-1); box-shadow: var(--shadow-1); font-size: 11px; line-height: 14px; }
+.sounding { margin: 0; pointer-events: none; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0 4px; align-items: center; width: 160px; min-height: 44px; padding: 4px 6px; background: var(--parchment); color: var(--ink); border: 1px solid var(--rule); border-radius: var(--r-1); box-shadow: var(--shadow-1); font-size: 11px; line-height: 14px; }
 .sounding .sounding-row { display: contents; }
 .sounding-term { color: var(--ink-soft); white-space: nowrap; font-size: 12px; }
 .sounding .amt { font-size: 15px; font-weight: 600; justify-self: end; font-variant-numeric: tabular-nums; }   /* slop-15: soundings 15 px */
