@@ -163,7 +163,8 @@ export function resolveRef(ref: AssistRef, data: AssistData, scope?: AssistScope
   if (ref.kind === "line_total") {
     const line = lines[ref.line_index];
     const cents = ref.which === "patient" ? line?.patient_cents ?? null : line?.plan_cents ?? null;
-    return { kind: "money", cents, evidence: cents === null ? "UNKNOWN" : lineEvidence(line), label: ref.which === "patient" ? ASSIST.refPatientTotal : ASSIST.refPlanTotal };
+    // a line's you-pay / plan-pays is an engine result: it reads "calculated" (a total built on an assumption keeps its ASSUMED badge)
+    return calcMoney(cents, cents === null ? "UNKNOWN" : lineEvidence(line), ref.which === "patient" ? ASSIST.refPatientTotal : ASSIST.refPlanTotal);
   }
   if (ref.kind === "estimate_total") {
     // the journey's totals (the facts line "you pay $902.00 · plan $1,098.00"): engine sums of the lines, labelled "calculated"
@@ -215,14 +216,15 @@ export function resolveRef(ref: AssistRef, data: AssistData, scope?: AssistScope
   if (lt) {
     const line = lines[Number(lt[1])];
     const cents = lt[2] === "patient_cents" ? line?.patient_cents ?? null : line?.plan_cents ?? null;
-    return { kind: "money", cents, evidence: cents === null ? "UNKNOWN" : lineEvidence(line), label };
+    return calcMoney(cents, cents === null ? "UNKNOWN" : lineEvidence(line), label);
   }
   const ra = /^estimate\.ledger\.lines\[(\d+)\]\.remaining_after\.(deductible_cents|annual_max_cents)$/.exec(path);
   if (ra) {
     const line = lines[Number(ra[1])];
     const cents = line?.remaining_after?.[ra[2] as "deductible_cents" | "annual_max_cents"] ?? null;
     const fromRecords = !!data.estimate?.inputs?.benefits_snapshot;
-    return { kind: "money", cents, evidence: cents === null ? "UNKNOWN" : fromRecords ? "USER" : "DOC", label };
+    // what remains after this line is computed from the records/document and the lines before it: "calculated", like the soundings on the map
+    return calcMoney(cents, cents === null ? "UNKNOWN" : fromRecords ? "USER" : "DOC", label);
   }
   const fl = /^estimate\.ledger\.lines\[(\d+)\]\.flags$/.exec(path);
   if (fl) { const line = lines[Number(fl[1])]; return { kind: "text", text: line?.flags.length ? line.flags.map(plainNote).join(" ") : ASSIST.none, evidence: "AMBIGUOUS", label }; }
@@ -248,6 +250,12 @@ export function resolveRef(ref: AssistRef, data: AssistData, scope?: AssistScope
     }
   }
   return { kind: "text", text: ASSIST.notLoaded, evidence: "UNKNOWN", label };
+}
+
+/** An engine-calculated amount (CLAUDE.md rule 2 + orchestrator note 27): shown with "Calculated from the clauses cited", never a bare DOC badge.
+ * A figure that rests on an assumption keeps its ASSUMED badge so the assumption stays visible. */
+function calcMoney(cents: number | null, evidence: Evidence, label: string): Resolved {
+  return { kind: "money", cents, evidence, label, calc: cents !== null && evidence !== "ASSUMED" };
 }
 
 function moneyField(cents: number | null | undefined, evidence: Evidence, label: string): Resolved {

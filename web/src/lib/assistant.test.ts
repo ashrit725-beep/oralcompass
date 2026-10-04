@@ -69,6 +69,11 @@ describe("ref resolution against the payloads (every Ref kind)", () => {
     expect(resolveRef({ kind: "line_total", line_index: 0, which: "patient" }, data)).toMatchObject({ kind: "money", cents: 39200, evidence: "DOC" });
     expect(resolveRef({ kind: "line_total", line_index: 0, which: "plan" }, data)).toMatchObject({ kind: "money", cents: 58800 });
     expect(resolveRef({ kind: "line_total", line_index: 1, which: "patient" }, data)).toMatchObject({ kind: "money", cents: null, evidence: "UNKNOWN" });
+    // calculated, not a bare "From the plan document" badge (note 27); an unresolved line has no calc label
+    expect(resolveRef({ kind: "line_total", line_index: 0, which: "patient" }, data)).toMatchObject({ calc: true });
+    expect(resolveRef({ kind: "line_total", line_index: 0, which: "plan" }, data)).toMatchObject({ calc: true });
+    expect(resolveRef({ kind: "field", path: "estimate.ledger.lines[0].patient_cents" }, data)).toMatchObject({ kind: "money", cents: 39200, calc: true });
+    expect(resolveRef({ kind: "line_total", line_index: 1, which: "patient" }, data)).toMatchObject({ calc: false });
   });
   it("field → plan, benefits, rules, treatment item, remaining_after and non-amount paths", () => {
     expect(resolveRef({ kind: "field", path: "plan.deductible_individual" }, data)).toMatchObject({ kind: "money", cents: 5000, evidence: "DOC" });
