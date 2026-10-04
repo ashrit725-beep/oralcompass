@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useReducedMotion } from "@/lib/motion";
 import { ArtPlate } from "./ArtPlate";
 import { Island } from "./Paper";
@@ -9,11 +10,14 @@ import { Island } from "./Paper";
  */
 export function HarborLight({ x, y, r, lit, selected }: { x: number; y: number; r: number; lit: boolean; selected: boolean }) {
   const reduce = useReducedMotion();
+  const [fallback, setFallback] = useState(false);
   const w = 3.4 * r, h = w * (1106 / 1422);
+  // the lamp sits on the painted lantern (upper right of the plate's tower); the SVG fallback tower stands at the centre
+  const lamp = fallback ? { x: x + r * 0.08, y: y - h * 0.38 } : { x: x + w * 0.15, y: y - h * 0.41 };
   return (
     <g className="harbor-light">
       <ellipse cx={x + 6} cy={y + h * 0.36} rx={w * 0.4} ry={h * 0.15} fill="var(--water-ink)" opacity={0.22} />
-      <ArtPlate slot="island-lighthouse" x={x - w / 2} y={y - h / 2} w={w} h={h} preserveAspectRatio="xMidYMid meet" fallback={
+      <ArtPlate slot="island-lighthouse" x={x - w / 2} y={y - h / 2} w={w} h={h} preserveAspectRatio="xMidYMid meet" onFallback={() => setFallback(true)} fallback={
         <g>
           <Island cx={x} cy={y + 8} r={r * 0.8} />
           <g transform={`translate(${x} ${y - 10})`}>
@@ -25,7 +29,7 @@ export function HarborLight({ x, y, r, lit, selected }: { x: number; y: number; 
         </g>
       } />
       {/* the lamp's beam: lit and sweeping only when the estimate is resolved */}
-      <g transform={`translate(${x + r * 0.08} ${y - h * 0.38})`} opacity={lit ? 1 : 0.45}>
+      <g transform={`translate(${lamp.x} ${lamp.y})`} opacity={lit ? 1 : 0.45}>
         <path className={lit && !reduce ? "beam motion-drift" : "beam"} d="M 0 0 L 120 -34 L 120 26 Z" fill="var(--gold-soft)" opacity={lit ? 0.3 : 0.15} style={{ transformOrigin: "0px 0px" }} />
         <circle r={4} fill={lit ? "var(--gold)" : "var(--sand)"} stroke="var(--ink)" strokeWidth={0.8} />
       </g>
