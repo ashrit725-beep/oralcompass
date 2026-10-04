@@ -502,37 +502,60 @@ def run(pw, device: str, reduced_motion: str = "no-preference"):
     page.get_by_role("tab", name="My plan").click(); page.wait_for_timeout(500)
     page.locator("label.plan-pick select").first.select_option("ML26"); page.wait_for_timeout(1200)
 
-    # ---- Compare (spec §12 + compare grid checks) ----
+    # ---- Compare (spec §12; phone-native cards per the owner's mobile-only direction, part E: one plan per swipeable card under a sticky
+    # segmented switcher; the table, its column headers and the desktop popover are gone, so these checks read the cards) ----
     page.get_by_role("tab", name="Compare").click(); page.wait_for_timeout(2500)
-    check(f"{device}: comparison grid renders", page.locator("table.grid").count() > 0)
-    check(f"{device}: eligibility banner under columns", page.get_by_text("not that you are eligible to enroll", exact=False).count() > 0)
-    grid_in_container = page.locator("[data-slot=table-container] table.grid").count() > 0
-    heads = page.locator("table.grid thead th").all_inner_texts()
-    head_elig = all("Eligibility:" in h for h in heads[1:]) if len(heads) > 1 else False
-    cells = page.evaluate("[...document.querySelectorAll('table.grid tbody tr:not(.differences) td')].filter(td => !td.querySelector('button[aria-expanded] .badge')).length")
-    unbadged_cells = page.evaluate("[...document.querySelectorAll('table.grid tr:not(.differences) td, table.grid th')].filter(c => /\\$\\s?\\d/.test(c.textContent) && !c.querySelector('.badge,.stitch')).length")
+    check(f"{device}: comparison cards render", page.locator(".cmp-track .cmp-card").count() >= 2, f"cards={page.locator('.cmp-track .cmp-card').count()}")
+    check(f"{device}: eligibility banner above the cards", page.get_by_text("not that you are eligible to enroll", exact=False).count() > 0)
+    heads = page.locator(".cmp-card .cmp-elig").evaluate_all("ds => ds.map(d => d.textContent)")
+    head_elig = bool(heads) and all("Eligibility:" in h for h in heads)
+    cells = page.evaluate("[...document.querySelectorAll('.cmp-card .cmp-row')].filter(r => !r.querySelector('button.cmp-cell .badge')).length")
+    unbadged_cells = page.evaluate(r"[...document.querySelectorAll('.cmp-card .cmp-cell-face, .cmp-card .cmp-card-head')].filter(c => /\$\s?\d/.test(c.textContent) && !c.querySelector('.badge,.stitch')).length")
     rail_ok = has_amount(page, ".rail-total", "$902.00") and page.evaluate("(() => { const r = document.querySelector('.rail-total'); return !!r && !!(r.querySelector('.badge') || r.parentElement.querySelector('.badge')); })()")
     unresolved_rail = page.get_by_text("Unresolved. Not provided for this plan:", exact=False).count() > 0
-    check(f"{device}: compare grid cells carry evidence", grid_in_container and head_elig and cells == 0 and unbadged_cells == 0 and rail_ok and unresolved_rail,
-          f"container={grid_in_container} elig={head_elig} cells_without_badge_button={cells} unbadged={unbadged_cells} rail={rail_ok} unresolved_rail={unresolved_rail}")
+    check(f"{device}: compare cards carry evidence", head_elig and cells == 0 and unbadged_cells == 0 and rail_ok and unresolved_rail,
+          f"elig={head_elig} rows_without_badge_button={cells} unbadged={unbadged_cells} rail={rail_ok} unresolved_rail={unresolved_rail}")
+    # the switcher follows the cards both ways (tap → track scrolls; the current segment is the card in view), and every topic row sits at
+    # the same height in every card (shared subgrid), so a sideways swipe keeps the row being read in place
+    segs = page.locator(".cmp-seg-btn")
+    sw = {"segs": segs.count()}
+    if segs.count() > 1:
+        segs.nth(1).click(); page.wait_for_timeout(900)
+        sw["after_tap"] = page.evaluate("[...document.querySelectorAll('.cmp-seg-btn')].map(b => b.getAttribute('aria-current') === 'true')")
+        page.evaluate("(() => { const t = document.querySelector('.cmp-track'); t.scrollTo({ left: 0, behavior: 'auto' }); })()"); page.wait_for_timeout(600)
+        sw["after_swipe"] = page.evaluate("[...document.querySelectorAll('.cmp-seg-btn')].map(b => b.getAttribute('aria-current') === 'true')")
+    sw["aligned"] = page.evaluate("""(() => { const cards = [...document.querySelectorAll('.cmp-card')]; if (cards.length < 2) return false;
+        const tops = cards.map(c => [...c.querySelectorAll('.cmp-row')].map(r => Math.round(r.getBoundingClientRect().top))); return tops.every(t => JSON.stringify(t) === JSON.stringify(tops[0])); })()""")
+    sw["sticky"] = page.evaluate("getComputedStyle(document.querySelector('.cmp-switch')).position")
+    sw["seg_h"] = page.evaluate("Math.min(...[...document.querySelectorAll('.cmp-seg-btn')].map(b => b.getBoundingClientRect().height))")
+    check(f"{device}: compare switcher follows the cards; rows aligned across cards", sw["segs"] >= 2 and sw.get("after_tap", [None, None])[1] is True and sw.get("after_swipe", [None])[0] is True
+          and sw["aligned"] and sw["sticky"] == "sticky" and sw["seg_h"] >= 44, str(sw))
+    check(f"{device}: compare marks topics that differ", page.locator(".cmp-card .cmp-diff").count() > 0)
     shot("09-compare")
-    page.locator("table.grid tbody button[aria-expanded]").first.click(); page.wait_for_timeout(600)
+    first_cell = page.locator(".cmp-card").first.locator("button.cmp-cell").first
+    first_cell.click(); page.wait_for_timeout(700)
     pop = page.locator("[data-slot=drawer-content]")
-    ok = pop.count() > 0 and pop.locator("h2, h3").count() > 0 and pop.locator("blockquote").count() > 0 and pop.get_by_role("button", name="Close clause").count() > 0
+    ok = pop.count() > 0 and pop.locator("h2, h3").count() > 0 and (pop.locator("blockquote").count() > 0 or pop.locator(".note").count() > 0) and pop.get_by_role("button", name="Close clause").count() > 0
     shot("20-compare-clause")
-    if pop.get_by_role("button", name="Close clause").count(): pop.get_by_role("button", name="Close clause").first.click(); page.wait_for_timeout(400)
-    else: page.keyboard.press("Escape"); page.wait_for_timeout(400)
-    check(f"{device}: compare cell opens its clause", ok)
-    # web-correctness-13: picking fewer than two plans clears the grid (no stale columns under pickers that show fewer plans)
-    pickers = page.locator(".compare-view .pickers select")
-    before = [pickers.nth(i).input_value() for i in range(pickers.count())]
-    pickers.nth(2).select_option(""); page.wait_for_timeout(1500)
-    cols_two = page.locator("table.grid thead th").count()
-    pickers.nth(1).select_option(""); page.wait_for_timeout(800)
-    cleared = page.locator("table.grid").count() == 0
-    pickers.nth(1).select_option(before[1]); page.wait_for_timeout(300)
-    pickers.nth(2).select_option(before[2]); page.wait_for_timeout(1800)
-    check(f"{device}: compare grid follows the pickers", cols_two == 3 and cleared and page.locator("table.grid thead th").count() == 4, f"before={before} cols_two={cols_two} cleared={cleared}")
+    page.keyboard.press("Escape"); page.wait_for_timeout(600)
+    back = page.evaluate("!!document.activeElement?.classList?.contains('cmp-cell')")
+    check(f"{device}: compare row opens its clause in a sheet; focus returns to the row", ok and back, f"sheet={ok} focus_back={back}")
+    # web-correctness-13: picking fewer than two plans clears the cards (no stale plans under pickers that show fewer); the pickers live in the
+    # "Choose plans" bottom sheet
+    def pickers():
+        if not page.locator(".cmp-pickers select").count():
+            page.get_by_role("button", name="Choose plans").first.click(); page.wait_for_timeout(700)
+        return page.locator(".cmp-pickers select")
+    pk = pickers()
+    before = [pk.nth(i).input_value() for i in range(pk.count())]
+    pk.nth(2).select_option(""); page.wait_for_timeout(1500)
+    cols_two = page.locator(".cmp-track .cmp-card").count()
+    pk.nth(1).select_option(""); page.wait_for_timeout(800)
+    cleared = page.locator(".cmp-track").count() == 0
+    pk.nth(1).select_option(before[1]); page.wait_for_timeout(300)
+    pk.nth(2).select_option(before[2]); page.wait_for_timeout(1800)
+    page.get_by_role("button", name="Done").click(); page.wait_for_timeout(600)
+    check(f"{device}: compare cards follow the pickers", cols_two == 2 and cleared and page.locator(".cmp-track .cmp-card").count() == 3, f"before={before} cols_two={cols_two} cleared={cleared}")
 
     # ---- Documents ----
     page.get_by_role("tab", name="Documents").click(); page.wait_for_timeout(1500)
@@ -558,11 +581,14 @@ def run(pw, device: str, reduced_motion: str = "no-preference"):
     check(f"{device}: clause explainer labels its plain sentence", bool(pw) and len(pw[0]) > 20 and pw[1] in ("Demo mode", "Written by the model from this quote", "Plain-words template") and pw[2].startswith("From "),
           str(pw)[:160])
     page.get_by_role("button", name="Close clause card").click(); page.wait_for_timeout(200)
-    # reminders: fact sentences with their evidence, one live region
+    # reminders: fact sentences with their evidence, one live region; the list opens from its row in a bottom sheet (mobile-only direction)
+    rm_row = page.get_by_role("button", name=re.compile(r"^Reminders"))
+    rm_row.first.scroll_into_view_if_needed(); rm_row.first.click(); page.wait_for_selector(".rm-in-sheet .rm-item, .rm-in-sheet .rm-empty", timeout=10000); page.wait_for_timeout(500)
     rm = page.locator(".rm-item")
     rm_unbadged = page.evaluate("[...document.querySelectorAll('.rm-text')].filter(t => /\\$\\s?\\d/.test(t.textContent) && !t.querySelector('.badge')).length")
     check(f"{device}: reminders listed with evidence", rm.count() >= 1 and rm_unbadged == 0 and page.locator(".rm-status[role=status]").count() == 1, f"items={rm.count()} unbadged={rm_unbadged}")
     shot("23-reminders")
+    page.keyboard.press("Escape"); page.wait_for_timeout(500)
     # the pdf.js page (a fictional plan with a stored PDF): each page is a labelled group with a text alternative (a11y-8); pressing a
     # stitch chip opens its card without redrawing the pages, so closing the card returns focus to the same chip, and typing in the
     # clause filter leaves the drawn pages in place (a11y-9). The walk returns to ML26 afterwards.

@@ -232,22 +232,94 @@
 .tpr-gate-ack { display: flex; align-items: center; gap: var(--s-2); min-height: 44px; font-size: .9rem; }
 .tpr-gate-ack input { width: 20px; height: 20px; flex: none; }
 
-/* ---- compare grid cells and cards ---- */
-.compare .grid th, .compare .grid td { vertical-align: top; }
-/* the grid flows with the page (no inner vertical scroller), so the header row is not sticky inside it */
-.compare .grid thead th { position: static; }
-.compare .grid-scroll { overflow-y: visible; max-height: none; }
-/* the differences sentence is a screen-reader summary of the row (every figure is badged in its cell): no visible band */
-.compare table.grid tr.differences td { border: 0; background: none; padding: 0; }
-.cmp-cell-face { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-1) var(--s-2); }
-.cmp-cell-face .amt { font-weight: 600; }
-.cmp-cell-face .cite { color: var(--ink-soft); font-size: .78rem; flex-basis: 100%; }
-.cmp-card-figure { margin: 0 0 var(--s-2); font-size: 1.1rem; display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-2); }
-.cmp-card .wording { margin: 0; }
-.rail-total .amt { font-family: var(--serif); font-size: 2.2rem; font-weight: 700; line-height: 1.1; }
-.rail .rail-total .amt { font-size: 1.6rem; }
+/* ---- Compare, phone-native (owner direction "its fully a mobile app", part E) ----
+   One plan per card in a horizontal scroll-snap track under a sticky segmented switcher. The cards share one subgrid, so a topic sits at
+   the same height in every card and a sideways swipe keeps the row being read in place. No viewport media queries: the phone layout is the
+   only layout (inside the 480 px app column on wide screens). Motion: the switcher thumb slides (transform), segments invert colour, presses
+   scale to .97 for 120 ms; reduced motion keeps the end states without movement. */
+.compare-view { --cmp-bleed: 1rem; }
+.cmp-top { display: grid; gap: var(--s-2); margin-bottom: var(--s-2); }
+.cmp-top-row { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); }
+.cmp-top-row h2 { margin: 0; }
+.cmp-choose { display: inline-flex; flex: none; align-items: center; gap: var(--s-2); min-height: 44px; padding: 0 var(--s-3); margin-right: calc(-1 * var(--s-2)); border-radius: var(--r-pill); background: transparent; color: var(--ink); font: 500 15px/20px var(--sans); cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+  transition: background-color var(--dur-micro) var(--ease-standard), color var(--dur-micro) var(--ease-standard), transform var(--dur-micro) var(--ease-standard); }
+.cmp-choose:active { background: var(--ink); color: var(--paper); }
+.cmp-choose:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.compare-view .cv-banner { margin: 0; font-size: 15px; line-height: 22px; }
+.compare-view .cv-note { margin: 0; font-size: 14px; line-height: 20px; color: var(--ink-soft); overflow-wrap: anywhere; }
+.cmp-context { margin: 0; font-size: 14px; line-height: 20px; color: var(--ink-soft); text-wrap: pretty; }
+.cmp-busy { margin: 0; font-size: 14px; line-height: 20px; color: var(--ink-soft); }
+
+.cmp-switch { position: sticky; top: var(--app-sticky-top, 0px); z-index: 6; margin: 0 calc(-1 * var(--cmp-bleed)); padding: var(--s-2) var(--cmp-bleed); background: var(--paper); box-shadow: 0 1px 0 var(--rule); }
+.cmp-seg { position: relative; display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); padding: 3px; border-radius: var(--r-3); background: var(--parchment); }
+.cmp-seg-thumb { position: absolute; top: 3px; bottom: 3px; left: 3px; width: calc((100% - 6px) / var(--n)); border-radius: 9px; background: var(--ink); box-shadow: var(--shadow-1);
+  transform: translateX(calc(var(--i) * 100%)); transition: transform var(--dur-standard) var(--ease-land); }
+.cmp-seg-btn { position: relative; z-index: 1; min-width: 0; min-height: 44px; padding: 4px var(--s-2); border-radius: 9px; background: transparent; color: var(--ink); font: 500 14px/18px var(--sans); text-align: center; text-wrap: balance; overflow-wrap: anywhere; cursor: pointer;
+  -webkit-tap-highlight-color: transparent; touch-action: manipulation; transition: color var(--dur-standard) var(--ease-standard), transform var(--dur-micro) var(--ease-standard); }
+.cmp-seg-btn[aria-current="true"] { color: var(--paper); }
+.cmp-seg-btn:focus-visible { outline: 3px solid var(--focus); outline-offset: 1px; }
+
+.cmp-track { position: relative; display: grid; grid-auto-flow: column; grid-auto-columns: calc(100% - 20px); grid-template-rows: repeat(var(--rows), auto); column-gap: var(--s-3);
+  margin: 0 calc(-1 * var(--cmp-bleed)); padding: var(--s-3) var(--cmp-bleed) var(--s-4); overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory; scroll-padding-inline: var(--cmp-bleed); scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.cmp-track::-webkit-scrollbar { display: none; }
+.cmp-card { grid-row: 1 / span var(--rows); display: grid; grid-template-rows: subgrid; row-gap: 0; min-width: 0; scroll-snap-align: start; scroll-snap-stop: always;
+  background: var(--surface-raised); border: 1px solid var(--rule); border-radius: var(--r-4); box-shadow: var(--shadow-1); overflow: hidden; }
+@supports not (grid-template-rows: subgrid) {
+  .cmp-track { grid-template-rows: auto; align-items: start; }
+  .cmp-card { grid-row: 1; display: flex; flex-direction: column; }
+}
+.cmp-card-head { display: flex; flex-direction: column; gap: var(--s-1); padding: var(--s-3) var(--s-4) 0; }
+.cmp-card-pos { margin: 0; font-size: 12px; line-height: 16px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+.cmp-card-head h4 { margin: 0; font: 600 17px/23px var(--serif); color: var(--ink); text-wrap: balance; }
+.cmp-card-ribbons { margin: var(--s-1) 0 0; display: flex; flex-wrap: wrap; gap: var(--s-1); }
+.cmp-card-ribbons .ribbon { margin-left: 0; }
+.cmp-elig { margin-top: auto; }
+.cmp-elig summary { display: flex; align-items: center; justify-content: space-between; gap: var(--s-2); min-height: 44px; font-size: 14px; line-height: 20px; color: var(--ink-soft); cursor: pointer; list-style: none; -webkit-tap-highlight-color: transparent; }
+.cmp-elig summary::-webkit-details-marker { display: none; }
+.cmp-elig summary:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; border-radius: var(--r-1); }
+.cmp-elig-chev { width: 16px; height: 16px; flex: none; transition: transform var(--dur-standard) var(--ease-standard); }
+.cmp-elig[open] .cmp-elig-chev { transform: rotate(90deg); }
+.cmp-elig p { margin: 0 0 var(--s-3); font-size: 13px; line-height: 18px; color: var(--ink-soft); overflow-wrap: anywhere; }
+.cmp-est { padding: var(--s-3) var(--s-4) var(--s-4); background: var(--paper-deep); border-top: 1px solid var(--rule); min-width: 0; }
+.cmp-est-label { margin: 0; font-size: 13px; line-height: 18px; color: var(--ink-soft); }
+.cmp-est .hero { margin: var(--s-1) 0 var(--s-2); gap: 2px; }
+.rail-total .amt { font-size: 32px; line-height: 38px; font-weight: 700; }
+.cmp-est .sub { font-size: 14px; line-height: 20px; color: var(--ink-soft); }
+.cmp-est .unresolved { margin: var(--s-1) 0 var(--s-2); font-size: 15px; line-height: 22px; }
+.cmp-est .flag { font-size: 13px; line-height: 18px; margin: var(--s-2) 0 0; }
+.cmp-est .note { margin: var(--s-2) 0 0; font-size: 13px; line-height: 18px; }
+.cmp-row { display: flex; min-width: 0; border-top: 1px solid var(--rule); }
+.cmp-cell { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) 16px; column-gap: var(--s-2); align-content: start; width: 100%; min-height: 56px; padding: var(--s-3) var(--s-3) var(--s-3) var(--s-4);
+  text-align: left; background: transparent; color: var(--ink); cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation; transition: background-color var(--dur-micro) var(--ease-standard); }
+.cmp-cell:active { background: color-mix(in srgb, var(--parchment) 70%, transparent); }
+.cmp-cell:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; }
+.cmp-cell-empty { margin: 0; cursor: default; }
+.cmp-row-top { grid-column: 1; display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 2px var(--s-2); font-size: 13px; line-height: 18px; color: var(--ink-soft); }
+.cmp-diff { display: inline-flex; align-items: center; gap: 6px; color: var(--wood-text); font-size: 12px; line-height: 18px; white-space: nowrap; }
+.cmp-diff::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--gold); }   /* marks a real state: the plans print different values here */
+.cmp-cell-face { grid-column: 1; margin-top: 2px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px var(--s-2); min-width: 0; }
+.cmp-cell-face .amt { font-size: 17px; line-height: 24px; font-weight: 600; }
+.cmp-cell-text { font-size: 15px; line-height: 22px; text-wrap: pretty; overflow-wrap: anywhere; }
+.cmp-cell-face .cite { flex-basis: 100%; font-size: 12px; line-height: 16px; color: var(--ink-soft); }
+.cmp-chev { grid-column: 2; grid-row: 1 / span 2; align-self: center; width: 16px; height: 16px; color: var(--ink-soft); }
+.cmp-card-figure { margin: 0 0 var(--s-3); font-size: 18px; line-height: 26px; display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-2); }
+.cmp-card-figure .amt { font-weight: 600; }
+.cmp-card-clause .wording { margin: 0; }
+.cmp-empty { display: grid; gap: var(--s-3); justify-items: start; margin-top: var(--s-3); padding: var(--s-4); border: 1px dashed var(--rule); border-radius: var(--r-3); background: var(--paper-deep); }
+.cmp-empty p { margin: 0; }
+.cmp-sheet-note { margin: 0; font-size: 14px; line-height: 20px; color: var(--ink-soft); }
+.cmp-pickers { display: grid; gap: var(--s-3); margin: var(--s-4) 0; }
+.cmp-pickers label { display: grid; gap: var(--s-1); font-size: 14px; line-height: 20px; color: var(--ink-soft); }
+.cmp-pickers select { width: 100%; min-width: 0; min-height: 48px; font-size: 16px; color: var(--ink); }
+.cmp-done, .cmp-empty-btn { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: 0 var(--s-5); border-radius: var(--r-pill); background: var(--ink); color: var(--paper); font: 600 16px/20px var(--sans); cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation; transition: transform var(--dur-micro) var(--ease-standard); }
+.cmp-done { width: 100%; margin-top: var(--s-5); }
+.cmp-done:focus-visible, .cmp-empty-btn:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+@media (prefers-reduced-motion: no-preference) {
+  .cmp-choose:active, .cmp-seg-btn:active, .cmp-done:active, .cmp-empty-btn:active { transform: scale(.97); }
+}
+@media (prefers-reduced-motion: reduce) { .cmp-seg-thumb, .cmp-seg-btn, .cmp-elig-chev { transition: none; } }
 .amt-cell { text-align: right; white-space: nowrap; }
-.rail-total .amt { font-size: 1.8rem; }
 
 /* ---- cost trail: the "calculated" note beside engine totals ---- */
 .calc-note { display: block; font-size: .78rem; font-style: italic; color: var(--ink-soft); font-family: var(--sans); font-weight: 400; }
@@ -260,3 +332,75 @@ td .calc-note, .note .calc-note, .line-tabs .calc-note { display: inline; }
 .pdf-outline.is-selected { border: 2px solid var(--terracotta); }
 .pdf-stitch.is-selected { border-color: var(--terracotta); box-shadow: 0 0 0 2px var(--select-ring); }
 .doc-wording { margin-top: var(--s-4); } .doc-wording h3 { font-size: 1rem; }
+
+/* ---- Documents, phone-native (owner direction "its fully a mobile app", part E): grouped list sections ----
+   Sections stack in one column at every width (inside the 480 px app column on wide screens); rows are 44 px+ with hairline separators
+   drawn as inset shadows (the legacy styles.css borders are later in the cascade, so rules here carry a `.docs` prefix to win). */
+.docs.documents { display: flex; flex-direction: column; gap: var(--s-7); }
+.docs .doc-plan { grid-row: auto; }
+.docs section > h2 { margin: 0 0 var(--s-3); }
+.docs .doc-head { display: grid; gap: var(--s-3); align-items: stretch; margin-bottom: var(--s-3); }
+.docs .doc-head h2 { margin: 0; }
+.docs .doc-head .plan-pick { display: grid; gap: var(--s-1); flex: none; font-size: 14px; line-height: 20px; color: var(--ink-soft); }
+.docs .doc-head .plan-pick select { width: 100%; min-height: 48px; font-size: 16px; color: var(--ink); }
+.ds-sub { margin: 0 0 var(--s-3); font-size: 14px; line-height: 20px; color: var(--ink-soft); text-wrap: pretty; }
+.ds-group { list-style: none; margin: 0; padding: 0; background: var(--surface-raised); border: 1px solid var(--rule); border-radius: var(--r-3); overflow: hidden; }
+.ds-group > * + * { box-shadow: inset 0 1px 0 var(--rule); }
+.docs .ds-group .doc-card { background: none; border-style: none; border-radius: 0; margin: 0; padding: var(--s-3) var(--s-4); }
+.docs .doc-card h3 { margin: 0; font: 600 16px/22px var(--serif); text-wrap: pretty; }
+.docs .doc-card p { margin: var(--s-1) 0 0; }
+.docs .doc-card .flag { margin-top: var(--s-2); }
+.ds-link-row a { display: inline-flex; align-items: center; gap: var(--s-1); min-height: 44px; }
+.ds-icon { width: 14px; height: 14px; flex: none; }
+.ds-more > summary { display: flex; align-items: center; gap: var(--s-2); min-height: 44px; cursor: pointer; list-style: none; -webkit-tap-highlight-color: transparent; }
+.ds-more > summary::-webkit-details-marker { display: none; }
+.ds-chev { width: 16px; height: 16px; flex: none; margin-left: auto; color: var(--ink-soft); transition: transform var(--dur-standard) var(--ease-standard); }
+details[open] > summary > .ds-chev { transform: rotate(90deg); }
+.ds-grow { flex: 1 1 auto; min-width: 0; }
+.ds-count { color: var(--ink-soft); font-weight: 400; font-variant-numeric: tabular-nums; }
+.ds-h3 { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-2); margin: var(--s-6) 0 var(--s-2); font: 600 17px/24px var(--serif); text-wrap: balance; }
+.ds-search { position: relative; display: block; margin: 0 0 var(--s-3); }
+.ds-search-icon { position: absolute; left: 12px; top: 50%; width: 18px; height: 18px; color: var(--ink-soft); transform: translateY(-50%); pointer-events: none; }
+.docs .ds-search input { width: 100%; max-width: none; min-height: 44px; padding: 0 var(--s-3) 0 40px; border: 1px solid var(--rule); border-radius: var(--r-3); background: var(--surface-raised); color: var(--ink); font-size: 16px; -webkit-appearance: none; appearance: none; }
+.docs .ds-search input:focus-visible { outline: 3px solid var(--focus); outline-offset: 1px; }
+.docs .clause-group { border-top: 0; }
+.docs .clause-group-head { display: flex; align-items: center; gap: var(--s-2); min-height: 48px; padding: 0 var(--s-4); list-style: none; font: 600 15px/20px var(--serif); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.docs .clause-group-head::-webkit-details-marker { display: none; }
+.docs .clause-group-head:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; }
+.docs .clause-group[open] > .clause-group-head { box-shadow: inset 0 -1px 0 var(--rule); }
+.docs .clauses { margin: 0; background: var(--paper); }
+.docs .clauses li { border-bottom: 0; }
+.docs .clauses li + li { box-shadow: inset 0 1px 0 var(--rule); }
+.docs .clauses li.is-selected { background: color-mix(in srgb, var(--gold) 16%, transparent); }
+.docs .clause-btn { display: block; min-height: 44px; padding: var(--s-3) var(--s-4); font-size: 15px; line-height: 22px; text-wrap: pretty; -webkit-tap-highlight-color: transparent; transition: background-color var(--dur-micro) var(--ease-standard); }
+.docs .clause-btn:active { background: color-mix(in srgb, var(--parchment) 70%, transparent); }
+.docs .clause-btn .where { margin-top: var(--s-1); font-size: 12px; line-height: 16px; }
+.ds-empty { margin: 0; padding: var(--s-3) var(--s-4); font-size: 14px; line-height: 20px; color: var(--ink-soft); }
+.ds-item { padding: var(--s-3) var(--s-4); min-width: 0; overflow-wrap: anywhere; }
+.ds-item h4 { margin: 0 0 var(--s-1); font-size: 15px; line-height: 21px; }
+.ds-item p { margin: var(--s-1) 0 0; font-size: 14px; line-height: 20px; }
+.ds-actions { margin-bottom: var(--s-3); }
+.ds-row { display: flex; align-items: center; gap: var(--s-3); width: 100%; min-height: 52px; padding: var(--s-2) var(--s-4); background: transparent; color: var(--ink); text-align: left; font: 500 16px/22px var(--sans); cursor: pointer;
+  -webkit-tap-highlight-color: transparent; touch-action: manipulation; transition: background-color var(--dur-micro) var(--ease-standard); }
+.ds-row:active { background: color-mix(in srgb, var(--parchment) 70%, transparent); }
+.ds-row:focus-visible { outline: 3px solid var(--focus); outline-offset: -3px; }
+.ds-lead { width: 22px; height: 22px; flex: none; color: var(--ink-soft); }
+.ds-row-title { display: block; }
+.ds-row-sub { display: block; font-size: 13px; line-height: 18px; font-weight: 400; color: var(--ink-soft); }
+.ds-mine strong { display: block; font-weight: 600; }
+.ds-meta { display: block; font-size: 13px; line-height: 18px; }
+.ds-needs { list-style: none; margin: var(--s-1) 0 0; padding: 0; }
+.ds-foot { margin: var(--s-2) 0 0; }
+.docs .sources li { border-bottom: 0; padding: 0; }
+.docs .sources .ds-more > summary { padding: var(--s-2) var(--s-4); font-size: 15px; line-height: 21px; }
+.ds-detail { padding: 0 var(--s-4) var(--s-3); }
+.ds-detail p { margin: var(--s-1) 0; overflow-wrap: anywhere; }
+.ds-audit .ds-item .ds-row-title { font-size: 14px; line-height: 20px; }
+.docs .privacy .delete-hold { margin-top: var(--s-5); }
+.docs .doc-wording { margin-top: 0; }
+@media (prefers-reduced-motion: reduce) { .ds-chev { transition: none; } }
+
+/* bottom sheets opened from Compare / Documents belong to the 480 px app column on a wide screen (mobile-only direction): centred over the
+   phone app, the dimmed overlay still covering the stage; on a phone this is the full width */
+.oc-col-sheet { max-width: 480px; margin-inline: auto; }
+
