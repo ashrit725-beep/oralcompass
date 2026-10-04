@@ -32,6 +32,21 @@ export interface AssistData {
 }
 export const EMPTY_DATA: AssistData = { estimate: null, plan: null, benefits: null, rules: [], items: [], stitches: [] };
 
+/** What the app shell provides once (AssistDataProvider): the payloads it already holds for the selected plan. */
+export interface AssistProvided extends Partial<AssistData> { planRef?: string }
+
+/** web-correctness-34: the shell's payloads answer only questions about the same plan (a Compare clause asks about another plan), and its
+ *  estimate only questions about the same estimate id; anything else is left for the lazy fetch. Items are the user's own records and
+ *  apply to every plan. */
+export function scopedProvided(ctx: AssistProvided | null, scope: Pick<AssistScope, "plan_ref" | "estimate_id">): Partial<AssistData> {
+  if (!ctx) return {};
+  const { planRef, ...data } = ctx;
+  if (planRef !== undefined && planRef !== scope.plan_ref) return data.items ? { items: data.items } : {};
+  const out: Partial<AssistData> = { ...data };
+  if (!scope.estimate_id || data.estimate?.id !== scope.estimate_id) delete out.estimate;
+  return out;
+}
+
 /** Identical to api/app/assistant.py MONEY_IN_TEXT / PLACEHOLDER. */
 export const MONEY_IN_TEXT = /\$\s?\d|\d\s?%|\d\s*(?:dollars|percent)\b|\b(?:dollars|percent)\s*\d/i;
 export const PLACEHOLDER = /\{\{ref:(\d+)\}\}/g;

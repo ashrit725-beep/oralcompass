@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import type { AssistScope, Benefits, CoverageRule, PlanFixture, SavedEstimate, Stitch, TreatmentItem } from "./types";
 import {
   applyScopeChoice, clientGuard, createRequestGate, EMPTY_DATA, hasBareMoney, initialSuggestions, lineEvidence, resolveRef, ribbonFor, scopeChoices, splitPlaceholders, stepEvidence,
-  suggestionKey, templateLabel, toolLabel, trailingRefs, lookupLabel, lookupLabels, type AssistData,
+  suggestionKey, templateLabel, toolLabel, trailingRefs, lookupLabel, lookupLabels, scopedProvided, type AssistData,
 } from "./assistant";
 
 const estimate = {
@@ -175,5 +175,20 @@ describe("copy grammar (info-only-12)", () => {
     expect(ASSIST.groundingRemoved(1)).toContain("1 sentence named a figure the records do not hold and was not shown.");
     expect(ASSIST.groundingRemoved(3)).toContain("3 sentences named");
     expect(COMPASS.panelLabel("ML26", COMPASS.notProvided, "$672.00")).toBe("Benefits compass for ML26: deductible remaining: not provided; annual maximum remaining: $672.00.");
+  });
+});
+
+describe("the shell's payloads are scoped to the question (web-correctness-34)", () => {
+  it("serves the same plan and estimate, never another plan's figures", () => {
+    const ctx = { planRef: "ML26", estimate, plan, benefits, rules, items, stitches: [] as Stitch[] };
+    const same = scopedProvided(ctx, { plan_ref: "ML26", estimate_id: "est-1" });
+    expect(same.estimate?.id).toBe("est-1");
+    expect(same.plan).toBe(plan);
+    expect("planRef" in same).toBe(false);
+    expect(scopedProvided(ctx, { plan_ref: "ML26", estimate_id: "est-2" }).estimate).toBeUndefined();   // a different estimate: fetched by id
+    expect(scopedProvided(ctx, { plan_ref: "ML26" }).estimate).toBeUndefined();
+    const other = scopedProvided(ctx, { plan_ref: "FM26H" });                                           // a Compare clause about another plan
+    expect(other).toEqual({ items });
+    expect(scopedProvided(null, { plan_ref: "ML26" })).toEqual({});
   });
 });

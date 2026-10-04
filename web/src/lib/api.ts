@@ -95,6 +95,7 @@ export const api = {
   addItem: (body: Partial<TreatmentItem>) => post<TreatmentItem>("/me/treatment-items", body),
   estimateFromRecords: (plan_code: PlanRef, treatment_item_ids?: string[], hypotheticals?: Record<string, unknown>) => post<SavedEstimate>("/me/estimates", { plan_code, treatment_item_ids: treatment_item_ids ?? [], hypotheticals: hypotheticals ?? {} }),
   savedEstimates: () => req<SavedEstimate[]>("/me/estimates"),
+  savedEstimate: (id: string) => req<SavedEstimate>(`/me/estimates/${encodeURIComponent(id)}`),
   myDocuments: () => req<PrivateDocument[]>("/me/documents"),
   exportMe: () => req<Record<string, unknown[]>>("/me/export"),
   deleteMe: () => req<{ deleted: Record<string, number> }>("/me", { method: "DELETE" }),
