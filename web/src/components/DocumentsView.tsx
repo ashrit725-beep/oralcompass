@@ -83,7 +83,7 @@ export function DocumentsView({ planCode, plans, onPlan, evidence, stitches, sel
         <div className="doc-head">
           <h2 id="docs-h">{PLAN.docsPlan}</h2>
           <label className="plan-pick">{PLAN.planCode}
-            <select value={planCode} onChange={(e) => onPlan(e.target.value)}>
+            <select value={planCode} onChange={(e) => onPlan(e.target.value)} title={upload ? uploadLabel(upload) : summary ? fastPathLabel(summary as PlanSummary) : undefined}>
               {!summary && <option value="">{PLAN.cmpNone}</option>}
               {carriers.filter((c) => !c.fictional).map((c) => <optgroup key={c.key} label={c.label}>{c.plans.flatMap((p) => p.years.map((y) => <option key={y.code} value={y.code}>{fastPathLabel(y.summary)}</option>))}</optgroup>)}
               {carriers.some((c) => c.fictional) && <optgroup label={PLAN.fictionalGroup}>{carriers.filter((c) => c.fictional).flatMap((c) => c.plans.flatMap((p) => p.years.map((y) => <option key={y.code} value={y.code}>{fastPathLabel(y.summary)}</option>)))}</optgroup>}

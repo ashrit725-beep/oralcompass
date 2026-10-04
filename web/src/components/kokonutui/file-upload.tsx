@@ -168,7 +168,7 @@ export default function FileUpload({
           onDragOver={handleDragOver}
           onDrop={handleDrop}
         >
-          <div className="relative min-h-[220px]">
+          <div className="relative min-h-[248px]">
             <AnimatePresence mode="wait">
               {status !== "uploading" ? (
                 <motion.div

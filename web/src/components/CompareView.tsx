@@ -56,6 +56,8 @@ export function CompareView({ plans, items, benefits, initial }: Props) {
   useEffect(() => { run(); /* eslint-disable-line */ }, [picked.join(","), planned.length]);
 
   const taken = (i: number, code: string) => picked.includes(code) && picked[i] !== code;
+  /** The full name of the picked plan: a long option is cut with an ellipsis inside the column, the title carries it whole. */
+  const fullName = (code: string | undefined) => { if (!code) return undefined; const p = plans.find((x) => x.plan_code === code); if (p) return fastPathLabel(p); const u = uploads.find((x) => x.plan_code === code); return u ? uploadLabel(u) : undefined; };
   return (
     <section className="compare-view" aria-labelledby="cv-h">
       <h2 id="cv-h">{PLAN.cmpViewTitle}</h2>
@@ -64,7 +66,7 @@ export function CompareView({ plans, items, benefits, initial }: Props) {
       <div className="pickers">
         {[0, 1, 2].map((i) => (
           <label key={i}>{PLAN.cmpPicker(i + 1)}
-            <select value={picked[i] ?? ""} onChange={(e) => { const v = e.target.value; setPicked((p) => { const n = [...p]; if (v) n[i] = v; else n.splice(i, 1); return n.filter(Boolean); }); }}>
+            <select value={picked[i] ?? ""} title={fullName(picked[i])} onChange={(e) => { const v = e.target.value; setPicked((p) => { const n = [...p]; if (v) n[i] = v; else n.splice(i, 1); return n.filter(Boolean); }); }}>
               <option value="">{PLAN.cmpNone}</option>
               {carriers.filter((c) => !c.fictional).map((c) => (
                 <optgroup key={c.key} label={c.label}>{c.plans.flatMap((p) => p.years.map((y) => <option key={y.code} value={y.code} disabled={taken(i, y.code)}>{fastPathLabel(y.summary)}</option>))}</optgroup>
