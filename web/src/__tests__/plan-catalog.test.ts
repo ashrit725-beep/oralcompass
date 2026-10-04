@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { dollarsToCents, fastPathLabel, firstCode, groupPlans, locatePlan, planLabel, summaryFor, uploadLabel } from "@/lib/plan-catalog";
+import { dollarsToCents, fastPathLabel, fullPlanLabel, firstCode, groupPlans, locatePlan, planLabel, summaryFor, uploadLabel } from "@/lib/plan-catalog";
 import type { PlanSummary } from "@/lib/types";
 
 /** The real preset catalog, reduced to the summary fields the pickers read (the API's plan_summary does the same projection). */
@@ -88,5 +88,21 @@ describe("dollarsToCents", () => {
     expect(dollarsToCents("abc")).toBeUndefined();
     expect(dollarsToCents("-5")).toBeUndefined();
     expect(dollarsToCents("1.234")).toBeUndefined();
+  });
+});
+
+describe("compact picker labels (layout-8, slop-20; orchestrator note 3)", () => {
+  const ml26 = { title: "MetLife NCFlex Dental — Classic Option, plan year 2026 (State of North Carolina)", is_fictional: false, option: "Classic Option", plan_year: 2026 };
+  const fm26h = { title: "The MetLife Federal Dental Plan 2026 — High Option (FEDVIP, nationwide)", is_fictional: false, option: "High Option", plan_year: 2026 };
+  const hb26 = { title: "Harborview Dental PPO 2026 — fictional demonstration plan", is_fictional: true, option: "Standard", plan_year: 2026 };
+  it("keeps the name part, then the option and year (once), with the fictional word", () => {
+    expect(fastPathLabel(ml26)).toBe("MetLife NCFlex Dental · Classic Option 2026");
+    expect(fastPathLabel(fm26h)).toBe("The MetLife Federal Dental Plan 2026 · High Option");
+    expect(fastPathLabel(hb26)).toBe("Harborview Dental PPO 2026 · Standard (fictional)");
+    expect(fastPathLabel(ml26).length).toBeLessThan(ml26.title.length);
+  });
+  it("keeps the full title for the tooltip", () => {
+    expect(fullPlanLabel(ml26)).toBe(ml26.title);
+    expect(fullPlanLabel(hb26)).toBe(`${hb26.title} (fictional)`);
   });
 });

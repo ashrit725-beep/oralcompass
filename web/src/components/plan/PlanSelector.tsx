@@ -1,6 +1,6 @@
 import { useId, useMemo, type ReactNode } from "react";
 import { PLAN } from "@/lib/copy/plan";
-import { fastPathLabel, firstCode, groupPlans, locatePlan, modeOf, uploadLabel, type UploadSummary } from "@/lib/plan-catalog";
+import { fastPathLabel, fullPlanLabel, firstCode, groupPlans, locatePlan, modeOf, uploadLabel, type UploadSummary } from "@/lib/plan-catalog";
 import type { PlanRef, PlanSummary } from "@/lib/types";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { cn } from "@/lib/utils";
@@ -34,6 +34,7 @@ export function PlanSelector({ plans, uploads, value, onChange, mode, onMode, up
   const carrier = hit?.carrier;
   const plan = hit?.plan;
   const real = carriers.filter((c) => !c.fictional);
+  const selectedTitle = hit ? fullPlanLabel(hit.year.summary) : uploads.find((u) => u.plan_code === value)?.title ?? "";
   const fictional = carriers.filter((c) => c.fictional);
 
   return (
@@ -41,23 +42,23 @@ export function PlanSelector({ plans, uploads, value, onChange, mode, onMode, up
       <div className="ps-mode">
         <span id={`${id}-mode`} className="ps-mode-label">{PLAN.sourceLabel}</span>
         <ToggleGroup type="single" variant="outline" spacing={0} value={mode} onValueChange={(v) => v && onMode(v as "preset" | "upload")} aria-labelledby={`${id}-mode`} className="ps-toggle">
-          <ToggleGroupItem value="preset" className="min-h-11 px-4 text-base">{PLAN.modePreset}</ToggleGroupItem>
-          <ToggleGroupItem value="upload" className="min-h-11 px-4 text-base">{PLAN.modeUpload}{uploads.length ? ` (${uploads.length})` : ""}</ToggleGroupItem>
+          <ToggleGroupItem value="preset" className="min-h-11 h-auto whitespace-normal px-4 py-1 text-base">{PLAN.modePreset}</ToggleGroupItem>
+          <ToggleGroupItem value="upload" className="min-h-11 h-auto whitespace-normal px-4 py-1 text-base">{PLAN.modeUpload}{uploads.length ? ` (${uploads.length})` : ""}</ToggleGroupItem>
         </ToggleGroup>
       </div>
 
       <div className="ps-row">
         <label className="plan-pick">{PLAN.planCode}
-          <select value={value} onChange={(e) => onChange(e.target.value)} aria-describedby={`${id}-fast`}>
+          <select value={value} onChange={(e) => onChange(e.target.value)} aria-describedby={`${id}-fast`} title={selectedTitle || undefined}>
             {!hit && !uploads.some((u) => u.plan_code === value) && <option value="">{PLAN.cmpNone}</option>}
             {real.length > 0 && real.map((c) => (
               <optgroup key={c.key} label={c.label}>
-                {c.plans.flatMap((p) => p.years.map((y) => <option key={y.code} value={y.code}>{fastPathLabel(y.summary)}</option>))}
+                {c.plans.flatMap((p) => p.years.map((y) => <option key={y.code} value={y.code} title={fullPlanLabel(y.summary)}>{fastPathLabel(y.summary)}</option>))}
               </optgroup>
             ))}
             {fictional.length > 0 && (
               <optgroup label={PLAN.fictionalGroup}>
-                {fictional.flatMap((c) => c.plans.flatMap((p) => p.years.map((y) => <option key={y.code} value={y.code}>{fastPathLabel(y.summary)}</option>)))}
+                {fictional.flatMap((c) => c.plans.flatMap((p) => p.years.map((y) => <option key={y.code} value={y.code} title={fullPlanLabel(y.summary)}>{fastPathLabel(y.summary)}</option>)))}
               </optgroup>
             )}
             {uploads.length > 0 && (
@@ -68,23 +69,25 @@ export function PlanSelector({ plans, uploads, value, onChange, mode, onMode, up
           </select>
         </label>
         <span id={`${id}-fast`} className="sr-only">{mode === "upload" ? PLAN.modeUpload : PLAN.modePreset}</span>
+        {/* the closed select shows a compact label; the full document title stays readable under it on phones (the cascade is hidden there) */}
+        {selectedTitle && <p className="ps-current muted small">{selectedTitle}</p>}
 
         {mode === "preset" && (
           <div className="ps-cascade" role="group" aria-label={PLAN.modePreset}>
-            <label>{PLAN.carrier}
+            <label className="ps-carrier">{PLAN.carrier}
               <select aria-label={PLAN.carrier} title={carrier?.label} value={carrier?.key ?? ""} onChange={(e) => { const c = carriers.find((x) => x.key === e.target.value); const code = firstCode(c); if (code) onChange(code); }}>
                 {!carrier && <option value="">{PLAN.cmpNone}</option>}
                 {real.length > 0 && <optgroup label={PLAN.publicGroup}>{real.map((c) => <option key={c.key} value={c.key}>{c.label}</option>)}</optgroup>}
                 {fictional.length > 0 && <optgroup label={PLAN.fictionalGroup}>{fictional.map((c) => <option key={c.key} value={c.key}>{c.label}</option>)}</optgroup>}
               </select>
             </label>
-            <label>{PLAN.planName}
+            <label className="ps-plan">{PLAN.planName}
               <select aria-label={PLAN.planName} title={plan?.label} value={plan?.key ?? ""} disabled={!carrier} onChange={(e) => { const p = carrier?.plans.find((x) => x.key === e.target.value); const code = firstCode(carrier, p); if (code) onChange(code); }}>
                 {!plan && <option value="">{PLAN.cmpNone}</option>}
                 {carrier?.plans.map((p) => <option key={p.key} value={p.key}>{p.label}</option>)}
               </select>
             </label>
-            <label>{PLAN.planYear}
+            <label className="ps-year">{PLAN.planYear}
               <select aria-label={PLAN.planYear} value={hit?.year.code ?? ""} disabled={!plan || plan.years.length <= 1} onChange={(e) => e.target.value && onChange(e.target.value)}>
                 {!plan && <option value="">{PLAN.cmpNone}</option>}
                 {plan?.years.map((y) => <option key={y.code} value={y.code}>{y.year ?? PLAN.notProvided}</option>)}

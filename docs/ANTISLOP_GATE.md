@@ -171,6 +171,11 @@ My plan atlas, which read as a cream-themed admin panel.
 - Evidence badge beside every figure: CLAUDE.md rule 2; only its weight changes (slop-15).
 - RubberSegment "1 Plain words · 2 Your numbers · 3 Exact wording": a real depth sequence, so numbering is information.
 - Route draw on first load and the 18 s route march: the one orchestrated moment; off under reduced motion.
+- My plan atlas kept as the simpler side-view coast (slop-21, orchestrator note 6; fix pass 2026-10-04). The five landmarks are drawn
+  forms (bridge, cove, lookout, lighthouse, harbor) on a side-view coastline; the only painted plate that would fit, `journey-backdrop`,
+  is a top-down sea chart with none of those forms, so cropping it would leave the landmarks floating on open water. The dead third of
+  the page is gone instead: with no landmark open the detail column is not reserved and, from 1200 px, the atlas and the Benefits compass
+  share the width in two halves (`styles/plan.css`, `.plan-layout.is-solo`). A painted side-view coast plate is a follow-up for the art set.
 
 ## 7. Eldora UI portfolio repo: rejected components (orchestrator note 7)
 

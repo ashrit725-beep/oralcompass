@@ -3,7 +3,7 @@ import { api } from "@/lib/api";
 import { UI } from "@/lib/copy";
 import { PLAN } from "@/lib/copy/plan";
 import { ownedFileObjectUrl } from "@/lib/owned-file";
-import { fastPathLabel, groupPlans, summaryFor, uploadLabel, type UploadEvidenceExtras, type UploadSummary } from "@/lib/plan-catalog";
+import { fastPathLabel, fullPlanLabel, groupPlans, summaryFor, uploadLabel, type UploadEvidenceExtras, type UploadSummary } from "@/lib/plan-catalog";
 import { circled } from "@/lib/stitches";
 import type { PlanEvidence, PlanRef, PlanSummary, PrivateDocument, SourceItem, Stitch, UploadedPlanSummary } from "@/lib/types";
 import { isUpload } from "@/lib/types";
@@ -79,8 +79,8 @@ export function DocumentsView({ planCode, plans, onPlan, evidence, stitches, sel
           <label className="plan-pick">{PLAN.planCode}
             <select value={planCode} onChange={(e) => onPlan(e.target.value)}>
               {!summary && <option value="">{PLAN.cmpNone}</option>}
-              {carriers.filter((c) => !c.fictional).map((c) => <optgroup key={c.key} label={c.label}>{c.plans.flatMap((p) => p.years.map((y) => <option key={y.code} value={y.code}>{fastPathLabel(y.summary)}</option>))}</optgroup>)}
-              {carriers.some((c) => c.fictional) && <optgroup label={PLAN.fictionalGroup}>{carriers.filter((c) => c.fictional).flatMap((c) => c.plans.flatMap((p) => p.years.map((y) => <option key={y.code} value={y.code}>{fastPathLabel(y.summary)}</option>)))}</optgroup>}
+              {carriers.filter((c) => !c.fictional).map((c) => <optgroup key={c.key} label={c.label}>{c.plans.flatMap((p) => p.years.map((y) => <option key={y.code} value={y.code} title={fullPlanLabel(y.summary)}>{fastPathLabel(y.summary)}</option>))}</optgroup>)}
+              {carriers.some((c) => c.fictional) && <optgroup label={PLAN.fictionalGroup}>{carriers.filter((c) => c.fictional).flatMap((c) => c.plans.flatMap((p) => p.years.map((y) => <option key={y.code} value={y.code} title={fullPlanLabel(y.summary)}>{fastPathLabel(y.summary)}</option>)))}</optgroup>}
               {uploads.length > 0 && <optgroup label={PLAN.uploadsGroup}>{uploads.map((u) => <option key={u.plan_code} value={u.plan_code}>{uploadLabel(u)}</option>)}</optgroup>}
             </select>
           </label>

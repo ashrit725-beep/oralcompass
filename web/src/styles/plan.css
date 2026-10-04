@@ -7,7 +7,8 @@
 .plan-selector { display: grid; gap: var(--s-3); width: 100%; }
 .ps-mode { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2) var(--s-4); }
 .ps-mode-label { font-size: .9rem; color: var(--ink-soft); }
-.ps-toggle [data-slot="toggle-group-item"] { font-family: var(--serif); }
+/* controls are set in the sans face (spec §5.2); a long label wraps inside its segment instead of spilling past the border (mobile-19) */
+.ps-toggle [data-slot="toggle-group-item"] { font-family: var(--sans); white-space: normal; height: auto; line-height: 1.2; text-align: center; }
 .ps-row { display: grid; gap: var(--s-3); align-items: end; grid-template-columns: minmax(0, 1fr); }
 .ps-cascade { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-3); }
 .ps-cascade select, .ps-upload select, .plan-selector .plan-pick select { width: 100%; min-height: 44px; }
@@ -16,16 +17,34 @@
 .plan-banner .ribbon { margin-left: 0; margin-right: .4rem; }
 .plan-empty { font-family: var(--serif); color: var(--ink-soft); margin: var(--s-2) 0 0; }
 .plan-head { align-items: start; }
-/* the full plan name gets its own row; the cascade sits under it with room for the longest carrier and plan names (orchestrator note 3) */
+.ps-current { display: none; margin: 0; overflow-wrap: anywhere; }
+/* the plan select gets its own row; the cascade puts carrier + year on one row and the long plan name on a full row of its own, so the
+   longest carrier and plan names fit at 898 px (a landmark open) as well as at full width (orchestrator note 3, layout-8, slop-20) */
 @media (min-width: 761px) {
   .ps-row { grid-template-columns: minmax(0, 1fr); }
   .plan-selector .plan-pick select { max-width: 640px; }
-  .ps-cascade { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1.6fr) minmax(120px, .5fr); }
+  .ps-cascade { grid-template-columns: minmax(0, 1fr) 8rem; grid-template-areas: "carrier year" "plan plan"; max-width: 760px; }
+  .ps-carrier { grid-area: carrier; } .ps-plan { grid-area: plan; } .ps-year { grid-area: year; }
 }
 @media (max-width: 760px) {
   .ps-cascade { display: none; }                 /* phones keep the single grouped select (addendum B2: fewer controls at 360 px) */
+  .ps-current { display: block; }
   .ps-mode { flex-direction: column; align-items: stretch; }
   .ps-toggle { width: 100%; } .ps-toggle [data-slot="toggle-group-item"] { flex: 1; }
+}
+
+/* ---- My plan layout: with no landmark open the 420 px detail column is not reserved (demo-18); from 1200 px the page splits in two
+   halves (slop-21): plan selector, atlas, hint and "Add a procedure" on the left, the Benefits compass on the right from the top, instead
+   of a dead third of the page. A landmark opens the detail column as before (the compass then sits under the atlas). ---- */
+@media (min-width: 761px) { .plan-layout.is-solo { grid-template-columns: minmax(0, 1fr); } }
+@media (min-width: 1200px) {
+  .plan-layout.is-solo .plan-main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto auto auto auto 1fr; column-gap: var(--s-5); align-items: start; }
+  .plan-layout.is-solo .plan-main > * { grid-column: 1; }
+  .plan-layout.is-solo .plan-main > .plan-head { grid-row: 1; }
+  .plan-layout.is-solo .plan-main > .plan-map { grid-row: 2; margin-top: var(--s-4); }
+  .plan-layout.is-solo .plan-main > .hint { grid-row: 3; }
+  .plan-layout.is-solo .plan-main > .plan-add { grid-row: 4; }
+  .plan-layout.is-solo .plan-main > .compass { grid-column: 2; grid-row: 1 / -1; margin-top: 0; }
 }
 
 /* ---- depth dial (RubberSegment wrapper) ---- */
@@ -76,7 +95,7 @@
 .cmp-derivation { margin: var(--s-2) 0 0; font-size: .8rem; color: var(--ink-soft); }
 .cmp-classes { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s-2); }
 .cmp-class-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s-2); flex-wrap: wrap; font-size: .9rem; }
-.cmp-class-name { font-weight: 500; } .cmp-class-pct { display: inline-flex; align-items: center; gap: var(--s-2); }
+.cmp-class-name { font-weight: 500; } .cmp-class-section { font-weight: 400; color: var(--ink-soft); font-size: .8rem; } .cmp-class-pct { display: inline-flex; align-items: center; gap: var(--s-2); }
 .cmp-out { margin: 0; font-size: .8rem; color: var(--ink-soft); }
 .cmp-restrictions { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s-1); }
 .cmp-restriction { min-height: 44px; text-align: left; font-size: .95rem; display: inline-flex; align-items: center; }

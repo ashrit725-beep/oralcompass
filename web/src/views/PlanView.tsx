@@ -90,7 +90,7 @@ export function PlanView({ data, mobile, landmark, onLandmark, stitch, onStitch,
   );
 
   return (
-    <div className="plan-layout">
+    <div className={`plan-layout ${landmark ? "" : "is-solo"}`}>
       <div className="plan-main">
         <div className="plan-head">
           <PlanSelector plans={plans} uploads={uploads} uploadsLoading={uploadsLoading} value={planRef} onChange={(ref) => { selectPlan(ref); onStitch(undefined); }} mode={mode} onMode={setMode} uploadSlot={uploadSlot} />

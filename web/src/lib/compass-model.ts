@@ -26,7 +26,10 @@ export interface MeterVM {
   afterFraction: number | null;
 }
 
-export interface CoverageVM { name: string; pctIn: number | null; statusIn: Evidence; citeIn: Cite | null; pctOut: number | null; statusOut: Evidence | null; classCite: Cite | null }
+export interface CoverageVM { name: string; pctIn: number | null; statusIn: Evidence; citeIn: Cite | null; pctOut: number | null; statusOut: Evidence | null; classCite: Cite | null;
+  /** The document's own row heading for the class (the last part of the cited section, e.g. "Basic Services (row 2)"), so two rows the
+   *  plan model names alike ("Type II", "Type II (50% row)") read as the document's rows (demo-18). Null when the cite has none. */
+  section: string | null }
 
 export interface RestrictionsVM {
   frequency: number;
@@ -114,7 +117,15 @@ export function coverageFor(plan: PlanFixture): CoverageVM[] {
     pctOut: c.plan_share_bp_out?.value == null ? null : c.plan_share_bp_out.value / 100,
     statusOut: c.plan_share_bp_out?.status ?? null,
     classCite: c.cite ?? null,
+    section: sectionLabel(c.plan_share_bp_in.cite?.section ?? c.cite?.section, c.name),
   }));
+}
+
+/** The last " — " part of a cited section heading, when it adds something to the class name. */
+export function sectionLabel(section: string | null | undefined, name: string): string | null {
+  if (!section) return null;
+  const last = section.split(" — ").pop()?.trim() ?? "";
+  return last && last !== name && !name.includes(last) ? last : null;
 }
 
 export function compassModel(plan: PlanFixture, benefits: Benefits | null, estimate: SavedEstimate | null): CompassVM {

@@ -23,7 +23,7 @@ export function CoverageMeter({ cls, stitch, selectedStitch, onSelectStitch }: C
   return (
     <li className="cmp-class">
       <div className="cmp-class-head">
-        <span className="cmp-class-name">{cls.name}</span>
+        <span className="cmp-class-name">{cls.name}{cls.section && <small className="cmp-class-section"> · {cls.section}</small>}</span>
         <span className="cmp-class-pct">
           {known ? <span className="num">{COMPASS.planPays(pctText(cls.pctIn!))}</span> : <span className="cmp-word">{COMPASS.shareNotStated}</span>}
           {stitch ? <StitchChip stitch={stitch} selected={selectedStitch?.id === stitch.id} onSelect={onSelectStitch} /> : <EvidenceBadge status={cls.statusIn} />}

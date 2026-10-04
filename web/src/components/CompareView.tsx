@@ -3,7 +3,7 @@ import { api } from "@/lib/api";
 import { UI } from "@/lib/copy";
 import { PLAN } from "@/lib/copy/plan";
 import { compareStates } from "@/lib/compare-state";
-import { fastPathLabel, groupPlans, uploadLabel, type UploadSummary } from "@/lib/plan-catalog";
+import { fastPathLabel, fullPlanLabel, groupPlans, uploadLabel, type UploadSummary } from "@/lib/plan-catalog";
 import type { Benefits, ComparisonResponse, PlanRef, PlanSummary, TreatmentItem } from "@/lib/types";
 import { ComparisonGrid, type GridPlan } from "./ComparisonGrid";
 import { EvidenceBadge } from "./Primitives";
@@ -56,10 +56,10 @@ export function CompareView({ plans, items, benefits, initial }: Props) {
             <select value={picked[i] ?? ""} onChange={(e) => { const v = e.target.value; setPicked((p) => { const n = [...p]; if (v) n[i] = v; else n.splice(i, 1); return n.filter(Boolean); }); }}>
               <option value="">{PLAN.cmpNone}</option>
               {carriers.filter((c) => !c.fictional).map((c) => (
-                <optgroup key={c.key} label={c.label}>{c.plans.flatMap((p) => p.years.map((y) => <option key={y.code} value={y.code} disabled={taken(i, y.code)}>{fastPathLabel(y.summary)}</option>))}</optgroup>
+                <optgroup key={c.key} label={c.label}>{c.plans.flatMap((p) => p.years.map((y) => <option key={y.code} value={y.code} disabled={taken(i, y.code)} title={fullPlanLabel(y.summary)}>{fastPathLabel(y.summary)}</option>))}</optgroup>
               ))}
               {carriers.some((c) => c.fictional) && (
-                <optgroup label={PLAN.fictionalGroup}>{carriers.filter((c) => c.fictional).flatMap((c) => c.plans.flatMap((p) => p.years.map((y) => <option key={y.code} value={y.code} disabled={taken(i, y.code)}>{fastPathLabel(y.summary)}</option>)))}</optgroup>
+                <optgroup label={PLAN.fictionalGroup}>{carriers.filter((c) => c.fictional).flatMap((c) => c.plans.flatMap((p) => p.years.map((y) => <option key={y.code} value={y.code} disabled={taken(i, y.code)} title={fullPlanLabel(y.summary)}>{fastPathLabel(y.summary)}</option>)))}</optgroup>
               )}
               {uploads.length > 0 && <optgroup label={PLAN.uploadsGroup}>{uploads.map((u) => <option key={u.plan_code} value={u.plan_code} disabled={taken(i, u.plan_code)}>{uploadLabel(u)}</option>)}</optgroup>}
             </select>
