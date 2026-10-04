@@ -1,38 +1,51 @@
 import { useState } from "react";
-import { motion } from "motion/react";
-import { SHEET_SPRING, useReducedMotion } from "../lib/motion";
 import { ATTRIBUTION, UI, type LandmarkId } from "../lib/copy";
 import { attributionLabel, dateLabel, nextCheckpoint, stageProgress, statusLabel } from "../lib/journey";
 import { money } from "../lib/stitches";
 import type { Checkpoint, JourneyLinks, JourneyView, Stage } from "../lib/types";
 import type { Selection } from "./atlas/JourneyMap";
 import { EvidenceBadge } from "./Primitives";
+import { Sheet } from "./Primitives/Sheet";
 
 interface Props {
   view: JourneyView; selection: Selection; onSelect: (s: Selection) => void; onOpenLandmark: (id: LandmarkId) => void; onOpenDocuments: () => void;
   onPatch: (cpId: string, body: { status?: string; completed_by?: string; date?: string; date_source?: string; note?: string }) => Promise<void>;
   onInstructions: (stageId: string, text: string, source: string, givenOn?: string) => Promise<void>;
   busy: boolean; mobile: boolean; onClose: () => void;
+  /** Phone: where focus returns when the sheet closes (the stage or checkpoint button that opened it). */
+  returnFocus?: HTMLElement | null;
 }
 
-/** Desktop: side panel. Phone: bottom sheet. Shows the selected island or checkpoint: status, explanation, dates/amounts/documents, source, next action. */
+/**
+ * Desktop: side panel (a labelled region in the detail column). Phone: the shared modal `Sheet` (vaul over Radix Dialog: aria-modal,
+ * focus moves in and is trapped, the page behind is inert, scrim, scroll lock, drag or Escape to close, 44 × 44 close button, safe-area
+ * padding), so keyboard focus never lands on controls hidden under a fixed panel (WCAG 2.2 SC 2.4.11). It opens only when the person
+ * selects a stage or checkpoint. Shows the selected stage or checkpoint: status, explanation, dates/amounts/documents, source, next action.
+ */
 export function DetailPanel(props: Props) {
-  const { view, selection, mobile, onClose } = props;
-  const reduce = useReducedMotion();
+  const { view, selection, mobile, onClose, returnFocus } = props;
   const stage = view.journey.stages.find((s) => s.id === selection.stageId);
   if (!stage) return null;
   const cp = selection.cpId ? stage.checkpoints.find((c) => c.id === selection.cpId) : undefined;
+  const crumbs = <p className="crumbs">{stage.title} <span className="muted">· {stage.island}</span>{cp ? <> › {cp.label}</> : null}</p>;
+  const body = cp ? <CheckpointDetail {...props} stage={stage} cp={cp} /> : <StageDetail {...props} stage={stage} />;
+  if (mobile) {
+    return (
+      <Sheet open onOpenChange={(o) => { if (!o) onClose(); }} title={cp ? cp.label : stage.title} returnFocus={returnFocus ?? undefined} className="detail-sheet" autoFocus>
+        {crumbs}
+        {body}
+      </Sheet>
+    );
+  }
   return (
-    // One entrance owner: on phones the sheet rises from the bottom edge on the sheet spring (no overshoot); on desktop the
-    // surrounding column in JourneyView owns drawer-rise, so the panel itself does not animate. Reduced motion: present at once.
-    <motion.aside className={`detail ${mobile ? "sheet" : "side"}`} role={mobile ? "dialog" : "region"} aria-labelledby="detail-h" aria-modal={mobile ? "false" : undefined}
-                  initial={mobile && !reduce ? { y: "100%" } : false} animate={{ y: 0 }} transition={SHEET_SPRING}>
+    // the surrounding column in JourneyView owns the entrance (drawer-rise); the panel itself does not animate
+    <aside className="detail side" role="region" aria-labelledby="detail-h">
       <div className="detail-bar">
-        <p className="crumbs">{stage.title} <span className="muted">· {stage.island}</span>{cp ? <> › {cp.label}</> : null}</p>
+        {crumbs}
         <button type="button" className="close" onClick={onClose} aria-label="Close details">×</button>
       </div>
-      {cp ? <CheckpointDetail {...props} stage={stage} cp={cp} /> : <StageDetail {...props} stage={stage} />}
-    </motion.aside>
+      {body}
+    </aside>
   );
 }
 

@@ -282,3 +282,9 @@
 /* phone passage: the 20 px stitch chips keep their look but get a 44 px tall hit area */
 .passage-vertical .stitch { position: relative; }
 .passage-vertical .stitch::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 44px; transform: translateY(-50%); }
+
+/* ---- care-stage / checkpoint detail (DetailPanel): desktop side panel, phone modal Sheet (findings a11y-3, mobile-1, layout-15) ---- */
+.detail-bar .close { flex: none; width: 44px; height: 44px; display: inline-grid; place-items: center; }
+.detail-sheet .crumbs { margin: 0 0 var(--s-2); }
+.detail-sheet .detail-body { padding: 0 0 max(16px, env(safe-area-inset-bottom)); }
+.detail-sheet .detail-body button:not(.linklike) { min-height: 44px; }

@@ -124,6 +124,8 @@ def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-pref
 
     open_alex(page)
     shot("01-journey")
+    # nothing opens by itself: no stage panel, sheet or drawer at load, and the desktop map keeps the full width (no detail column)
+    check(f"{device}: no detail surface open at load", page.locator(".detail, .drawer, .passage-layout.has-detail").count() == 0)
     check(f"{device}: sample ribbon labels fictional records", page.get_by_text("Sample journey — fictional person and records").count() > 0)
     check(f"{device}: progress language", page.get_by_text("of", exact=False).filter(has_text="checkpoints completed").count() > 0)
 
@@ -256,6 +258,9 @@ def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-pref
     # select the 'Before your visit' stage then its 'Appointment information recorded' checkpoint (confirmed by the dental team)
     page.locator("button[aria-label^='Before your visit']").first.click()
     page.wait_for_timeout(400)
+    if mobile:   # the phone stage detail is a modal sheet: it holds focus and must be closed before the timeline behind it is used
+        check(f"{device}: stage detail is a modal sheet", page.locator("[role=dialog][aria-modal=true] h2#detail-h").count() == 1)
+        close_sheet()
     page.locator("button[aria-label^='Appointment information recorded']").first.click()
     page.wait_for_timeout(500)
     shot("02-checkpoint")
@@ -266,6 +271,7 @@ def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-pref
     # record a checkpoint as user-marked: 'Preparation instructions viewed' stays awaiting; mark 'Appointment recorded' on the visit stage
     close_sheet()
     page.locator("button[aria-label^='Your appointment']").first.click(); page.wait_for_timeout(300)
+    close_sheet()
     page.locator("button[aria-label^='Appointment recorded']").first.click(); page.wait_for_timeout(400)
     page.get_by_label("Date", exact=True).fill("2026-10-27")
     page.get_by_role("button", name="Record this checkpoint").click(); page.wait_for_timeout(900)

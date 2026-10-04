@@ -27,7 +27,7 @@ const TABS = Object.keys(NAV) as Tab[];
 export default function App() {
   const mobile = useMobile();
   const data = useAppData();
-  const selection = useJourneySelection(data.view, !mobile);
+  const selection = useJourneySelection(data.view);
   const [tab, setTab] = useState<Tab>("journey");
   const [landmark, setLandmark] = useState<LandmarkId | null>(null);
   const [stitch, setStitch] = useState<Stitch | undefined>();

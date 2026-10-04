@@ -1,21 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { currentStageId } from "@/lib/journey";
 import type { JourneySelection, JourneyView, MapSelection, StageSelection } from "@/lib/types";
 
 /**
  * Journey selection (spec §6): `{ stage?: StageSelection; island?: MapSelection }`, one open at a time, plus the element focus returns
- * to when the drawer/sheet closes. When a journey loads or changes on desktop, the current care stage is selected (the pre-existing
- * behaviour: it fills the right column). On phones nothing opens by itself: a sheet that covers the header at load hides the page.
+ * to when the drawer/sheet closes. Nothing opens by itself: a journey loads (or changes) with an empty selection on every screen size,
+ * so the map keeps its full width on desktop and no sheet covers the phone header. The current care stage stays a visual pin on the
+ * care rail / timeline; its detail opens only when the person selects it.
  */
-export function useJourneySelection(view: JourneyView | null, autoSelectStage = true) {
+export function useJourneySelection(view: JourneyView | null) {
   const [selection, setSelection] = useState<JourneySelection>({});
   const returnFocusRef = useRef<HTMLElement | null>(null);
 
-  useEffect(() => {
-    if (!view || !autoSelectStage) { setSelection({}); return; }
-    const j = view.journey;
-    setSelection({ stage: { stageId: currentStageId(j) ?? j.stages[0]?.id } });
-  }, [view?.id]);
+  // a different journey (or none) never keeps the previous journey's open stage or island
+  useEffect(() => { setSelection({}); returnFocusRef.current = null; }, [view?.id]);
 
   const selectStage = useCallback((stage: StageSelection | null, from?: HTMLElement | null) => {
     if (from) returnFocusRef.current = from;
@@ -28,7 +25,8 @@ export function useJourneySelection(view: JourneyView | null, autoSelectStage = 
   const clear = useCallback(() => {
     setSelection({});
     const el = returnFocusRef.current; returnFocusRef.current = null;
-    if (el && document.contains(el)) el.focus();
+    // after the commit: a modal sheet that is still mounted would trap the focus call (and Radix focuses nothing on its own unmount)
+    if (el) setTimeout(() => { if (document.contains(el)) el.focus(); }, 0);
   }, []);
 
   return { selection, selectStage, selectIsland, clear, returnFocusRef };

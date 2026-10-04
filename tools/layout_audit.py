@@ -646,6 +646,8 @@ def walk(pw, device: dict) -> dict:
         page.locator("button[aria-label^='Before your visit']").first.scroll_into_view_if_needed()
         page.locator("button[aria-label^='Before your visit']").first.click(); page.wait_for_timeout(500)
         A.audit("care stage: Before your visit")
+        if phone:   # the phone stage detail is a modal sheet over the timeline: close it before using the timeline again
+            close_all()
         page.locator("button[aria-label^='Appointment information recorded']").first.click(); page.wait_for_timeout(500)
         A.audit("care checkpoint detail")
         close_all()
