@@ -414,6 +414,16 @@ def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-pref
         shot("20-compare-clause")
         page.keyboard.press("Escape"); page.wait_for_timeout(300)
     check(f"{device}: compare cell opens its clause", ok)
+    # web-correctness-13: picking fewer than two plans clears the grid (no stale columns under pickers that show fewer plans)
+    pickers = page.locator(".compare-view .pickers select")
+    before = [pickers.nth(i).input_value() for i in range(pickers.count())]
+    pickers.nth(2).select_option(""); page.wait_for_timeout(1500)
+    cols_two = page.locator("table.grid thead th").count()
+    pickers.nth(1).select_option(""); page.wait_for_timeout(800)
+    cleared = page.locator("table.grid").count() == 0
+    pickers.nth(1).select_option(before[1]); page.wait_for_timeout(300)
+    pickers.nth(2).select_option(before[2]); page.wait_for_timeout(1800)
+    check(f"{device}: compare grid follows the pickers", cols_two == 3 and cleared and page.locator("table.grid thead th").count() == 4, f"before={before} cols_two={cols_two} cleared={cleared}")
 
     # ---- Documents ----
     page.get_by_role("tab", name="Documents").click(); page.wait_for_timeout(1500)
