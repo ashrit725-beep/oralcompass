@@ -52,7 +52,7 @@ sequenceDiagram
   participant O as repo.get_owned
   participant E as engine
   participant S as store
-  W->>R: POST /me/estimates {plan_ref, treatment_item_ids, network}
+  W->>R: POST /me/estimates {plan_code, treatment_item_ids, network, hypotheticals}
   R->>O: read every referenced item and benefits record
   O-->>R: owned records (anything else: constant 404)
   R->>E: load_plan(plan) + items + benefits snapshot

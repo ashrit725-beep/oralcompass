@@ -92,3 +92,7 @@ statically; `vite.config.ts` splits react/radix/vaul into `ui-vendor` (main 121 
 ## Docs / presentation (filled by the polish pass)
 - README quick start must cover: `api/.env` from `api/.env.example`, demo mode vs live mode, `npm install` (Tailwind/shadcn stack), `web/THIRD_PARTY_NOTICES.md`,
   Tailwind v4 browser floor, the screenshot walk, the demo script (`docs/ORALCOMPASS_DESIGN_SPEC.md` §11) and the judging-criteria map (`docs/JUDGING_CRITERIA.md`).
+- Done in the finish pass (2026-10-04): `README.md` rewritten (promise, real vs fictional, 60-second start, tour, AI features, numbers, tests, limits,
+  Screenshots section linking `docs/screenshots/*.png`), `docs/ARCHITECTURE.md` (mermaid diagrams + build method), `docs/DEMO_SCRIPT.md` (numbers
+  verified against the demo-mode API: Alex 90200/109800 with soundings 67200 then 16200; Sam 64000/56000, out-of-network hypothetical 94000),
+  `CLAUDE.md` reading list, repository map and test-safety rule. Open: the final screenshot set in `docs/screenshots/` (filled after the merge).
