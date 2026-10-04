@@ -462,13 +462,13 @@ describe("placeholders and masks", () => {
 });
 
 describe("pageTextFromItems", () => {
-  it("keeps pdf.js line ends and joins items on a line with one space", () => {
+  it("keeps pdf.js line ends, joins items on a line with one space and drops empty lines", () => {
     const items = [
       { str: "Member:", hasEOL: false }, { str: "Avery Rowan", hasEOL: true }, { type: "beginMarkedContent" },
       { str: "Member ID:", hasEOL: false }, { str: " HB26-4471-902", hasEOL: true }, { str: "", hasEOL: true }, { str: "", hasEOL: true },
       { str: "", hasEOL: true }, { str: "Deductible  $50", hasEOL: false },
     ];
-    expect(pageTextFromItems(items)).toBe("Member: Avery Rowan\nMember ID: HB26-4471-902\n\nDeductible $50");
+    expect(pageTextFromItems(items)).toBe("Member: Avery Rowan\nMember ID: HB26-4471-902\nDeductible $50");
   });
 });
 

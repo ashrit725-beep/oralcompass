@@ -9,6 +9,7 @@
 import { ApiError, api } from "./api";
 import { authHeaders } from "./auth";
 import { UPLOAD } from "./copy/upload";
+import { pageTextFromItems } from "./pdf-text";
 import type { ExtractedField, ExtractionStatus, ReviewDecision, UploadResponse } from "./types";
 
 export const MAX_BYTES = 32 * 1024 * 1024;
@@ -78,18 +79,6 @@ export async function sha256Hex(data: ArrayBuffer | Uint8Array): Promise<string>
 }
 
 export interface PdfInspection { pages: number; text: string; pageTexts: string[] }
-
-/** One page's text layer as lines: items joined with a space, a line break where pdf.js marks the end of a line (`hasEOL`), runs of
- *  spaces collapsed. The on-device detector reads label values up to the line end, so the breaks matter. */
-export function pageTextFromItems(items: readonly unknown[]): string {
-  let out = "";
-  for (const it of items) {
-    if (!it || typeof it !== "object" || !("str" in it)) continue;
-    const item = it as { str: string; hasEOL?: boolean };
-    out += item.str + (item.hasEOL ? "\n" : " ");
-  }
-  return out.split("\n").map((l) => l.replace(/[ \t\u00a0]+/g, " ").trim()).filter(Boolean).join("\n");
-}
 
 /** Page count + the per-page text layer of the first 100 pages (read on this device for the redaction review). pdf.js is imported lazily (its own chunk). */
 export async function inspectPdf(data: ArrayBuffer, onPage?: (done: number, total: number) => void): Promise<PdfInspection> {
