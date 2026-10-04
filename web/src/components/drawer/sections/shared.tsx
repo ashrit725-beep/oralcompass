@@ -31,6 +31,8 @@ export interface SectionProps {
   arrivedAt?: DrawerSectionKey;
   /** Additive: the Allowance section PATCHes an item and asks the host to re-estimate. */
   onRecordsChanged?: () => void;
+  /** The selected plan reference from the app state ("ML26" or "upload:<id>"); an uploaded model's `plan_code` is its version label ("UP1"), which the API does not resolve (web-correctness-23). */
+  planRef?: string;
 }
 
 /** The section frame: `<section aria-labelledby>` + focusable `<h3>` (tabindex -1); collapsible sections render as `<details>` on request. */

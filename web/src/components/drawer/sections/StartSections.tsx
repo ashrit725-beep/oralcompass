@@ -3,7 +3,7 @@ import { MissingInputs } from "@/components/CostTrail";
 import { UI } from "@/lib/copy";
 import { DRAWER } from "@/lib/copy/drawer";
 import { BenefitStatementForm } from "@/components/records/BenefitStatementForm";
-import { networkWord } from "@/lib/drawer";
+import { drawerPlanRef, networkWord } from "@/lib/drawer";
 import type { Evidence } from "@/lib/types";
 import { Fact, Figure, Row, Section, type SectionProps } from "./shared";
 
@@ -15,8 +15,8 @@ import { Fact, Figure, Row, Section, type SectionProps } from "./shared";
  * module also sits in the main chunk through LandmarkContent, so a lazy import would not split it).
  */
 
-export function StartSections({ plan, benefits, estimate, stitches, onSelectStitch, onRecordsChanged }: SectionProps & { onOpenLandmark?: (id: never) => void }) {
-  const planRef = estimate?.plan_code ?? plan.plan_code;
+export function StartSections({ plan, benefits, estimate, stitches, onSelectStitch, onRecordsChanged, planRef: planRefProp }: SectionProps & { onOpenLandmark?: (id: never) => void }) {
+  const planRef = drawerPlanRef(planRefProp, estimate, plan);
   const net = estimate?.inputs.network ?? null;
   const netStatus: Evidence = estimate?.inputs.network_status ?? "UNKNOWN";
   const noLines = !!estimate && estimate.status === "unresolved" && estimate.ledger.lines.length === 0;

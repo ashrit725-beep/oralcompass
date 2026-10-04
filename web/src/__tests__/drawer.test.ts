@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calcInputs, checkpointAmountWords, checkpointAriaName, checkpointsForLine, citeForRule, rangeWords, remainingBeforeLine, clockWords, conditionWords, missingForLine, rememberStitchAnchor, sectionForRule, stitchForCheckpoint, stitchScopeLabel, takeStitchAnchor } from "@/lib/drawer";
+import { calcInputs, checkpointAmountWords, drawerPlanRef, checkpointAriaName, checkpointsForLine, citeForRule, rangeWords, remainingBeforeLine, clockWords, conditionWords, missingForLine, rememberStitchAnchor, sectionForRule, stitchForCheckpoint, stitchScopeLabel, takeStitchAnchor } from "@/lib/drawer";
 import { stepContextFor, stitchesForLine, stitchesFromClauses, stitchForStep, uniqueStitches } from "@/lib/stitches";
 import type { Benefits, Clause, CoverageRule, LedgerLine, PlanFixture, SavedEstimate, TreatmentItem } from "@/lib/types";
 import { DRAWER } from "@/lib/copy/drawer";
@@ -185,5 +185,13 @@ describe("demo-16 / slop-18: Harbor Light words", () => {
     expect(DRAWER.afterRouteStages(2)).toMatch(/^2 care stages follow the route/);
     expect(DRAWER.stageProgress("Follow-up", 0, 2)).toBe("Follow-up · 0 of 2 checkpoints completed");
     expect(DRAWER.crumbsLight("Harbor Light")).not.toContain("Harbor Light");
+  });
+});
+
+describe("web-correctness-23: uploaded plans send their upload ref, not the version label", () => {
+  it("prefers the app's selected plan ref over the model's plan_code", () => {
+    expect(drawerPlanRef("upload:abc123", null, { plan_code: "UP1" })).toBe("upload:abc123");
+    expect(drawerPlanRef(undefined, { plan_code: "ML26" }, { plan_code: "ML26" })).toBe("ML26");
+    expect(drawerPlanRef(undefined, null, { plan_code: "HB26" })).toBe("HB26");
   });
 });

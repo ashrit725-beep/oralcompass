@@ -6,7 +6,7 @@ import { RuleGlyph } from "@/components/pipeline/RuleGlyph";
 import { Sheet } from "@/components/Primitives/Sheet";
 import { Button } from "@/components/ui/button";
 import { DRAWER } from "@/lib/copy/drawer";
-import { calcInputs, checkpointAriaName, remainingBeforeLine, rememberStitchAnchor, ruleFor, sectionForRule, type DrawerSectionKey } from "@/lib/drawer";
+import { calcInputs, checkpointAriaName, drawerPlanRef, remainingBeforeLine, rememberStitchAnchor, ruleFor, sectionForRule, type DrawerSectionKey } from "@/lib/drawer";
 import { transitions } from "@/lib/motion";
 import { stepContextFor, stitchesForLine } from "@/lib/stitches";
 import { buildTrail } from "@/lib/trail";
@@ -66,6 +66,8 @@ export interface ProcedureDrawerProps {
   castLine?: boolean;
   /** Additive (optional): the journey's stage progress; the Harbor Light lists each care stage after the route with its checkpoints completed. */
   stageProgress?: Progress["stages"];
+  /** Additive (optional): the selected plan reference ("ML26" or "upload:<id>") for API calls; preferred over the model's plan_code. */
+  planRef?: string;
 }
 
 const SHEET_STAGGER = {
@@ -74,7 +76,7 @@ const SHEET_STAGGER = {
 };
 
 export function ProcedureDrawer(props: ProcedureDrawerProps) {
-  const { island, vm, plan, rules, benefits, estimate, stitches, selectedCheckpoint, onSelectStitch, onOpenDocuments, onClose, mobile, returnFocus, onRecordsChanged, castLine = true, stageProgress } = props;
+  const { island, vm, plan, rules, benefits, estimate, stitches, selectedCheckpoint, onSelectStitch, onOpenDocuments, onClose, mobile, returnFocus, onRecordsChanged, castLine = true, stageProgress, planRef: planRefProp } = props;
   const reduce = useReducedMotion();
   const item = island.item;
   // A planned island whose estimate has no ledger lines at all (usage not provided) is in fog: give the sections an unresolved pseudo-line so
@@ -116,8 +118,8 @@ export function ProcedureDrawer(props: ProcedureDrawerProps) {
     return () => window.clearTimeout(t);
   }, [island.id, selectedCheckpoint, arrivedAt, goTo, mobile, titleId]);
 
-  const sectionProps: SectionProps = { island, line, item, rule, trail, plan, rules, benefits, estimate, stitches, onSelectStitch, onOpenDocuments, mobile, arrivedAt, onRecordsChanged };
-  const planRef = estimate?.plan_code ?? plan.plan_code;
+  const planRef = drawerPlanRef(planRefProp, estimate, plan);
+  const sectionProps: SectionProps = { island, line, item, rule, trail, plan, rules, benefits, estimate, stitches, onSelectStitch, onOpenDocuments, mobile, arrivedAt, onRecordsChanged, planRef };
   const scope: AssistScope = {
     plan_ref: planRef, estimate_id: estimate?.id, treatment_item_id: item?.id, line_index: island.lineIndex,
     step_key: selectedCp && selectedCp.rule !== "missing" ? selectedCp.rule : undefined, checkpoint_key: selectedCp?.key,
@@ -138,7 +140,7 @@ export function ProcedureDrawer(props: ProcedureDrawerProps) {
     const tail = [<CalculationSection key="calculation" {...sectionProps} />, <ClauseEvidenceSection key="evidence" {...sectionProps} />, <AskSection key={`ask-${island.id}`} scope={scope} onOpenStitch={openStitch} />];
     return mobile ? [finalCost, ...core, ...tail] : [...core, finalCost, ...tail];
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [island, vm, plan, rules, benefits, estimate, stitches, mobile, arrivedAt, selectedCp?.key, stageProgress]);
+  }, [island, vm, plan, rules, benefits, estimate, stitches, mobile, arrivedAt, selectedCp?.key, stageProgress, planRef]);
 
   const crumbs = island.kind === "start" ? DRAWER.crumbsStart(island.place) : island.kind === "destination" ? DRAWER.crumbsLight(island.place)
     : island.kind === "visited" ? DRAWER.crumbsVisited(island.place) : island.kind === "marginal" ? DRAWER.crumbsMarginal(island.place)

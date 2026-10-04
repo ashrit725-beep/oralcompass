@@ -202,6 +202,12 @@ export function parseAllowedCents(input: string): number | undefined {
   return cents != null && cents > 0 ? cents : undefined;
 }
 
+/** The plan reference the drawer sends to the API: the app's selected ref first ("upload:<id>" for an uploaded plan, whose model
+ *  `plan_code` is only its version label "UP1" and answers 404), then the estimate's, then the model's (web-correctness-23). */
+export function drawerPlanRef(selected: string | undefined, estimate: { plan_code: string } | null | undefined, plan: { plan_code: string }): string {
+  return selected || estimate?.plan_code || plan.plan_code;
+}
+
 /** Missing inputs that name this line (or none) — spec §3.3 "Unresolved". */
 export function missingForLine(missing: MissingInput[], line: LedgerLine | undefined): MissingInput[] {
   return missing.filter((m) => !m.line || (line && m.line === line.label));
