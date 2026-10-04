@@ -79,3 +79,13 @@ def test_benefit_and_treatment_amounts_have_an_upper_bound():
     assert r.status_code == 422
     r = client.post("/me/treatment-items", json={"label": "Crown", "procedure_key": "crown", "dentist_fee_cents": 10**20}, headers=A)
     assert r.status_code == 422
+
+
+def test_estimate_and_comparison_line_lists_are_bounded():
+    import time
+    line = {"key": "crown", "label": "Crown", "tooth": "30", "charge_cents": 120000, "completion": "2026-11-20"}
+    t0 = time.time()
+    assert client.post("/estimates", json={"plan_ref": "HB26", "lines": [line] * 5000}, headers=A).status_code == 422
+    assert client.post("/comparisons", json={"plan_refs": ["HB26", "DD24"], "lines": [line] * 5000}, headers=A).status_code == 422
+    assert time.time() - t0 < 5
+    assert client.post("/estimates", json={"plan_ref": "HB26", "lines": [line] * 3}, headers=A).status_code == 201

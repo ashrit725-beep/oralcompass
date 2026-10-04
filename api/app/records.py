@@ -118,7 +118,7 @@ class Hypotheticals(BaseModel):
 
 class EstimateRequest(BaseModel):
     plan_code: str                                   # a plan reference: preset code or "upload:<document_id>"
-    treatment_item_ids: list[str] = []               # defaults to all items with status planned/scheduled
+    treatment_item_ids: list[str] = Field(default_factory=list, max_length=100)   # defaults to all items with status planned/scheduled
     journey_id: Optional[str] = None                 # scope the default to one journey's items (a sample's records never mix into another journey)
     dos_rule: Optional[str] = None                   # defaults to the plan's stated rule (or completion)
     hypotheticals: Hypotheticals = Field(default_factory=Hypotheticals)   # labeled ASSUMED
