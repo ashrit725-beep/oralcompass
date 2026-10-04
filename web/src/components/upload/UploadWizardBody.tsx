@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { api, ApiError } from "@/lib/api";
 import { UPLOAD } from "@/lib/copy/upload";
 import type { PlanRef, UploadedPlanSummary } from "@/lib/types";
-import { isTerminal, pollExtraction, type ExtractionStatusFull, type UploadResponseX } from "@/lib/upload";
+import { isTerminal, pollExtraction, startErrorCopy, type ExtractionStatusFull, type UploadResponseX } from "@/lib/upload";
 import { ExtractionProgress } from "./ExtractionProgress";
 import { PaneHeading } from "./PaneHeading";
 import { PlanUpload } from "./PlanUpload";
@@ -41,6 +41,7 @@ export function UploadWizardBody({ onPublished, onUsePlan, onClose, onStepChange
   const [starting, setStarting] = useState(false);
   const [status, setStatus] = useState<ExtractionStatusFull | null>(null);
   const [pollError, setPollError] = useState<string | null>(null);
+  const [startError, setStartError] = useState<string | null>(null);   // shown on step 2, where the person still is (web-correctness-19)
   const [published, setPublished] = useState<PublishResult | null>(null);
   const abort = useRef<AbortController | null>(null);
 
@@ -51,12 +52,12 @@ export function UploadWizardBody({ onPublished, onUsePlan, onClose, onStepChange
 
   const startExtraction = useCallback(async () => {
     if (!upload || starting) return;
-    setStarting(true); setPollError(null);
+    setStarting(true); setPollError(null); setStartError(null);
     try {
       await api.extract(upload.id);
     } catch (e) {
       // 409 extraction_in_progress: a run already exists; fall through to polling it
-      if (!(e instanceof ApiError && e.status === 409)) { setPollError(UPLOAD.pollingFailed); setStarting(false); return; }
+      if (!(e instanceof ApiError && e.status === 409)) { setStartError(startErrorCopy(e)); setStarting(false); return; }
     }
     setStep(3);
     setStarting(false);
@@ -87,7 +88,7 @@ export function UploadWizardBody({ onPublished, onUsePlan, onClose, onStepChange
           <PlanUpload onUploaded={onUploaded} mode={mode?.llm_mode ?? null} model={mode?.llm_model} />
         </Step>
         <Step>
-          {upload && preview && <RedactionPreview docId={upload.id} preview={preview} onPreview={setPreview} onContinue={startExtraction} busy={starting} />}
+          {upload && preview && <RedactionPreview docId={upload.id} preview={preview} onPreview={setPreview} onContinue={startExtraction} busy={starting} startError={startError} />}
         </Step>
         <Step>
           <ExtractionProgress status={status} starting={starting} pollError={pollError} onReview={() => setStep(4)} />

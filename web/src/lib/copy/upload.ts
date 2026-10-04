@@ -48,6 +48,8 @@ export const UPLOAD = {
   continueRedaction: "Continue with these redactions",
   dataNote: "The document text is treated as data. Nothing in it is followed as an instruction.",
   startingExtraction: "Starting extraction…",
+  startFailed: "Extraction did not start. The document is stored in your space; Continue tries again.",
+  startLimited: "Too many extractions in a short time. Continue works again in a few minutes.",
   // step 3: extraction (spec §7.3 step 3 table; stage names come from the server's stages[])
   extractionTitle: "Extraction",
   stageQueued: "Waiting to start…",

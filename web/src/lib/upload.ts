@@ -127,10 +127,13 @@ export async function prepareFile(file: File, onPhase?: (p: PreparePhase) => voi
 
 export const isTerminal = (status: string | undefined | null) => !!status && TERMINAL.has(status);
 
+const abortError = () => new DOMException("aborted", "AbortError");
+/** web-correctness-20: an already-aborted signal rejects at once (an abort that lands during a fetch fires no later event). */
 const sleep = (ms: number, signal?: AbortSignal) =>
   new Promise<void>((resolve, reject) => {
+    if (signal?.aborted) { reject(abortError()); return; }
     const t = setTimeout(resolve, ms);
-    signal?.addEventListener("abort", () => { clearTimeout(t); reject(new DOMException("aborted", "AbortError")); }, { once: true });
+    signal?.addEventListener("abort", () => { clearTimeout(t); reject(abortError()); }, { once: true });
   });
 
 /** Poll GET /me/documents/{id}/extraction until a terminal status; every reading is reported to `onStatus`. */
@@ -144,7 +147,9 @@ export async function pollExtraction(
   const max = opts.maxPolls ?? Infinity;
   let n = 0;
   for (;;) {
+    if (opts.signal?.aborted) throw abortError();
     const st = await fetcher(id);
+    if (opts.signal?.aborted) throw abortError();
     onStatus(st);
     if (isTerminal(st.status)) return st;
     if (++n >= max) return st;
@@ -285,6 +290,11 @@ export function uploadErrorCopy(e: unknown): string {
     case "sha256_mismatch": return UPLOAD.shaMismatch;
     default: return UPLOAD.uploadFailed;
   }
+}
+
+/** web-correctness-19: POST /extract failed (anything but 409, which means a run already exists). */
+export function startErrorCopy(e: unknown): string {
+  return e instanceof ApiError && e.status === 429 ? UPLOAD.startLimited : UPLOAD.startFailed;
 }
 
 export function reviewErrorCopy(e: unknown): string {

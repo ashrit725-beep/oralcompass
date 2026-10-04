@@ -3,7 +3,7 @@ import { ApiError } from "./api";
 import type { ExtractedField } from "./types";
 import {
   checkPages, checkSize, decisionCandidate, decisionEdit, formatProposed, groupByLandmark, isPdfMagic, isTerminal, labelFor, MAX_BYTES, parseValueInput,
-  pollExtraction, createSerialGate, problemCopy, publishErrorCopy, reviewErrorCopy, uploadErrorCopy, errorBody, sha256Hex, stageCopy, stageProgress, undecidedRequired, urlBase64ToUint8Array, verifiedUndecided, type ExtractionStatusFull,
+  pollExtraction, createSerialGate, startErrorCopy, problemCopy, publishErrorCopy, reviewErrorCopy, uploadErrorCopy, errorBody, sha256Hex, stageCopy, stageProgress, undecidedRequired, urlBase64ToUint8Array, verifiedUndecided, type ExtractionStatusFull,
 } from "./upload";
 
 const field = (over: Partial<ExtractedField>): ExtractedField => ({
@@ -144,5 +144,32 @@ describe("review decisions are serialized (web-correctness-21)", () => {
     gate.leave();
     expect(gate.busy).toBe(false);
     expect(gate.enter()).toBe(true);
+  });
+});
+
+describe("polling stops on abort (web-correctness-20)", () => {
+  it("rejects with AbortError when the abort lands during a fetch, and fetches no more", async () => {
+    const ctl = new AbortController();
+    let calls = 0;
+    const fetcher = async () => { calls++; ctl.abort(); return status({ status: "identifying_fields" }); };
+    const seen: string[] = [];
+    await expect(pollExtraction("d1", (st) => seen.push(st.status), { intervalMs: 5, signal: ctl.signal, fetcher })).rejects.toMatchObject({ name: "AbortError" });
+    await new Promise((r) => setTimeout(r, 40));
+    expect(calls).toBe(1);
+    expect(seen).toEqual([]);                    // a reading that arrives after the abort is not reported
+  });
+  it("does not start when the signal is already aborted", async () => {
+    const ctl = new AbortController(); ctl.abort();
+    let calls = 0;
+    await expect(pollExtraction("d1", () => undefined, { signal: ctl.signal, fetcher: async () => { calls++; return status({ status: "ready" }); } })).rejects.toMatchObject({ name: "AbortError" });
+    expect(calls).toBe(0);
+  });
+});
+
+describe("extraction start failures (web-correctness-19)", () => {
+  it("says the run did not start, with its own sentence for the rate limit", () => {
+    expect(startErrorCopy(new ApiError(429, "/x"))).toContain("Too many extractions");
+    expect(startErrorCopy(new ApiError(500, "/x"))).toContain("did not start");
+    expect(startErrorCopy(new TypeError("network"))).toContain("did not start");
   });
 });

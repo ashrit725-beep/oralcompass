@@ -16,9 +16,11 @@ export interface RedactionPreviewProps {
   onPreview: (p: { text: string; removed: string[]; note?: string }) => void;
   onContinue: () => void;
   busy?: boolean;
+  /** POST /extract failed; the person is still on this step (web-correctness-19). */
+  startError?: string | null;
 }
 
-export function RedactionPreview({ docId, preview, onPreview, onContinue, busy }: RedactionPreviewProps) {
+export function RedactionPreview({ docId, preview, onPreview, onContinue, busy, startError }: RedactionPreviewProps) {
   const [term, setTerm] = useState("");
   const [terms, setTerms] = useState<string[]>([]);
   const [working, setWorking] = useState(false);
@@ -62,8 +64,9 @@ export function RedactionPreview({ docId, preview, onPreview, onContinue, busy }
         {error && <p role="alert" className="up-error">{error}</p>}
       </form>
       <p className="up-note">{preview.note ?? UPLOAD.dataNote}</p>
+      {startError && <p role="alert" className="up-error">{startError}</p>}
       <div className="up-actions">
-        <Button type="button" size="touch" onClick={onContinue} disabled={busy || working}>{busy ? UPLOAD.startingExtraction : UPLOAD.continueRedaction}</Button>
+        <Button type="button" size="touch" onClick={() => { if (!busy && !working) onContinue(); }} aria-disabled={busy || working || undefined}>{busy ? UPLOAD.startingExtraction : UPLOAD.continueRedaction}</Button>
       </div>
     </div>
   );
