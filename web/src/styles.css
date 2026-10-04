@@ -213,8 +213,10 @@ label { display: flex; flex-direction: column; gap: .25rem; font-size: .9rem; co
 .rules tr.excluded th { text-decoration: line-through; text-decoration-color: var(--terracotta); }
 
 /* ---- badges, stitches, dial, wording ---- */
-.badge { display: inline-flex; align-items: center; gap: .25rem; font-size: .72rem; border-radius: 6px; padding: .1rem .4rem; border: 1px solid var(--rule); background: var(--paper); color: var(--ink); white-space: nowrap; }
-.badge-doc { border-color: var(--forest); } .badge-user { border-color: var(--water-ink); } .badge-assumed { border-style: dashed; } .badge-ambiguous { border-color: var(--gold); } .badge-unknown { border-style: dotted; } .badge-conflict { border-color: var(--terracotta); }
+/* slop-15: the badge is a quiet caption, never heavier than its figure: 12 px glyph + word, no border or fill, ink-soft, one line.
+   The six statuses stay apart by glyph AND word (CLAUDE.md rule 2); colour is never the only signal, so no per-status border remains. */
+.badge { display: inline-flex; align-items: center; gap: .25rem; font-size: 12px; line-height: 16px; font-weight: 400; border: 0; border-radius: 0; padding: 0; background: none; color: var(--ink-soft); white-space: nowrap; font-variant-numeric: normal; }
+.badge .badge-glyph { width: 12px; height: 12px; flex: none; }
 .stitch { position: relative; display: inline-flex; align-items: center; gap: .15rem; border: 1px solid var(--ink); border-radius: 6px; background: var(--paper); color: var(--ink); padding: .05rem .3rem; cursor: pointer; font-size: .8rem; line-height: 1.3; }
 .stitch .scope { font-family: var(--mono); font-size: .7rem; background: var(--ink); color: var(--paper); padding: 0 .25rem; border-radius: 3px; } .stitch .scope-prominent { font-weight: 700; }
 .stitch-selected { box-shadow: 0 0 0 2px var(--terracotta); }

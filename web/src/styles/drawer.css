@@ -256,3 +256,9 @@ details[open] > .dsec-summary .dsec-toggle { transform: rotate(-135deg); margin-
 .clause-scrim { position: fixed; inset: 0; z-index: 19; background: color-mix(in srgb, var(--ink) 20%, transparent); animation: clause-scrim-in var(--dur-standard, 240ms) ease-out both; }
 @keyframes clause-scrim-in { from { opacity: 0; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .clause-scrim { animation: none; } }
+
+/* slop-15: in table cells the badge sits on the caption line UNDER its figure (one badge per figure), so it never stacks beside the
+   number or wraps into a three-line pill; figures read first. Phone rows lift the figure to 16 px. */
+td .fig .badge, td .fact .badge, .dsec-dl dd .fig .badge { order: 3; flex-basis: 100%; white-space: nowrap; }
+.drawer td .fig .badge { white-space: nowrap; }
+@media (max-width: 640px) { .fig .amt { font-size: 16px; line-height: 22px; } }
