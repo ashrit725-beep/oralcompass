@@ -27,6 +27,20 @@ export interface PlanSelectorProps {
   className?: string;
 }
 
+/**
+ * A native <select> whose closed state is drawn by a wrapping face (WebKit cannot wrap or ellipsize a closed select, so a long plan
+ * name was cut mid-word at 320 px). The select is the real control on top (transparent, full size): its name, keyboard, the native
+ * picker and `select_option` are unchanged; the face only mirrors the chosen option's text. 16 px text, so iOS never zooms.
+ */
+function PickSelect({ face, children, ...rest }: React.SelectHTMLAttributes<HTMLSelectElement> & { face: string }) {
+  return (
+    <span className="ps-select">
+      <span className="ps-face" aria-hidden="true">{face}</span>
+      <select {...rest}>{children}</select>
+    </span>
+  );
+}
+
 export function PlanSelector({ plans, uploads, value, onChange, mode, onMode, uploadSlot, uploadsLoading, className }: PlanSelectorProps) {
   const id = useId();
   const carriers = useMemo(() => groupPlans(plans), [plans]);
@@ -34,12 +48,15 @@ export function PlanSelector({ plans, uploads, value, onChange, mode, onMode, up
   const real = carriers.filter((c) => !c.fictional);
   const selectedTitle = hit ? fullPlanLabel(hit.year.summary) : uploads.find((u) => u.plan_code === value)?.title ?? "";
   const fictional = carriers.filter((c) => c.fictional);
+  const chosenUpload = uploads.find((u) => u.plan_code === value);
+  const pickFace = hit ? fastPathLabel(hit.year.summary) : chosenUpload ? uploadLabel(chosenUpload) : PLAN.cmpNone;
+  const uploadFace = chosenUpload ? PLAN.uploadVersion(uploadLabel(chosenUpload), (chosenUpload.published_at ?? "").slice(0, 10)) : PLAN.cmpNone;
 
   return (
     <div className={cn("plan-selector", className)}>
       <div className="ps-mode">
         <span id={`${id}-mode`} className="ps-mode-label">{PLAN.sourceLabel}</span>
-        <ToggleGroup type="single" variant="outline" spacing={0} value={mode} onValueChange={(v) => v && onMode(v as "preset" | "upload")} aria-labelledby={`${id}-mode`} className="ps-toggle">
+        <ToggleGroup type="single" variant="outline" spacing={0} value={mode} onValueChange={(v) => v && onMode(v as "preset" | "upload")} aria-labelledby={`${id}-mode`} className="ps-toggle w-full">
           <ToggleGroupItem value="preset" className="min-h-11 h-auto whitespace-normal px-3 py-1 text-[15px]">{PLAN.modePreset}</ToggleGroupItem>
           <ToggleGroupItem value="upload" className="min-h-11 h-auto whitespace-normal px-3 py-1 text-[15px]">{PLAN.modeUpload}{uploads.length ? ` (${uploads.length})` : ""}</ToggleGroupItem>
         </ToggleGroup>
@@ -47,7 +64,7 @@ export function PlanSelector({ plans, uploads, value, onChange, mode, onMode, up
 
       <div className="ps-row">
         <label className="plan-pick">{PLAN.planCode}
-          <select value={value} onChange={(e) => onChange(e.target.value)} aria-describedby={`${id}-fast`} title={selectedTitle || undefined}>
+          <PickSelect face={pickFace} value={value} onChange={(e) => onChange(e.target.value)} aria-describedby={`${id}-fast`} title={selectedTitle || undefined}>
             {!hit && !uploads.some((u) => u.plan_code === value) && <option value="">{PLAN.cmpNone}</option>}
             {real.length > 0 && real.map((c) => (
               <optgroup key={c.key} label={c.label}>
@@ -64,7 +81,7 @@ export function PlanSelector({ plans, uploads, value, onChange, mode, onMode, up
                 {uploads.map((u) => <option key={u.plan_code} value={u.plan_code}>{uploadLabel(u)}</option>)}
               </optgroup>
             )}
-          </select>
+          </PickSelect>
         </label>
         <span id={`${id}-fast`} className="sr-only">{mode === "upload" ? PLAN.modeUpload : PLAN.modePreset}</span>
         {/* the closed select shows a compact label; the full document title stays readable under it */}
@@ -74,10 +91,10 @@ export function PlanSelector({ plans, uploads, value, onChange, mode, onMode, up
           <div className="ps-upload" role="group" aria-label={PLAN.modeUpload}>
             {uploadsLoading ? <p className="muted small">{PLAN.uploadsLoading}</p> : uploads.length === 0 ? <p className="muted small ps-noup">{PLAN.noUploads}</p> : (
               <label>{PLAN.uploadedPlan}
-                <select aria-label={PLAN.uploadedPlan} value={modeOf(value) === "upload" ? value : ""} onChange={(e) => e.target.value && onChange(e.target.value)}>
+                <PickSelect face={uploadFace} aria-label={PLAN.uploadedPlan} value={modeOf(value) === "upload" ? value : ""} onChange={(e) => e.target.value && onChange(e.target.value)}>
                   {modeOf(value) !== "upload" && <option value="">{PLAN.cmpNone}</option>}
                   {uploads.map((u) => <option key={u.plan_code} value={u.plan_code}>{PLAN.uploadVersion(uploadLabel(u), (u.published_at ?? "").slice(0, 10))}</option>)}
-                </select>
+                </PickSelect>
               </label>
             )}
             {uploadSlot}
