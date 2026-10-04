@@ -46,7 +46,7 @@ describe("PlanAtlas markup", () => {
   );
   it("renders one real button per landmark, named by the familiar term first", () => {
     const names = [...html.matchAll(/aria-label="([^"]+)"/g)].map((m) => m[1]).filter((n) => n !== "Plan map");
-    expect(names).toEqual(["Your plan (The harbor)", "Deductible (The bridge): $25.00, From the plan document", "Coverage (The cove)", "Annual maximum (The lookout)", "Cost breakdown (The lighthouse): Waiting for information"]);
+    expect(names).toEqual(["Your plan (The harbor)", "Pay first part (The bridge): $25.00, From the plan document", "Who pays what (The cove)", "Yearly limit (The lookout)", "You pay (The lighthouse): Waiting for information"]);
     expect(html.match(/<button/g)).toHaveLength(5);
     expect(html).toMatch(/data-stop="bridge"[^>]*aria-pressed="true"/);
     expect(html).toMatch(/role="group" aria-label="Plan map"/);

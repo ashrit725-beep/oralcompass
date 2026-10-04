@@ -4,11 +4,11 @@
  * or the fixed template (demo mode, or a sentence that did not pass the server's checks).
  */
 export const EXPLAIN = {
-  plainWords: "Plain words",
-  writing: "Writing a plain sentence from this quote…",
-  labelLive: "Written by the model from this quote",
+  plainWords: "Simple words",
+  writing: "Writing it in simple words…",
+  labelLive: "Written by the computer from these words",
   labelDemo: "Demo mode",
-  labelTemplate: "Plain-words template",
+  labelTemplate: "Ready-made sentence",
   fromClause: (stitch: string) => `From ${stitch}`,
-  templateNote: "A fixed sentence about this kind of clause, not about this quote's figures.",
+  templateNote: "A ready-made sentence about this kind of rule. It has no numbers.",
 } as const;

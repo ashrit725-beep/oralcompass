@@ -78,7 +78,7 @@ describe("ref resolution against the payloads (every Ref kind)", () => {
   it("field → plan, benefits, rules, treatment item, remaining_after and non-amount paths", () => {
     expect(resolveRef({ kind: "field", path: "plan.deductible_individual" }, data)).toMatchObject({ kind: "money", cents: 5000, evidence: "DOC" });
     expect(resolveRef({ kind: "field", path: "plan.annual_max" }, data)).toMatchObject({ kind: "money", cents: 150000, evidence: "DOC" });
-    expect(resolveRef({ kind: "field", path: "plan.annual_max" }, { ...data, plan: planUnlimited })).toMatchObject({ kind: "text", text: "no annual maximum stated" });
+    expect(resolveRef({ kind: "field", path: "plan.annual_max" }, { ...data, plan: planUnlimited })).toMatchObject({ kind: "text", text: "no yearly limit" });
     expect(resolveRef({ kind: "field", path: "plan.annual_max_unlimited" }, data)).toMatchObject({ kind: "text", text: "no" });
     expect(resolveRef({ kind: "field", path: "plan.benefit_year_start_month" }, data)).toMatchObject({ kind: "text", text: "January" });
     expect(resolveRef({ kind: "field", path: "benefits.remaining_max_cents" }, data)).toMatchObject({ kind: "money", cents: 126000, evidence: "USER" });
@@ -139,7 +139,7 @@ describe("scope, suggestions, ribbons, tools", () => {
     expect(ribbonFor({ mode: "live", ribbon: null, intent: "procedure_cost", model: "anthropic/claude-haiku-4.5" }, "live")).toEqual({ text: ASSIST.liveLabel("anthropic/claude-haiku-4.5"), tone: "live" });
     expect(ASSIST.liveLabel("m")).toContain("Written by AI from your plan's numbers");
     expect(ribbonFor({ mode: "live", ribbon: null, intent: "explain_step", model: "anthropic/claude-haiku-4.5" }, "live")).toMatchObject({ tone: "live" });
-    expect(ribbonFor({ mode: "demo", ribbon: "The model did not answer in time; a template answer is shown.", intent: "explain_step" }, "live")).toMatchObject({ tone: "fallback" });
+    expect(ribbonFor({ mode: "demo", ribbon: "The AI helper took too long, so a ready-made answer is shown.", intent: "explain_step" }, "live")).toMatchObject({ tone: "fallback" });
     expect(ribbonFor({ mode: "live", ribbon: null, intent: "advice_request", model: "m" }, "live")).toMatchObject({ tone: "template" });
   });
   it("turns tool ids into words (ids only, never amounts)", () => {
@@ -147,8 +147,8 @@ describe("scope, suggestions, ribbons, tools", () => {
     expect(toolLabel("get_estimate_line(line 0)")).toBe("ledger line 0");
     expect(toolLabel("get_benefits(ML26)")).toBe("benefits of ML26");
     expect(toolLabel("resolve_procedure")).toBe("procedure names");
-    expect(templateLabel({ type: "template", key: "advice_question", text: "" })).toBe("Information, not a choice");
-    expect(templateLabel({ type: "template", key: "out_of_scope", text: "" })).toBe("Outside this assistant's scope");
+    expect(templateLabel({ type: "template", key: "advice_question", text: "" })).toBe("Just numbers, no advice");
+    expect(templateLabel({ type: "template", key: "out_of_scope", text: "" })).toBe("Not about cost");
   });
 });
 
@@ -185,11 +185,11 @@ describe("lookups in plain words (demo-19)", () => {
 
 describe("copy grammar (info-only-12)", () => {
   it("agrees in number and reads each compass figure on its own", () => {
-    expect(ASSIST.guardRemoved(1)).toBe("1 sentence was removed by the information-only check.");
-    expect(ASSIST.guardRemoved(2)).toBe("2 sentences were removed by the information-only check.");
-    expect(ASSIST.groundingRemoved(1)).toContain("1 sentence named a figure the records do not hold and was not shown.");
-    expect(ASSIST.groundingRemoved(3)).toContain("3 sentences named");
-    expect(COMPASS.panelLabel("ML26", COMPASS.notProvided, "$672.00")).toBe("Benefits compass for ML26: deductible remaining: not provided; annual maximum remaining: $672.00.");
+    expect(ASSIST.guardRemoved(1)).toBe("1 sentence was taken out because it gave advice.");
+    expect(ASSIST.guardRemoved(2)).toBe("2 sentences were taken out because they gave advice.");
+    expect(ASSIST.groundingRemoved(1)).toContain("1 sentence had a number we can't back up, so it is hidden.");
+    expect(ASSIST.groundingRemoved(3)).toContain("3 sentences had numbers");
+    expect(COMPASS.panelLabel("ML26", COMPASS.notProvided, "$672.00")).toBe("Money map for ML26: pay-first part left: missing; yearly limit left: $672.00.");
   });
 });
 

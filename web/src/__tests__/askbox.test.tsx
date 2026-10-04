@@ -146,7 +146,7 @@ describe("answers: simple terms first, details closed, one announcement", () => 
     expect(first?.className).toContain("as-simple");
     expect(card.querySelector(".as-simple-label")?.textContent).toBe("In simple terms");
     expect(card.querySelector(".as-simple-text")?.textContent).toContain("$902.00");
-    expect(card.querySelector(".as-simple-text")?.textContent).toContain("Calculated from the clauses cited");
+    expect(card.querySelector(".as-simple-text")?.textContent).toContain("We did the math with the plan rules");
     const toggle = byText("Show the details")!;
     expect(toggle.getAttribute("aria-expanded")).toBe("false");
     const region = document.getElementById(toggle.getAttribute("aria-controls")!)!;
@@ -352,7 +352,7 @@ describe("Documents scope, the estimate_total ref", () => {
     expect(text.textContent).toContain("$902.00");
     expect(text.textContent).toContain("$1098.00");                   // NumberFlow is mocked with toFixed (no grouping) here
     expect(text.querySelectorAll(".amt.tabular-nums")).toHaveLength(2);
-    expect(text.textContent).toContain("Calculated from the clauses cited");
+    expect(text.textContent).toContain("We did the math with the plan rules");
     expect(q("[aria-live]")?.textContent).toBe("Answer: You pay $902.00 (calculated from the clauses cited) and the plan pays $1,098.00 (calculated from the clauses cited).");
   });
 });

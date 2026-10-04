@@ -96,14 +96,14 @@ describe("completion disclaimer printed once (finding slop-29)", () => {
 describe("evidence beside journey figures (findings info-only-5, demo-8)", () => {
   it("marks the Answers-log totals as calculated", () => {
     const rows = answersLog(vm, f.view, f.plan, f.estimate);
-    expect(rows.find((r) => r.key === "cost")).toMatchObject({ dd: "$902.00 · plan $1,098.00", calc: true });
+    expect(rows.find((r) => r.key === "cost")).toMatchObject({ dd: "$902.00 · insurance $1,098.00", calc: true });
     expect(answersLog(vm, f.view, f.plan, null).find((r) => r.key === "cost")?.calc).toBeFalsy();
     const html = renderToStaticMarkup(<AnswersLog vm={vm} view={f.view} plan={f.plan} estimate={f.estimate} onFocus={noop} />);
-    expect(html).toContain("Calculated from the clauses cited");
+    expect(html).toContain("We did the math with the plan rules");
   });
   it("Money says 'calculated' for engine totals and reads the badge label (not the code) when the badge is hidden", () => {
-    expect(renderToStaticMarkup(<Money cents={90200} evidence="DOC" calc />)).toContain("Calculated from the clauses cited");
-    expect(renderToStaticMarkup(<Money cents={4500} evidence="USER" badge={false} />)).toContain("Evidence: You entered");
+    expect(renderToStaticMarkup(<Money cents={90200} evidence="DOC" calc />)).toContain("We did the math with the plan rules");
+    expect(renderToStaticMarkup(<Money cents={4500} evidence="USER" badge={false} />)).toContain("Evidence: You typed this");
     expect(renderToStaticMarkup(<Money cents={4500} evidence="USER" badge={false} />)).not.toContain("Evidence: USER");
   });
 });
@@ -118,8 +118,8 @@ describe("overview figures (finding web-correctness-26)", () => {
     const rows = route.split('<tr class="ov-island').slice(1);
     for (const r of rows) {
       const cells = r.split("<td>");
-      expect(cells[5]).toContain("Calculated from the clauses cited"); // You pay
-      expect(cells[6]).toContain("Calculated from the clauses cited"); // Plan pays
+      expect(cells[5]).toContain("We did the math with the plan rules"); // You pay
+      expect(cells[6]).toContain("We did the math with the plan rules"); // Plan pays
       expect(cells[5]).not.toContain("You entered");
     }
   });
@@ -186,10 +186,10 @@ describe("CinematicStage (shared by My journey and My plan)", () => {
 });
 
 describe("care timeline (finding slop-27; the phone timeline since the mobile-only direction)", () => {
-  it("shows a single 'Show on the chart' link, on the current stage", () => {
+  it("shows a single 'See it on the map' link, on the current stage", () => {
     const html = renderToStaticMarkup(<CareTimeline journey={f.view.journey} progress={f.view.progress} selected={null} onSelect={noop} currentStageId="before" linkedIsland={() => vm.islands[0].id} onShowOnChart={noop} />);
-    expect(html.match(/Show on the chart/g) ?? []).toHaveLength(1);
-    const at = html.indexOf('data-stage-btn="before"'), link = html.indexOf("Show on the chart"), next = html.indexOf("data-stage-btn=", at + 1);
+    expect(html.match(/See it on the map/g) ?? []).toHaveLength(1);
+    const at = html.indexOf('data-stage-btn="before"'), link = html.indexOf("See it on the map"), next = html.indexOf("data-stage-btn=", at + 1);
     expect(link).toBeGreaterThan(at);
     expect(next === -1 || link < next).toBe(true);
   });
@@ -220,8 +220,8 @@ describe("journey motion rules (findings motion-5, motion-4, slop-26, motion-12)
 describe("what if and tooth controls (finding demo-5)", () => {
   it("the network hypothetical offers records / in / out and labels an active value ASSUMED", () => {
     const off = renderToStaticMarkup(<WhatIfNetwork value={null} recorded="in" onChange={noop} />);
-    expect(off).toContain("As in your records (in-network)");
-    expect(off).toContain("Out-of-network (hypothetical)");
+    expect(off).toContain("As your papers say (on your plan&#x27;s list)");
+    expect(off).toContain("Not on the list (a guess)");
     expect(off).not.toContain("badge-assumed");
     expect(renderToStaticMarkup(<WhatIfNetwork value="out" recorded="in" onChange={noop} />)).toContain("badge-assumed");
   });

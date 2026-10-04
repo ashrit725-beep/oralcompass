@@ -21,8 +21,8 @@ describe("coverage share dollars", () => {
     const html = renderToStaticMarkup(<CoverageShareSection {...props} />);
     expect(html).toContain("$588.00");
     expect(html).toContain("$392.00");
-    expect(html).not.toContain("From the plan document");
-    expect(html).toContain("You entered");
+    expect(html).not.toContain("From your plan papers");
+    expect(html).toContain("You typed this");
   });
 });
 

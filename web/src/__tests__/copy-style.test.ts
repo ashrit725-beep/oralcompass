@@ -12,7 +12,7 @@ describe("shell copy", () => {
   it("prints no em dash as punctuation in the UI strings (slop-1, info-only-10; antislop R-02)", () => {
     const bad = strings(UI).filter((s) => /\s—\s/.test(s));
     expect(bad).toEqual([]);
-    expect(UI.sampleRibbon).toBe("Sample journey: fictional person and records");
+    expect(UI.sampleRibbon).toBe("Pretend example: not a real person");
     expect(RECONCILE_WARN).not.toMatch(/—/);
   });
 });

@@ -7,7 +7,7 @@ import type { JourneyView, PassageVM, PlanFixture, SavedEstimate } from "@/lib/t
  * line, not stat tiles (hairlines only, tabular numbers). Each <dd> is a `linklike` button that moves focus to the thing it names.
  * Row 3 never prints $0.00 for a missing estimate: the unresolved and none branches live in `answersLog` (tested). While a new estimate
  * is being computed row 3 reads "Recalculating…"; the live announcement belongs to JourneyView's single aria-live region.
- * Row 3's figures are engine totals: they carry "Calculated from the clauses cited" (row 4 counts the cited steps behind them).
+ * Row 3's figures are engine totals: they carry "We did the math with the plan rules" (row 4 counts the cited steps behind them).
  */
 export interface AnswersLogProps { vm: PassageVM; view: JourneyView | null; plan: PlanFixture | null; estimate: SavedEstimate | null; recalculating?: boolean; onFocus: (target: AnswerTarget) => void }
 

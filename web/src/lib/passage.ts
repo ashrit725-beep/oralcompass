@@ -257,7 +257,7 @@ function stitchForCiteLike(cite: { page: number; quote: string; doc?: string } |
 // ---------------------------------------------------------------------------------------------------------------------------------
 
 export type AnswerTarget = "stage" | "island" | "light" | "checkpoint" | "documents";
-/** `calc`: the row prints engine totals, so it carries the "Calculated from the clauses cited" mark beside it (finding info-only-5). */
+/** `calc`: the row prints engine totals, so it carries the "We did the math with the plan rules" mark beside it (finding info-only-5). */
 export interface AnswerRow { key: string; dt: string; dd: string; title?: string; target: AnswerTarget; calc?: boolean }
 
 export function answersLog(vm: PassageVM, view: JourneyView | null, plan: PlanFixture | null, estimate: SavedEstimate | null, recalculating = false): AnswerRow[] {

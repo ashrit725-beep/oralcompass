@@ -22,7 +22,7 @@ describe("compass meters", () => {
   it("draws unknown usage differently from $0 used, and says so in the compact gauge (info-only-8)", () => {
     const g = renderToStaticMarkup(<Gauge label="Deductible" meter={meter({ usedCents: null, remainingCents: null, usedFraction: null })} usedWord="met" compact />);
     expect(g).toMatch(/class="cmp-meter\s+is-empty"/);
-    expect(g).toContain("Not provided");
+    expect(g).toContain("Missing");
     const css = readFileSync(join(__dirname, "../styles/plan.css"), "utf8");
     expect(css).toMatch(/\.cmp-meter\.is-empty:not\(\.is-unknown\)\s*\{[^}]*border:\s*1px dashed/);
   });
@@ -38,7 +38,7 @@ describe("compass headline evidence (orchestrator note 1)", () => {
     const html = renderToStaticMarkup(<BenefitsCompass plan={ml26} benefits={alex.benefits[0] as Benefits} estimate={alex.estimate as SavedEstimate} stitches={[]} onOpenLandmark={() => undefined} onSelectStitch={() => undefined} />);
     const answer = /<p class="cmp-a">(.*?)<\/p>/.exec(html)?.[1] ?? "";
     expect(answer).toContain("$162.00");
-    expect(answer).toContain("Calculated:");
+    expect(answer).toContain("We did the math:");
     expect(answer).not.toMatch(/class="badge badge-doc"/);
   });
 });
@@ -48,7 +48,7 @@ describe("after-planned figure (numbers-7)", () => {
     const g = renderToStaticMarkup(<Gauge label="Annual maximum" meter={meter({ afterCents: 16200, afterFraction: 0.9 })} usedWord="paid by the plan" />);
     expect(g).toContain("$162.00");
     const after = g.slice(g.indexOf("$162.00"));
-    expect(after).toMatch(/calculated/i);
-    expect(after.slice(0, 400)).not.toContain("From the plan document");
+    expect(after).toMatch(/did the math/i);
+    expect(after.slice(0, 400)).not.toContain("From your plan papers");
   });
 });

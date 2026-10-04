@@ -110,7 +110,7 @@ export function trailingRefs(text: string, refs: AssistRef[]): AssistRef[] {
 }
 
 export type Resolved =
-  | { kind: "money"; cents: number | null; evidence: Evidence; label: string; /** an engine total: "Calculated from the clauses cited" */ calc?: boolean }
+  | { kind: "money"; cents: number | null; evidence: Evidence; label: string; /** an engine total: "We did the math with the plan rules" */ calc?: boolean }
   | { kind: "percent"; pct: number | null; evidence: Evidence; label: string }
   | { kind: "text"; text: string; evidence: Evidence; label: string }
   | { kind: "clause"; stitch: Stitch | undefined; raw: string; rule?: string; label: string };
@@ -259,7 +259,7 @@ export function resolveRef(ref: AssistRef, data: AssistData, scope?: AssistScope
   return { kind: "text", text: ASSIST.notLoaded, evidence: "UNKNOWN", label };
 }
 
-/** An engine-calculated amount (CLAUDE.md rule 2 + orchestrator note 27): shown with "Calculated from the clauses cited", never a bare DOC badge.
+/** An engine-calculated amount (CLAUDE.md rule 2 + orchestrator note 27): shown with "We did the math with the plan rules", never a bare DOC badge.
  * A figure that rests on an assumption keeps its ASSUMED badge so the assumption stays visible. */
 function calcMoney(cents: number | null, evidence: Evidence, label: string): Resolved {
   return { kind: "money", cents, evidence, label, calc: cents !== null && evidence !== "ASSUMED" };
