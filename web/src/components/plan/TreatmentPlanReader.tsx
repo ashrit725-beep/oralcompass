@@ -76,7 +76,7 @@ export function TreatmentPlanReader({ onConfirmed }: TreatmentPlanReaderProps) {
   }
   /** Redact on this device, then send only the redacted text (the raw text never leaves the browser). */
   async function sendRedacted(raw: string, from: "text" | "pdf") {
-    const r = redactOnDevice(raw);
+    const r = await redactOnDevice(raw);
     setDeviceRemoved({ total: r.total, from });
     show(await api.readTreatmentPlanText(r.text));
   }

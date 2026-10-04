@@ -6,7 +6,7 @@ import { UPLOAD } from "@/lib/copy/upload";
 import { useReducedMotion } from "@/lib/motion";
 import { applyRedaction, maskValue, type FoundIdentifier, type RedactionResult } from "@/lib/redact";
 import { categoryCounts, maskedVisible, pageRanges, previewPages, sortIdentifiers, termOccurrences, tokenize } from "@/lib/redaction-view";
-import { CLIENT_REDACTION_LIMITS } from "@/lib/upload";
+import { CLIENT_REDACTION_LIMITS } from "@/lib/client-redaction";
 import { PaneHeading } from "./PaneHeading";
 
 /**

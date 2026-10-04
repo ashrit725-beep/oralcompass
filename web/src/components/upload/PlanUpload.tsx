@@ -4,7 +4,8 @@ import { StageLoader } from "@/components/StageLoader";
 import { Button } from "@/components/ui/button";
 import { UPLOAD } from "@/lib/copy/upload";
 import { detectIdentifiers, type FoundIdentifier } from "@/lib/redact";
-import { MAX_BYTES, loadSampleStatement, prepareFile, problemCopy, type PreparePhase, type PreparedFile } from "@/lib/upload";
+import { loadSampleStatement } from "@/lib/client-redaction";
+import { MAX_BYTES, prepareFile, problemCopy, type PreparePhase, type PreparedFile } from "@/lib/upload";
 
 /**
  * PlanUpload (spec §7.3 step 1; client redaction design point 2). The Kokonut drop zone with the real validation chain, all ON THIS DEVICE:

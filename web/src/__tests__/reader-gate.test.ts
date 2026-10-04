@@ -27,17 +27,17 @@ describe("treatment-plan reader send gate (info-only-3, web-correctness-22; orch
 });
 
 describe("treatment-plan reader: on-device redaction of text (client redaction design point 6)", () => {
-  it("removes the patient's name before the text is sent, and keeps tooth numbers, codes and fees", () => {
+  it("removes the patient's name before the text is sent, and keeps tooth numbers, codes and fees", async () => {
     const text = "Northside Dental Group estimate (fictional)\nPatient: Alex Chen\nTooth  Code   Procedure  Fee\n30     D3330  Root canal, molar  $1,120.00";
-    const r = redactOnDevice(text);
+    const r = await redactOnDevice(text);
     expect(r.total).toBe(1);
     expect(r.text).not.toMatch(/Alex Chen/);
     expect(r.text).toContain("[name removed]");
     for (const kept of ["30", "D3330", "Root canal, molar", "$1,120.00"]) expect(r.text).toContain(kept);
   });
-  it("leaves text without identifiers as it is", () => {
+  it("leaves text without identifiers as it is", async () => {
     const text = "Tooth  Procedure  Fee\n14  Crown, porcelain  $1,020.00";
-    expect(redactOnDevice(text)).toEqual({ text, total: 0 });
+    expect(await redactOnDevice(text)).toEqual({ text, total: 0 });
   });
   it("recognises a PDF by type or name", () => {
     expect(isPdfFile(pdf)).toBe(true);

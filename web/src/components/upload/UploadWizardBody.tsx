@@ -3,10 +3,11 @@ import Stepper, { Step } from "@/components/ui/Stepper";
 import { Button } from "@/components/ui/button";
 import { api, ApiError } from "@/lib/api";
 import { UPLOAD } from "@/lib/copy/upload";
+import { buildClientRedaction } from "@/lib/client-redaction";
 import type { RedactionResult } from "@/lib/redact";
 import type { PlanRef, UploadedPlanSummary } from "@/lib/types";
 import {
-  buildClientRedaction, isTerminal, MAX_PREVIEW_CHARS, pollExtraction, serverRedactionSummary, startErrorCopy, uploadErrorCopy,
+  isTerminal, MAX_PREVIEW_CHARS, pollExtraction, serverRedactionSummary, startErrorCopy, uploadErrorCopy,
   type ExtractionStatusFull, type UploadResponseX,
 } from "@/lib/upload";
 import { ExtractionProgress } from "./ExtractionProgress";
