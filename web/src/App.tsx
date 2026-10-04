@@ -58,7 +58,10 @@ export default function App() {
   const dockRef = useRef<HTMLDivElement>(null);
   useMeasuredVar(dockRef, "--dock-h", true);
   // "Ask in plain words" on every tab: the journey-level scope (plan + the journey's estimate + the journey, no line)
-  const askScope = useMemo(() => askBoxScope(planRef, estimate, data.view?.id), [planRef, estimate, data.view?.id]);
+  // on Compare the scope also carries the plans currently compared (scope.compare, 1–3 refs) for the compare_terms answers
+  const [compared, setCompared] = useState<string[]>([]);
+  const comparedKey = tab === "compare" ? compared.join(",") : "";
+  const askScope = useMemo(() => askBoxScope(planRef, estimate, data.view?.id, comparedKey ? comparedKey.split(",") : null), [planRef, estimate, data.view?.id, comparedKey]);
   const openStitchById = useCallback((id: string) => { const s = stitches.find((x) => x.id === id); if (s) setStitch(s); }, [stitches]);
 
   const list = (
@@ -110,7 +113,7 @@ export default function App() {
             </div>
             <div data-view="compare" className="view-pane">
               <ErrorBoundary label={NAV.compare} resetKey={tab}>
-                <CompareView plans={plans} items={items} benefits={benefits} initial={defaultCompareColumns(planRef, plans)} />
+                <CompareView plans={plans} items={items} benefits={benefits} initial={defaultCompareColumns(planRef, plans)} onColumns={setCompared} />
               </ErrorBoundary>
             </div>
             <div data-view="documents" className="view-pane">

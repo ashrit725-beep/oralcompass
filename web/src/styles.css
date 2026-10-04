@@ -388,7 +388,7 @@ summary { min-height: 32px; padding-block: 4px; }
 /* phone layout, always on (mobile-only app) */
   .tagline { display: none; }
   .appbar { padding: .6rem 1rem; gap: .4rem .75rem; }
-  .app { padding-bottom: calc(68px + env(safe-area-inset-bottom)); }
+  .app { padding-bottom: var(--dock-h, calc(68px + env(safe-area-inset-bottom))); }
   .dock { position: fixed; left: 0; right: 0; bottom: 0; margin-inline: auto; max-width: var(--col); z-index: 14; background: var(--paper-deep); border-top: 1px solid var(--rule); box-shadow: var(--shadow-1); padding: 6px 8px calc(6px + env(safe-area-inset-bottom)); }
   .dock-item { display: flex; min-width: 0; }
   .dock [role="tab"] { color: var(--ink-soft); }
@@ -404,7 +404,7 @@ summary { min-height: 32px; padding-block: 4px; }
   .dock { padding-left: max(8px, env(safe-area-inset-left)); padding-right: max(8px, env(safe-area-inset-right)); }
 /* landscape phones (~340-430 px tall): icon beside the label in a 44 px row, so the dock takes ~56 px of the height instead of ~65 */
 @media (max-height: 500px) and (orientation: landscape) {
-  .app { padding-bottom: calc(56px + env(safe-area-inset-bottom)); }
+  .app { padding-bottom: var(--dock-h, calc(56px + env(safe-area-inset-bottom))); }
   .dock { padding-top: 5px; padding-bottom: calc(5px + env(safe-area-inset-bottom)); }
   .dock [role="tab"] { flex-direction: row !important; min-height: 44px !important; gap: 6px !important; }
 }

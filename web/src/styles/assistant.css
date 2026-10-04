@@ -73,16 +73,7 @@
 .as-earlier > .as-answers { margin-top: var(--s-2); }
 @media (prefers-reduced-motion: reduce) { .as-chevron { transition: none; } }
 
-/* ---- the AskBox card (desktop): one parchment card at the top of each tab's main column ---- */
-.askbox { display: flex; flex-direction: column; gap: var(--s-3); margin: var(--s-4) 0; padding: var(--s-4) var(--s-5); background: var(--paper-deep); border: 1px solid var(--rule); border-radius: var(--r-4); font-family: var(--sans); }
-.askbox-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-1) var(--s-3); }
-.askbox-title { margin: 0; font-family: var(--serif); font-size: 18px; line-height: 24px; font-weight: 600; color: var(--ink); }
-.askbox-desc { margin: 0; font-size: 13px; line-height: 18px; color: var(--ink-soft); }
 .askbox-composer { max-width: 52rem; }
-.askbox-chips { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--s-2); }
-.askbox .as-answers { gap: var(--s-2); }
-.askbox .as-answer { background: var(--paper); box-shadow: none; max-width: 64rem; }
-.askbox .as-error { max-width: 52rem; }
 
 /* ---- the phone field above the dock and its bottom sheet ---- */
 .askfield-bar { position: fixed; left: max(0px, calc((100% - 480px) / 2)); right: max(0px, calc((100% - 480px) / 2)); bottom: var(--dock-h, 68px); z-index: 14; padding: var(--s-2) max(12px, env(safe-area-inset-right)) var(--s-1) max(12px, env(safe-area-inset-left)); background: var(--paper-deep); border-top: 1px solid var(--rule); box-shadow: var(--shadow-1); }
@@ -109,7 +100,5 @@
 /* the placeholder ("Ask anything about your plan, in your own words") takes two lines at phone width: show both */
 .askbox-sheet-foot textarea { min-height: 72px !important; }   /* over the composer's min-h-12 utility */
 @media (prefers-reduced-motion: reduce) { .ask-scrim { animation: none; } }
-/* the AskBox chunk normally arrives before the journey data; if not, this keeps the card's place so the map does not move */
-.askbox-pending { min-height: 176px; margin: var(--s-4) 0; border: 1px solid var(--rule); border-radius: var(--r-4); background: var(--paper-deep); }
 /* "Calculated from the clauses cited" wraps inside answers (it is nowrap in the drawer's figure rows) */
 .as-answer .fig-calc { white-space: normal; }

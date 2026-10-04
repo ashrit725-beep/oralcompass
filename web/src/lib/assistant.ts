@@ -165,6 +165,10 @@ export function resolveRef(ref: AssistRef, data: AssistData, scope?: AssistScope
     const cents = ref.which === "patient" ? line?.patient_cents ?? null : line?.plan_cents ?? null;
     return { kind: "money", cents, evidence: cents === null ? "UNKNOWN" : lineEvidence(line), label: ref.which === "patient" ? ASSIST.refPatientTotal : ASSIST.refPlanTotal };
   }
+  if (ref.kind === "estimate_total") {
+    // the journey's totals (the facts line "you pay $902.00 · plan $1,098.00"): engine sums of the lines, labelled "calculated"
+    return resolveRef({ kind: "field", path: ref.which === "patient" ? "estimate.ledger.patient_total_cents" : "estimate.ledger.plan_total_cents" }, data, scope);
+  }
   if (ref.kind === "clause") {
     return { kind: "clause", stitch: stitchForLabel(ref.stitch, ref.rule ?? "", data.stitches), raw: ref.stitch, rule: ref.rule, label: ASSIST.refClause(ref.stitch) };
   }
@@ -416,8 +420,16 @@ const normRef = (r: string) => (r.startsWith("upload:") ? r : r.toUpperCase());
 
 /** The AskBox scope (journey level, no line): the selected plan, the journey's estimate when it belongs to that plan (the API locks an
  *  estimate to its plan and answers 404 otherwise, e.g. for the moment between a plan switch and the new estimate), and the journey. */
-export function askBoxScope(planRef: string, estimate: Pick<SavedEstimate, "id" | "plan_code"> | null | undefined, journeyId?: string | null): AssistScope | null {
+export function askBoxScope(planRef: string, estimate: Pick<SavedEstimate, "id" | "plan_code"> | null | undefined, journeyId?: string | null, compare?: readonly string[] | null): AssistScope | null {
   if (!planRef) return null;
   const est = estimate && (!estimate.plan_code || normRef(estimate.plan_code) === normRef(planRef)) ? { estimate_id: estimate.id } : {};
-  return { plan_ref: planRef, ...est, ...(journeyId ? { journey_id: journeyId } : {}) };
+  const cmp = compareScope(compare);
+  return { plan_ref: planRef, ...est, ...(journeyId ? { journey_id: journeyId } : {}), ...(cmp ? { compare: cmp } : {}) };
+}
+
+/** The Compare tab's scope.compare: the plans currently compared, deduplicated, at most three (the API accepts 1–3); none gives undefined. */
+export function compareScope(refs: readonly string[] | null | undefined): string[] | undefined {
+  const seen = new Set<string>();
+  const out = (refs ?? []).filter((r) => typeof r === "string" && r.length > 0 && (seen.has(normRef(r)) ? false : (seen.add(normRef(r)), true))).slice(0, 3);
+  return out.length ? out : undefined;
 }
