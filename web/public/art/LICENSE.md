@@ -17,3 +17,10 @@ redistributed as part of OralCompass under the repository's license.
 | paper-texture.webp | parchment grain tile (1254×1254) | WebP |
 
 The SVG scenes in `web/src/components/atlas/` remain the fallback whenever a file here is missing or fails to load.
+
+## Third-party UI component sources
+
+Hand-written and generated art above is owner-created. Interface components vendored from third-party registries (shadcn/ui, Magic UI,
+Aceternity UI, Motion Primitives, Animata, Kokonut UI, React Bits, Eldora UI, Hover.dev, Uiverse) are listed with their licences in
+`web/THIRD_PARTY_NOTICES.md`; Aceternity UI and Hover.dev items are licensed for use in this end product only and are not redistributable
+as a component kit.

@@ -68,7 +68,8 @@ h1 { font-size: 1.5rem; } h2 { font-size: 1.35rem; } h3 { font-size: 1.1rem; } h
 .num, .amt, .total { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
 a { color: var(--ink); text-decoration-color: var(--gold); text-underline-offset: 3px; }
 button { font: inherit; }
-button:not(.linklike):not(.close):not(.stitch):not(.island-btn):not(.cp-btn):not(.landmark-btn):not(.clause-btn):not(.jv-stage-btn):not(.jv-cp) {
+/* The legacy pill button. shadcn primitives ([data-slot]) and vendored components (.unstyled) opt out and style themselves with utilities. */
+button:not(.linklike):not(.close):not(.stitch):not(.island-btn):not(.cp-btn):not(.landmark-btn):not(.clause-btn):not(.jv-stage-btn):not(.jv-cp):not([data-slot]):not(.unstyled) {
   background: var(--ink); color: var(--paper); border: 1px solid var(--ink); border-radius: 999px; padding: .5rem 1rem; cursor: pointer; min-height: 40px;
 }
 button.secondary:not(.linklike) { background: transparent; color: var(--ink); }

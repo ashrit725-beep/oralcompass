@@ -1,11 +1,13 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
 
-function Table({ className, ...props }: React.ComponentProps<"table">) {
+// shadcn/ui Table (radix-nova), patched for OralCompass (component plan §2 N12): `containerClassName` lets ComparisonGrid add
+// `max-h-[70dvh] overflow-auto scroll-fade-x`; TableHead gets `sticky top-0 bg-paper-deep` at the call site.
+function Table({ className, containerClassName, ...props }: React.ComponentProps<"table"> & { containerClassName?: string }) {
   return (
     <div
       data-slot="table-container"
-      className="relative w-full overflow-x-auto"
+      className={cn("relative w-full overflow-x-auto", containerClassName)}
     >
       <table
         data-slot="table"
