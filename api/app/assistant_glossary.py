@@ -98,8 +98,8 @@ GLOSSARY: dict[str, GlossaryEntry] = {
                 "least costly alternative treatment", "lcat", "less costly service", "less costly alternative", "alternate treatment",
                 "downgrade", "downgrading"],
         "simple": ("An alternate benefit means the plan pays only what a less costly treatment for the same problem would cost, such as "
-                   "a metal crown in place of a white one. You pay the difference between the two."),
-        "simpler": "The plan pays the price of a less costly option, and you pay the difference.",
+                   "a metal crown in place of a white one. You pay the difference in price."),
+        "simpler": "An alternate benefit means the plan pays for a less costly option, and you pay the difference.",
         "plan_field": None,
     },
     "exclusion": {
@@ -173,8 +173,8 @@ GLOSSARY: dict[str, GlossaryEntry] = {
         "aka": ["coverage class", "class of service", "service class", "class i", "class ii", "class iii", "class a", "class b", "class c",
                 "type i", "type ii", "type iii", "preventive services", "basic services", "major services", "preventive care",
                 "basic care", "major care"],
-        "simple": ("Plans sort dental care into groups, often called classes or types, such as preventive, basic and major. "
-                   "Each group has its own plan share, so a crown and a cleaning can be paid differently."),
+        "simple": ("A coverage class is a group of dental care, such as preventive, basic or major, that the plan pays the same way. "
+                   "Plans may call these classes or types, and each one has its own plan share."),
         "simpler": "A coverage class is a group of dental care that the plan pays the same way.",
         "plan_field": None,
     },
@@ -211,6 +211,12 @@ GLOSSARY: dict[str, GlossaryEntry] = {
         "simpler": "The dentist's fee is the price the dentist asks for the work.",
         "plan_field": None,
     },
+}
+
+# The engine's rule codes (ledger steps, assistant_templates.RULE_FROM_STEP_KEY) and the glossary entry that explains each in plain words.
+TERM_FOR_RULE: dict[str, str] = {
+    "D": "deductible", "CO": "plan_share", "M": "annual_max", "N": "allowed_amount", "AB": "alternate_benefit", "X": "exclusion",
+    "W": "waiting_period", "F": "frequency_limit", "fee": "dentist_fee", "total": "out_of_pocket",
 }
 
 # Said in one sentence when a define_term answer is about a copay and the plan document states plan shares (design point 4).
