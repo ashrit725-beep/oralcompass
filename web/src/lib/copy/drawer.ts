@@ -39,6 +39,8 @@ export const DRAWER = {
   sFinalCost: "Final cost",
   sCalculation: "How was this calculated?",
   calculated: "Calculated from the steps below",
+  /** The same label away from a step list (map, overview, Answers log, stage panel): the figure is engine arithmetic over cited clauses. */
+  calculatedCited: "Calculated from the clauses cited",
   calcFromRoute: "Calculated from your statement and the islands up to here",
   remainingBeforeLater: "The figure after the previous island on the route: your statement figure, then each earlier island in processing order.",
   harborTableNote: "Each figure is calculated from that island's steps; its stitch opens the clause behind it.",

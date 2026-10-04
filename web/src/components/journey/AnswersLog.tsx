@@ -20,7 +20,7 @@ export function AnswersLog({ vm, view, plan, estimate, recalculating = false, on
           <dt>{r.dt}</dt>
           <dd>
             <button type="button" className="linklike log-link num" title={r.title ?? r.dd} onClick={() => onFocus(r.target)}>{r.dd}</button>
-            {r.calc && <span className="fig-calc log-calc">{DRAWER.calculated}</span>}
+            {r.calc && <span className="fig-calc log-calc">{DRAWER.calculatedCited}</span>}
           </dd>
         </div>
       ))}

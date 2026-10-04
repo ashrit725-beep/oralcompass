@@ -128,7 +128,7 @@ export const UPLOAD = {
   published: (label: string) => `Published as ${label}`,
   publishedBody: (label: string) => `${label} is now a plan version in your space. The plan picker lists it; estimates calculated with it carry the ${label} label.`,
   publishedKept: "The journey keeps the plan it had; the plan picker switches whenever you choose.",
-  usePlan: (label: string) => `Use ${label} for this journey`,
+  showJourneyOn: (label: string) => `Show this journey on ${label}`,      // a plain switch, never a suggestion (advice_lint: no "use" opener)
   publishUndecided: (list: string) => `The server lists required rows without a decision: ${list}.`,
   publishInvalid: (type: string) => `The engine rejected the built plan (${type}). Decisions can be changed and the version published again.`,
   publishFailed: "The plan version could not be published.",

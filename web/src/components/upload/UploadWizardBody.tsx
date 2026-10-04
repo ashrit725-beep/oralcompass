@@ -21,7 +21,7 @@ import { ReviewTable, type PublishResult } from "./ReviewTable";
 export interface UploadWizardBodyProps {
   planRef: PlanRef;
   onPublished?: (summary: UploadedPlanSummary, planRef: PlanRef) => void;
-  /** demo-17: the published panel's explicit "Use UPn for this journey" choice. */
+  /** demo-17: the published panel's explicit "Show this journey on UPn" choice. */
   onUsePlan?: (planRef: PlanRef) => void;
   onClose: () => void;
   /** The dialog shell widens for the review step. */
@@ -101,7 +101,7 @@ export function UploadWizardBody({ onPublished, onUsePlan, onClose, onStepChange
               {published.summary.is_fictional && <p className="ribbon up-ribbon">{UPLOAD.fictional}</p>}
               {onUsePlan && <p className="up-caption">{UPLOAD.publishedKept}</p>}
               <div className="up-actions">
-                {onUsePlan && <Button type="button" variant="outline" size="touch" onClick={() => onUsePlan(published.plan_ref)}>{UPLOAD.usePlan(published.version_label)}</Button>}
+                {onUsePlan && <Button type="button" variant="outline" size="touch" onClick={() => onUsePlan(published.plan_ref)}>{UPLOAD.showJourneyOn(published.version_label)}</Button>}
                 <Button type="button" size="touch" onClick={onClose}>{UPLOAD.close}</Button>
               </div>
             </div>

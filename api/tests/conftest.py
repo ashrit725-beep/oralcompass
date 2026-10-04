@@ -10,6 +10,14 @@ import tempfile
 from pathlib import Path
 
 os.environ["ORALCOMPASS_DEV_AUTH"] = "1"
+# Test safety (orchestrator note 13): api/.env can be LIVE (a real OpenRouter key). Every test runs in demo mode with no key in the
+# environment. These are set before app.main imports, and load_dotenv(override=False) never replaces a variable that already exists,
+# so api/.env cannot switch the suite to live. A test that needs a real model call opts in with @pytest.mark.live_llm (skipped unless
+# ORALCOMPASS_ALLOW_LIVE_LLM=1). Tests that mock a live call set provider + a fake key + an httpx.MockTransport themselves.
+_ALLOW_LIVE = os.environ.get("ORALCOMPASS_ALLOW_LIVE_LLM") == "1"
+if not _ALLOW_LIVE:
+    os.environ["ORALCOMPASS_LLM_PROVIDER"] = "none"
+    os.environ["OPENROUTER_API_KEY"] = ""
 os.environ.setdefault("ORALCOMPASS_STORE", "memory")
 if os.environ["ORALCOMPASS_STORE"] == "sqlite" and not os.environ.get("ORALCOMPASS_DB_PATH"):
     os.environ["ORALCOMPASS_DB_PATH"] = str(Path(tempfile.mkdtemp(prefix="oralcompass-test-db-")) / "oralcompass.db")
@@ -28,4 +36,40 @@ def _fresh_llm_guard():
     llm_guard.guard.reset()
     extraction._GRAMMAR_REFUSED.clear()          # each test starts as if the provider had never refused a grammar
     extraction._RETRY_BACKOFF_S = 0.0            # no real pause before the retry in tests
+    yield
+
+
+def pytest_configure(config):
+    config.addinivalue_line("markers", "live_llm: makes a real model call; skipped unless ORALCOMPASS_ALLOW_LIVE_LLM=1")
+
+
+def pytest_collection_modifyitems(config, items):
+    if _ALLOW_LIVE:
+        return
+    skip = pytest.mark.skip(reason="live model call: set ORALCOMPASS_ALLOW_LIVE_LLM=1 to run")
+    for item in items:
+        if "live_llm" in item.keywords:
+            item.add_marker(skip)
+
+
+class _NoNetwork(Exception):
+    pass
+
+
+def _refuse(request):
+    raise _NoNetwork(f"a test tried a real model call to {request.url.host}; mock it with httpx.MockTransport or mark it live_llm")
+
+
+@pytest.fixture(autouse=True)
+def _demo_mode_and_no_model_network(request, monkeypatch):
+    """Every test starts in demo mode with no key, and any model HTTP call that a test did not mock fails instead of reaching the network."""
+    if "live_llm" in request.keywords and _ALLOW_LIVE:
+        yield
+        return
+    import httpx
+    from app import assistant, extraction
+    monkeypatch.setenv("ORALCOMPASS_LLM_PROVIDER", "none")
+    monkeypatch.setenv("OPENROUTER_API_KEY", "")
+    monkeypatch.setattr(extraction, "_TRANSPORT_OVERRIDE", httpx.MockTransport(_refuse))
+    monkeypatch.setattr(assistant, "live_client", lambda: httpx.Client(timeout=5, transport=httpx.MockTransport(_refuse)))
     yield

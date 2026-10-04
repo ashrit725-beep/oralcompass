@@ -37,7 +37,7 @@ function CheckpointRow({ cp, islandId, selected, onSelect, onSelectStitch }: { c
       </button>
       {(cp.stitch || cp.badge) && (
         <span className="pv-evidence">{cp.stitch && onSelectStitch ? <StitchChip stitch={cp.stitch} onSelect={onSelectStitch} />
-          : cp.rule === "total" && cp.amountOut != null ? <span className="fig-calc">{DRAWER.calculated}</span>   /* an engine total, not a quote from the document */
+          : cp.rule === "total" && cp.amountOut != null ? <span className="fig-calc">{DRAWER.calculatedCited}</span>   /* an engine total, not a quote from the document */
           : <EvidenceBadge status={cp.badge} />}</span>
       )}
     </li>
@@ -84,7 +84,7 @@ export function PassageVertical({ vm, selected, onSelect, planCode, onSelectStit
           <button type="button" className={`unstyled pv-card pv-frame ${isSel("destination") ? "is-selected" : ""}`} aria-pressed={isSel("destination")} aria-label={`${PASSAGE.lightLabel(light.youPay != null ? `${PASSAGE.youPay} ${moneyText(light.youPay)}` : PASSAGE.waitingLower)}${light.planPays != null ? ` · ${PASSAGE.plan} ${moneyText(light.planPays)}` : ""}`} onClick={(e) => onSelect("destination", undefined, e.currentTarget, e.detail === 0)}>
             <span className="pv-title">{light.title}</span>
             <span className={`pv-amt-line ${light.youPay != null ? "estimate" : "unresolved"}`}>{light.youPay != null ? <>{PASSAGE.youPay} <Money cents={light.youPay} evidence="DOC" badge={false} calc /> · {PASSAGE.plan} <Money cents={light.planPays} evidence="DOC" badge={false} calc /></> : PASSAGE.waitingLower}</span>
-            {light.youPay != null && <span className="fig-calc" aria-hidden="true">{DRAWER.calculated}</span>}
+            {light.youPay != null && <span className="fig-calc" aria-hidden="true">{DRAWER.calculatedCited}</span>}
             {light.subtitle && <span className="pv-place">{light.subtitle}</span>}
           </button>
         </li>

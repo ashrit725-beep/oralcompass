@@ -47,7 +47,7 @@ export function Money({ cents, evidence, className, badge = true, calc = false, 
           <><span aria-hidden="true">—</span><span className="sr-only">{NO_AMOUNT}</span></>
         )}
       </span>
-      {calc && has ? <span className={badge ? "fig-calc" : "sr-only"}>{DRAWER.calculated}</span>
+      {calc && has ? <span className={badge ? "fig-calc" : "sr-only"}>{DRAWER.calculatedCited}</span>
         : badge ? <EvidenceBadge status={evidence} /> : <span className="sr-only">{evidenceWords(evidence)}</span>}
     </span>
   );

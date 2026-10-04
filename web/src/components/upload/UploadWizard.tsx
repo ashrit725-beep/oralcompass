@@ -17,7 +17,7 @@ const UploadWizardBody = lazy(() => import("./UploadWizardBody").then((m) => ({ 
  * - `planRef`: the plan currently selected (presets or an earlier upload); informational, the wizard never writes to it.
  * - `onPublished(summary, planRef)`: called once `POST /me/documents/{id}/publish` returns 201, with the `UploadedPlanSummary`
  *   (`plan_code` = `"upload:<document_id>"`, `version_label` "UP1"…) and that `plan_ref`. The caller refreshes its upload list; it does NOT
- *   switch the journey's plan (demo-17). `onUsePlan(planRef)` (optional) backs the published panel's "Use UPn for this journey" button,
+ *   switch the journey's plan (demo-17). `onUsePlan(planRef)` (optional) backs the published panel's "Show this journey on UPn" button,
  *   where the caller runs `selectPlan` and `reestimate()`. Default: no-op; the dialog shows the published label either way.
  * - `open` / `onOpenChange`: controlled dialog state; uncontrolled when omitted.
  * - `trigger`: an inline trigger rendered with `DialogTrigger asChild`; when omitted and the dialog is uncontrolled, a 44 px
@@ -29,7 +29,7 @@ export interface UploadWizardProps {
   planRef: PlanRef;
   /** Called with the published version; the foundation then calls `selectPlan(summary.plan_code)` / `reestimate()`. */
   onPublished?: (summary: UploadedPlanSummary, planRef: PlanRef) => void;
-  /** demo-17: publishing never switches the journey's plan; when given, the published panel offers "Use UPn for this journey". */
+  /** demo-17: publishing never switches the journey's plan; when given, the published panel offers "Show this journey on UPn". */
   onUsePlan?: (planRef: PlanRef) => void;
   /** Controls the dialog from the outside (PlanSelector Upload branch, Documents "Your documents" slot). */
   open?: boolean;

@@ -124,7 +124,7 @@ export function coverageFor(plan: PlanFixture): CoverageVM[] {
 /** The last " — " part of a cited section heading, when it adds something to the class name. */
 export function sectionLabel(section: string | null | undefined, name: string): string | null {
   if (!section) return null;
-  const last = section.split(" — ").pop()?.trim() ?? "";
+  const last = section.split(" \u2014 ").pop()?.trim() ?? "";   // the generated headings' em-dash separator
   return last && last !== name && !name.includes(last) ? last : null;
 }
 

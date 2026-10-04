@@ -43,7 +43,7 @@ function CheckpointTable({ isl, onSelectStitch }: { isl: IslandVM; onSelectStitc
             <td>{cp.amountOut != null ? <Money cents={cp.amountOut} evidence={cp.badge} badge={false} /> : "—"}</td>
             <td>{OWNER_WORD[cp.owner]}</td>
             <td>{cp.stitch ? <><StitchChip stitch={cp.stitch} onSelect={onSelectStitch} /> <small className="where">{cp.stitch.doc} {cp.stitch.pageNote ?? `p.${cp.stitch.page}`}</small></>
-              : cp.rule === "total" && cp.amountOut != null ? <span className="fig-calc">{DRAWER.calculated}</span> : <EvidenceBadge status={cp.badge} />}</td>
+              : cp.rule === "total" && cp.amountOut != null ? <span className="fig-calc">{DRAWER.calculatedCited}</span> : <EvidenceBadge status={cp.badge} />}</td>
           </tr>
         ))}
       </tbody>

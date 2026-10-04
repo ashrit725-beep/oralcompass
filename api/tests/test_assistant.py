@@ -302,6 +302,7 @@ def test_live_mode_mocked_applies_guard_grounding_and_fallback(alex, monkeypatch
     assert j["mode"] == "demo" and j["ribbon"] == ASSIST_RIBBON_LIVE_FALLBACK
 
 
+@pytest.mark.live_llm      # a REAL model call with the key in api/.env: skipped unless ORALCOMPASS_ALLOW_LIVE_LLM=1 (orchestrator note 13)
 def test_live_mode_once_for_real_when_the_stored_key_and_network_allow(alex, monkeypatch):
     from dotenv import dotenv_values
     vals = dotenv_values(Path(__file__).resolve().parents[1] / ".env")

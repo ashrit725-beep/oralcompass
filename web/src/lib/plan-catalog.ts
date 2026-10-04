@@ -1,6 +1,9 @@
 import type { PlanRef, PlanSummary, UploadedPlanSummary } from "./types";
 import { isUpload } from "./types";
 
+/** The separator the generated preset titles use between carrier/plan name and option ("MetLife NCFlex Dental \u2014 Classic Option"). */
+export const TITLE_SEP = " \u2014 ";
+
 /**
  * Pure helpers for the plan pickers (spec §7.2): the carrier → plan → year grouping of `GET /plans` summaries, labels for the
  * grouped fast-path `<select>` (option values are plan codes), and the local type extensions this view needs for uploaded plans.
@@ -26,7 +29,7 @@ export function planLabel(p: Pick<PlanSummary, "plan_name" | "option" | "title">
  * in the option's `title` attribute (`fullPlanLabel`); option VALUES stay the plan codes. Without a " — " the title is used as written.
  */
 export function fastPathLabel(p: Pick<PlanSummary, "title" | "is_fictional"> & Partial<Pick<PlanSummary, "option" | "plan_year">>): string {
-  const [name, rest] = p.title.split(" — ");
+  const [name, rest] = p.title.split(TITLE_SEP);
   let label = p.title;
   if (rest !== undefined) {
     const option = text(p.option, "");

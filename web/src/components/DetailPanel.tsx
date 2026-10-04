@@ -61,7 +61,7 @@ function EstimateFigures({ estimate }: { estimate: SavedEstimate }) {
   if (estimate.status !== "estimate" || estimate.user_estimated_payment_cents == null) return <>{code}: {PASSAGE.waitingInputs(estimate.missing_inputs.length)}</>;
   return (
     <>{code}: you pay <strong className="num">{money(estimate.user_estimated_payment_cents)}</strong> · plan pays <strong className="num">{money(estimate.insurer_estimated_payment_cents)}</strong>
-      {estimate.plan_payment_is_upper_bound ? " (upper bound)" : ""} <span className="fig-calc">{DRAWER.calculated}</span></>
+      {estimate.plan_payment_is_upper_bound ? " (upper bound)" : ""} <span className="fig-calc">{DRAWER.calculatedCited}</span></>
   );
 }
 
