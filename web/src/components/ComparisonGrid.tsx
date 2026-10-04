@@ -2,6 +2,7 @@ import { Fragment, Suspense, lazy, useId, useState } from "react";
 import { UI } from "@/lib/copy";
 import { PLAN } from "@/lib/copy/plan";
 import { ledgerEvidence } from "@/lib/compass-model";
+import { plainNote } from "@/lib/stitches";
 import type { ComparisonResponse, GridCell, PlanFixture } from "@/lib/types";
 import { useMobile } from "@/hooks/useMobile";
 import { Button } from "@/components/ui/button";
@@ -88,7 +89,7 @@ export function ComparisonGrid({ data, plans, enteredFor = [] }: Props) {
                     <span className="sub">{UI.planPays}: <Money cents={L.plan_total_cents} evidence={ledgerEvidence(L)} />{L.plan_total_is_upper_bound ? ` ${PLAN.cmpUpperBound}` : ""}</span>
                   </p>
                 )}
-                {[...new Set(L?.flags ?? [])].map((f) => <p key={f} className="flag">{f}</p>)}
+                {[...new Set(L?.flags ?? [])].map((f) => <p key={f} className="flag">{plainNote(f)}</p>)}
                 <p className="note">{enteredFor.includes(plans[c]?.ref ?? c) ? PLAN.cmpEnteredThisPlan : PLAN.cmpNothingEntered}</p>
                 <p className="note">{PLAN.cmpPremium}: {premium?.value != null ? <Money cents={premium.value} evidence={premium.status} /> : <><span>{UI.notStated}</span> <EvidenceBadge status="UNKNOWN" /></>}</p>
               </article>
@@ -110,6 +111,7 @@ function ClauseCell({ cell, topic, planTitle }: { cell: GridCell; topic: string;
   const mobile = useMobile();
   const [open, setOpen] = useState(false);
   const descId = useId();
+  const titleId = useId();
   const isAmount = cell.text.includes("$");
   const face = (
     <span className="cmp-cell-face">
@@ -157,8 +159,8 @@ function ClauseCell({ cell, topic, planTitle }: { cell: GridCell; topic: string;
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>{trigger}</PopoverTrigger>
-      <PopoverContent align="start">
-        <PopoverHeader><PopoverTitle>{topic}</PopoverTitle><PopoverDescription>{planTitle}</PopoverDescription></PopoverHeader>
+      <PopoverContent align="start" aria-labelledby={titleId}>
+        <PopoverHeader><PopoverTitle id={titleId}>{topic}</PopoverTitle><PopoverDescription>{planTitle}</PopoverDescription></PopoverHeader>
         {card}
       </PopoverContent>
     </Popover>

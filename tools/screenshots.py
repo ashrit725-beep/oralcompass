@@ -535,7 +535,7 @@ def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-pref
     page.locator("ol.clauses li button").first.click(); page.wait_for_timeout(400)
     check(f"{device}: clause card opens", page.get_by_role("dialog").count() > 0)
     page.wait_for_timeout(800)
-    pw = page.evaluate("(() => { const p = document.querySelector('aside.clause .plain-words'); return p ? [p.querySelector('.pw-sentence')?.textContent || '', p.querySelector('.pw-label')?.textContent || '', p.querySelector('.pw-where')?.textContent || ''] : null; })()")
+    pw = page.evaluate("(() => { const p = document.querySelector('.clause[role=dialog] .plain-words'); return p ? [p.querySelector('.pw-sentence')?.textContent || '', p.querySelector('.pw-label')?.textContent || '', p.querySelector('.pw-where')?.textContent || ''] : null; })()")
     check(f"{device}: clause explainer labels its plain sentence", bool(pw) and len(pw[0]) > 20 and pw[1] in ("Demo mode", "Written by the model from this quote", "Plain-words template") and pw[2].startswith("From "),
           str(pw)[:160])
     page.get_by_role("button", name="Close clause card").click(); page.wait_for_timeout(200)

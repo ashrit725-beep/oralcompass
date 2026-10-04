@@ -47,5 +47,5 @@
 .as-section { margin-top: var(--s-4); }
 
 /* the ClauseCard footer hosts the composer at full width */
-.clause footer .as-root { flex: 1 1 100%; margin-bottom: var(--s-2); }
-.clause footer { flex-wrap: wrap; }
+.clause .clause-foot .as-root { flex: 1 1 100%; margin-bottom: var(--s-2); }
+.clause .clause-foot { flex-wrap: wrap; }

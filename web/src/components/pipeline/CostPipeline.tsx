@@ -7,7 +7,7 @@ import { EvidenceBadge } from "@/components/Primitives";
 import { UI } from "@/lib/copy";
 import { DRAWER } from "@/lib/copy/drawer";
 import { checkpointsForLine, itemFeeCents, missingForLine } from "@/lib/drawer";
-import { money } from "@/lib/stitches";
+import { money, plainNote } from "@/lib/stitches";
 import { stitchesForLine } from "@/lib/stitches";
 import { buildTrail } from "@/lib/trail";
 import type { Benefits, CoverageRule, LedgerLine, MissingInput, PlanFixture, Stitch, TreatmentItem } from "@/lib/types";
@@ -96,7 +96,7 @@ export function CostPipeline({ line, item, rule, plan, stitches, benefits = null
         {cp.rule === "missing" && (
           <ul className="node-missing">
             {lineMissing.map((m, k) => <li key={k}><strong>{m.input}</strong> <span className="muted">{m.how}</span></li>)}
-            {lineMissing.length === 0 && cp.flags.map((f, k) => <li key={k}>{f}</li>)}
+            {lineMissing.length === 0 && cp.flags.map((f, k) => <li key={k}>{plainNote(f)}</li>)}
           </ul>
         )}
         {(cp.rule === "X" || cp.rule === "W" || cp.rule === "F") && <p className="node-closed-why">{cp.explanation}</p>}

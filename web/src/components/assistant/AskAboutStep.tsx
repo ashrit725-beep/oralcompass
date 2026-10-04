@@ -155,13 +155,13 @@ export function AskAboutStep({ scope, onOpenStitch, onOpenStep, className, data:
               {loading && <p className="as-caption">{ASSIST.loadingData}</p>}
               <AnswerBlocks blocks={a.blocks} data={data} scope={a.scope} onOpenStitch={onOpenStitch} onOpenStep={onOpenStep} onClarify={(patch) => { void ask(a.question, patch); }} />
               {informational && !hasSentence && <p className="as-caption">{ASSIST.nothingSurvived}</p>}
-              <footer className="as-answer-foot">
+              <div className="as-answer-foot">
                 {dropped > 0 && <span className="as-guard">{ASSIST.guardRemoved(dropped)}</span>}
                 {grounding > 0 && <span className="as-guard">{ASSIST.groundingRemoved(grounding)}</span>}
                 {a.resp.tools_used.length > 0 && (
                   <span className="as-tools">{ASSIST.toolsUsed} {lookupLabels(a.resp.tools_used, data).join(" · ")}</span>
                 )}
-              </footer>
+              </div>
             </li>
           );
         })}

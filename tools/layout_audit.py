@@ -81,7 +81,7 @@ const phone = !!opts.phone;
 const VW = document.documentElement.clientWidth, VH = window.innerHeight;
 const INTERACTIVE = 'button,a[href],input:not([type=hidden]),select,textarea,summary,[role=button],[role=link],[role=tab],[role=radio],[role=checkbox],[role=switch],[role=menuitem],[role=option],[role=slider]';
 const TEXTISH = 'label,h1,h2,h3,h4,h5,h6,p,li,dt,dd,td,th,caption,figcaption,blockquote,legend,[class*=badge],[class*=chip],[class*=stitch],[class*=lozenge],[class*=pill]';
-const OVERLAY = '[role=dialog],[role=alertdialog],[data-slot=drawer-content],[data-slot=popover-content],[data-slot=dialog-content],[data-slot=sheet-content],[data-vaul-drawer],[data-radix-popper-content-wrapper],[role=tooltip],[role=menu],[role=listbox],.drawer,aside.clause';
+const OVERLAY = '[role=dialog],[role=alertdialog],[data-slot=drawer-content],[data-slot=popover-content],[data-slot=dialog-content],[data-slot=sheet-content],[data-vaul-drawer],[data-radix-popper-content-wrapper],[role=tooltip],[role=menu],[role=listbox],.drawer,.clause[role=dialog]';
 const csCache = new Map();
 const cs = (el) => { let s = csCache.get(el); if (!s) { s = getComputedStyle(el); csCache.set(el, s); } return s; };
 const norm = (s) => (s || '').replace(/\s+/g, ' ').trim();
@@ -417,7 +417,7 @@ return { overlap, clipping, clipping_named: clippingNamed, occlusion, occlusion_
 }"""
 
 SCROLLERS_JS = r"""(scope) => {
-  const OVERLAY = '[role=dialog],[role=alertdialog],[data-slot=drawer-content],[data-slot=popover-content],[data-slot=dialog-content],[data-vaul-drawer],.drawer,aside.clause';
+  const OVERLAY = '[role=dialog],[role=alertdialog],[data-slot=drawer-content],[data-slot=popover-content],[data-slot=dialog-content],[data-vaul-drawer],.drawer,.clause[role=dialog]';
   const modal = [...document.querySelectorAll('[aria-modal="true"]')].some(m => m.getBoundingClientRect().width > 0);
   const root = scope ? document.querySelector(scope) : document.body; if (!root) return [];
   const out = []; let i = 0;
@@ -551,7 +551,7 @@ def walk(pw, device: dict) -> dict:
             vis = [i for i in range(btn.count()) if btn.nth(i).is_visible()]
             if vis:
                 btn.nth(vis[-1]).click(); page.wait_for_timeout(300); continue
-            if page.locator(".drawer, aside.clause, [role=dialog]").count():
+            if page.locator(".drawer, .clause[role=dialog], [role=dialog]").count():
                 page.keyboard.press("Escape"); page.wait_for_timeout(300); continue
             break
 

@@ -6,7 +6,7 @@ import { UI } from "../lib/copy";
 import { DRAWER } from "../lib/copy/drawer";
 import { takeStitchAnchor } from "../lib/drawer";
 import { transitions } from "../lib/motion";
-import { money } from "../lib/stitches";
+import { money, plainNote } from "../lib/stitches";
 import type { AssistScope, LedgerLine, Step, Stitch } from "../lib/types";
 import { AskAboutStep } from "./assistant/AskAboutStep";
 import { DepthDial } from "./DepthDial";
@@ -41,7 +41,7 @@ export function stepsAffectedBy(stitch: Pick<Stitch, "doc" | "page" | "ruleCodes
 export function ClauseCard({ stitch, lines, onClose, onOpenOnPage, askSlot, askScope, anchorRect, returnFocus }: Props) {
   const [depth, setDepth] = useState<1 | 2 | 3>(1);
   const reduce = useReducedMotion();
-  const cardRef = useRef<HTMLElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
   const opener = useRef<HTMLElement | null>(null);
   const [thread, setThread] = useState<string | null>(null);
   const affected = stepsAffectedBy(stitch, lines);
@@ -53,7 +53,7 @@ export function ClauseCard({ stitch, lines, onClose, onOpenOnPage, askSlot, askS
   useLayoutEffect(() => {
     opener.current = (document.activeElement as HTMLElement | null) ?? null;
     const a = anchorRect ?? takeStitchAnchor();
-    const h = cardRef.current?.querySelector("header")?.getBoundingClientRect();
+    const h = cardRef.current?.querySelector(".clause-head")?.getBoundingClientRect();
     if (!a || !h || reduce) { setThread(null); return; }
     const o = host?.getBoundingClientRect() ?? { left: 0, top: 0 };      // inside the sheet the svg is positioned against the sheet, not the viewport
     const x1 = a.left + a.width / 2 - o.left, y1 = a.top + a.height / 2 - o.top, x2 = h.left + 12 - o.left, y2 = h.top + h.height / 2 - o.top;
@@ -93,13 +93,13 @@ export function ClauseCard({ stitch, lines, onClose, onOpenOnPage, askSlot, askS
                        transition={{ pathLength: transitions.threadPull, opacity: host ? { duration: 0.5, times: [0, 0.6, 1] } : { duration: 1.4, times: [0, 0.7, 1] } }} onAnimationComplete={() => setThread(null)} />
         </svg>
       )}
-      <aside ref={cardRef} className={`clause ${host ? "clause-in-sheet" : ""}`} role="dialog" aria-labelledby="clause-h" aria-modal="false">
-        <header>
+      <div ref={cardRef} className={`clause ${host ? "clause-in-sheet" : ""}`} role="dialog" aria-labelledby="clause-h" aria-modal="false">
+        <div className="clause-head">
           <StitchChip stitch={stitch} selected prominent />
           <h3 id="clause-h" ref={headingRef} tabIndex={-1}>{stitch.topic.replace(/[_:]/g, " ")}</h3>
           <EvidenceBadge status="DOC" />
           <Button type="button" variant="ghost" size="icon-touch" className="clause-close" onClick={onClose} aria-label="Close clause card"><X aria-hidden="true" /></Button>
-        </header>
+        </div>
         <DepthDial depth={depth} onChange={setDepth} />
         {depth === 1 && <PlainWords planRef={askScope?.plan_ref} stitch={stitch} eyebrow={false} />}
         {depth === 2 && (
@@ -114,15 +114,15 @@ export function ClauseCard({ stitch, lines, onClose, onOpenOnPage, askSlot, askS
             <blockquote>“{stitch.quote}”</blockquote>
             <figcaption>{stitch.doc}, page {stitch.page}</figcaption>
             {/* a table row quoted alone does not say which column applies (demo-13): name the row and the plan option's column */}
-            {stitch.section ? <p className="wording-context">{DRAWER.clauseSection(stitch.section)}</p> : null}
+            {stitch.section ? <p className="wording-context">{DRAWER.clauseSection(plainNote(stitch.section))}</p> : null}
             {stitch.option && /%/.test(stitch.quote) ? <p className="wording-context">{DRAWER.clauseOption(stitch.option)}</p> : null}
           </figure>
         )}
-        <footer>
+        <div className="clause-foot">
           {askSlot ?? (askScope ? <AskAboutStep scope={askScope} className="clause-ask" /> : null)}
           <button type="button" onClick={() => onOpenOnPage(stitch)}>{UI.showInDocuments}</button>
-        </footer>
-      </aside>
+        </div>
+      </div>
     </>
   );
   return host ? createPortal(card, host) : card;

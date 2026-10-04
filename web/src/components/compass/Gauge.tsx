@@ -17,6 +17,8 @@ import { EvidenceBadge, StitchChip } from "@/components/Primitives";
  */
 export interface GaugeProps {
   label: string;
+  /** Heading level for the gauge title; 3 under an h2 (landmark panel), 4 under an h3 (compass). */
+  headingLevel?: 3 | 4;
   meter: MeterVM;
   /** The stitch for the limit's clause, resolved by the caller from `meter.limitCite`. */
   stitch?: Stitch;
@@ -26,7 +28,8 @@ export interface GaugeProps {
   compact?: boolean;
 }
 
-export function Gauge({ label, meter, stitch, selectedStitch, onSelectStitch, usedWord, compact }: GaugeProps) {
+export function Gauge({ label, meter, stitch, selectedStitch, onSelectStitch, usedWord, compact, headingLevel = 4 }: GaugeProps) {
+  const H = headingLevel === 3 ? "h3" : "h4";
   const known = meter.limitCents != null && !meter.unlimited;
   const limitEvidence: Evidence = meter.limitStatus;
   const usedPct = meter.usedFraction == null ? 0 : meter.usedFraction * 100;
@@ -37,7 +40,7 @@ export function Gauge({ label, meter, stitch, selectedStitch, onSelectStitch, us
 
   return (
     <div className={`cmp-gauge ${compact ? "is-compact" : ""}`}>
-      <h4 className="cmp-h">{label}</h4>
+      <H className="cmp-h">{label}</H>
       <div className="cmp-limit">
         {meter.unlimited ? (
           <><span className="cmp-word">{COMPASS.unlimited}</span> <EvidenceBadge status={limitEvidence} /></>

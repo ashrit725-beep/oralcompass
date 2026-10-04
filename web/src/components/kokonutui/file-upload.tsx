@@ -52,6 +52,8 @@ interface FileUploadProps {
   validateFile?: (file: File) => FileError | null;
   labels: FileUploadLabels;
   showTitle?: boolean;
+  /** Title heading level so the outline stays in order wherever the dropzone sits (default h3). */
+  headingLevel?: 2 | 3 | 4 | 5;
   className?: string;
 }
 
@@ -94,8 +96,10 @@ export default function FileUpload({
   validateFile = () => null,
   labels,
   showTitle = false,
+  headingLevel = 3,
   className,
 }: FileUploadProps) {
+  const Heading = (`h${headingLevel}` as "h2" | "h3" | "h4" | "h5");
   const [dragging, setDragging] = useState(false);
   const [error, setError] = useState<FileError | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -158,7 +162,7 @@ export default function FileUpload({
 
   return (
     <section aria-labelledby={headingId} className={cn("relative mx-auto w-full max-w-sm", className)}>
-      <h3 id={headingId} className={showTitle ? "mb-2 font-serif text-[17px] leading-6 text-ink" : "sr-only"}>{labels.title}</h3>
+      <Heading id={headingId} className={showTitle ? "mb-2 font-serif text-[17px] leading-6 text-ink" : "sr-only"}>{labels.title}</Heading>
       <div className="relative w-full rounded-xl bg-paper-deep p-1.5 ring-1 ring-rule">
         <div
           className={cn(

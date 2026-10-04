@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { UI } from "../lib/copy";
 import { DRAWER } from "../lib/copy/drawer";
-import { money, signed, stepContextFor, stitchForLabel, stitchForStep } from "../lib/stitches";
+import { money, plainNote, signed, stepContextFor, stitchForLabel, stitchForStep } from "../lib/stitches";
 import { rangeWords } from "../lib/drawer";
 import { PLAN } from "../lib/copy/plan";
 import { buildTrail } from "../lib/trail";
@@ -99,7 +99,7 @@ export function CostTrail({ estimate, stitches, selected, onSelect, prominentSco
       {trail.reconciles === true && <p className="reconcile ok">✓ {UI.reconciles}</p>}
       {trail.reconciles === false && <p className="reconcile warn" role="alert">{UI.reconcileWarn}</p>}
       {trail.upperBound && <p className="flag">{UI.upperBound}</p>}
-      {!one && line.flags.map((f, i) => <p key={i} className="flag">{f}</p>)}
+      {!one && line.flags.map((f, i) => <p key={i} className="flag">{plainNote(f)}</p>)}
       {line.remaining_after?.deductible_cents != null && (
         <p className="note">Remaining after this line: deductible {money(line.remaining_after.deductible_cents)} · annual maximum {line.remaining_after.annual_max_cents == null ? "no maximum applies" : money(line.remaining_after.annual_max_cents)} <span className="calc-note">({PLAN.calculatedShort})</span></p>
       )}
@@ -134,7 +134,7 @@ export function MissingInputs({ estimate, compact, showRange = true }: { estimat
       {!compact && <p>{UI.missingIntro}</p>}
       <ul>
         {estimate.missing_inputs.map((m, i) => <li key={i}><strong>{m.input}</strong>: {m.how}</li>)}
-        {estimate.missing_inputs.length === 0 && estimate.ledger.flags.map((f, i) => <li key={i}>{f}</li>)}
+        {estimate.missing_inputs.length === 0 && estimate.ledger.flags.map((f, i) => <li key={i}>{plainNote(f)}</li>)}
       </ul>
       {showRange && estimate.movers?.range && <p className="range">{rangeWords(estimate.movers.range, estimate.movers.movers)}</p>}
     </section>

@@ -1,4 +1,5 @@
 import { TRAIL } from "./copy";
+import { plainNote } from "./stitches";
 import type { LedgerLine, Step } from "./types";
 
 /** One step of the cost trail (the lighthouse). Every step shows: amount in, the rule, the change, amount out, an explanation and the clause stitch. */
@@ -30,7 +31,7 @@ export function buildTrail(line: LedgerLine): Trail {
   }
   if (line.status === "unresolved") {
     return { status: line.status, upperBound: false, fee: null, youPay: null, planPays: null, reconciles: null,
-             steps: [{ key: "wait", title: "Waiting for information", amountIn: null, change: null, amountOut: null, owner: "info", rule: "?", explanation: line.flags.join(" "), stitch: null }] };
+             steps: [{ key: "wait", title: "Waiting for information", amountIn: null, change: null, amountOut: null, owner: "info", rule: "?", explanation: line.flags.map(plainNote).join(" "), stitch: null }] };
   }
   const net = find(S, (s) => s.rule === "N");
   const abBasis = find(S, (s) => s.rule === "AB" && s.owner === "basis");

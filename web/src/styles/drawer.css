@@ -208,7 +208,7 @@ details[open] > .dsec-summary .dsec-toggle { transform: rotate(-135deg); margin-
 .clause-in-sheet { overflow-wrap: break-word; }
 /* The term ("coinsurance") keeps its word and takes a full row; the chip, badge and close wrap around it. `!important` because the base
    `.clause header h3 { flex: 1 }` in styles.css outranks this layered sheet (computed flex stayed `1 1 0%`, 43 px wide at 360). */
-.clause-in-sheet header h3 { min-width: 0; flex: 1 1 100% !important; overflow-wrap: normal !important; word-break: normal; hyphens: manual; }
+.clause-in-sheet .clause-head h3 { min-width: 0; flex: 1 1 100% !important; overflow-wrap: normal !important; word-break: normal; hyphens: manual; }
 .drawer-lede .fig .amt { font-size: 18px; line-height: 24px; font-weight: 600; }
 .drawer-lede .drawer-lede-amt .amt { color: var(--you-pay); }
 .clause-in-sheet { position: absolute; left: 0; right: 0; bottom: 0; width: auto; max-height: 70%; overflow-y: auto; border-radius: 18px 18px 0 0; z-index: 45; box-shadow: var(--shadow-3); }

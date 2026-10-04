@@ -143,7 +143,7 @@ export function TreatmentPlanReader({ onConfirmed }: TreatmentPlanReaderProps) {
         </div>
         <span className="tpr-or" aria-hidden="true">{PLAN.readOr}</span>
         <div className="tpr-file">
-          {seen && <FileUpload onFileSelected={pickFile} status={busy === "file" ? "uploading" : "idle"} currentFile={file} acceptedFileTypes={ACCEPTED} maxFileSize={MAX_BYTES} showTitle
+          {seen && <FileUpload headingLevel={5} onFileSelected={pickFile} status={busy === "file" ? "uploading" : "idle"} currentFile={file} acceptedFileTypes={ACCEPTED} maxFileSize={MAX_BYTES} showTitle
                       labels={{ title: PLAN.readFileTitle, hint: PLAN.readFileHint, choose: PLAN.readFileChoose, cancel: PLAN.readFileCancel, limits: PLAN.readFileLimits, tooLarge: () => PLAN.readFileTooLarge, wrongType: PLAN.readFileWrongType }} />}
           <p className="muted small tpr-image-note">{PLAN.readImageNote}</p>
           {held && (
