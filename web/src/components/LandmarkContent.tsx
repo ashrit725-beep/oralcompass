@@ -73,7 +73,7 @@ export function LandmarkContent({ landmark, plan, summary, benefits, rules, esti
 
       {landmark === "harbor" && (
         <ul className="facts">
-          <li><span className="k">Plan</span><span className="v"><strong>{summary.plan_name ?? summary.title}</strong>{summary.option ? <span>, {summary.option}</span> : null}</span></li>
+          <li><span className="k">Plan</span><span className="v"><strong>{[summary.plan_name ?? summary.title, summary.option].filter(Boolean).join(", ")}</strong></span></li>
           <li><span className="k">Insurer</span><span className="v">{summary.insurer ?? <><span>{UI.notStated}</span> <EvidenceBadge status="UNKNOWN" /></>}</span></li>
           <li><span className="k">Where it applies</span><span className="v">{summary.region ?? summary.where_offered?.text ?? <><span>{UI.notStated}</span> <EvidenceBadge status="UNKNOWN" /></>}</span></li>
           <li><span className="k">Network</span><span className="v">{netText(summary.network)}</span></li>
