@@ -110,7 +110,7 @@ export function PlanView({ data, mobile, landmark, onLandmark, stitch, onStitch,
         {plan && <BenefitsCompass plan={plan} benefits={benefitsFor} estimate={estimate} stitches={stitches} onOpenLandmark={openLandmarkDeep} onSelectStitch={onStitch} selectedStitch={stitch} />}
         {procedures.length > 0 && (
           <details className="plan-add">
-            <summary>{PLAN.addTitle}</summary>
+            <summary><span className="plan-add-title">{PLAN.addTitle}</span><span className="plan-add-sub">{PLAN.addSummaryNote}</span></summary>
             <TreatmentPlanImporter procedures={procedures} onAdded={() => { setLive(PLAN.recalculating); loadRecords(); reestimate(); }} />
           </details>
         )}

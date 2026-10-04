@@ -308,6 +308,9 @@ def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-pref
     for lv, name in levels:
         if lv > max(seen_levels) + 1 and skip is None: skip = f"h{lv} {name!r}"
         seen_levels.append(lv)
+    # layout-26 / slop-22: "Add a procedure" reads as a disclosure control (bordered card header, chevron, sub-line, 44 px+)
+    add_aff = page.evaluate("(() => { const s = document.querySelector('.plan-add > summary'); if (!s) return null; const a = getComputedStyle(s, '::after'); const d = getComputedStyle(s.parentElement); return [a.content !== 'none' && a.borderRightStyle === 'solid', d.borderTopStyle === 'solid', !!s.querySelector('.plan-add-sub'), s.getBoundingClientRect().height >= 44]; })()")
+    check(f"{device}: add a procedure has a disclosure affordance", bool(add_aff) and all(add_aff), str(add_aff))
     check(f"{device}: My plan heading outline", bool(levels) and levels[0][0] == 2 and levels[0][1] == "My plan" and skip is None, f"first={levels[:2]} skip={skip}")
     shot("19-compass")
     page.get_by_role("button", name=re.compile("^Frequency limits")).first.click(); page.wait_for_timeout(600)

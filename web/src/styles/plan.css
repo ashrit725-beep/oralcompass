@@ -136,10 +136,21 @@
 .bs-status { margin: 0; font-size: .9rem; }
 .bs-derivation { margin: 0; font-size: .85rem; } .bs-derivation dt { color: var(--ink-soft); } .bs-derivation dd { margin: .2rem 0 0; }
 .is-compact .bs-grid { grid-template-columns: minmax(0, 1fr); }
-.plan-add { margin-top: var(--s-4); }
-.plan-add > summary { cursor: pointer; font-family: var(--serif); font-weight: 600; min-height: 44px; display: flex; align-items: center; padding: 0 var(--s-2); border-radius: var(--r-2); }
+/* "Add a procedure" reads as a control (layout-26, slop-22): a card header with a chevron that turns when open and a one-line sub-title */
+.plan-add { margin-top: var(--s-4); background: var(--paper-deep); border: 1px solid var(--rule); border-radius: var(--r-4); }
+.plan-add > summary { cursor: pointer; list-style: none; min-height: 56px; display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: var(--s-3); align-content: center;
+  padding: var(--s-2) var(--s-4); border-radius: var(--r-4); }
+.plan-add > summary::-webkit-details-marker { display: none; }
+.plan-add > summary::after { content: ""; grid-column: 2; grid-row: 1 / span 2; align-self: center; width: 9px; height: 9px; border-right: 2px solid var(--ink); border-bottom: 2px solid var(--ink);
+  transform: rotate(45deg); transition: transform var(--dur-standard) var(--ease-standard); }
+.plan-add[open] > summary::after { transform: rotate(225deg); }
+.plan-add-title { font-family: var(--serif); font-weight: 600; font-size: 1.05rem; }
+.plan-add-sub { grid-column: 1; font-size: .85rem; color: var(--ink-soft); }
+.plan-add > summary:hover { background: var(--parchment); }
 .plan-add > summary:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
-.plan-add[open] > summary { margin-bottom: var(--s-2); }
+.plan-add[open] > summary { margin-bottom: var(--s-2); border-bottom: 1px solid var(--rule); border-radius: var(--r-4) var(--r-4) 0 0; }
+.plan-add > :not(summary) { padding: 0 var(--s-4) var(--s-4); }
+@media (prefers-reduced-motion: reduce) { .plan-add > summary::after { transition: none; } }
 @media (max-width: 760px) { .bs-grid { grid-template-columns: minmax(0, 1fr); } }
 
 /* ---- treatment plan reader: the send gate for files (orchestrator note 11) ---- */

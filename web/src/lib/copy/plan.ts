@@ -63,6 +63,7 @@ export const PLAN = {
   bsSeparateOut: "This document states separate out-of-network limits; their figures are tracked separately.",
   // ---- add a procedure (spec §4.5) ----
   addTitle: "Add a procedure",
+  addSummaryNote: "Type it, paste the estimate's text or read a photo of it",
   addIntro: "A treatment item from your dentist's estimate. The procedure is matched to one of 16 fixed identifiers; the name as written stays on the island.",
   addProcedure: "Procedure (one of 16 fixed identifiers)",
   addProcedureName: "Name as written on the estimate (optional)",
