@@ -37,6 +37,11 @@ cd web && npm run build && npx vite preview --port 4173 --host 127.0.0.1        
 
 # screenshot walk (needs both servers; writes PNGs + checks.json to the given directory; exit 1 on any failed check)
 python3 tools/screenshots.py shots/<your-agent-name>
+# zero-errors gate (API in demo mode, fresh data dir): clicks every control on every view on desktop / iPhone 13 WebKit / Pixel 7, motion on
+# and reduced; exit 1 on any console error/warning, pageerror, unhandled rejection, unexpected >= 400 or React warning, printed with the
+# action that triggered it. React warnings only exist in a dev bundle, so also run it against `npx vite` (dev server).
+# `--only iphone|pixel|"x900 chromium motion"|"x900 chromium reduced"` runs one device (run them in parallel); `--quick` = desktop + Pixel 7.
+python3 tools/error_sweep.py
 ```
 
 - The vite preview and dev server proxy `/api/*` to `http://127.0.0.1:8000` (rewrite strips `/api`). The web client sends `X-Dev-User: demo-user`
