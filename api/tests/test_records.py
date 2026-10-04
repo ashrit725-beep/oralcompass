@@ -207,3 +207,13 @@ def test_journey_bodies_are_typed():
     assert client.patch(f"/journeys/{j['id']}/checkpoints/aftercare", json={"status": "completed", "date": "soon"}, headers=h).status_code == 422
     sid = j["journey"]["stages"][0]["id"]
     assert client.put(f"/journeys/{j['id']}/stages/{sid}/instructions", json={"text": "t", "source": "s", "given_on": "yesterday"}, headers=h).status_code == 422
+
+
+def test_authored_labels_carry_no_em_dash():
+    """slop-2: authored journey labels, banners and comparison topics use colons and commas (real document titles stay verbatim)."""
+    h = {"X-Dev-User": "labels"}
+    samples = client.get("/journeys/samples", headers=h).json()
+    assert all("—" not in s["label"] for s in samples["items"]) and "—" not in samples["note"]
+    assert "—" not in client.get("/plans", headers=h).json()["banner"]
+    from oralcompass_engine.comparison import TOPICS
+    assert all("—" not in t for t in TOPICS)
