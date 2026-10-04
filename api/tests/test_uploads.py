@@ -747,3 +747,16 @@ def test_upload_quotas_per_owner_and_for_the_whole_volume(monkeypatch):
     monkeypatch.setenv("ORALCOMPASS_DATA_MAX_BYTES", "1")
     r = upload(H("quota-volume"), make_pdf(["page"]))
     assert r.status_code == 507 and r.json()["detail"]["error"] == "storage_full"
+
+
+def test_quote_verification_needs_whole_words_and_survives_pdf_hyphenation():
+    """api-correctness-16: a fragment inside a longer number is never 'confirmed'; soft hyphens, zero-width characters and hyphenated line
+    breaks in the page text do not stop a verbatim quote from confirming."""
+    from app.extraction import normalize, verify_quote
+    P = lambda xs: [normalize(x) for x in xs]          # noqa: E731
+    assert verify_quote("50%", 1, P(["coinsurance is 150% of the fee"]))["result"] != "confirmed"
+    assert verify_quote("$5", 1, P(["maximum $500 per year"]))["result"] != "confirmed"
+    assert verify_quote("60%", 1, P(["The plan pays 60% after the deductible"]))["result"] == "likely"        # short: needs a click
+    q = "covered services provided by dentists"
+    for page in ("covered services pro-\nvided by dentists", "covered services pro­vided by dentists", "covered services provided​ by dentists"):
+        assert verify_quote(q, 1, P([page]))["result"] == "confirmed", page

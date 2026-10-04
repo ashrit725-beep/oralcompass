@@ -102,8 +102,14 @@ def llm_model() -> str:
 
 
 # ---------------------------------------------------------------- text
+_INVISIBLE = re.compile("[\u00ad\u200b\u200c\u200d\u2060\ufeff]")      # soft hyphen, zero-width characters, BOM
+_HYPHEN_BREAK = re.compile(r"(\w)-[ \t]*\n[ \t]*([a-z])")                   # "pro-\nvided" → "provided" (a lower-case continuation only)
+
+
 def normalize(s: str) -> str:
     s = unicodedata.normalize("NFKC", s or "")
+    s = _INVISIBLE.sub("", s)
+    s = _HYPHEN_BREAK.sub(r"\1\2", s)
     s = s.replace("’", "'").replace("‘", "'").replace("“", '"').replace("”", '"').replace("–", "-").replace("—", "-")
     return re.sub(r"\s+", " ", s).strip().casefold()
 
@@ -371,16 +377,26 @@ def _best_similarity(quote_n: str, page_n: str) -> float:
     return best
 
 
+MIN_CONFIRMED_CHARS, MIN_CONFIRMED_WORDS = 20, 3
+
+
+def _long_enough(qn: str) -> bool:
+    return len(qn) >= MIN_CONFIRMED_CHARS or len(qn.split()) >= MIN_CONFIRMED_WORDS
+
+
 def verify_quote(quote: Optional[str], page: Optional[int], pages_n: list[str]) -> dict:
     """{result: confirmed|likely|not_found, page, page_note, similarity}"""
     if not quote or not page or page < 1 or page > len(pages_n):
         return {"result": "not_found", "page": page, "page_note": None, "similarity": 0.0}
     qn = normalize(quote)
-    if qn in pages_n[page - 1]:
+    exact = re.compile(r"(?<![\w$%])" + re.escape(qn) + r"(?![\w%])")      # whole words: '50%' is not inside '150%', '$5' not inside '$500'
+    if exact.search(pages_n[page - 1]):
+        if not _long_enough(qn):            # a fragment can match by accident: it needs the owner's click, never automatic DOC
+            return {"result": "likely", "page": page, "page_note": "short quote: check it on the page", "similarity": 1.0}
         return {"result": "confirmed", "page": page, "page_note": None, "similarity": 1.0}
     for delta in (1, -1, 2, -2):
         p = page + delta
-        if 1 <= p <= len(pages_n) and qn in pages_n[p - 1]:
+        if 1 <= p <= len(pages_n) and exact.search(pages_n[p - 1]):
             return {"result": "likely", "page": p, "page_note": f"quote found on page {p}; the extraction cited page {page}", "similarity": 1.0}
     best, best_page = 0.0, page
     for p in range(max(1, page - PAGE_TOLERANCE), min(len(pages_n), page + PAGE_TOLERANCE) + 1):
