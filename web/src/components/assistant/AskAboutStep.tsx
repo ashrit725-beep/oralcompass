@@ -18,8 +18,8 @@ const RATE_LIMIT_PAUSE_MS = 20_000;
 /**
  * AskAboutStep (owner: web upload-review + assistant agent; spec §8, component plan N8). Replaces the day-1 stub IN PLACE, same export.
  * The Kokonut ai-prompt composer (scope selector, Compass send button) rendered INLINE at the foot of a step or in the ClauseCard footer,
- * three suggested questions as 44 px buttons, the ThoughtLine retrieval header (label = the real stage; the trace lists the server's
- * `tools_used`), and the answer list: parchment note blocks with Money-rendered refs, stitch chips that open the clause, the demo /
+ * three suggested questions as a ruled list of 44 px text buttons, the ThoughtLine retrieval header (label = the real stage, the lookup
+ * count when settled, no timer), and the answer list: parchment note blocks with Money-rendered refs, stitch chips that open the clause, the demo /
  * fixed-template / live label, the guard's dropped count. Never a right-hand column, never chat bubbles, no AI iconography. Answers clear
  * when the scope changes. States (spec §8.6): idle · sending · answered · nothing survived · live unavailable · rate limited · offline.
  * Additive props beyond the frozen contract: `data` (payloads for ref resolution; otherwise the AssistDataProvider or a lazy fetch) and
@@ -130,7 +130,6 @@ export function AskAboutStep({ scope, onOpenStitch, onOpenStep, className, data:
           working={!!pending}
           label={isClause ? ASSIST.sendingClause : ASSIST.sending}
           doneLabel={ASSIST.readIn(lookupCount)}
-          steps={[]}
           showTimer={false}
           glyph={<Compass aria-hidden="true" />}
           glyphColor="var(--gold)"
