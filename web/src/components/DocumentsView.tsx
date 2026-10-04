@@ -214,7 +214,8 @@ export function DocumentsView({ planCode, plans, onPlan, evidence, stitches, sel
         {mine === null ? <p className="muted">{UI.processing}</p> : mine.length === 0 ? <p className="ds-empty">{PLAN.docsNoPrivate}</p> : (
           <ul className="ds-group ds-mine">{mine.map((d) => <li key={d.id} className="ds-item"><strong>{plainNote(d.label ?? d.filename)}</strong> <span className="muted ds-meta">{words(DOC_WORDS.kind, d.type ?? "upload")} · {d.extraction_status ? words(DOC_WORDS.status, d.extraction_status) : UI.notStated}</span>
             {(d.fields_needing_confirmation?.length ?? 0) > 0 && <ul className="small ds-needs">{d.fields_needing_confirmation!.map((f) => <li key={f}><EvidenceBadge status="AMBIGUOUS" /> {PLAN.docsNeedsConfirmation} {f}</li>)}</ul>}
-            {d.redaction_preview && <p className="small muted">{PLAN.docsRedactionRemoved} {d.redaction_preview.removed.join(", ") || PLAN.docsNothing}</p>}</li>)}</ul>
+            {/* S21 slot: red/ui's ServerRedactionLine replaces this line on merge (this line stays as its fallback) */}
+            {d.redaction_preview && <p className="small muted ds-redaction">{PLAN.docsRedactionRemoved} {d.redaction_preview.removed.join(", ") || PLAN.docsNothing}</p>}</li>)}</ul>
         )}
         <p className="muted small ds-foot">{PLAN.docsUncertain}</p>
       </section>

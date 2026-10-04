@@ -78,6 +78,7 @@ export function CompareView({ plans, items, benefits, initial }: Props) {
         </div>
         <p className="cv-banner">{UI.availabilityBanner}</p>
         <p className="cmp-context">{PLAN.cmpProcedures(procedures)}</p>
+        <p className="cv-note">{UI.comparisonNote}</p>
       </header>
       <p className="cmp-busy" role="status">{busy ? UI.processing : ""}</p>
       {err && <p className="error" role="alert">{err}</p>}

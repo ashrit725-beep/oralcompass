@@ -176,6 +176,7 @@
 .cmp-choose:active { background: var(--ink); color: var(--paper); }
 .cmp-choose:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 .compare-view .cv-banner { margin: 0; font-size: 15px; line-height: 22px; }
+.compare-view .cv-note { margin: 0; font-size: 14px; line-height: 20px; color: var(--ink-soft); overflow-wrap: anywhere; }
 .cmp-context { margin: 0; font-size: 14px; line-height: 20px; color: var(--ink-soft); text-wrap: pretty; }
 .cmp-busy { margin: 0; font-size: 14px; line-height: 20px; color: var(--ink-soft); }
 
