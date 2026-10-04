@@ -1,0 +1,2408 @@
+{
+ "note": "Captured from the running API on 2026-10-03 for the sam sample (fictional person; plan HB26). Used only by lib/passage.test.ts.",
+ "view": {
+  "id": "68500d3fcf9943dbad382d57b6c24385",
+  "journey": {
+   "id": "sample-sam",
+   "label": "Sample journey \u2014 Sam Rivera (fictional)",
+   "is_sample": true,
+   "plan_ref": "HB26",
+   "estimate_ref": "sam_estimate",
+   "note": "Stages and checkpoints come from information supplied by the user and the dental team. Nothing here is a clinical timeline; completion describes recorded activity only. Fictional sample.",
+   "stages": [
+    {
+     "id": "start",
+     "title": "Starting point",
+     "island": "Harbor of Beginnings",
+     "purpose": "Add insurance documents, select a preset plan, and add the dentist's treatment plan.",
+     "finance": {
+      "kind": "plan_details"
+     },
+     "checkpoints": [
+      {
+       "id": "plan-doc",
+       "label": "Plan document added",
+       "kind": "document",
+       "status": "completed",
+       "completed_by": "user",
+       "date": {
+        "value": "2026-10-03",
+        "source": "user"
+       },
+       "detail": "Harborview Dental PPO 2026 (fictional demonstration plan) selected from the preset catalog. Rules are read from the stored document with page citations.",
+       "source": {
+        "label": "Harborview certificate (fictional), 14 pages",
+        "doc": "HB26",
+        "page": 1
+       },
+       "action": {
+        "type": "open_landmark",
+        "target": "harbor"
+       },
+       "due_date": null,
+       "completed_at": "2026-10-03",
+       "links": {
+        "document": "doc-hb26",
+        "landmark": "harbor"
+       }
+      },
+      {
+       "id": "treatment-plan",
+       "label": "Treatment plan added",
+       "kind": "document",
+       "status": "completed",
+       "completed_by": "user",
+       "date": {
+        "value": "2026-10-03",
+        "source": "document"
+       },
+       "detail": "Estimate from Northside Dental Group (fictional), dated 2026-10-03: porcelain/ceramic crown on tooth 30 ($1,200) and a two-surface posterior composite on tooth 19 ($300). Typed by the user; planned dates come from the estimate.",
+       "source": {
+        "label": "Treatment estimate (typed), dated 2026-10-03"
+       },
+       "action": {
+        "type": "open_landmark",
+        "target": "lighthouse"
+       },
+       "due_date": null,
+       "completed_at": "2026-10-03",
+       "links": {
+        "document": "doc-estimate",
+        "treatment_items": [
+         "ti-crown-30",
+         "ti-composite-19"
+        ]
+       }
+      },
+      {
+       "id": "usage",
+       "label": "Benefit statement entered",
+       "kind": "review",
+       "status": "completed",
+       "completed_by": "user",
+       "date": {
+        "value": "2026-09-15",
+        "source": "user"
+       },
+       "detail": "Figures from a benefit statement dated 2026-09-15, entered by the user: deductible $50 met (applied 2026-05-22); plan paid $745 so far this year. Remaining annual maximum is derived: $1,500 \u2212 $745 = $755. These figures are not in the plan document.",
+       "source": {
+        "label": "Benefit statement figures entered by the user"
+       },
+       "action": {
+        "type": "open_landmark",
+        "target": "lookout"
+       },
+       "due_date": null,
+       "completed_at": "2026-09-15",
+       "links": {
+        "document": "doc-statement",
+        "landmark": "lookout"
+       }
+      }
+     ],
+     "linked_treatment_items": [],
+     "instructions": null,
+     "dates": null
+    },
+    {
+     "id": "before",
+     "title": "Before your visit",
+     "island": "Lantern Cove",
+     "purpose": "Review appointment information, projected costs, and any preparation instructions supplied by the dental team.",
+     "finance": {
+      "kind": "estimate"
+     },
+     "checkpoints": [
+      {
+       "id": "estimate-reviewed",
+       "label": "Cost estimate reviewed",
+       "kind": "estimate",
+       "status": "current",
+       "detail": "Projected costs for the two planned procedures under the Harborview rules, with every amount traceable to a clause.",
+       "action": {
+        "type": "open_landmark",
+        "target": "lighthouse"
+       },
+       "due_date": null,
+       "completed_at": null,
+       "links": {
+        "estimate": "planned",
+        "landmark": "lighthouse"
+       }
+      },
+      {
+       "id": "appointment-info",
+       "label": "Appointment information recorded",
+       "kind": "appointment",
+       "status": "awaiting_info",
+       "date": null,
+       "detail": "No appointment date has been recorded. The estimate lists planned completion dates (composite 2026-10-20; crown preparation 2026-11-03, completion 2026-11-20) \u2014 these are planning dates from the estimate, not confirmed appointments.",
+       "source": {
+        "label": "Planned dates: treatment estimate (typed)"
+       },
+       "action": {
+        "type": "enter_date",
+        "field": "appointment_date"
+       },
+       "due_date": null,
+       "completed_at": null
+      },
+      {
+       "id": "prep-instructions",
+       "label": "Preparation instructions viewed",
+       "kind": "instruction",
+       "status": "awaiting_info",
+       "detail": "No preparation instructions have been supplied by the dental team. OralCompass does not generate instructions.",
+       "action": {
+        "type": "add_document",
+        "field": "prep_instructions"
+       },
+       "due_date": null,
+       "completed_at": null
+      }
+     ],
+     "linked_treatment_items": [
+      "ti-crown-30",
+      "ti-composite-19"
+     ],
+     "instructions": null,
+     "dates": {
+      "label": "Planned dates on the estimate",
+      "values": [
+       "2026-10-20 (composite, planned)",
+       "2026-11-03 (crown preparation, planned)",
+       "2026-11-20 (crown completion, planned)"
+      ],
+      "source": "treatment estimate 2026-10-03 (typed)"
+     }
+    },
+    {
+     "id": "visit",
+     "title": "Your appointment",
+     "island": "Anchor Point",
+     "purpose": "Record the visit and organize the treatment information and documents received.",
+     "finance": {
+      "kind": "estimate_vs_received"
+     },
+     "checkpoints": [
+      {
+       "id": "visit-recorded",
+       "label": "Appointment recorded",
+       "kind": "appointment",
+       "status": "upcoming",
+       "date": null,
+       "detail": "Record the date of the visit and which procedures were performed, as stated by the dental team.",
+       "action": {
+        "type": "mark_recorded"
+       },
+       "due_date": null,
+       "completed_at": null
+      },
+      {
+       "id": "visit-docs",
+       "label": "Documents received organized",
+       "kind": "document",
+       "status": "upcoming",
+       "detail": "Receipts, treatment notes and any pre-treatment estimate response from the plan can be stored here.",
+       "action": {
+        "type": "add_document",
+        "field": "visit_documents"
+       },
+       "due_date": null,
+       "completed_at": null
+      }
+     ],
+     "linked_treatment_items": [
+      "ti-crown-30",
+      "ti-composite-19"
+     ],
+     "instructions": null,
+     "dates": null
+    },
+    {
+     "id": "recovery",
+     "title": "Recovery",
+     "island": "Quiet Shoals",
+     "purpose": "View the dental team's recovery instructions and track milestones you record or that the dental team confirms.",
+     "finance": {
+      "kind": "none"
+     },
+     "checkpoints": [
+      {
+       "id": "aftercare",
+       "label": "Aftercare instructions viewed",
+       "kind": "instruction",
+       "status": "awaiting_info",
+       "detail": "No aftercare instructions have been supplied by the dental team yet. When added, they are shown as written, with their source.",
+       "action": {
+        "type": "add_document",
+        "field": "aftercare_instructions"
+       },
+       "due_date": null,
+       "completed_at": null
+      },
+      {
+       "id": "recovery-milestone",
+       "label": "Recovery milestone recorded",
+       "kind": "milestone",
+       "status": "upcoming",
+       "detail": "Milestones you mark are labeled as user-marked. Milestones confirmed by the dental team are labeled as confirmed, with the date they gave. Checklist completion is not a statement about healing.",
+       "action": {
+        "type": "mark_recorded"
+       },
+       "due_date": null,
+       "completed_at": null
+      }
+     ],
+     "linked_treatment_items": [
+      "ti-crown-30",
+      "ti-composite-19"
+     ],
+     "instructions": null,
+     "dates": null
+    },
+    {
+     "id": "followup",
+     "title": "Follow-up",
+     "island": "Compass Rest",
+     "purpose": "Organize follow-up appointments, questions, records, and updated cost information.",
+     "finance": {
+      "kind": "updated_costs"
+     },
+     "checkpoints": [
+      {
+       "id": "followup-appt",
+       "label": "Follow-up appointment scheduled",
+       "kind": "appointment",
+       "status": "upcoming",
+       "date": null,
+       "detail": "No follow-up date has been recorded.",
+       "action": {
+        "type": "enter_date",
+        "field": "followup_date"
+       },
+       "due_date": null,
+       "completed_at": null
+      },
+      {
+       "id": "updated-costs",
+       "label": "Updated cost information reviewed",
+       "kind": "estimate",
+       "status": "upcoming",
+       "detail": "After the plan processes a claim, the Explanation of Benefits can be entered here to compare the projected and actual amounts.",
+       "action": {
+        "type": "add_document",
+        "field": "eob"
+       },
+       "due_date": null,
+       "completed_at": null
+      }
+     ],
+     "linked_treatment_items": [
+      "ti-crown-30",
+      "ti-composite-19"
+     ],
+     "instructions": null,
+     "dates": null
+    }
+   ],
+   "user_ref": "sam",
+   "created_from": "sample-sam",
+   "created_at": "2026-10-04T01:11:18.396117+00:00"
+  },
+  "progress": {
+   "stages": [
+    {
+     "id": "start",
+     "title": "Starting point",
+     "completed": 3,
+     "total": 3,
+     "label": "3 of 3 checkpoints completed"
+    },
+    {
+     "id": "before",
+     "title": "Before your visit",
+     "completed": 0,
+     "total": 3,
+     "label": "0 of 3 checkpoints completed"
+    },
+    {
+     "id": "visit",
+     "title": "Your appointment",
+     "completed": 0,
+     "total": 2,
+     "label": "0 of 2 checkpoints completed"
+    },
+    {
+     "id": "recovery",
+     "title": "Recovery",
+     "completed": 0,
+     "total": 2,
+     "label": "0 of 2 checkpoints completed"
+    },
+    {
+     "id": "followup",
+     "title": "Follow-up",
+     "completed": 0,
+     "total": 2,
+     "label": "0 of 2 checkpoints completed"
+    }
+   ],
+   "current_stage": "before",
+   "label": "3 of 12 checkpoints completed",
+   "note": "Completion describes recorded activity (documents added, information viewed, dates entered). It is not a statement about treatment or healing. Items you mark are labeled as marked by you; items the dental team confirmed are labeled as confirmed, with the date they gave."
+  },
+  "links": {
+   "treatment_items": {
+    "ti-crown-30": {
+     "id": "3774567c4a4543419c893218cf110357",
+     "procedure_key": "crown",
+     "procedure_name": null,
+     "tooth": "30",
+     "status": "planned",
+     "dentist_fee_cents": 120000,
+     "allowed_cents": null,
+     "allowed_status": "UNKNOWN",
+     "allowed_source": "not stated on the estimate; the plan's Appendix A allowed amount ($1,000) is used and cited",
+     "appointment_date": null,
+     "planned_completion": "2026-11-20"
+    },
+    "ti-composite-19": {
+     "id": "d075bf6715ef4dac88d64b380f838289",
+     "procedure_key": "composite",
+     "procedure_name": null,
+     "tooth": "19",
+     "status": "planned",
+     "dentist_fee_cents": 30000,
+     "allowed_cents": null,
+     "allowed_status": "UNKNOWN",
+     "allowed_source": "not stated on the estimate; Appendix A ($200) used and cited",
+     "appointment_date": null,
+     "planned_completion": "2026-10-20"
+    }
+   },
+   "documents": {
+    "doc-hb26": {
+     "id": "89e6c32b5b7a45039e93811d4d483544",
+     "type": "plan_certificate",
+     "label": "Harborview Dental PPO 2026 certificate (fictional, public sample)",
+     "extraction_status": "confirmed"
+    },
+    "doc-estimate": {
+     "id": "ee1da17e332847daa46b13c6782fc8d0",
+     "type": "treatment_estimate",
+     "label": "Northside Dental Group estimate, 2026-10-03 (fictional, typed)",
+     "extraction_status": "typed"
+    },
+    "doc-statement": {
+     "id": "6d445b8bbdb34cb8920d63a55f550799",
+     "type": "benefit_statement",
+     "label": "Harborview benefit statement, 2026-09-15 (fictional, figures typed)",
+     "extraction_status": "typed"
+    }
+   },
+   "latest_estimate": null
+  },
+  "is_sample": true,
+  "sample_label": "Sample journey \u2014 fictional person and records. Plan rules come from the cited documents.",
+  "seeded_records": {
+   "benefits": 1,
+   "treatment_item": 5,
+   "document": 3
+  }
+ },
+ "items": [
+  {
+   "id": "4060840d5ce24ebb97f8879219e9b277",
+   "procedure_key": "exam",
+   "tooth": null,
+   "quantity": 1,
+   "dentist_fee_cents": 6500,
+   "allowed_cents": null,
+   "network": "in",
+   "appointment_date": "2026-03-10",
+   "status": "completed",
+   "source": "benefit statement 2026-09-15",
+   "seed_id": "ti-exam-0310",
+   "allowed_status": "DOC",
+   "allowed_source": "Appendix A",
+   "planned_prep": null,
+   "planned_completion": null,
+   "seeded_from_sample": "sam",
+   "owner": "fixture-sam"
+  },
+  {
+   "id": "8e62fd92e9314f73a22c21062863f72e",
+   "procedure_key": "cleaning",
+   "tooth": null,
+   "quantity": 1,
+   "dentist_fee_cents": 12500,
+   "allowed_cents": null,
+   "network": "in",
+   "appointment_date": "2026-03-10",
+   "status": "completed",
+   "source": "benefit statement 2026-09-15",
+   "seed_id": "ti-cleaning-0310",
+   "allowed_status": "DOC",
+   "allowed_source": "Appendix A",
+   "planned_prep": null,
+   "planned_completion": null,
+   "seeded_from_sample": "sam",
+   "owner": "fixture-sam"
+  },
+  {
+   "id": "29f6c41075f64f488f808be7649128c7",
+   "procedure_key": "root_canal_molar",
+   "tooth": "30",
+   "quantity": 1,
+   "dentist_fee_cents": 125000,
+   "allowed_cents": null,
+   "network": "in",
+   "appointment_date": "2026-05-22",
+   "status": "completed",
+   "source": "benefit statement 2026-09-15",
+   "seed_id": "ti-rct-30",
+   "allowed_status": "DOC",
+   "allowed_source": "Appendix A",
+   "planned_prep": null,
+   "planned_completion": null,
+   "seeded_from_sample": "sam",
+   "owner": "fixture-sam"
+  },
+  {
+   "id": "3774567c4a4543419c893218cf110357",
+   "procedure_key": "crown",
+   "tooth": "30",
+   "quantity": 1,
+   "dentist_fee_cents": 120000,
+   "allowed_cents": null,
+   "network": "in",
+   "appointment_date": null,
+   "planned_dates": {
+    "prep": "2026-11-03",
+    "completion": "2026-11-20",
+    "source": "treatment estimate 2026-10-03"
+   },
+   "status": "planned",
+   "source": "treatment estimate 2026-10-03 (typed)",
+   "seed_id": "ti-crown-30",
+   "allowed_status": "UNKNOWN",
+   "allowed_source": "not stated on the estimate; the plan's Appendix A allowed amount ($1,000) is used and cited",
+   "planned_prep": "2026-11-03",
+   "planned_completion": "2026-11-20",
+   "seeded_from_sample": "sam",
+   "owner": "fixture-sam"
+  },
+  {
+   "id": "d075bf6715ef4dac88d64b380f838289",
+   "procedure_key": "composite",
+   "tooth": "19",
+   "quantity": 1,
+   "dentist_fee_cents": 30000,
+   "allowed_cents": null,
+   "network": "in",
+   "appointment_date": null,
+   "planned_dates": {
+    "completion": "2026-10-20",
+    "source": "treatment estimate 2026-10-03"
+   },
+   "status": "planned",
+   "source": "treatment estimate 2026-10-03 (typed)",
+   "seed_id": "ti-composite-19",
+   "allowed_status": "UNKNOWN",
+   "allowed_source": "not stated on the estimate; Appendix A ($200) used and cited",
+   "planned_prep": null,
+   "planned_completion": "2026-10-20",
+   "seeded_from_sample": "sam",
+   "owner": "fixture-sam"
+  }
+ ],
+ "benefits": [
+  {
+   "plan_code": "HB26",
+   "plan_version": "fixtures/plans/hb26.json (sha256 of the certificate recorded at seed time)",
+   "coverage_start": "2025-01-01",
+   "coverage_end": null,
+   "network_default": "in",
+   "deductible_met_cents": 5000,
+   "benefits_used_cents": 74500,
+   "source": {
+    "type": "benefit_statement",
+    "label": "Harborview benefit statement dated 2026-09-15, figures entered by the user",
+    "date": "2026-09-15",
+    "entered_by": "user"
+   },
+   "last_updated": "2026-09-15",
+   "claims": [
+    {
+     "id": "cl-1",
+     "date": "2026-03-10",
+     "procedure_key": "exam",
+     "tooth": null,
+     "dentist_fee_cents": 6500,
+     "allowed_cents": 4500,
+     "plan_paid_cents": 4500,
+     "patient_paid_cents": 0,
+     "deductible_applied_cents": 0,
+     "source": "benefit statement 2026-09-15"
+    },
+    {
+     "id": "cl-2",
+     "date": "2026-03-10",
+     "procedure_key": "cleaning",
+     "tooth": null,
+     "dentist_fee_cents": 12500,
+     "allowed_cents": 9500,
+     "plan_paid_cents": 9500,
+     "patient_paid_cents": 0,
+     "deductible_applied_cents": 0,
+     "source": "benefit statement 2026-09-15"
+    },
+    {
+     "id": "cl-3",
+     "date": "2026-03-10",
+     "procedure_key": "bitewing_xrays",
+     "tooth": null,
+     "dentist_fee_cents": 8500,
+     "allowed_cents": 6000,
+     "plan_paid_cents": 6000,
+     "patient_paid_cents": 0,
+     "deductible_applied_cents": 0,
+     "source": "benefit statement 2026-09-15"
+    },
+    {
+     "id": "cl-4",
+     "date": "2026-05-22",
+     "procedure_key": "root_canal_molar",
+     "tooth": "30",
+     "dentist_fee_cents": 125000,
+     "allowed_cents": 90000,
+     "plan_paid_cents": 42500,
+     "patient_paid_cents": 47500,
+     "deductible_applied_cents": 5000,
+     "source": "benefit statement 2026-09-15"
+    },
+    {
+     "id": "cl-5",
+     "date": "2026-06-18",
+     "procedure_key": "amalgam",
+     "tooth": "3",
+     "dentist_fee_cents": 22000,
+     "allowed_cents": 15000,
+     "plan_paid_cents": 12000,
+     "patient_paid_cents": 3000,
+     "deductible_applied_cents": 0,
+     "source": "benefit statement 2026-09-15"
+    }
+   ],
+   "reconciliation": "4500 + 9500 + 6000 + 42500 + 12000 = 74500 plan paid; deductible applied 5000 of 5000; remaining annual maximum = 150000 - 74500 = 75500 (derived by the engine, not stored)",
+   "network_default_source": {
+    "source": "user",
+    "note": "Northside Dental Group is listed as a participating dentist by the user"
+   },
+   "seeded_from_sample": "sam",
+   "plan_version_sha256": "f9307fead5ade691bf21576471aa0059930b1d3b99d4570e2323c7bf1d74c818",
+   "id": "9222cb18d90e4c88a3a3578b0831fa3e",
+   "owner": "fixture-sam",
+   "remaining_deductible_cents": 0,
+   "remaining_max_cents": 75500,
+   "annual_max_unlimited": false,
+   "derivation": {
+    "remaining_deductible": "plan deductible $50.00 (document) \u2212 met $50.00 (Harborview benefit statement dated 2026-09-15, figures entered by the user) = $0.00",
+    "remaining_max": "annual maximum $1,500.00 (document) \u2212 plan paid $745.00 (Harborview benefit statement dated 2026-09-15, figures entered by the user) = $755.00"
+   }
+  }
+ ],
+ "estimate": {
+  "plan_code": "HB26",
+  "plan_ref": "HB26",
+  "plan_version_label": "HB26",
+  "plan_version_sha256": "f9307fead5ade691bf21576471aa0059930b1d3b99d4570e2323c7bf1d74c818",
+  "calculated_at": "2026-10-04T01:11:18.408349+00:00",
+  "inputs": {
+   "treatment_item_ids": [
+    "3774567c4a4543419c893218cf110357",
+    "d075bf6715ef4dac88d64b380f838289"
+   ],
+   "benefits_snapshot": {
+    "plan_code": "HB26",
+    "plan_version": "fixtures/plans/hb26.json (sha256 of the certificate recorded at seed time)",
+    "coverage_start": "2025-01-01",
+    "coverage_end": null,
+    "network_default": "in",
+    "deductible_met_cents": 5000,
+    "benefits_used_cents": 74500,
+    "source": {
+     "type": "benefit_statement",
+     "label": "Harborview benefit statement dated 2026-09-15, figures entered by the user",
+     "date": "2026-09-15",
+     "entered_by": "user"
+    },
+    "last_updated": "2026-09-15",
+    "claims": [
+     {
+      "id": "cl-1",
+      "date": "2026-03-10",
+      "procedure_key": "exam",
+      "tooth": null,
+      "dentist_fee_cents": 6500,
+      "allowed_cents": 4500,
+      "plan_paid_cents": 4500,
+      "patient_paid_cents": 0,
+      "deductible_applied_cents": 0,
+      "source": "benefit statement 2026-09-15"
+     },
+     {
+      "id": "cl-2",
+      "date": "2026-03-10",
+      "procedure_key": "cleaning",
+      "tooth": null,
+      "dentist_fee_cents": 12500,
+      "allowed_cents": 9500,
+      "plan_paid_cents": 9500,
+      "patient_paid_cents": 0,
+      "deductible_applied_cents": 0,
+      "source": "benefit statement 2026-09-15"
+     },
+     {
+      "id": "cl-3",
+      "date": "2026-03-10",
+      "procedure_key": "bitewing_xrays",
+      "tooth": null,
+      "dentist_fee_cents": 8500,
+      "allowed_cents": 6000,
+      "plan_paid_cents": 6000,
+      "patient_paid_cents": 0,
+      "deductible_applied_cents": 0,
+      "source": "benefit statement 2026-09-15"
+     },
+     {
+      "id": "cl-4",
+      "date": "2026-05-22",
+      "procedure_key": "root_canal_molar",
+      "tooth": "30",
+      "dentist_fee_cents": 125000,
+      "allowed_cents": 90000,
+      "plan_paid_cents": 42500,
+      "patient_paid_cents": 47500,
+      "deductible_applied_cents": 5000,
+      "source": "benefit statement 2026-09-15"
+     },
+     {
+      "id": "cl-5",
+      "date": "2026-06-18",
+      "procedure_key": "amalgam",
+      "tooth": "3",
+      "dentist_fee_cents": 22000,
+      "allowed_cents": 15000,
+      "plan_paid_cents": 12000,
+      "patient_paid_cents": 3000,
+      "deductible_applied_cents": 0,
+      "source": "benefit statement 2026-09-15"
+     }
+    ],
+    "reconciliation": "4500 + 9500 + 6000 + 42500 + 12000 = 74500 plan paid; deductible applied 5000 of 5000; remaining annual maximum = 150000 - 74500 = 75500 (derived by the engine, not stored)",
+    "network_default_source": {
+     "source": "user",
+     "note": "Northside Dental Group is listed as a participating dentist by the user"
+    },
+    "seeded_from_sample": "sam",
+    "plan_version_sha256": "f9307fead5ade691bf21576471aa0059930b1d3b99d4570e2323c7bf1d74c818",
+    "id": "9222cb18d90e4c88a3a3578b0831fa3e",
+    "owner": "fixture-sam",
+    "remaining_deductible_cents": 0,
+    "remaining_max_cents": 75500,
+    "annual_max_unlimited": false,
+    "derivation": {
+     "remaining_deductible": "plan deductible $50.00 (document) \u2212 met $50.00 (Harborview benefit statement dated 2026-09-15, figures entered by the user) = $0.00",
+     "remaining_max": "annual maximum $1,500.00 (document) \u2212 plan paid $745.00 (Harborview benefit statement dated 2026-09-15, figures entered by the user) = $755.00"
+    }
+   },
+   "hypotheticals": {},
+   "dos_rule": "completion",
+   "network": "in",
+   "network_status": "USER"
+  },
+  "ledger": {
+   "status": "estimate",
+   "lines": [
+    {
+     "label": "Crown, porcelain or ceramic (tooth 30)",
+     "status": "estimate",
+     "steps": [
+      {
+       "label": "Network adjustment (not owed by you)",
+       "cents": 20000,
+       "owner": "nobody",
+       "rule": "N",
+       "stitch": "HB26#p10"
+      },
+      {
+       "label": "Alternate benefit: plan pays on the lower allowance",
+       "cents": -20000,
+       "owner": "basis",
+       "rule": "AB",
+       "stitch": "HB26#p9"
+      },
+      {
+       "label": "Your share (50% of the amount after deductible)",
+       "cents": 40000,
+       "owner": "patient",
+       "rule": "CO",
+       "stitch": "HB26#p5"
+      },
+      {
+       "label": "Plan pays 50% before the annual maximum",
+       "cents": 40000,
+       "owner": "plan_pre",
+       "rule": "CO",
+       "stitch": "HB26#p5"
+      },
+      {
+       "label": "Difference between the allowed amount and the alternate basis (your share)",
+       "cents": 20000,
+       "owner": "patient",
+       "rule": "AB",
+       "stitch": "HB26#p9"
+      }
+     ],
+     "patient_cents": 60000,
+     "plan_cents": 40000,
+     "plan_is_upper_bound": false,
+     "flags": [],
+     "remaining_after": {
+      "deductible_cents": 0,
+      "annual_max_cents": 35500
+     },
+     "benefit_year": 2026,
+     "treatment_item_id": "3774567c4a4543419c893218cf110357",
+     "procedure_key": "crown"
+    },
+    {
+     "label": "Resin composite filling, two surfaces, posterior tooth (tooth 19)",
+     "status": "estimate",
+     "steps": [
+      {
+       "label": "Network adjustment (not owed by you)",
+       "cents": 10000,
+       "owner": "nobody",
+       "rule": "N",
+       "stitch": "HB26#p10"
+      },
+      {
+       "label": "Your share (20% of the amount after deductible)",
+       "cents": 4000,
+       "owner": "patient",
+       "rule": "CO",
+       "stitch": "HB26#p5"
+      },
+      {
+       "label": "Plan pays 80% before the annual maximum",
+       "cents": 16000,
+       "owner": "plan_pre",
+       "rule": "CO",
+       "stitch": "HB26#p5"
+      }
+     ],
+     "patient_cents": 4000,
+     "plan_cents": 16000,
+     "plan_is_upper_bound": false,
+     "flags": [],
+     "remaining_after": {
+      "deductible_cents": 0,
+      "annual_max_cents": 19500
+     },
+     "benefit_year": 2026,
+     "treatment_item_id": "d075bf6715ef4dac88d64b380f838289",
+     "procedure_key": "composite"
+    }
+   ],
+   "patient_total_cents": 64000,
+   "plan_total_cents": 56000,
+   "plan_total_is_upper_bound": false,
+   "flags": [],
+   "not_provided": [],
+   "assumptions": [],
+   "order_note": "Processing order assumed: as listed on your estimate. Order does not change any line in this scenario.",
+   "could_change": "Claims already submitted but not yet processed, services since your statement date, and the plan's own determination can change these amounts. This is an estimate, not the plan's decision."
+  },
+  "movers": {
+   "range": [
+    64000,
+    64000
+   ],
+   "movers": [],
+   "unresolved_reasons": []
+  },
+  "insurer_estimated_payment_cents": 56000,
+  "user_estimated_payment_cents": 64000,
+  "plan_payment_is_upper_bound": false,
+  "assumptions": [],
+  "unknowns": [],
+  "missing_inputs": [],
+  "status": "estimate",
+  "footer": "Information from your documents and your inputs. Not advice. Not the plan's determination.",
+  "sources": {
+   "plan_document": {
+    "version_label": "HB26",
+    "title": "Harborview Dental PPO 2026 \u2014 Certificate of Coverage (fictional)",
+    "publisher": "OralCompass team",
+    "url": null,
+    "document_type": "plan_certificate",
+    "document_date": null,
+    "pages": 14,
+    "retrieved_at": "2026-10-03",
+    "stored_path": "fixtures/documents/harborview_certificate.pdf",
+    "has_stored_pdf": true,
+    "sha256": "f9307fead5ade691bf21576471aa0059930b1d3b99d4570e2323c7bf1d74c818",
+    "access_limits": [],
+    "reuse_terms": null,
+    "role": "primary",
+    "source_id": null
+   },
+   "evidence_endpoint": "/plans/HB26/evidence"
+  },
+  "id": "603effcccd9d46b49bfadf0400c03f15",
+  "owner": "fixture-sam"
+ },
+ "rules": [
+  {
+   "procedure_key": "cleaning",
+   "plan_code": "HB26",
+   "covered": true,
+   "category": "Class I",
+   "category_status": "DOC",
+   "category_cite": {
+    "doc": "HB26",
+    "page": 5,
+    "quote": "Class I Preventive services: the Plan pays 100% of the Allowed Amount. Class II Basic services: the Plan pays 80% of the Allowed Amount. Class III Major services: the Plan pays 50% of the Allowed Amount. The same percentages apply in-network and out-of-network."
+   },
+   "plan_pays_pct": 100,
+   "you_pay_pct": 0,
+   "coverage_cite": {
+    "doc": "HB26",
+    "page": 5,
+    "quote": "Class I Preventive services: the Plan pays 100% of the Allowed Amount. Class II Basic services: the Plan pays 80% of the Allowed Amount. Class III Major services: the Plan pays 50% of the Allowed Amount. The same percentages apply in-network and out-of-network."
+   },
+   "plan_pays_pct_out": 100,
+   "deductible_applies": false,
+   "deductible_cite": {
+    "doc": "HB26",
+    "page": 6,
+    "quote": "The Deductible is $50 per Covered Person and $150 per family each Calendar Year. The Deductible is waived for Class I services."
+   },
+   "counts_toward_annual_max": true,
+   "annual_max_cite": {
+    "doc": "HB26",
+    "page": 6,
+    "quote": "The Annual Maximum is $1,500 per Covered Person each Calendar Year. The Annual Maximum is the most the Plan pays for covered services in a Calendar Year; it does not limit the amount you may owe. All classes of covered services count toward the Annual Maximum."
+   },
+   "waiting": {
+    "months": 0,
+    "status": "DOC",
+    "cite": {
+     "doc": "HB26",
+     "page": 4,
+     "quote": "There are no waiting periods under this Plan."
+    },
+    "note": ""
+   },
+   "allowed_amount": {
+    "value": 9500,
+    "status": "DOC",
+    "note": ""
+   },
+   "frequency": [
+    {
+     "clock": "calendar_count",
+     "n": 2,
+     "cite": {
+      "doc": "HB26",
+      "page": 9,
+      "quote": "Oral examinations and cleanings are covered twice per Calendar Year. Crowns on the same tooth are covered once in any 60-month period."
+     }
+    }
+   ],
+   "alternate_benefit": null
+  },
+  {
+   "procedure_key": "composite",
+   "plan_code": "HB26",
+   "covered": true,
+   "category": "Class II",
+   "category_status": "DOC",
+   "category_cite": {
+    "doc": "HB26",
+    "page": 7,
+    "quote": "Class II Basic services include fillings (amalgam and resin composite), simple and surgical extractions, and emergency treatment of dental pain."
+   },
+   "plan_pays_pct": 80,
+   "you_pay_pct": 20,
+   "coverage_cite": {
+    "doc": "HB26",
+    "page": 5,
+    "quote": "Class I Preventive services: the Plan pays 100% of the Allowed Amount. Class II Basic services: the Plan pays 80% of the Allowed Amount. Class III Major services: the Plan pays 50% of the Allowed Amount. The same percentages apply in-network and out-of-network."
+   },
+   "plan_pays_pct_out": 80,
+   "deductible_applies": true,
+   "deductible_cite": {
+    "doc": "HB26",
+    "page": 6,
+    "quote": "The Deductible is $50 per Covered Person and $150 per family each Calendar Year. The Deductible is waived for Class I services."
+   },
+   "counts_toward_annual_max": true,
+   "annual_max_cite": {
+    "doc": "HB26",
+    "page": 6,
+    "quote": "The Annual Maximum is $1,500 per Covered Person each Calendar Year. The Annual Maximum is the most the Plan pays for covered services in a Calendar Year; it does not limit the amount you may owe. All classes of covered services count toward the Annual Maximum."
+   },
+   "waiting": {
+    "months": 0,
+    "status": "DOC",
+    "cite": {
+     "doc": "HB26",
+     "page": 4,
+     "quote": "There are no waiting periods under this Plan."
+    },
+    "note": ""
+   },
+   "allowed_amount": {
+    "value": 20000,
+    "status": "DOC",
+    "note": ""
+   },
+   "frequency": null,
+   "alternate_benefit": null
+  },
+  {
+   "procedure_key": "crown",
+   "plan_code": "HB26",
+   "covered": true,
+   "category": "Class III",
+   "category_status": "DOC",
+   "category_cite": {
+    "doc": "HB26",
+    "page": 8,
+    "quote": "Class III Major services include crowns, inlays, onlays, bridges, partial and complete dentures, root canal therapy, scaling and root planing, and periodontal surgery."
+   },
+   "plan_pays_pct": 50,
+   "you_pay_pct": 50,
+   "coverage_cite": {
+    "doc": "HB26",
+    "page": 5,
+    "quote": "Class I Preventive services: the Plan pays 100% of the Allowed Amount. Class II Basic services: the Plan pays 80% of the Allowed Amount. Class III Major services: the Plan pays 50% of the Allowed Amount. The same percentages apply in-network and out-of-network."
+   },
+   "plan_pays_pct_out": 50,
+   "deductible_applies": true,
+   "deductible_cite": {
+    "doc": "HB26",
+    "page": 6,
+    "quote": "The Deductible is $50 per Covered Person and $150 per family each Calendar Year. The Deductible is waived for Class I services."
+   },
+   "counts_toward_annual_max": true,
+   "annual_max_cite": {
+    "doc": "HB26",
+    "page": 6,
+    "quote": "The Annual Maximum is $1,500 per Covered Person each Calendar Year. The Annual Maximum is the most the Plan pays for covered services in a Calendar Year; it does not limit the amount you may owe. All classes of covered services count toward the Annual Maximum."
+   },
+   "waiting": {
+    "months": 0,
+    "status": "DOC",
+    "cite": {
+     "doc": "HB26",
+     "page": 4,
+     "quote": "There are no waiting periods under this Plan."
+    },
+    "note": ""
+   },
+   "allowed_amount": {
+    "value": 100000,
+    "status": "DOC",
+    "note": ""
+   },
+   "frequency": [
+    {
+     "clock": "per_tooth_months",
+     "n": 60,
+     "cite": {
+      "doc": "HB26",
+      "page": 9,
+      "quote": "Oral examinations and cleanings are covered twice per Calendar Year. Crowns on the same tooth are covered once in any 60-month period."
+     }
+    }
+   ],
+   "alternate_benefit": {
+    "status": "DOC",
+    "conditions": [
+     {
+      "procedure_key": "crown",
+      "condition": "molar",
+      "basis_key": "cast_crown"
+     }
+    ],
+    "cite": {
+     "doc": "HB26",
+     "page": 9,
+     "quote": "When a porcelain or ceramic crown is placed on a molar, the benefit will be based on the allowance for a full cast metal crown. You are responsible for the difference between the Allowed Amount for the service performed and the allowance for the alternate service."
+    }
+   }
+  },
+  {
+   "procedure_key": "exam",
+   "plan_code": "HB26",
+   "covered": true,
+   "category": "Class I",
+   "category_status": "DOC",
+   "category_cite": {
+    "doc": "HB26",
+    "page": 5,
+    "quote": "Class I Preventive services: the Plan pays 100% of the Allowed Amount. Class II Basic services: the Plan pays 80% of the Allowed Amount. Class III Major services: the Plan pays 50% of the Allowed Amount. The same percentages apply in-network and out-of-network."
+   },
+   "plan_pays_pct": 100,
+   "you_pay_pct": 0,
+   "coverage_cite": {
+    "doc": "HB26",
+    "page": 5,
+    "quote": "Class I Preventive services: the Plan pays 100% of the Allowed Amount. Class II Basic services: the Plan pays 80% of the Allowed Amount. Class III Major services: the Plan pays 50% of the Allowed Amount. The same percentages apply in-network and out-of-network."
+   },
+   "plan_pays_pct_out": 100,
+   "deductible_applies": false,
+   "deductible_cite": {
+    "doc": "HB26",
+    "page": 6,
+    "quote": "The Deductible is $50 per Covered Person and $150 per family each Calendar Year. The Deductible is waived for Class I services."
+   },
+   "counts_toward_annual_max": true,
+   "annual_max_cite": {
+    "doc": "HB26",
+    "page": 6,
+    "quote": "The Annual Maximum is $1,500 per Covered Person each Calendar Year. The Annual Maximum is the most the Plan pays for covered services in a Calendar Year; it does not limit the amount you may owe. All classes of covered services count toward the Annual Maximum."
+   },
+   "waiting": {
+    "months": 0,
+    "status": "DOC",
+    "cite": {
+     "doc": "HB26",
+     "page": 4,
+     "quote": "There are no waiting periods under this Plan."
+    },
+    "note": ""
+   },
+   "allowed_amount": {
+    "value": 4500,
+    "status": "DOC",
+    "note": ""
+   },
+   "frequency": [
+    {
+     "clock": "calendar_count",
+     "n": 2,
+     "cite": {
+      "doc": "HB26",
+      "page": 9,
+      "quote": "Oral examinations and cleanings are covered twice per Calendar Year. Crowns on the same tooth are covered once in any 60-month period."
+     }
+    }
+   ],
+   "alternate_benefit": null
+  },
+  {
+   "procedure_key": "root_canal_molar",
+   "plan_code": "HB26",
+   "covered": true,
+   "category": "Class III",
+   "category_status": "DOC",
+   "category_cite": {
+    "doc": "HB26",
+    "page": 8,
+    "quote": "Class III Major services include crowns, inlays, onlays, bridges, partial and complete dentures, root canal therapy, scaling and root planing, and periodontal surgery."
+   },
+   "plan_pays_pct": 50,
+   "you_pay_pct": 50,
+   "coverage_cite": {
+    "doc": "HB26",
+    "page": 5,
+    "quote": "Class I Preventive services: the Plan pays 100% of the Allowed Amount. Class II Basic services: the Plan pays 80% of the Allowed Amount. Class III Major services: the Plan pays 50% of the Allowed Amount. The same percentages apply in-network and out-of-network."
+   },
+   "plan_pays_pct_out": 50,
+   "deductible_applies": true,
+   "deductible_cite": {
+    "doc": "HB26",
+    "page": 6,
+    "quote": "The Deductible is $50 per Covered Person and $150 per family each Calendar Year. The Deductible is waived for Class I services."
+   },
+   "counts_toward_annual_max": true,
+   "annual_max_cite": {
+    "doc": "HB26",
+    "page": 6,
+    "quote": "The Annual Maximum is $1,500 per Covered Person each Calendar Year. The Annual Maximum is the most the Plan pays for covered services in a Calendar Year; it does not limit the amount you may owe. All classes of covered services count toward the Annual Maximum."
+   },
+   "waiting": {
+    "months": 0,
+    "status": "DOC",
+    "cite": {
+     "doc": "HB26",
+     "page": 4,
+     "quote": "There are no waiting periods under this Plan."
+    },
+    "note": ""
+   },
+   "allowed_amount": {
+    "value": 90000,
+    "status": "DOC",
+    "note": ""
+   },
+   "frequency": null,
+   "alternate_benefit": null
+  }
+ ],
+ "plan": {
+  "plan_code": "HB26",
+  "title": "Harborview Dental PPO 2026 \u2014 fictional demonstration plan",
+  "is_fictional": true,
+  "source_document": {
+   "title": "Harborview Dental PPO 2026 \u2014 Certificate of Coverage (fictional)",
+   "publisher": "OralCompass team",
+   "url": null,
+   "retrieved_at": "2026-10-03",
+   "sha256": "f9307fead5ade691bf21576471aa0059930b1d3b99d4570e2323c7bf1d74c818",
+   "pages": 14,
+   "version_label": "HB26",
+   "path": "fixtures/documents/harborview_certificate.pdf",
+   "document_type": "plan_certificate"
+  },
+  "deductible_individual": {
+   "value": 5000,
+   "status": "DOC",
+   "cite": {
+    "page": 6,
+    "quote": "The Deductible is $50 per Covered Person and $150 per family each Calendar Year. The Deductible is waived for Class I services."
+   }
+  },
+  "annual_max": {
+   "value": 150000,
+   "status": "DOC",
+   "cite": {
+    "page": 6,
+    "quote": "The Annual Maximum is $1,500 per Covered Person each Calendar Year. The Annual Maximum is the most the Plan pays for covered services in a Calendar Year; it does not limit the amount you may owe. All classes of covered services count toward the Annual Maximum."
+   }
+  },
+  "benefit_year_start_month": {
+   "value": 1,
+   "status": "DOC",
+   "cite": {
+    "page": 6,
+    "quote": "Benefit Year means the Calendar Year, January 1 through December 31."
+   }
+  },
+  "classes": [
+   {
+    "name": "Class I",
+    "plan_share_bp_in": {
+     "value": 10000,
+     "status": "DOC",
+     "cite": {
+      "page": 5,
+      "quote": "Class I Preventive services: the Plan pays 100% of the Allowed Amount. Class II Basic services: the Plan pays 80% of the Allowed Amount. Class III Major services: the Plan pays 50% of the Allowed Amount. The same percentages apply in-network and out-of-network."
+     }
+    },
+    "plan_share_bp_out": {
+     "value": 10000,
+     "status": "DOC",
+     "cite": {
+      "page": 5,
+      "quote": "Class I Preventive services: the Plan pays 100% of the Allowed Amount. Class II Basic services: the Plan pays 80% of the Allowed Amount. Class III Major services: the Plan pays 50% of the Allowed Amount. The same percentages apply in-network and out-of-network."
+     }
+    },
+    "procedures_text": [
+     "Periodic oral evaluation",
+     "Adult cleaning (prophylaxis)",
+     "Bitewing x-rays (set)",
+     "Fluoride treatment (child)",
+     "Sealant (per tooth, child)"
+    ],
+    "cite": {
+     "page": 5,
+     "quote": "Class I Preventive services: the Plan pays 100% of the Allowed Amount. Class II Basic services: the Plan pays 80% of the Allowed Amount. Class III Major services: the Plan pays 50% of the Allowed Amount. The same percentages apply in-network and out-of-network."
+    }
+   },
+   {
+    "name": "Class II",
+    "plan_share_bp_in": {
+     "value": 8000,
+     "status": "DOC",
+     "cite": {
+      "page": 5,
+      "quote": "Class I Preventive services: the Plan pays 100% of the Allowed Amount. Class II Basic services: the Plan pays 80% of the Allowed Amount. Class III Major services: the Plan pays 50% of the Allowed Amount. The same percentages apply in-network and out-of-network."
+     }
+    },
+    "plan_share_bp_out": {
+     "value": 8000,
+     "status": "DOC",
+     "cite": {
+      "page": 5,
+      "quote": "Class I Preventive services: the Plan pays 100% of the Allowed Amount. Class II Basic services: the Plan pays 80% of the Allowed Amount. Class III Major services: the Plan pays 50% of the Allowed Amount. The same percentages apply in-network and out-of-network."
+     }
+    },
+    "procedures_text": [
+     "Resin composite filling, two surfaces, posterior tooth",
+     "Amalgam filling, two surfaces",
+     "Simple extraction",
+     "Surgical extraction"
+    ],
+    "cite": {
+     "page": 7,
+     "quote": "Class II Basic services include fillings (amalgam and resin composite), simple and surgical extractions, and emergency treatment of dental pain."
+    }
+   },
+   {
+    "name": "Class III",
+    "plan_share_bp_in": {
+     "value": 5000,
+     "status": "DOC",
+     "cite": {
+      "page": 5,
+      "quote": "Class I Preventive services: the Plan pays 100% of the Allowed Amount. Class II Basic services: the Plan pays 80% of the Allowed Amount. Class III Major services: the Plan pays 50% of the Allowed Amount. The same percentages apply in-network and out-of-network."
+     }
+    },
+    "plan_share_bp_out": {
+     "value": 5000,
+     "status": "DOC",
+     "cite": {
+      "page": 5,
+      "quote": "Class I Preventive services: the Plan pays 100% of the Allowed Amount. Class II Basic services: the Plan pays 80% of the Allowed Amount. Class III Major services: the Plan pays 50% of the Allowed Amount. The same percentages apply in-network and out-of-network."
+     }
+    },
+    "procedures_text": [
+     "Scaling and root planing (per quadrant)",
+     "Root canal therapy, molar",
+     "Crown, porcelain or ceramic",
+     "Crown, full cast metal",
+     "Partial denture"
+    ],
+    "cite": {
+     "page": 8,
+     "quote": "Class III Major services include crowns, inlays, onlays, bridges, partial and complete dentures, root canal therapy, scaling and root planing, and periodontal surgery."
+    }
+   }
+  ],
+  "class_of": {
+   "exam": {
+    "value": "Class I",
+    "status": "DOC",
+    "cite": {
+     "page": 5,
+     "quote": "Class I Preventive services: the Plan pays 100% of the Allowed Amount. Class II Basic services: the Plan pays 80% of the Allowed Amount. Class III Major services: the Plan pays 50% of the Allowed Amount. The same percentages apply in-network and out-of-network."
+    }
+   },
+   "cleaning": {
+    "value": "Class I",
+    "status": "DOC",
+    "cite": {
+     "page": 5,
+     "quote": "Class I Preventive services: the Plan pays 100% of the Allowed Amount. Class II Basic services: the Plan pays 80% of the Allowed Amount. Class III Major services: the Plan pays 50% of the Allowed Amount. The same percentages apply in-network and out-of-network."
+    }
+   },
+   "bitewing_xrays": {
+    "value": "Class I",
+    "status": "DOC",
+    "cite": {
+     "page": 5,
+     "quote": "Class I Preventive services: the Plan pays 100% of the Allowed Amount. Class II Basic services: the Plan pays 80% of the Allowed Amount. Class III Major services: the Plan pays 50% of the Allowed Amount. The same percentages apply in-network and out-of-network."
+    }
+   },
+   "fluoride_child": {
+    "value": "Class I",
+    "status": "DOC",
+    "cite": {
+     "page": 5,
+     "quote": "Class I Preventive services: the Plan pays 100% of the Allowed Amount. Class II Basic services: the Plan pays 80% of the Allowed Amount. Class III Major services: the Plan pays 50% of the Allowed Amount. The same percentages apply in-network and out-of-network."
+    }
+   },
+   "sealant": {
+    "value": "Class I",
+    "status": "DOC",
+    "cite": {
+     "page": 5,
+     "quote": "Class I Preventive services: the Plan pays 100% of the Allowed Amount. Class II Basic services: the Plan pays 80% of the Allowed Amount. Class III Major services: the Plan pays 50% of the Allowed Amount. The same percentages apply in-network and out-of-network."
+    }
+   },
+   "composite": {
+    "value": "Class II",
+    "status": "DOC",
+    "cite": {
+     "page": 7,
+     "quote": "Class II Basic services include fillings (amalgam and resin composite), simple and surgical extractions, and emergency treatment of dental pain."
+    }
+   },
+   "amalgam": {
+    "value": "Class II",
+    "status": "DOC",
+    "cite": {
+     "page": 7,
+     "quote": "Class II Basic services include fillings (amalgam and resin composite), simple and surgical extractions, and emergency treatment of dental pain."
+    }
+   },
+   "extraction_simple": {
+    "value": "Class II",
+    "status": "DOC",
+    "cite": {
+     "page": 7,
+     "quote": "Class II Basic services include fillings (amalgam and resin composite), simple and surgical extractions, and emergency treatment of dental pain."
+    }
+   },
+   "extraction_surgical": {
+    "value": "Class II",
+    "status": "DOC",
+    "cite": {
+     "page": 7,
+     "quote": "Class II Basic services include fillings (amalgam and resin composite), simple and surgical extractions, and emergency treatment of dental pain."
+    }
+   },
+   "scaling_root_planing": {
+    "value": "Class III",
+    "status": "DOC",
+    "cite": {
+     "page": 8,
+     "quote": "Class III Major services include crowns, inlays, onlays, bridges, partial and complete dentures, root canal therapy, scaling and root planing, and periodontal surgery."
+    }
+   },
+   "root_canal_molar": {
+    "value": "Class III",
+    "status": "DOC",
+    "cite": {
+     "page": 8,
+     "quote": "Class III Major services include crowns, inlays, onlays, bridges, partial and complete dentures, root canal therapy, scaling and root planing, and periodontal surgery."
+    }
+   },
+   "crown": {
+    "value": "Class III",
+    "status": "DOC",
+    "cite": {
+     "page": 8,
+     "quote": "Class III Major services include crowns, inlays, onlays, bridges, partial and complete dentures, root canal therapy, scaling and root planing, and periodontal surgery."
+    }
+   },
+   "cast_crown": {
+    "value": "Class III",
+    "status": "DOC",
+    "cite": {
+     "page": 8,
+     "quote": "Class III Major services include crowns, inlays, onlays, bridges, partial and complete dentures, root canal therapy, scaling and root planing, and periodontal surgery."
+    }
+   },
+   "denture_partial": {
+    "value": "Class III",
+    "status": "DOC",
+    "cite": {
+     "page": 8,
+     "quote": "Class III Major services include crowns, inlays, onlays, bridges, partial and complete dentures, root canal therapy, scaling and root planing, and periodontal surgery."
+    }
+   }
+  },
+  "allowed_amounts": {
+   "exam": {
+    "value": 4500,
+    "status": "DOC",
+    "cite": {
+     "page": 13,
+     "quote": "Periodic oral evaluation: $45.00"
+    }
+   },
+   "cleaning": {
+    "value": 9500,
+    "status": "DOC",
+    "cite": {
+     "page": 13,
+     "quote": "Adult cleaning (prophylaxis): $95.00"
+    }
+   },
+   "bitewing_xrays": {
+    "value": 6000,
+    "status": "DOC",
+    "cite": {
+     "page": 13,
+     "quote": "Bitewing x-rays (set): $60.00"
+    }
+   },
+   "fluoride_child": {
+    "value": 3000,
+    "status": "DOC",
+    "cite": {
+     "page": 13,
+     "quote": "Fluoride treatment (child): $30.00"
+    }
+   },
+   "sealant": {
+    "value": 5000,
+    "status": "DOC",
+    "cite": {
+     "page": 13,
+     "quote": "Sealant (per tooth, child): $50.00"
+    }
+   },
+   "composite": {
+    "value": 20000,
+    "status": "DOC",
+    "cite": {
+     "page": 13,
+     "quote": "Resin composite filling, two surfaces, posterior tooth: $200.00"
+    }
+   },
+   "amalgam": {
+    "value": 15000,
+    "status": "DOC",
+    "cite": {
+     "page": 13,
+     "quote": "Amalgam filling, two surfaces: $150.00"
+    }
+   },
+   "extraction_simple": {
+    "value": 18000,
+    "status": "DOC",
+    "cite": {
+     "page": 13,
+     "quote": "Simple extraction: $180.00"
+    }
+   },
+   "extraction_surgical": {
+    "value": 36000,
+    "status": "DOC",
+    "cite": {
+     "page": 13,
+     "quote": "Surgical extraction: $360.00"
+    }
+   },
+   "scaling_root_planing": {
+    "value": 24000,
+    "status": "DOC",
+    "cite": {
+     "page": 13,
+     "quote": "Scaling and root planing (per quadrant): $240.00"
+    }
+   },
+   "root_canal_molar": {
+    "value": 90000,
+    "status": "DOC",
+    "cite": {
+     "page": 13,
+     "quote": "Root canal therapy, molar: $900.00"
+    }
+   },
+   "crown": {
+    "value": 100000,
+    "status": "DOC",
+    "cite": {
+     "page": 13,
+     "quote": "Crown, porcelain or ceramic: $1,000.00"
+    }
+   },
+   "cast_crown": {
+    "value": 80000,
+    "status": "DOC",
+    "cite": {
+     "page": 13,
+     "quote": "Crown, full cast metal: $800.00"
+    }
+   },
+   "denture_partial": {
+    "value": 140000,
+    "status": "DOC",
+    "cite": {
+     "page": 13,
+     "quote": "Partial denture: $1,400.00"
+    }
+   },
+   "implant": {
+    "value": 190000,
+    "status": "DOC",
+    "cite": {
+     "page": 13,
+     "quote": "Dental implant (body): $1,900.00"
+    }
+   },
+   "night_guard": {
+    "value": 40000,
+    "status": "DOC",
+    "cite": {
+     "page": 13,
+     "quote": "Occlusal night guard: $400.00"
+    }
+   }
+  },
+  "alternate_benefit": {
+   "status": "DOC",
+   "cite": {
+    "page": 9,
+    "quote": "When a porcelain or ceramic crown is placed on a molar, the benefit will be based on the allowance for a full cast metal crown. You are responsible for the difference between the Allowed Amount for the service performed and the allowance for the alternate service."
+   },
+   "conditions": [
+    {
+     "procedure_key": "crown",
+     "condition": "molar",
+     "basis_key": "cast_crown"
+    }
+   ]
+  },
+  "waiting_months": {
+   "value": {},
+   "status": "DOC",
+   "cite": {
+    "page": 4,
+    "quote": "There are no waiting periods under this Plan."
+   }
+  },
+  "frequency": [
+   {
+    "procedure_key": "cleaning",
+    "clock": "calendar_count",
+    "n": 2,
+    "cite": {
+     "page": 9,
+     "quote": "Oral examinations and cleanings are covered twice per Calendar Year. Crowns on the same tooth are covered once in any 60-month period."
+    }
+   },
+   {
+    "procedure_key": "exam",
+    "clock": "calendar_count",
+    "n": 2,
+    "cite": {
+     "page": 9,
+     "quote": "Oral examinations and cleanings are covered twice per Calendar Year. Crowns on the same tooth are covered once in any 60-month period."
+    }
+   },
+   {
+    "procedure_key": "crown",
+    "clock": "per_tooth_months",
+    "n": 60,
+    "cite": {
+     "page": 9,
+     "quote": "Oral examinations and cleanings are covered twice per Calendar Year. Crowns on the same tooth are covered once in any 60-month period."
+    }
+   }
+  ],
+  "excluded": {
+   "implant": {
+    "value": true,
+    "status": "DOC",
+    "cite": {
+     "page": 11,
+     "quote": "The Plan does not cover dental implants, occlusal night guards, cosmetic services, or services started before coverage began."
+    }
+   },
+   "night_guard": {
+    "value": true,
+    "status": "DOC",
+    "cite": {
+     "page": 11,
+     "quote": "The Plan does not cover dental implants, occlusal night guards, cosmetic services, or services started before coverage began."
+    }
+   }
+  },
+  "oon_rule": {
+   "value": {
+    "in": "Participating dentists accept the Allowed Amount as payment in full; the difference between the dentist's charge and the Allowed Amount is not billed to you.",
+    "out": "For non-participating dentists the Plan pays on the same Allowed Amount; a non-participating dentist may bill you the difference between the charge and the Allowed Amount."
+   },
+   "status": "DOC",
+   "cite": {
+    "page": 10,
+    "quote": "For non-participating dentists the Plan pays on the same Allowed Amount; a non-participating dentist may bill you the difference between the charge and the Allowed Amount."
+   }
+  },
+  "dos_rule": {
+   "value": "completion",
+   "status": "DOC",
+   "cite": {
+    "page": 12,
+    "quote": "For multi-visit procedures, the date of service is the date the procedure is completed (for crowns, the cementation date)."
+   }
+  },
+  "premium_monthly": {
+   "employee_only": {
+    "value": 3100,
+    "status": "DOC",
+    "cite": {
+     "page": 2,
+     "quote": "Employee only: $31.00 per month."
+    }
+   },
+   "employee_spouse": {
+    "value": 6200,
+    "status": "DOC",
+    "cite": {
+     "page": 2,
+     "quote": "Employee only: $31.00 per month."
+    }
+   },
+   "employee_children": {
+    "value": 7000,
+    "status": "DOC",
+    "cite": {
+     "page": 2,
+     "quote": "Employee only: $31.00 per month."
+    }
+   },
+   "family": {
+    "value": 9800,
+    "status": "DOC",
+    "cite": {
+     "page": 2,
+     "quote": "Employee only: $31.00 per month."
+    }
+   }
+  },
+  "deductible_waived_classes": [
+   "Class I"
+  ]
+ },
+ "clauses": [
+  {
+   "field": "catalog.effective_dates.cite",
+   "doc": "HB26",
+   "page": 1,
+   "page_note": null,
+   "section": null,
+   "quote": "Coverage under this certificate is effective January 1, 2026 through December 31, 2026 and is offered in North Carolina and Virginia through the Harborview PPO network.",
+   "fact_id": null,
+   "review_status": null,
+   "n": 1
+  },
+  {
+   "field": "catalog.where_offered.cite",
+   "doc": "HB26",
+   "page": 1,
+   "page_note": null,
+   "section": null,
+   "quote": "Coverage under this certificate is effective January 1, 2026 through December 31, 2026 and is offered in North Carolina and Virginia through the Harborview PPO network.",
+   "fact_id": null,
+   "review_status": null,
+   "n": 2
+  },
+  {
+   "field": "premium_monthly.employee_children.cite",
+   "doc": "HB26",
+   "page": 2,
+   "page_note": null,
+   "section": null,
+   "quote": "Employee only: $31.00 per month.",
+   "fact_id": null,
+   "review_status": null,
+   "n": 3
+  },
+  {
+   "field": "premium_monthly.employee_only.cite",
+   "doc": "HB26",
+   "page": 2,
+   "page_note": null,
+   "section": null,
+   "quote": "Employee only: $31.00 per month.",
+   "fact_id": null,
+   "review_status": null,
+   "n": 4
+  },
+  {
+   "field": "premium_monthly.employee_spouse.cite",
+   "doc": "HB26",
+   "page": 2,
+   "page_note": null,
+   "section": null,
+   "quote": "Employee only: $31.00 per month.",
+   "fact_id": null,
+   "review_status": null,
+   "n": 5
+  },
+  {
+   "field": "premium_monthly.family.cite",
+   "doc": "HB26",
+   "page": 2,
+   "page_note": null,
+   "section": null,
+   "quote": "Employee only: $31.00 per month.",
+   "fact_id": null,
+   "review_status": null,
+   "n": 6
+  },
+  {
+   "field": "waiting_months.cite",
+   "doc": "HB26",
+   "page": 4,
+   "page_note": null,
+   "section": null,
+   "quote": "There are no waiting periods under this Plan.",
+   "fact_id": null,
+   "review_status": null,
+   "n": 7
+  },
+  {
+   "field": "class_of.bitewing_xrays.cite",
+   "doc": "HB26",
+   "page": 5,
+   "page_note": null,
+   "section": null,
+   "quote": "Class I Preventive services: the Plan pays 100% of the Allowed Amount. Class II Basic services: the Plan pays 80% of the Allowed Amount. Class III Major services: the Plan pays 50% of the Allowed Amount. The same percentages apply in-network and out-of-network.",
+   "fact_id": null,
+   "review_status": null,
+   "n": 8
+  },
+  {
+   "field": "class_of.cleaning.cite",
+   "doc": "HB26",
+   "page": 5,
+   "page_note": null,
+   "section": null,
+   "quote": "Class I Preventive services: the Plan pays 100% of the Allowed Amount. Class II Basic services: the Plan pays 80% of the Allowed Amount. Class III Major services: the Plan pays 50% of the Allowed Amount. The same percentages apply in-network and out-of-network.",
+   "fact_id": null,
+   "review_status": null,
+   "n": 9
+  },
+  {
+   "field": "class_of.exam.cite",
+   "doc": "HB26",
+   "page": 5,
+   "page_note": null,
+   "section": null,
+   "quote": "Class I Preventive services: the Plan pays 100% of the Allowed Amount. Class II Basic services: the Plan pays 80% of the Allowed Amount. Class III Major services: the Plan pays 50% of the Allowed Amount. The same percentages apply in-network and out-of-network.",
+   "fact_id": null,
+   "review_status": null,
+   "n": 10
+  },
+  {
+   "field": "class_of.fluoride_child.cite",
+   "doc": "HB26",
+   "page": 5,
+   "page_note": null,
+   "section": null,
+   "quote": "Class I Preventive services: the Plan pays 100% of the Allowed Amount. Class II Basic services: the Plan pays 80% of the Allowed Amount. Class III Major services: the Plan pays 50% of the Allowed Amount. The same percentages apply in-network and out-of-network.",
+   "fact_id": null,
+   "review_status": null,
+   "n": 11
+  },
+  {
+   "field": "class_of.sealant.cite",
+   "doc": "HB26",
+   "page": 5,
+   "page_note": null,
+   "section": null,
+   "quote": "Class I Preventive services: the Plan pays 100% of the Allowed Amount. Class II Basic services: the Plan pays 80% of the Allowed Amount. Class III Major services: the Plan pays 50% of the Allowed Amount. The same percentages apply in-network and out-of-network.",
+   "fact_id": null,
+   "review_status": null,
+   "n": 12
+  },
+  {
+   "field": "classes[0].cite",
+   "doc": "HB26",
+   "page": 5,
+   "page_note": null,
+   "section": null,
+   "quote": "Class I Preventive services: the Plan pays 100% of the Allowed Amount. Class II Basic services: the Plan pays 80% of the Allowed Amount. Class III Major services: the Plan pays 50% of the Allowed Amount. The same percentages apply in-network and out-of-network.",
+   "fact_id": null,
+   "review_status": null,
+   "n": 13
+  },
+  {
+   "field": "classes[0].plan_share_bp_in.cite",
+   "doc": "HB26",
+   "page": 5,
+   "page_note": null,
+   "section": null,
+   "quote": "Class I Preventive services: the Plan pays 100% of the Allowed Amount. Class II Basic services: the Plan pays 80% of the Allowed Amount. Class III Major services: the Plan pays 50% of the Allowed Amount. The same percentages apply in-network and out-of-network.",
+   "fact_id": null,
+   "review_status": null,
+   "n": 14
+  },
+  {
+   "field": "classes[0].plan_share_bp_out.cite",
+   "doc": "HB26",
+   "page": 5,
+   "page_note": null,
+   "section": null,
+   "quote": "Class I Preventive services: the Plan pays 100% of the Allowed Amount. Class II Basic services: the Plan pays 80% of the Allowed Amount. Class III Major services: the Plan pays 50% of the Allowed Amount. The same percentages apply in-network and out-of-network.",
+   "fact_id": null,
+   "review_status": null,
+   "n": 15
+  },
+  {
+   "field": "classes[1].plan_share_bp_in.cite",
+   "doc": "HB26",
+   "page": 5,
+   "page_note": null,
+   "section": null,
+   "quote": "Class I Preventive services: the Plan pays 100% of the Allowed Amount. Class II Basic services: the Plan pays 80% of the Allowed Amount. Class III Major services: the Plan pays 50% of the Allowed Amount. The same percentages apply in-network and out-of-network.",
+   "fact_id": null,
+   "review_status": null,
+   "n": 16
+  },
+  {
+   "field": "classes[1].plan_share_bp_out.cite",
+   "doc": "HB26",
+   "page": 5,
+   "page_note": null,
+   "section": null,
+   "quote": "Class I Preventive services: the Plan pays 100% of the Allowed Amount. Class II Basic services: the Plan pays 80% of the Allowed Amount. Class III Major services: the Plan pays 50% of the Allowed Amount. The same percentages apply in-network and out-of-network.",
+   "fact_id": null,
+   "review_status": null,
+   "n": 17
+  },
+  {
+   "field": "classes[2].plan_share_bp_in.cite",
+   "doc": "HB26",
+   "page": 5,
+   "page_note": null,
+   "section": null,
+   "quote": "Class I Preventive services: the Plan pays 100% of the Allowed Amount. Class II Basic services: the Plan pays 80% of the Allowed Amount. Class III Major services: the Plan pays 50% of the Allowed Amount. The same percentages apply in-network and out-of-network.",
+   "fact_id": null,
+   "review_status": null,
+   "n": 18
+  },
+  {
+   "field": "classes[2].plan_share_bp_out.cite",
+   "doc": "HB26",
+   "page": 5,
+   "page_note": null,
+   "section": null,
+   "quote": "Class I Preventive services: the Plan pays 100% of the Allowed Amount. Class II Basic services: the Plan pays 80% of the Allowed Amount. Class III Major services: the Plan pays 50% of the Allowed Amount. The same percentages apply in-network and out-of-network.",
+   "fact_id": null,
+   "review_status": null,
+   "n": 19
+  },
+  {
+   "field": "annual_max.cite",
+   "doc": "HB26",
+   "page": 6,
+   "page_note": null,
+   "section": null,
+   "quote": "The Annual Maximum is $1,500 per Covered Person each Calendar Year. The Annual Maximum is the most the Plan pays for covered services in a Calendar Year; it does not limit the amount you may owe. All classes of covered services count toward the Annual Maximum.",
+   "fact_id": null,
+   "review_status": null,
+   "n": 20
+  },
+  {
+   "field": "benefit_year_start_month.cite",
+   "doc": "HB26",
+   "page": 6,
+   "page_note": null,
+   "section": null,
+   "quote": "Benefit Year means the Calendar Year, January 1 through December 31.",
+   "fact_id": null,
+   "review_status": null,
+   "n": 21
+  },
+  {
+   "field": "deductible_family.cite",
+   "doc": "HB26",
+   "page": 6,
+   "page_note": null,
+   "section": null,
+   "quote": "The Deductible is $50 per Covered Person and $150 per family each Calendar Year. The Deductible is waived for Class I services.",
+   "fact_id": null,
+   "review_status": null,
+   "n": 22
+  },
+  {
+   "field": "deductible_individual.cite",
+   "doc": "HB26",
+   "page": 6,
+   "page_note": null,
+   "section": null,
+   "quote": "The Deductible is $50 per Covered Person and $150 per family each Calendar Year. The Deductible is waived for Class I services.",
+   "fact_id": null,
+   "review_status": null,
+   "n": 23
+  },
+  {
+   "field": "class_of.amalgam.cite",
+   "doc": "HB26",
+   "page": 7,
+   "page_note": null,
+   "section": null,
+   "quote": "Class II Basic services include fillings (amalgam and resin composite), simple and surgical extractions, and emergency treatment of dental pain.",
+   "fact_id": null,
+   "review_status": null,
+   "n": 24
+  },
+  {
+   "field": "class_of.composite.cite",
+   "doc": "HB26",
+   "page": 7,
+   "page_note": null,
+   "section": null,
+   "quote": "Class II Basic services include fillings (amalgam and resin composite), simple and surgical extractions, and emergency treatment of dental pain.",
+   "fact_id": null,
+   "review_status": null,
+   "n": 25
+  },
+  {
+   "field": "class_of.extraction_simple.cite",
+   "doc": "HB26",
+   "page": 7,
+   "page_note": null,
+   "section": null,
+   "quote": "Class II Basic services include fillings (amalgam and resin composite), simple and surgical extractions, and emergency treatment of dental pain.",
+   "fact_id": null,
+   "review_status": null,
+   "n": 26
+  },
+  {
+   "field": "class_of.extraction_surgical.cite",
+   "doc": "HB26",
+   "page": 7,
+   "page_note": null,
+   "section": null,
+   "quote": "Class II Basic services include fillings (amalgam and resin composite), simple and surgical extractions, and emergency treatment of dental pain.",
+   "fact_id": null,
+   "review_status": null,
+   "n": 27
+  },
+  {
+   "field": "classes[1].cite",
+   "doc": "HB26",
+   "page": 7,
+   "page_note": null,
+   "section": null,
+   "quote": "Class II Basic services include fillings (amalgam and resin composite), simple and surgical extractions, and emergency treatment of dental pain.",
+   "fact_id": null,
+   "review_status": null,
+   "n": 28
+  },
+  {
+   "field": "class_of.cast_crown.cite",
+   "doc": "HB26",
+   "page": 8,
+   "page_note": null,
+   "section": null,
+   "quote": "Class III Major services include crowns, inlays, onlays, bridges, partial and complete dentures, root canal therapy, scaling and root planing, and periodontal surgery.",
+   "fact_id": null,
+   "review_status": null,
+   "n": 29
+  },
+  {
+   "field": "class_of.crown.cite",
+   "doc": "HB26",
+   "page": 8,
+   "page_note": null,
+   "section": null,
+   "quote": "Class III Major services include crowns, inlays, onlays, bridges, partial and complete dentures, root canal therapy, scaling and root planing, and periodontal surgery.",
+   "fact_id": null,
+   "review_status": null,
+   "n": 30
+  },
+  {
+   "field": "class_of.denture_partial.cite",
+   "doc": "HB26",
+   "page": 8,
+   "page_note": null,
+   "section": null,
+   "quote": "Class III Major services include crowns, inlays, onlays, bridges, partial and complete dentures, root canal therapy, scaling and root planing, and periodontal surgery.",
+   "fact_id": null,
+   "review_status": null,
+   "n": 31
+  },
+  {
+   "field": "class_of.root_canal_molar.cite",
+   "doc": "HB26",
+   "page": 8,
+   "page_note": null,
+   "section": null,
+   "quote": "Class III Major services include crowns, inlays, onlays, bridges, partial and complete dentures, root canal therapy, scaling and root planing, and periodontal surgery.",
+   "fact_id": null,
+   "review_status": null,
+   "n": 32
+  },
+  {
+   "field": "class_of.scaling_root_planing.cite",
+   "doc": "HB26",
+   "page": 8,
+   "page_note": null,
+   "section": null,
+   "quote": "Class III Major services include crowns, inlays, onlays, bridges, partial and complete dentures, root canal therapy, scaling and root planing, and periodontal surgery.",
+   "fact_id": null,
+   "review_status": null,
+   "n": 33
+  },
+  {
+   "field": "classes[2].cite",
+   "doc": "HB26",
+   "page": 8,
+   "page_note": null,
+   "section": null,
+   "quote": "Class III Major services include crowns, inlays, onlays, bridges, partial and complete dentures, root canal therapy, scaling and root planing, and periodontal surgery.",
+   "fact_id": null,
+   "review_status": null,
+   "n": 34
+  },
+  {
+   "field": "alternate_benefit.cite",
+   "doc": "HB26",
+   "page": 9,
+   "page_note": null,
+   "section": null,
+   "quote": "When a porcelain or ceramic crown is placed on a molar, the benefit will be based on the allowance for a full cast metal crown. You are responsible for the difference between the Allowed Amount for the service performed and the allowance for the alternate service.",
+   "fact_id": null,
+   "review_status": null,
+   "n": 35
+  },
+  {
+   "field": "frequency[0].cite",
+   "doc": "HB26",
+   "page": 9,
+   "page_note": null,
+   "section": null,
+   "quote": "Oral examinations and cleanings are covered twice per Calendar Year. Crowns on the same tooth are covered once in any 60-month period.",
+   "fact_id": null,
+   "review_status": null,
+   "n": 36
+  },
+  {
+   "field": "frequency[1].cite",
+   "doc": "HB26",
+   "page": 9,
+   "page_note": null,
+   "section": null,
+   "quote": "Oral examinations and cleanings are covered twice per Calendar Year. Crowns on the same tooth are covered once in any 60-month period.",
+   "fact_id": null,
+   "review_status": null,
+   "n": 37
+  },
+  {
+   "field": "frequency[2].cite",
+   "doc": "HB26",
+   "page": 9,
+   "page_note": null,
+   "section": null,
+   "quote": "Oral examinations and cleanings are covered twice per Calendar Year. Crowns on the same tooth are covered once in any 60-month period.",
+   "fact_id": null,
+   "review_status": null,
+   "n": 38
+  },
+  {
+   "field": "oon_rule.cite",
+   "doc": "HB26",
+   "page": 10,
+   "page_note": null,
+   "section": null,
+   "quote": "For non-participating dentists the Plan pays on the same Allowed Amount; a non-participating dentist may bill you the difference between the charge and the Allowed Amount.",
+   "fact_id": null,
+   "review_status": null,
+   "n": 39
+  },
+  {
+   "field": "excluded.implant.cite",
+   "doc": "HB26",
+   "page": 11,
+   "page_note": null,
+   "section": null,
+   "quote": "The Plan does not cover dental implants, occlusal night guards, cosmetic services, or services started before coverage began.",
+   "fact_id": null,
+   "review_status": null,
+   "n": 40
+  },
+  {
+   "field": "excluded.night_guard.cite",
+   "doc": "HB26",
+   "page": 11,
+   "page_note": null,
+   "section": null,
+   "quote": "The Plan does not cover dental implants, occlusal night guards, cosmetic services, or services started before coverage began.",
+   "fact_id": null,
+   "review_status": null,
+   "n": 41
+  },
+  {
+   "field": "missing_tooth.cite",
+   "doc": "HB26",
+   "page": 11,
+   "page_note": null,
+   "section": null,
+   "quote": "The Plan does not cover the replacement of a tooth that was missing before the Covered Person's coverage began.",
+   "fact_id": null,
+   "review_status": null,
+   "n": 42
+  },
+  {
+   "field": "dos_rule.cite",
+   "doc": "HB26",
+   "page": 12,
+   "page_note": null,
+   "section": null,
+   "quote": "For multi-visit procedures, the date of service is the date the procedure is completed (for crowns, the cementation date).",
+   "fact_id": null,
+   "review_status": null,
+   "n": 43
+  },
+  {
+   "field": "allowed_amounts.amalgam.cite",
+   "doc": "HB26",
+   "page": 13,
+   "page_note": null,
+   "section": null,
+   "quote": "Amalgam filling, two surfaces: $150.00",
+   "fact_id": null,
+   "review_status": null,
+   "n": 44
+  },
+  {
+   "field": "allowed_amounts.bitewing_xrays.cite",
+   "doc": "HB26",
+   "page": 13,
+   "page_note": null,
+   "section": null,
+   "quote": "Bitewing x-rays (set): $60.00",
+   "fact_id": null,
+   "review_status": null,
+   "n": 45
+  },
+  {
+   "field": "allowed_amounts.cast_crown.cite",
+   "doc": "HB26",
+   "page": 13,
+   "page_note": null,
+   "section": null,
+   "quote": "Crown, full cast metal: $800.00",
+   "fact_id": null,
+   "review_status": null,
+   "n": 46
+  },
+  {
+   "field": "allowed_amounts.cleaning.cite",
+   "doc": "HB26",
+   "page": 13,
+   "page_note": null,
+   "section": null,
+   "quote": "Adult cleaning (prophylaxis): $95.00",
+   "fact_id": null,
+   "review_status": null,
+   "n": 47
+  },
+  {
+   "field": "allowed_amounts.composite.cite",
+   "doc": "HB26",
+   "page": 13,
+   "page_note": null,
+   "section": null,
+   "quote": "Resin composite filling, two surfaces, posterior tooth: $200.00",
+   "fact_id": null,
+   "review_status": null,
+   "n": 48
+  },
+  {
+   "field": "allowed_amounts.crown.cite",
+   "doc": "HB26",
+   "page": 13,
+   "page_note": null,
+   "section": null,
+   "quote": "Crown, porcelain or ceramic: $1,000.00",
+   "fact_id": null,
+   "review_status": null,
+   "n": 49
+  },
+  {
+   "field": "allowed_amounts.denture_partial.cite",
+   "doc": "HB26",
+   "page": 13,
+   "page_note": null,
+   "section": null,
+   "quote": "Partial denture: $1,400.00",
+   "fact_id": null,
+   "review_status": null,
+   "n": 50
+  },
+  {
+   "field": "allowed_amounts.exam.cite",
+   "doc": "HB26",
+   "page": 13,
+   "page_note": null,
+   "section": null,
+   "quote": "Periodic oral evaluation: $45.00",
+   "fact_id": null,
+   "review_status": null,
+   "n": 51
+  },
+  {
+   "field": "allowed_amounts.extraction_simple.cite",
+   "doc": "HB26",
+   "page": 13,
+   "page_note": null,
+   "section": null,
+   "quote": "Simple extraction: $180.00",
+   "fact_id": null,
+   "review_status": null,
+   "n": 52
+  },
+  {
+   "field": "allowed_amounts.extraction_surgical.cite",
+   "doc": "HB26",
+   "page": 13,
+   "page_note": null,
+   "section": null,
+   "quote": "Surgical extraction: $360.00",
+   "fact_id": null,
+   "review_status": null,
+   "n": 53
+  },
+  {
+   "field": "allowed_amounts.fluoride_child.cite",
+   "doc": "HB26",
+   "page": 13,
+   "page_note": null,
+   "section": null,
+   "quote": "Fluoride treatment (child): $30.00",
+   "fact_id": null,
+   "review_status": null,
+   "n": 54
+  },
+  {
+   "field": "allowed_amounts.implant.cite",
+   "doc": "HB26",
+   "page": 13,
+   "page_note": null,
+   "section": null,
+   "quote": "Dental implant (body): $1,900.00",
+   "fact_id": null,
+   "review_status": null,
+   "n": 55
+  },
+  {
+   "field": "allowed_amounts.night_guard.cite",
+   "doc": "HB26",
+   "page": 13,
+   "page_note": null,
+   "section": null,
+   "quote": "Occlusal night guard: $400.00",
+   "fact_id": null,
+   "review_status": null,
+   "n": 56
+  },
+  {
+   "field": "allowed_amounts.root_canal_molar.cite",
+   "doc": "HB26",
+   "page": 13,
+   "page_note": null,
+   "section": null,
+   "quote": "Root canal therapy, molar: $900.00",
+   "fact_id": null,
+   "review_status": null,
+   "n": 57
+  },
+  {
+   "field": "allowed_amounts.scaling_root_planing.cite",
+   "doc": "HB26",
+   "page": 13,
+   "page_note": null,
+   "section": null,
+   "quote": "Scaling and root planing (per quadrant): $240.00",
+   "fact_id": null,
+   "review_status": null,
+   "n": 58
+  },
+  {
+   "field": "allowed_amounts.sealant.cite",
+   "doc": "HB26",
+   "page": 13,
+   "page_note": null,
+   "section": null,
+   "quote": "Sealant (per tooth, child): $50.00",
+   "fact_id": null,
+   "review_status": null,
+   "n": 59
+  }
+ ],
+ "procedures": [
+  {
+   "key": "exam",
+   "name": "Periodic oral evaluation",
+   "category_hint": "preventive",
+   "tooth_or_area_relevant": false
+  },
+  {
+   "key": "cleaning",
+   "name": "Adult cleaning (prophylaxis)",
+   "category_hint": "preventive",
+   "tooth_or_area_relevant": false
+  },
+  {
+   "key": "bitewing_xrays",
+   "name": "Bitewing x-rays (set)",
+   "category_hint": "preventive",
+   "tooth_or_area_relevant": false
+  },
+  {
+   "key": "fluoride_child",
+   "name": "Fluoride treatment (child)",
+   "category_hint": "preventive",
+   "tooth_or_area_relevant": false
+  },
+  {
+   "key": "sealant",
+   "name": "Sealant (per tooth, child)",
+   "category_hint": "preventive",
+   "tooth_or_area_relevant": true
+  },
+  {
+   "key": "composite",
+   "name": "Resin composite filling, two surfaces, posterior tooth",
+   "category_hint": "basic",
+   "tooth_or_area_relevant": true
+  },
+  {
+   "key": "amalgam",
+   "name": "Amalgam filling, two surfaces",
+   "category_hint": "basic",
+   "tooth_or_area_relevant": true
+  },
+  {
+   "key": "extraction_simple",
+   "name": "Simple extraction",
+   "category_hint": "basic",
+   "tooth_or_area_relevant": true
+  },
+  {
+   "key": "extraction_surgical",
+   "name": "Surgical extraction",
+   "category_hint": "basic/major (varies)",
+   "tooth_or_area_relevant": true
+  },
+  {
+   "key": "scaling_root_planing",
+   "name": "Scaling and root planing (per quadrant)",
+   "category_hint": "basic/major (varies)",
+   "tooth_or_area_relevant": true
+  },
+  {
+   "key": "root_canal_molar",
+   "name": "Root canal therapy, molar",
+   "category_hint": "basic/major (varies)",
+   "tooth_or_area_relevant": true
+  },
+  {
+   "key": "crown",
+   "name": "Crown, porcelain or ceramic",
+   "category_hint": "major",
+   "tooth_or_area_relevant": true
+  },
+  {
+   "key": "cast_crown",
+   "name": "Crown, full cast metal",
+   "category_hint": "major",
+   "tooth_or_area_relevant": true
+  },
+  {
+   "key": "denture_partial",
+   "name": "Partial denture",
+   "category_hint": "major",
+   "tooth_or_area_relevant": false
+  },
+  {
+   "key": "implant",
+   "name": "Dental implant (body)",
+   "category_hint": "major/excluded (varies)",
+   "tooth_or_area_relevant": true
+  },
+  {
+   "key": "night_guard",
+   "name": "Occlusal night guard",
+   "category_hint": "major/excluded (varies)",
+   "tooth_or_area_relevant": false
+  }
+ ]
+}
