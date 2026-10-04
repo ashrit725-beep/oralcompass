@@ -15,7 +15,7 @@ from pydantic import BaseModel
 
 from .auth import User, current_user
 from .data import EMPTY_JOURNEY, SAMPLE_JOURNEYS, SAMPLE_USERS
-from .records import seed_user_records
+from .records import item_in_journey, seed_user_records
 from .store import NOT_FOUND, repo
 from .templates import JOURNEY_NOTE, SAMPLE_JOURNEY_LABEL
 
@@ -54,9 +54,11 @@ def progress(journey: dict) -> dict:
 
 def resolve_links(sub: str, journey: dict) -> dict:
     """Attach the caller's own records (treatment items, documents, latest saved estimate) to the journey's link references — ids only, owner-scoped."""
-    items = {i.get("seed_id") or i["id"]: i for i in repo.list_owned(sub, "treatment_item")}
-    docs = {d.get("seed_id") or d["id"]: d for d in repo.list_owned(sub, "document")}
-    estimates = sorted(repo.list_owned(sub, "saved_estimate"), key=lambda e: e.get("calculated_at", ""))
+    items = {i.get("seed_id") or i["id"]: i for i in repo.list_owned(sub, "treatment_item") if item_in_journey(i, journey)}
+    docs = {d.get("seed_id") or d["id"]: d for d in repo.list_owned(sub, "document") if item_in_journey(d, journey)}
+    # the latest estimate on this journey's plan only (another sample's estimate is not this journey's)
+    estimates = sorted((e for e in repo.list_owned(sub, "saved_estimate") if not journey.get("plan_ref") or e.get("plan_code") == journey.get("plan_ref")),
+                       key=lambda e: e.get("calculated_at", ""))
     latest = estimates[-1] if estimates else None
     out = {"treatment_items": {}, "documents": {}, "latest_estimate": None}
     for s in journey["stages"]:

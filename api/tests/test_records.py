@@ -144,3 +144,22 @@ def test_ledger_lines_carry_record_ids_and_benefits_are_keyed_by_plan_ref():
     # preset benefits stay keyed by the preset code; listing derives each record against its own plan
     assert [b["plan_code"] for b in client.get("/me/benefits", headers=h).json()] == ["ML26"]
     assert client.get("/me/benefits/ml26", headers=h).json()["plan_code"] == "ML26"
+
+
+def test_second_sample_journey_does_not_mix_into_the_first():
+    """demo-1: opening Alex, then Sam and Jordan, keeps each journey's estimate on its own sample's records ($902 / $640)."""
+    h = {"X-Dev-User": "demo-three-samples"}
+    alex = client.post("/journeys", json={"from": "sample-alex"}, headers=h).json()
+    sam = client.post("/journeys", json={"from": "sample-sam"}, headers=h).json()
+    client.post("/journeys", json={"from": "sample-jordan"}, headers=h)
+    est_a = client.post("/me/estimates", json={"plan_code": "ML26", "journey_id": alex["id"]}, headers=h).json()
+    assert est_a["user_estimated_payment_cents"] == 90200 and est_a["insurer_estimated_payment_cents"] == 109800 and len(est_a["ledger"]["lines"]) == 2
+    est_s = client.post("/me/estimates", json={"plan_code": "HB26", "journey_id": sam["id"]}, headers=h).json()
+    assert est_s["user_estimated_payment_cents"] == 64000 and est_s["insurer_estimated_payment_cents"] == 56000
+    # each journey's links show only its own sample's records and its own plan's latest estimate
+    view_a = client.get(f"/journeys/{alex['id']}", headers=h).json()
+    assert all(k.startswith("ti-a-") for k in view_a["links"]["treatment_items"]) and view_a["links"]["latest_estimate"]["plan_code"] == "ML26"
+    view_s = client.get(f"/journeys/{sam['id']}", headers=h).json()
+    assert not any(k.startswith("ti-a-") or k.startswith("ti-j-") for k in view_s["links"]["treatment_items"]) and view_s["links"]["latest_estimate"]["plan_code"] == "HB26"
+    # another owner's journey id is a constant 404
+    assert client.post("/me/estimates", json={"plan_code": "ML26", "journey_id": alex["id"]}, headers=B).status_code == 404

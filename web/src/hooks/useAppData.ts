@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "@/lib/api";
 import { UI } from "@/lib/copy";
 import { stitchesFromClauses } from "@/lib/stitches";
+import { itemsForJourney } from "@/lib/journey-scope";
 import type { Benefits, CoverageRule, JourneyView, PlanEvidence, PlanFixture, PlanRef, PlanSummary, Procedure, SavedEstimate, TreatmentItem } from "@/lib/types";
 
 export type JourneySample = { id: string; label: string; plan_ref: string | null };
@@ -20,7 +21,7 @@ export function useAppData() {
   const [plan, setPlan] = useState<PlanFixture | null>(null);
   const [rules, setRules] = useState<CoverageRule[]>([]);
   const [evidence, setEvidence] = useState<PlanEvidence | null>(null);
-  const [items, setItems] = useState<TreatmentItem[]>([]);
+  const [allItems, setItems] = useState<TreatmentItem[]>([]);
   const [benefits, setBenefits] = useState<Benefits[]>([]);
   const [procedures, setProcedures] = useState<Procedure[]>([]);
   const [estimate, setEstimate] = useState<SavedEstimate | null>(null);
@@ -30,6 +31,9 @@ export function useAppData() {
   const [samples, setSamples] = useState<JourneySample[]>([]);
   const [tick, setTick] = useState(0);
 
+  // the active journey's records only: a second sample's procedures never mix into the first (demo-1)
+  const userRef = view?.journey.user_ref ?? null;
+  const items = useMemo(() => itemsForJourney(allItems, { user_ref: userRef }), [allItems, userRef]);
   const stitches = useMemo(() => (evidence ? stitchesFromClauses(evidence.clauses) : []), [evidence]);
 
   // ---- base catalogs + journeys ----
@@ -65,7 +69,7 @@ export function useAppData() {
         if (cancelled) return;
         setPlan(pm.model); setRules(ru.rules); setEvidence(ev);
         const planned = items.filter((i) => i.status === "planned" || i.status === "scheduled");
-        if (planned.length) { const est = await api.estimateFromRecords(planRef); if (!cancelled) setEstimate(est); }
+        if (planned.length) { const est = await api.estimateFromRecords(planRef, planned.map((i) => i.id)); if (!cancelled) setEstimate(est); }
         else setEstimate(null);
       } catch (e: any) { if (!cancelled) setError(`${UI.errorTitle}: ${e.message}`); }
       finally { if (!cancelled) setLoading(null); }

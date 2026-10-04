@@ -92,6 +92,7 @@ export interface Benefits {
 export interface TreatmentItem {
   id: string; seed_id?: string; procedure_key: string; procedure_name?: string | null; tooth?: string | null; quantity: number; dentist_fee_cents: number; allowed_cents: number | null; allowed_status?: string; allowed_source?: string | null;
   code_as_written?: string | null; network?: string | null; appointment_date?: string | null; planned_prep?: string | null; planned_completion?: string | null; status: string; source: string;
+  seeded_from_sample?: string | null;
 }
 export interface MissingInput { input: string; how: string; line?: string }
 export interface SavedEstimate {

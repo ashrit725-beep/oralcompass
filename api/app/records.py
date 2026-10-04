@@ -76,6 +76,7 @@ class TreatmentItemIn(BaseModel):
 class EstimateRequest(BaseModel):
     plan_code: str                                   # a plan reference: preset code or "upload:<document_id>"
     treatment_item_ids: list[str] = []               # defaults to all items with status planned/scheduled
+    journey_id: Optional[str] = None                 # scope the default to one journey's items (a sample's records never mix into another journey)
     dos_rule: Optional[str] = None                   # defaults to the plan's stated rule (or completion)
     hypotheticals: dict = {}                         # {remaining_deductible_cents, remaining_max_cents, network, enrolled_months} — labeled ASSUMED
 
@@ -158,6 +159,12 @@ def lines_from_items(items: list[dict]) -> list[EstimateLine]:
         out.append(EstimateLine(i["procedure_key"], name + (f" (tooth {i['tooth']})" if i.get("tooth") else ""), i.get("tooth"), i["dentist_fee_cents"] * i.get("quantity", 1),
                                 date.fromisoformat(comp) if comp else None, date.fromisoformat(i["planned_prep"]) if i.get("planned_prep") else None, []))
     return out
+
+
+def item_in_journey(item: dict, journey: Optional[dict]) -> bool:
+    """A record seeded from a sample belongs only to that sample's journeys; the user's own records belong to every journey of theirs."""
+    seeded = item.get("seeded_from_sample")
+    return not seeded or (journey is not None and seeded == journey.get("user_ref"))
 
 
 def _benefits_record(sub: str, plan_ref: str) -> Optional[dict]:
@@ -334,6 +341,9 @@ def estimate_from_records(body: EstimateRequest, user: User = Depends(current_us
     res = resolve_plan_ref(user, body.plan_code)
     plan, ref = res.plan, res.ref
     items = repo.list_owned(user.sub, "treatment_item")
+    if body.journey_id:
+        journey = repo.get_owned(user.sub, "journey", body.journey_id)["journey"]
+        items = [i for i in items if item_in_journey(i, journey)]
     if body.treatment_item_ids:
         items = [i for i in items if i["id"] in body.treatment_item_ids]
     else:
