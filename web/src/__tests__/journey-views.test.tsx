@@ -47,7 +47,7 @@ describe("start screen samples (finding demo-12)", () => {
 });
 
 describe("DetailPanel forms (finding web-correctness-7)", () => {
-  const base = { view: f.view, onSelect: noop, onOpenLandmark: noop, onOpenDocuments: noop, onPatch: async () => {}, onInstructions: async () => {}, busy: false, mobile: false, onClose: noop };
+  const base = { view: f.view, estimate: f.estimate, onSelect: noop, onOpenLandmark: noop, onOpenDocuments: noop, onPatch: async () => {}, onInstructions: async () => {}, busy: false, mobile: false, onClose: noop };
   const stage = f.view.journey.stages.find((s) => s.checkpoints.length >= 2)!;
   const bodyOf = (el: ReturnType<typeof DetailPanel>) => (el as React.ReactElement<{ children: React.ReactNode[] }>).props.children[1] as React.ReactElement;
   it("mounts a fresh checkpoint form per checkpoint and a fresh stage form per stage", () => {
@@ -56,5 +56,19 @@ describe("DetailPanel forms (finding web-correctness-7)", () => {
     expect(a.key).toBe(`${stage.id}:${stage.checkpoints[0].id}`);
     expect(b.key).not.toBe(a.key);
     expect(bodyOf(DetailPanel({ ...base, selection: { stageId: stage.id } })).key).toBe(stage.id);
+  });
+});
+
+describe("DetailPanel costs (finding web-correctness-28)", () => {
+  it("prints the live estimate, not the journey view's stale latest_estimate snapshot", () => {
+    const stale = { ...f.view, links: { ...f.view.links, latest_estimate: { id: "old", plan_code: "ML26", status: "estimate", calculated_at: "2026-01-01", user_estimated_payment_cents: 12345, insurer_estimated_payment_cents: 67890 } } };
+    const props = { view: stale, estimate: f.estimate, onSelect: noop, onOpenLandmark: noop, onOpenDocuments: noop, onPatch: async () => {}, onInstructions: async () => {}, busy: false, mobile: false, onClose: noop };
+    const stageHtml = renderToStaticMarkup(<DetailPanel {...props} selection={{ stageId: "before" }} />);
+    expect(stageHtml).toContain("$902.00");
+    expect(stageHtml).toContain("$1,098.00");
+    expect(stageHtml).not.toContain("$123.45");
+    const cpHtml = renderToStaticMarkup(<DetailPanel {...props} selection={{ stageId: "before", cpId: "estimate-reviewed" }} />);
+    expect(cpHtml).toContain("$902.00");
+    expect(cpHtml).not.toContain("$678.90");
   });
 });

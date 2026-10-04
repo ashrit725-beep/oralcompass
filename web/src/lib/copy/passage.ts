@@ -125,6 +125,7 @@ export const PASSAGE = {
   ownerInfo: "information",
   cancelledNote: (n: number) => `${n} cancelled item${n === 1 ? "" : "s"} not drawn.`,
   uploadedPlan: "your uploaded document",
+  currentEstimate: "Current estimate",
   tableScrolls: "The table scrolls sideways for more columns.",
   tableRegion: (name: string) => `${name} (table, scrolls sideways)`,
 } as const satisfies Record<string, string | ((...a: never[]) => string)>;

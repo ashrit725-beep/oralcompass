@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { ATTRIBUTION, UI, type LandmarkId } from "../lib/copy";
+import { ATTRIBUTION, DRAWER, UI, type LandmarkId } from "../lib/copy";
+import { PASSAGE } from "../lib/copy/passage";
 import { attributionLabel, dateLabel, nextCheckpoint, stageProgress, statusLabel } from "../lib/journey";
 import { money } from "../lib/stitches";
-import type { Checkpoint, JourneyLinks, JourneyView, Stage } from "../lib/types";
+import type { Checkpoint, JourneyLinks, JourneyView, SavedEstimate, Stage } from "../lib/types";
 import type { Selection } from "./atlas/JourneyMap";
 import { EvidenceBadge } from "./Primitives";
 import { Sheet } from "./Primitives/Sheet";
@@ -12,6 +13,9 @@ interface Props {
   onPatch: (cpId: string, body: { status?: string; completed_by?: string; date?: string; date_source?: string; note?: string }) => Promise<void>;
   onInstructions: (stageId: string, text: string, source: string, givenOn?: string) => Promise<void>;
   busy: boolean; mobile: boolean; onClose: () => void;
+  /** The live estimate (useAppData): the same figures the map, the Answers log and the Harbor Light show. The journey view's
+   *  `links.latest_estimate` is a snapshot taken when the journey was fetched and goes stale after a re-estimate. */
+  estimate: SavedEstimate | null;
   /** Phone: where focus returns when the sheet closes (the stage or checkpoint button that opened it). */
   returnFocus?: HTMLElement | null;
 }
@@ -51,7 +55,17 @@ export function DetailPanel(props: Props) {
   );
 }
 
-function StageDetail({ view, stage, onSelect, onOpenLandmark, onInstructions, busy }: Props & { stage: Stage }) {
+/** "you pay $X · plan pays $Y" from the live estimate, labelled as calculated (engine arithmetic over cited clauses and your figures). */
+function EstimateFigures({ estimate }: { estimate: SavedEstimate }) {
+  const code = estimate.sources?.plan_document?.version_label ?? estimate.plan_code;
+  if (estimate.status !== "estimate" || estimate.user_estimated_payment_cents == null) return <>{code}: {PASSAGE.waitingInputs(estimate.missing_inputs.length)}</>;
+  return (
+    <>{code}: you pay <strong className="num">{money(estimate.user_estimated_payment_cents)}</strong> · plan pays <strong className="num">{money(estimate.insurer_estimated_payment_cents)}</strong>
+      {estimate.plan_payment_is_upper_bound ? " (upper bound)" : ""} <span className="fig-calc">{DRAWER.calculated}</span></>
+  );
+}
+
+function StageDetail({ view, stage, estimate, onSelect, onOpenLandmark, onInstructions, busy }: Props & { stage: Stage }) {
   const prog = stageProgress(stage);
   const items = (stage.linked_treatment_items ?? []).map((id) => view.links.treatment_items[id]).filter(Boolean);
   const [text, setText] = useState(""); const [source, setSource] = useState(""); const [given, setGiven] = useState("");
@@ -70,9 +84,9 @@ function StageDetail({ view, stage, onSelect, onOpenLandmark, onInstructions, bu
           <p className="muted small">{UI.allowedNote}</p>
         </section>
       )}
-      {stage.finance.kind !== "none" && view.links.latest_estimate && (
+      {stage.finance.kind !== "none" && estimate && (
         <section className="block"><h3>Costs</h3>
-          <p>Latest estimate ({view.links.latest_estimate.plan_code}): you pay <strong className="num">{money(view.links.latest_estimate.user_estimated_payment_cents)}</strong> · plan pays <strong className="num">{money(view.links.latest_estimate.insurer_estimated_payment_cents)}</strong>{view.links.latest_estimate.status === "unresolved" ? " — unresolved (information missing)" : ""}</p>
+          <p>{PASSAGE.currentEstimate} <EstimateFigures estimate={estimate} /></p>
           <button type="button" onClick={() => onOpenLandmark("lighthouse")}>Open the cost breakdown</button>
         </section>
       )}
@@ -93,7 +107,7 @@ function StageDetail({ view, stage, onSelect, onOpenLandmark, onInstructions, bu
   );
 }
 
-function CheckpointDetail({ view, stage, cp, onSelect, onOpenLandmark, onOpenDocuments, onPatch, busy }: Props & { stage: Stage; cp: Checkpoint }) {
+function CheckpointDetail({ view, stage, cp, estimate, onSelect, onOpenLandmark, onOpenDocuments, onPatch, busy }: Props & { stage: Stage; cp: Checkpoint }) {
   const [date, setDate] = useState(cp.date?.value ?? ""); const [dateSource, setDateSource] = useState<string>(cp.date?.source ?? "user");
   const [who, setWho] = useState<"user" | "dental_team">("user");
   const next = nextCheckpoint(view.journey, { stageId: stage.id, cpId: cp.id });
@@ -110,7 +124,7 @@ function CheckpointDetail({ view, stage, cp, onSelect, onOpenLandmark, onOpenDoc
         {cp.source && <><dt>Source</dt><dd>{cp.source.label}{cp.source.doc ? ` (${cp.source.doc}${cp.source.page ? `, p.${cp.source.page}` : ""})` : ""}</dd></>}
         {linkedDoc && <><dt>Document</dt><dd>{linkedDoc.label} <button type="button" className="linklike" onClick={onOpenDocuments}>open in Documents</button></dd></>}
         {linkedItems.length > 0 && <><dt>Procedures</dt><dd>{linkedItems.map((t) => `${t.procedure_name ?? t.procedure_key}${t.tooth ? ` (tooth ${t.tooth})` : ""}`).join("; ")}</dd></>}
-        {cp.links?.estimate && view.links.latest_estimate && <><dt>Amounts</dt><dd>you pay {money(view.links.latest_estimate.user_estimated_payment_cents)} · plan pays {money(view.links.latest_estimate.insurer_estimated_payment_cents)} ({view.links.latest_estimate.plan_code})</dd></>}
+        {cp.links?.estimate && estimate && <><dt>Amounts</dt><dd><EstimateFigures estimate={estimate} /></dd></>}
         {cp.user_note && <><dt>Your note</dt><dd>{cp.user_note}</dd></>}
       </dl>
       <section className="block actions">
