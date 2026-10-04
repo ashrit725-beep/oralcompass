@@ -105,6 +105,7 @@ export function AskAboutStep({ scope, onOpenStitch, onOpenStep, className, data:
         onScopeChange={(v) => setChoice(v as ScopeChoice)}
         placeholder={isClause ? ASSIST.clausePlaceholder : stepScoped ? ASSIST.placeholder : ASSIST.planPlaceholder}
         sendLabel={ASSIST.send}
+        label={isClause ? ASSIST.clauseHeading : stepScoped ? ASSIST.heading : ASSIST.planHeading}
         scopeLabel={ASSIST.scopeLabel}
         describedBy={descId}
         disabled={!!pending || paused}

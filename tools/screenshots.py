@@ -177,7 +177,13 @@ def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-pref
 
     # ---- the inline assistant inside the drawer (spec §12 "assistant demo") ----
     ta = page.locator(".drawer textarea").first
-    ta.scroll_into_view_if_needed(); ta.fill("What happens to the annual maximum on this line?")
+    ta.scroll_into_view_if_needed()
+    # a11y-20: the question box has its own accessible name and a visible terracotta focus ring on its shell
+    ta.focus(); page.keyboard.press("Shift+Tab"); page.keyboard.press("Tab")
+    ring = page.evaluate("""(() => { const t = document.activeElement; if (!t || t.tagName !== 'TEXTAREA') return null; const sh = t.closest('.ai-prompt-shell'); const s = sh && getComputedStyle(sh);
+        return { name: t.getAttribute('aria-label') || '', style: s ? s.outlineStyle : '', width: s ? parseFloat(s.outlineWidth) : 0 }; })()""")
+    check(f"{device}: assistant question box labelled with a visible focus ring", bool(ring) and ring["name"].startswith("Ask about") and ring["style"] == "solid" and ring["width"] >= 2, str(ring))
+    ta.fill("What happens to the annual maximum on this line?")
     page.locator(".drawer").get_by_role("button", name="Ask", exact=True).first.click(); page.wait_for_timeout(2500)
     ans = page.locator(".drawer .as-answer")
     ribbon = page.locator(".drawer .as-ribbon").first.inner_text() if page.locator(".drawer .as-ribbon").count() else ""

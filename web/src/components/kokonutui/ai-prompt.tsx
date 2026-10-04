@@ -3,7 +3,7 @@
  * Patched for OralCompass (component plan §2 N8): the promo header row, vendor logo SVGs and model picker are gone; the dropdown is a
  * SCOPE selector ("This step" / "This island" / "Whole plan" supplied by the wrapper); surfaces → paper-deep, focus
  * focus ring → sea, check → forest; fixed `w-4/6` and the hard-coded id are gone (`useId`); all icon
- * buttons are 44 px; the send button is `aria-label` "Ask" with lucide Compass (never AI iconography). Enter submits, Shift+Enter newline.
+ * buttons are 44 px; focus rings terracotta (3:1 on paper-deep), the question box's on its shell (a11y-20); the send button is `aria-label` "Ask" with lucide Compass (never AI iconography). Enter submits, Shift+Enter newline.
  * Strings are props with NO shipped defaults: `AskAboutStep` passes the ASSIST copy namespace. Reduced motion: the one 150 ms
  * opacity swap is the only animation (MotionConfig covers it).
  */
@@ -31,6 +31,8 @@ interface AIPromptProps {
   placeholder?: string;
   /** Accessible name of the send button (copy, e.g. "Ask"). */
   sendLabel: string;
+  /** Accessible name of the question box (a11y-20: the placeholder vanishes on typing, so it is not the name). Defaults to the placeholder. */
+  label?: string;
   /** Accessible name of the scope selector (copy). */
   scopeLabel?: string;
   /** id of the element that describes the composer ("Answers quote your plan document; this is information, not advice"). */
@@ -46,6 +48,7 @@ export default function AI_Prompt({
   onScopeChange,
   placeholder = "",
   sendLabel,
+  label,
   scopeLabel,
   describedBy,
   disabled = false,
@@ -75,15 +78,18 @@ export default function AI_Prompt({
 
   return (
     <div className={cn("w-full", className)}>
-      <div className="rounded-xl border border-rule bg-paper-deep p-1.5">
+      {/* the focus ring sits on this shell (assistant.css `.ai-prompt-shell:has(textarea:focus-visible)`): the textarea's own ring was
+          clipped by its scroll box and drawn in sea at 2.1:1 (a11y-20) */}
+      <div className="ai-prompt-shell rounded-xl border border-rule bg-paper-deep p-1.5">
         <div className="relative flex flex-col">
           <div className="overflow-y-auto" style={{ maxHeight: "400px" }}>
             <Textarea
               className={cn(
-                "w-full resize-none rounded-lg rounded-b-none border-none bg-paper-deep px-4 py-3 font-serif text-base text-ink placeholder:text-ink-soft focus-visible:ring-2 focus-visible:ring-sea focus-visible:ring-offset-0",
+                "w-full resize-none rounded-lg rounded-b-none border-none bg-paper-deep px-4 py-3 font-serif text-base text-ink placeholder:text-ink-soft focus-visible:ring-0 focus-visible:ring-offset-0",
                 "min-h-[72px]"
               )}
               id={id}
+              aria-label={label || placeholder || undefined}
               aria-describedby={describedBy}
               disabled={disabled}
               onChange={(e) => { setValue(e.target.value); adjustHeight(); }}
@@ -100,7 +106,7 @@ export default function AI_Prompt({
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
-                      className="flex min-h-11 items-center gap-1 rounded-md pr-2 pl-2 text-sm text-ink hover:bg-parchment focus-visible:ring-2 focus-visible:ring-sea focus-visible:ring-offset-0"
+                      className="flex min-h-11 items-center gap-1 rounded-md pr-2 pl-2 text-sm text-ink hover:bg-parchment focus-visible:ring-2 focus-visible:ring-terracotta focus-visible:ring-offset-0"
                       variant="ghost"
                       aria-label={scopeLabel}
                     >
@@ -138,7 +144,7 @@ export default function AI_Prompt({
               aria-label={sendLabel}
               variant="ghost"
               size="icon-touch"
-              className="rounded-lg text-ink hover:bg-parchment focus-visible:ring-2 focus-visible:ring-sea focus-visible:ring-offset-0 disabled:opacity-40"
+              className="rounded-lg text-ink hover:bg-parchment focus-visible:ring-2 focus-visible:ring-terracotta focus-visible:ring-offset-0 disabled:opacity-40"
               disabled={disabled || !value.trim()}
               type="button"
               onClick={submit}
