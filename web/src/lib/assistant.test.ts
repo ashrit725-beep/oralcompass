@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { AssistScope, Benefits, CoverageRule, PlanFixture, SavedEstimate, Stitch, TreatmentItem } from "./types";
 import {
   applyScopeChoice, clientGuard, createRequestGate, EMPTY_DATA, hasBareMoney, initialSuggestions, lineEvidence, resolveRef, ribbonFor, scopeChoices, splitPlaceholders, stepEvidence,
-  suggestionKey, templateLabel, toolLabel, trailingRefs, type AssistData,
+  suggestionKey, templateLabel, toolLabel, trailingRefs, lookupLabel, lookupLabels, type AssistData,
 } from "./assistant";
 
 const estimate = {
@@ -146,5 +146,22 @@ describe("request gate (web-correctness-14)", () => {
     const newer = gate.begin();
     expect(gate.isCurrent(rootCanal)).toBe(false);
     expect(gate.isCurrent(newer)).toBe(true);
+  });
+});
+
+describe("lookups in plain words (demo-19)", () => {
+  it("names lines and steps from the estimate, 1-based when unnamed, never with amounts", () => {
+    const d = { estimate };
+    expect(lookupLabel("get_benefits(ML26)", d)).toBe("Your benefit figures for ML26");
+    expect(lookupLabel("get_estimate_line(line 1)", d)).toBe("Crown (tooth 19): estimate line");
+    expect(lookupLabel("explain_step(line 0, step 2)", d)).toBe("Root canal (tooth 19): plan share step");
+    expect(lookupLabel("explain_step(line 0, step 2)", null)).toBe("Line 1: step 3");
+    expect(lookupLabel("get_estimate_line(line 4)", d)).toBe("Line 5: estimate line");
+    expect(lookupLabel("get_plan_rules(root_canal_molar)", d)).toBe("Plan rules for Root canal, molar");
+    expect(lookupLabel("resolve_procedure", d)).toBe("Procedure names");
+    expect(lookupLabel("get_clause(ML26#p25)", d)).toBe("Plan clause ML26#p25");
+    const all = lookupLabels(["explain_step(line 0, step 1)", "explain_step(line 0, step 1)", "get_estimate_line(line 0)"], d);
+    expect(all).toEqual(["Root canal (tooth 19): deductible step", "Root canal (tooth 19): estimate line"]);
+    for (const l of all) expect(l).not.toMatch(/\$|%|\d+\.\d/);
   });
 });

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { api, ApiError } from "@/lib/api";
 import { ASSIST } from "@/lib/copy/assistant";
 import {
-  applyScopeChoice, clientGuard, createRequestGate, initialSuggestions, ribbonFor, scopeChoices, toolLabel, type AssistBlockX, type AssistData, type AssistResponseX, type ScopeChoice,
+  applyScopeChoice, clientGuard, createRequestGate, initialSuggestions, lookupLabels, ribbonFor, scopeChoices, type AssistBlockX, type AssistData, type AssistResponseX, type ScopeChoice,
 } from "@/lib/assistant";
 import { cn } from "@/lib/utils";
 import type { AssistScope } from "@/lib/types";
@@ -98,7 +98,7 @@ export function AskAboutStep({ scope, onOpenStitch, onOpenStep, className, data:
   }, [scope, choice, pending]);
 
   const latest = answers[answers.length - 1];
-  const traceSteps = latest ? latest.resp.tools_used.map(toolLabel) : [];
+  const lookupCount = latest ? lookupLabels(latest.resp.tools_used, data).length : 0;
   const preLabel = !answers.length && mode ? (mode.llm_mode === "live" && mode.llm_model ? ASSIST.liveLabel(mode.llm_model) : ASSIST.demoEnvironment) : null;
 
   return (
@@ -121,7 +121,7 @@ export function AskAboutStep({ scope, onOpenStitch, onOpenStep, className, data:
       />
       <ul className="as-suggestions" aria-label={ASSIST.suggestionsLabel}>
         {suggested.map((q) => (
-          <li key={q}><Button type="button" variant="outline" size="touch" className="as-suggestion h-auto max-w-full whitespace-normal text-left" disabled={!!pending || paused} onClick={() => { void ask(q); }}>{q}</Button></li>
+          <li key={q}><Button type="button" variant="ghost" size="touch" className="as-suggestion h-auto w-full justify-start whitespace-normal text-left" disabled={!!pending || paused} onClick={() => { void ask(q); }}>{q}</Button></li>
         ))}
       </ul>
       {(pending || latest) && (
@@ -129,8 +129,9 @@ export function AskAboutStep({ scope, onOpenStitch, onOpenStep, className, data:
           key={cycle}
           working={!!pending}
           label={isClause ? ASSIST.sendingClause : ASSIST.sending}
-          doneLabel={ASSIST.readIn(traceSteps.length)}
-          steps={pending ? [] : traceSteps}
+          doneLabel={ASSIST.readIn(lookupCount)}
+          steps={[]}
+          showTimer={false}
           glyph={<Compass aria-hidden="true" />}
           glyphColor="var(--gold)"
           breathPeriod={2.4}
@@ -159,7 +160,7 @@ export function AskAboutStep({ scope, onOpenStitch, onOpenStep, className, data:
                 {dropped > 0 && <span className="as-guard">{ASSIST.guardRemoved(dropped)}</span>}
                 {grounding > 0 && <span className="as-guard">{ASSIST.groundingRemoved(grounding)}</span>}
                 {a.resp.tools_used.length > 0 && (
-                  <span className="as-tools">{ASSIST.toolsUsed} {a.resp.tools_used.map(toolLabel).join(" · ")}</span>
+                  <span className="as-tools">{ASSIST.toolsUsed} {lookupLabels(a.resp.tools_used, data).join(" · ")}</span>
                 )}
               </footer>
             </li>

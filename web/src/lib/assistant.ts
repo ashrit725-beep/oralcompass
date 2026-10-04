@@ -6,6 +6,7 @@
  *   template `label`, clarify `text` and the `tools_used` id strings (foundation notes §2.3 / §3.1).
  */
 import { ASSIST } from "./copy/assistant";
+import { PROCEDURE_NAMES } from "./clauses";
 import { stitchForLabel } from "./stitches";
 import type { AssistRef, AssistResponse, AssistScope, Benefits, CoverageRule, Evidence, LedgerLine, PlanFixture, SavedEstimate, Step, Stitch, TreatmentItem, VJson } from "./types";
 
@@ -251,6 +252,36 @@ export function toolLabel(tool: string): string {
   const name = ASSIST.toolName[m[1]] ?? m[1].replace(/_/g, " ");
   return m[2] ? `${name} ${m[2]}` : name;
 }
+
+/** demo-19: one tool id in plain words, resolved against the estimate the client holds (`get_estimate_line(line 1)` → "Crown (tooth 19):
+ *  estimate line"; `explain_step(line 0, step 2)` → "Root canal (tooth 19): plan share step"). Step names come from the rule code, never
+ *  the step label, so no amount appears; lines and steps count from 1 when no name is known. */
+export function lookupLabel(tool: string, data?: Pick<AssistData, "estimate"> | null): string {
+  const m = /^([a-z_]+)(?:\((.*)\))?$/.exec(tool.trim());
+  if (!m) return tool;
+  const arg = (m[2] ?? "").trim();
+  const lines = data?.estimate?.ledger.lines ?? [];
+  const lineName = (i: number) => lines[i]?.label || ASSIST.lookupLineN(i + 1);
+  switch (m[1]) {
+    case "get_benefits": return ASSIST.lookupBenefits(arg);
+    case "get_estimate_line": { const i = Number(/(\d+)/.exec(arg)?.[1]); return Number.isFinite(i) ? ASSIST.lookupLine(lineName(i)) : toolLabel(tool); }
+    case "explain_step": {
+      const nums = arg.match(/\d+/g)?.map(Number) ?? [];
+      if (nums.length < 2) return toolLabel(tool);
+      const [li, si] = nums;
+      const step = lines[li]?.steps[si];
+      const rule = step && ASSIST.stepRule[step.rule];
+      return rule ? ASSIST.lookupStep(lineName(li), rule) : ASSIST.lookupStepUnnamed(lineName(li), si + 1);
+    }
+    case "get_plan_rules": return ASSIST.lookupRules(PROCEDURE_NAMES[arg] ?? arg.replace(/_/g, " "));
+    case "get_clause": return ASSIST.lookupClause(arg);
+    case "resolve_procedure": return ASSIST.lookupProcedures;
+    default: return toolLabel(tool);
+  }
+}
+
+/** The answer's lookups, in plain words, each listed once. */
+export const lookupLabels = (tools: string[], data?: Pick<AssistData, "estimate"> | null): string[] => [...new Set(tools.map((t) => lookupLabel(t, data)))];
 
 /** Client-side mirror of the server's amount check: a sentence that still carries a bare amount is not rendered and counted as dropped. */
 export function clientGuard(blocks: AssistBlockX[]): { blocks: AssistBlockX[]; dropped: number } {

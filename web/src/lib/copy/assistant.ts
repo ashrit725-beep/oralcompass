@@ -22,7 +22,7 @@ export const ASSIST = {
   suggestionsLabel: "Suggested questions",
   sending: "Reading the selected step…",
   sendingClause: "Reading the selected clause…",
-  readIn: (n: number) => `${n} lookup${n === 1 ? "" : "s"} in`,
+  readIn: (n: number) => `${n} lookup${n === 1 ? "" : "s"}`,
   asked: (q: string) => `Asked: ${q}`,
   answerHeading: "What the records and the document say",
   demoRibbon: "Demo mode: template answers assembled from the engine's fields, not a live model.",
@@ -42,6 +42,19 @@ export const ASSIST = {
   clarifyLabel: "Which procedure?",
   whatIfLabel: "Hypotheticals",
   toolsUsed: "Looked up:",
+  // demo-19: lookups in plain words (the ids resolve against the estimate the client holds; numbering is 1-based; no amounts)
+  lookupBenefits: (code: string) => `Your benefit figures for ${code}`,
+  lookupLine: (name: string) => `${name}: estimate line`,
+  lookupStep: (name: string, step: string) => `${name}: ${step} step`,
+  lookupStepUnnamed: (name: string, n: number) => `${name}: step ${n}`,
+  lookupRules: (procedure: string) => `Plan rules for ${procedure}`,
+  lookupClause: (id: string) => `Plan clause ${id}`,
+  lookupProcedures: "Procedure names",
+  lookupLineN: (n: number) => `Line ${n}`,
+  stepRule: {
+    fee: "dentist's fee", N: "allowed amount", AB: "alternate benefit", D: "deductible", CO: "plan share", M: "annual maximum",
+    X: "exclusion", W: "waiting period", F: "frequency", total: "your share",
+  } as Record<string, string>,
   toolName: {
     get_estimate_line: "ledger", explain_step: "step", get_plan_rules: "rules for", get_clause: "clause", get_benefits: "benefits of", resolve_procedure: "procedure names",
   } as Record<string, string>,

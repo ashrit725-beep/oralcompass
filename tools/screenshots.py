@@ -192,6 +192,11 @@ def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-pref
     check(f"{device}: assistant demo answer grounded", ans.locator(".as-sentence").count() >= 1 and ans.locator(".stitch").count() >= 1 and ribbon.startswith("Demo mode") and page.locator(".drawer", has_text="Looked up:").count() > 0 and not bare and un_as == 0,
           f"sentences={ans.locator('.as-sentence').count()} stitches={ans.locator('.stitch').count()} ribbon={ribbon[:30]!r} bare$={bare} unbadged={un_as}")
     shot("16-assistant")
+    # demo-19 / slop-25: lookups in plain words, listed once, no "0.0s" timer artifact, suggestions as a ruled list (not pills)
+    tools_txt = page.evaluate("[...document.querySelectorAll('.drawer .as-tools')].map(t => t.textContent).join(' | ')")
+    timer = page.evaluate("[...document.querySelectorAll('.drawer .as-thought')].some(t => /\\d\\.\\ds/.test(t.textContent))")
+    pill = page.evaluate("(() => { const b = document.querySelector('.drawer .as-suggestion'); return b ? parseFloat(getComputedStyle(b).borderTopLeftRadius) : 0; })()")
+    check(f"{device}: assistant lookups in plain words", bool(tools_txt) and not re.search(r"ledger line|step line|_|\(", tools_txt) and not timer and pill <= 10, f"{tools_txt[:120]!r} timer={timer} radius={pill}")
     # the clause composer: a stitch chip in the answer opens the ClauseCard with its own composer
     ans.locator(".stitch").first.click(); page.wait_for_timeout(600)
     card = page.locator(".clause[role=dialog]")
@@ -419,7 +424,7 @@ def run(pw, device: str, width: int, height: int, reduced_motion: str = "no-pref
     check(f"{device}: official source link present", page.locator("a[href^='https://oshr.nc.gov']").count() > 0)
     check(f"{device}: clauses listed with page references", page.locator("ol.clauses li").count() > 20)
     # slop-23: one row per distinct sentence, plain-word captions, meta lines without stray dots; mobile-11: the plan select fits the column
-    dump = page.evaluate("""(() => { const rows = [...document.querySelectorAll('ol.clauses li')]; const keys = rows.map(li => (li.querySelector('.scope')?.textContent || '') + '|' + (li.querySelector('.where')?.textContent || '').split(' · ')[0] + '|' + (li.querySelector('q')?.textContent || ''));
+    dump = page.evaluate(r"""(() => { const rows = [...document.querySelectorAll('ol.clauses li')]; const keys = rows.map(li => (li.querySelector('.scope')?.textContent || '') + '|' + (li.querySelector('.where')?.textContent || '').split(' · ')[0] + '|' + (li.querySelector('q')?.textContent || ''));
         const raw = rows.filter(li => /\bcite\b|_/.test(li.querySelector('.where')?.textContent || '')).length;
         const meta = [...document.querySelectorAll('.doc-card p.muted.small')].filter(p => /^\s*·|Not stated/.test(p.textContent)).length;
         const pick = document.querySelector('.doc-head label.plan-pick'); const over = pick ? Math.round(pick.getBoundingClientRect().right - document.documentElement.clientWidth) : 0;
