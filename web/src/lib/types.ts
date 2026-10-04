@@ -141,7 +141,7 @@ export interface Claim { id: string; date: string; procedure_key: string; tooth?
 export interface PassageVM { status: "empty" | "pending" | "estimate" | "unresolved"; start: IslandVM; islands: IslandVM[]; visited: IslandVM[]; marginal: IslandVM[]; destination: IslandVM;
   totals: { youPay: number | null; planPays: number | null; upperBound: boolean; range: [number, number] | null }; stepsCited: number; rulesNotStated: number }
 export interface MapSelection { islandId: string; checkpointKey?: string }
-/** Care-stage selection: the same shape as `Selection` in components/atlas/JourneyMap.tsx. */
+/** Care-stage selection (a stage, optionally one of its checkpoints) from the Care timeline or the Overview list. */
 export interface StageSelection { stageId: string; cpId?: string }
 export interface JourneySelection { stage?: StageSelection; island?: MapSelection }
 export interface AssistScope { plan_ref: PlanRef; estimate_id?: string; treatment_item_id?: string; line_index?: number; step_key?: string; checkpoint_key?: string; stitch?: string; journey_id?: string }

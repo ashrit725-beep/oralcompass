@@ -219,11 +219,6 @@ label { display: flex; flex-direction: column; gap: .25rem; font-size: .9rem; co
 .stitch-selected { box-shadow: 0 0 0 2px var(--terracotta); }
 .stitch::after { content: ""; position: absolute; inset: -6px -2px; }
 .scope { font-family: var(--mono); font-size: .75rem; background: var(--ink); color: var(--paper); padding: 0 .3rem; border-radius: 3px; }
-.dial { display: inline-flex; border: 1px solid var(--rule); border-radius: 999px; overflow: hidden; margin-left: auto; }
-.dial button { background: transparent !important; color: var(--ink) !important; border: 0 !important; border-radius: 0 !important; padding: .3rem .7rem !important; min-height: 34px !important; }
-.dial button + button { border-left: 1px solid var(--rule) !important; }
-.dial .dial-on { background: var(--parchment) !important; font-weight: 600; }
-.dial-label { font-size: .85rem; }
 .wording { margin: .5rem 0; padding: .6rem .9rem; border-left: 3px solid var(--gold); background: rgba(197, 154, 60, .08); font-family: var(--serif); }
 .wording blockquote { margin: 0; } .wording figcaption { font-size: .8rem; color: var(--ink-soft); margin-top: .3rem; font-family: var(--sans); }
 

@@ -57,6 +57,7 @@ export function DocumentsView({ planCode, plans, onPlan, evidence, stitches, sel
     return () => { cancelled = true; if (url) URL.revokeObjectURL(url); };
   }, [ownedPath]);
 
+  // Each privacy action reports its own failure in the status line (web-correctness-18): a rejected request is never silent.
   async function exportData() {
     try { saveJson(await api.exportMe(), "oralcompass-my-data.json"); setMsg(PLAN.docsExported); }
     catch (e) { setMsg(UI.exportFailed(failureReason(e))); }

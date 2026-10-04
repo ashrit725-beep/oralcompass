@@ -3,7 +3,7 @@ import { PASSAGE } from "../lib/copy/passage";
 import { attributionLabel, dateLabel, stageProgress, statusLabel } from "../lib/journey";
 import { islandAmountText, moneyText } from "../lib/passage";
 import type { InsuranceCheckpointVM, IslandVM, Journey, PassageVM, Stitch } from "../lib/types";
-import type { Selection } from "./atlas/JourneyMap";
+import type { StageSelection as Selection } from "../lib/types";
 import { Money } from "./Money";
 import { EvidenceBadge, StitchChip } from "./Primitives";
 

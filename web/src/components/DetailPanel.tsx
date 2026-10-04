@@ -5,7 +5,7 @@ import { ATTRIBUTION, UI, type LandmarkId } from "../lib/copy";
 import { attributionLabel, dateLabel, nextCheckpoint, stageProgress, statusLabel } from "../lib/journey";
 import { money } from "../lib/stitches";
 import type { Checkpoint, JourneyLinks, JourneyView, Stage } from "../lib/types";
-import type { Selection } from "./atlas/JourneyMap";
+import type { StageSelection as Selection } from "../lib/types";
 import { EvidenceBadge } from "./Primitives";
 
 interface Props {
