@@ -259,7 +259,13 @@ export const decisionCandidate = (f: ExtractedField, index: number): ReviewDecis
 export const decisionEdit = (f: ExtractedField, value: unknown, source: string): ReviewDecision => ({ field_path: f.field_path, decision: "edited", value, source });
 
 type Body = { error?: string; fields?: string[]; type?: string; field_path?: string; unit?: string } | undefined;
-const body = (e: unknown): Body => (e instanceof ApiError ? (e.body as Body) : undefined);
+/** The API's error object: FastAPI wraps an HTTPException's dict in `detail` ({"detail": {"error": …}}); a bare object is accepted too. */
+export const errorBody = (e: unknown): Body => {
+  if (!(e instanceof ApiError) || !e.body || typeof e.body !== "object") return undefined;
+  const b = e.body as { detail?: unknown };
+  return (b.detail && typeof b.detail === "object" ? b.detail : b) as Body;
+};
+const body = errorBody;
 
 /** Upload failure → one UPLOAD sentence (the server's error codes, foundation notes §3.2 item 1). */
 export function uploadErrorCopy(e: unknown): string {

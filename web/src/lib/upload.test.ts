@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
+import { ApiError } from "./api";
 import type { ExtractedField } from "./types";
 import {
   checkPages, checkSize, decisionCandidate, decisionEdit, formatProposed, groupByLandmark, isPdfMagic, isTerminal, labelFor, MAX_BYTES, parseValueInput,
-  pollExtraction, problemCopy, sha256Hex, stageCopy, stageProgress, undecidedRequired, urlBase64ToUint8Array, verifiedUndecided, type ExtractionStatusFull,
+  pollExtraction, problemCopy, publishErrorCopy, reviewErrorCopy, uploadErrorCopy, errorBody, sha256Hex, stageCopy, stageProgress, undecidedRequired, urlBase64ToUint8Array, verifiedUndecided, type ExtractionStatusFull,
 } from "./upload";
 
 const field = (over: Partial<ExtractedField>): ExtractedField => ({
@@ -119,5 +120,17 @@ describe("review helpers", () => {
   it("builds review decisions in the API's shape", () => {
     expect(decisionEdit(fields[0], 6000, "EOB dated 2026-02-01")).toEqual({ field_path: "deductible_individual", decision: "edited", value: 6000, source: "EOB dated 2026-02-01" });
     expect(decisionCandidate(fields[3], 1)).toEqual({ field_path: "class_of.crown", decision: "candidate", candidate_index: 1 });
+  });
+});
+
+describe("API error copy (FastAPI wraps the error object in `detail`)", () => {
+  it("reads the server's error code from {detail: {error}}", () => {
+    expect(uploadErrorCopy(new ApiError(422, "/me/documents/upload", { detail: { error: "sha256_mismatch" } }))).toContain("checksum computed here differs");
+    expect(uploadErrorCopy(new ApiError(413, "/me/documents/upload", { detail: { error: "file_too_large", max_bytes: 1 } }))).toBe("The server limits uploads to 32 MB.");
+    expect(reviewErrorCopy(new ApiError(422, "/me/documents/x/review", { detail: { error: "source_required" } }))).toBe("A source is required for an entered value.");
+    expect(publishErrorCopy(new ApiError(409, "/me/documents/x/publish", { detail: { error: "undecided_fields", fields: ["class_of"] } }), [])).toContain("at least one coverage class row");
+    expect(errorBody(new ApiError(422, "/x", { error: "term_too_long" }))?.error).toBe("term_too_long");
+    expect(errorBody(new Error("x"))).toBeUndefined();
+    expect(uploadErrorCopy(new ApiError(500, "/x", undefined))).toContain("could not be stored");
   });
 });

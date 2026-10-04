@@ -1,8 +1,8 @@
 import { useId, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { api, ApiError } from "@/lib/api";
+import { api } from "@/lib/api";
 import { UPLOAD } from "@/lib/copy/upload";
-import { PREVIEW_SHOWN_CHARS } from "@/lib/upload";
+import { errorBody, PREVIEW_SHOWN_CHARS } from "@/lib/upload";
 
 /**
  * RedactionPreview (spec §7.3 step 2): what was removed before any model call, the first 1,200 characters of the redacted text in a
@@ -36,7 +36,7 @@ export function RedactionPreview({ docId, preview, onPreview, onContinue, busy }
       setTerms(next); setTerm("");
       onPreview(r.redaction_preview);
     } catch (e) {
-      setError(e instanceof ApiError && (e.body as { error?: string } | undefined)?.error === "term_too_long" ? UPLOAD.termTooLong : UPLOAD.reviewFailed);
+      setError(errorBody(e)?.error === "term_too_long" ? UPLOAD.termTooLong : UPLOAD.reviewFailed);
     } finally { setWorking(false); }
   };
 
