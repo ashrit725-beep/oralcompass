@@ -41,29 +41,39 @@ describe("ComparisonGrid cells (a11y-2: label in name)", () => {
   });
 });
 
-describe("ComparisonGrid rails (info-only-1: entered for this plan only)", () => {
-  it("says per rail whether inputs were entered for that plan, and never implies a carry-over", () => {
+describe("ComparisonGrid estimates (info-only-1: entered for this plan only)", () => {
+  it("says per card whether inputs were entered for that plan, and never implies a carry-over", () => {
     const html = renderToStaticMarkup(<ComparisonGrid data={data} plans={plans} enteredFor={["ML26"]} />);
     expect(html.match(/entered for this plan only/g)).toHaveLength(1);
     expect(html.match(/Nothing is entered for this plan/g)).toHaveLength(1);
   });
 });
 
-describe("ComparisonGrid layout (layout-22, mobile-10, slop-10: no nested vertical scroll box)", () => {
-  const html = renderToStaticMarkup(<ComparisonGrid data={data} plans={plans} />);
-  it("lets the table take its natural height inside a horizontal-only scroller", () => {
-    const container = /<div[^>]*class="([^"]*grid-scroll[^"]*)"/.exec(html)?.[1] ?? "";
-    expect(container).toContain("overflow-x-auto");
-    expect(container).not.toMatch(/max-h-|overflow-auto(?!-)/);
+describe("ComparisonGrid phone cards (mobile-only direction, part E)", () => {
+  const html = renderToStaticMarkup(<ComparisonGrid data={data} plans={plans} labels={{ ML26: "MetLife NCFlex Dental · Classic 2026", DD26: "Delta Dental PPO · 2026" }} />);
+  it("renders one swipeable card per plan, in the user's order, inside one horizontal track (no table, no nested vertical scroller)", () => {
+    expect(html).not.toMatch(/<table/);
+    expect(html.match(/<article[^>]*class="cmp-card"/g)).toHaveLength(2);
+    expect(html.indexOf("MetLife NCFlex</h4>")).toBeLessThan(html.indexOf("Delta Dental PPO</h4>"));
+    expect(html).toMatch(/<div[^>]*class="cmp-track"[^>]*role="region"/);
+  });
+  it("names each plan in the segmented switcher; the first card is the current one", () => {
+    const segs = [...html.matchAll(/<button[^>]*class="cmp-seg-btn[^"]*"[^>]*>([^<]*)<\/button>/g)];
+    expect(segs.map((m) => m[1])).toEqual(["MetLife NCFlex Dental · Classic 2026", "Delta Dental PPO · 2026"]);
+    expect(segs[0][0]).toContain('aria-current="true"');
+    expect(segs[1][0]).not.toContain("aria-current");
+  });
+  it("tags a topic whose values differ between the plans", () => {
+    expect(html.match(/Differs between plans/g)).toHaveLength(2);
   });
 });
 
 describe("ComparisonGrid repetition (info-only-6, slop-11, slop-12)", () => {
   const html = renderToStaticMarkup(<ComparisonGrid data={data} plans={plans} />);
-  it("prints the differences sentence only for screen readers (its figures are badged in the cells)", () => {
-    expect(html).toMatch(/<tr[^>]*class="[^"]*differences[^"]*"[^>]*><td[^>]*><span class="sr-only">MetLife NCFlex: \$1,500\.00/);
+  it("prints the differences sentence once, for screen readers only (its figures are badged in the cells)", () => {
+    expect(html.match(/<span class="sr-only">MetLife NCFlex: \$1,500\.00/g)).toHaveLength(1);
   });
-  it("lists each rail flag once", () => {
+  it("lists each estimate flag once", () => {
     expect(html.match(/waiting period: not found/g)).toHaveLength(1);
   });
 });
@@ -71,7 +81,7 @@ describe("ComparisonGrid repetition (info-only-6, slop-11, slop-12)", () => {
 describe("ComparisonGrid headings (a11y-22)", () => {
   it("nests the grid title as an h3 under the view's h2", () => {
     const html = renderToStaticMarkup(<ComparisonGrid data={data} plans={plans} />);
-    expect(html).toMatch(/<h3 id="cmp-h">Side by side<\/h3>/);
+    expect(html).toMatch(/<h3 id="cmp-h"[^>]*>Side by side<\/h3>/);
     expect(html).not.toMatch(/<h2/);
   });
 });

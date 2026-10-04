@@ -186,6 +186,18 @@ export const PLAN = {
   cmpUpperBound: "(upper bound)",
   cmpUnresolvedFor: "Unresolved. Not provided for this plan:",
   cmpClose: "Close clause",
+  // phone Compare (mobile-only direction): one plan per card under a sticky plan switcher
+  cmpChoose: "Choose plans",
+  cmpChooseClose: "Close plan choice",
+  cmpDone: "Done",
+  cmpPickTwo: "Two or more plans are needed for a comparison.",
+  cmpOrderNote: "Plans appear in the order you chose. Inputs are entered for each plan separately; nothing is copied between plans.",
+  cmpSwitcher: "Plans in this comparison",
+  cmpCardsRegion: "Plan cards. Swipe sideways to move between plans.",
+  cmpCardPos: (i: number, n: number) => `Plan ${i} of ${n}`,
+  cmpDiffers: "Differs between plans",
+  cmpWhoCanEnroll: "Where offered and who can enroll",
+  cmpCardEstimate: "Estimated you pay for the procedures compared",
   // ---- documents ----
   docsPlan: "Plan documents",
   docsMine: "Your documents",
