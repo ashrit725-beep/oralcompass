@@ -7,7 +7,7 @@
  */
 import { ASSIST } from "./copy/assistant";
 import { PROCEDURE_NAMES } from "./clauses";
-import { stitchForLabel } from "./stitches";
+import { plainNote, stitchForLabel } from "./stitches";
 import type { AssistRef, AssistResponse, AssistScope, Benefits, CoverageRule, Evidence, LedgerLine, PlanFixture, SavedEstimate, Step, Stitch, TreatmentItem, VJson } from "./types";
 
 export type AssistBlockX =
@@ -181,7 +181,7 @@ export function resolveRef(ref: AssistRef, data: AssistData, scope?: AssistScope
     return { kind: "money", cents, evidence: cents === null ? "UNKNOWN" : fromRecords ? "USER" : "DOC", label };
   }
   const fl = /^estimate\.ledger\.lines\[(\d+)\]\.flags$/.exec(path);
-  if (fl) { const line = lines[Number(fl[1])]; return { kind: "text", text: line?.flags.length ? line.flags.join(" ") : ASSIST.none, evidence: "AMBIGUOUS", label }; }
+  if (fl) { const line = lines[Number(fl[1])]; return { kind: "text", text: line?.flags.length ? line.flags.map(plainNote).join(" ") : ASSIST.none, evidence: "AMBIGUOUS", label }; }
   if (path.startsWith("treatment_item.")) {
     const item = scope?.treatment_item_id ? data.items.find((it) => it.id === scope.treatment_item_id) ?? itemForScope(data, scope.line_index) : itemForScope(data, scope?.line_index);
     if (path === "treatment_item.dentist_fee_cents") return moneyField(item?.dentist_fee_cents, item ? "USER" : "UNKNOWN", label);

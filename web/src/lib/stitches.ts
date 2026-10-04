@@ -116,5 +116,8 @@ export function uniqueStitches(list: (Stitch | undefined | null)[]): Stitch[] {
   return out;
 }
 
+/** Engine notes join clauses with a spaced em dash ("not found in the pages read — computed as none"); the UI reads them with a comma. */
+export const plainNote = (s: string) => s.replace(/\s+—\s+/g, ", ");
+
 export const money = (c: number | null | undefined) => (c == null ? "—" : `$${(c / 100).toLocaleString("en-US", { minimumFractionDigits: 2 })}`);
 export const signed = (c: number | null | undefined) => (c == null ? "—" : c < 0 ? `−${money(-c)}` : c === 0 ? "$0.00" : `+${money(c)}`);

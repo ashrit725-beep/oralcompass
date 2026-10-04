@@ -6,7 +6,7 @@
 import { checkpointEvidence } from "./checkpoints";
 import { UI } from "./copy";
 import { DRAWER } from "./copy/drawer";
-import { money, signed, stitchForCite, stitchForStep } from "./stitches";
+import { money, plainNote, signed, stitchForCite, stitchForStep } from "./stitches";
 import { dollarsToCents } from "./plan-catalog";
 import { buildTrail, type Trail, type TrailStep } from "./trail";
 import type { Benefits, CheckpointRule, Cite, CoverageRule, Evidence, InsuranceCheckpointVM, LedgerLine, MissingInput, Movers, PlanFixture, SavedEstimate, Stitch, TreatmentItem } from "./types";
@@ -128,9 +128,9 @@ export function checkpointAriaName(cp: InsuranceCheckpointVM): string {
 export function checkpointsForLine(line: LedgerLine, item: TreatmentItem | undefined, row: CoverageRule | undefined, plan: PlanFixture, stitches: Stitch[], missing: MissingInput[] = [], benefits: Benefits | null = null): InsuranceCheckpointVM[] {
   const trail: Trail = buildTrail(line);
   if (line.status === "unresolved") {
-    const flags = [...line.flags];
+    const flags = line.flags.map(plainNote);
     return [{ key: "missing", rule: "missing", term: DRAWER.waitingInfo, place: CHECKPOINT_PLACE.missing, glyph: CHECKPOINT_GLYPH.missing, amountIn: null, change: null, amountOut: null,
-              owner: "info", explanation: [...missing.map((m) => `${m.input}: ${m.how}`), ...flags].join(" "), stitchLabel: null, badge: "UNKNOWN", stepIndexes: [], flags }];
+              owner: "info", explanation: [...missing.map((m) => `${plainNote(m.input)}: ${m.how}`), ...flags].join(" "), stitchLabel: null, badge: "UNKNOWN", stepIndexes: [], flags }];
   }
   const share = trail.steps.find((s) => ruleForTrailStep(s) === "CO");
   const shareHasStitch = !!(share && stitchForCheckpoint("CO", share.stitch, row, plan, stitches));

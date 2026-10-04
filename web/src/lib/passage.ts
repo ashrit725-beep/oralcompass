@@ -16,7 +16,7 @@ import { checkpointEvidence } from "./checkpoints";
 import { stitchForCheckpoint } from "./drawer";
 import { CHECKPOINT_PLACE, CHECKPOINT_TERM, CLOSED_SUFFIX, GLYPH_FOR_RULE, LIGHT_PLACE, SLOT_ORDER, START_PLACE, categoryOf, placeName } from "./islands";
 import { PASSAGE } from "./copy/passage";
-import { stepContextFor, stitchForLabel, type StepContext } from "./stitches";
+import { plainNote, stepContextFor, stitchForLabel, type StepContext } from "./stitches";
 import { buildTrail, type TrailStep } from "./trail";
 import { isUpload } from "./types";
 import type {
@@ -84,7 +84,7 @@ export function checkpointsFor(line: LedgerLine, islandId: string, stitches: Sti
     ...s,
   });
   if (line.status === "unresolved") {
-    return [mk("missing", { owner: "info", explanation: missing.length ? missing.map((m) => m.input).join("; ") : line.flags.join(" "), flags: line.flags })];
+    return [mk("missing", { owner: "info", explanation: missing.length ? missing.map((m) => plainNote(m.input)).join("; ") : line.flags.map(plainNote).join(" "), flags: line.flags.map(plainNote) })];
   }
   if (line.status === "not_covered") {
     const x = line.steps[0];
