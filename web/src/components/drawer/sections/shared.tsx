@@ -76,7 +76,8 @@ export function Figure({ cents, evidence, stitch, stitches, onSelectStitch, sign
   calc?: boolean;
   /** The evidence of the non-document figures a calculated total used (see `calcInputs` in lib/drawer.ts). */
   inputs?: Evidence[];
-  /** Caption for a calculated figure; `null` hides it (table cells, where the table caption says it once). */
+  /** Caption for a calculated figure; `null` shortens it to "calculated" (or hides it when no input badge is shown, e.g. table cells whose
+   *  table note says it once). */
   calcLabel?: string | null;
 }) {
   const missing = cents == null;
@@ -84,7 +85,9 @@ export function Figure({ cents, evidence, stitch, stitches, onSelectStitch, sign
   const inputBadges = [...new Set(inputs ?? [])];
   const asCalc = !!calc && !missing && ((chips.length > 0 && !!onSelectStitch) || inputBadges.length > 0);
   const text = missing ? "—" : isSigned ? signed(cents) : money(cents);
-  const label = calcLabel === undefined ? DRAWER.calculated : calcLabel;
+  // `null` hides the long caption, but a figure that shows input badges always says "calculated" beside them: a lone "You entered" next to
+  // an engine total would claim the user typed it
+  const label = calcLabel === undefined ? DRAWER.calculated : calcLabel === null ? (inputBadges.length ? DRAWER.calculatedShort : null) : calcLabel;
   return (
     <span className={cn("fig", hero && "fig-hero", missing && "fig-missing", asCalc && "fig-calculated", className)} data-amount={missing ? undefined : text}>
       {roll && !missing && !asCalc ? <Money cents={cents} evidence={evidence} signed={isSigned} /> : (

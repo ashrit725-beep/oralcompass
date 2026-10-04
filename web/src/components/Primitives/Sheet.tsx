@@ -26,7 +26,6 @@ export interface SheetProps {
 
 export function Sheet({ open, onOpenChange, title, description, originRect, returnFocus, children, className, closeLabel = "Close details" }: SheetProps) {
   const wasOpen = useRef(open);
-  const titleRef = useRef<HTMLHeadingElement>(null);
   const returnRef = useRef(returnFocus);
   returnRef.current = returnFocus;
   // Focus return is deferred one task: while the sheet is mounted Radix's FocusScope traps focus, so a synchronous focus() on the island
@@ -46,11 +45,12 @@ export function Sheet({ open, onOpenChange, title, description, originRect, retu
         style={origin ? ({ transformOrigin: origin } as React.CSSProperties) : undefined}
         // vaul suppresses Radix's open auto-focus; without it focus stayed on the island card behind the aria-modal sheet and Tab walked the
         // page (mobile-2). Focus the sheet's title instead (a heading, so nothing activates by accident).
-        onOpenAutoFocus={(e) => { e.preventDefault(); titleRef.current?.focus({ preventScroll: true }); }}
+        // (the shadcn DrawerTitle is a plain function component without forwardRef, so the title is found in the content, not by ref)
+        onOpenAutoFocus={(e) => { e.preventDefault(); (e.currentTarget as HTMLElement | null)?.querySelector<HTMLElement>('[data-slot="drawer-title"]')?.focus({ preventScroll: true }); }}
       >
         <div className="sticky top-0 z-10 flex min-h-12 items-center justify-between gap-2 border-b border-rule bg-paper-deep px-4">
           {/* two lines at most, balanced, instead of an ellipsis that cut the procedure name (layout-11) */}
-          <DrawerTitle ref={titleRef} tabIndex={-1} className="min-w-0 py-2 line-clamp-2 [text-wrap:balance] outline-none focus-visible:outline-3 focus-visible:outline-ring">{title}</DrawerTitle>
+          <DrawerTitle tabIndex={-1} className="min-w-0 py-2 line-clamp-2 [text-wrap:balance] outline-none focus-visible:outline-3 focus-visible:outline-ring">{title}</DrawerTitle>
           <DrawerClose asChild>
             <Button variant="ghost" size="icon-touch" aria-label={closeLabel} className="-mr-2 shrink-0"><X aria-hidden="true" /></Button>
           </DrawerClose>

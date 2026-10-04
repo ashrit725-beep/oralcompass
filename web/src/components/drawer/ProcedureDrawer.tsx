@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { DRAWER } from "@/lib/copy/drawer";
 import { calcInputs, checkpointAriaName, drawerPlanRef, remainingBeforeLine, rememberStitchAnchor, ruleFor, sectionForRule, type DrawerSectionKey } from "@/lib/drawer";
 import { transitions } from "@/lib/motion";
-import { stepContextFor, stitchesForLine } from "@/lib/stitches";
+import { stepContextFor, stitchesForLine, stitchForCite } from "@/lib/stitches";
 import { buildTrail } from "@/lib/trail";
 import type { AssistScope, Benefits, CoverageRule, InsuranceCheckpointVM, IslandVM, LedgerLine, PassageVM, PlanFixture, Progress, SavedEstimate, Stitch } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -146,6 +146,8 @@ export function ProcedureDrawer(props: ProcedureDrawerProps) {
     : island.kind === "visited" ? DRAWER.crumbsVisited(island.place) : island.kind === "marginal" ? DRAWER.crumbsMarginal(island.place)
     : DRAWER.crumbs(island.order, vm.islands.length, island.place);
   const lineStitches = line ? stitchesForLine(line, stitches, stepContextFor(line, rules)) : [];
+  // the plan's figure carries the coverage-share clause (its own class row), not whichever clause the first step cites
+  const shareStitch = stitchForCite(rule?.coverage_cite, stitches, plan.source_document.version_label) ?? lineStitches[0];
   const unresolved = island.kind === "procedure" && (island.state === "unresolved" || island.state === "pending");
 
   const header = (
@@ -172,7 +174,7 @@ export function ProcedureDrawer(props: ProcedureDrawerProps) {
           {!unresolved && (
             <p className="drawer-lede-row drawer-lede-plan">
               <span className="drawer-lede-term-plan">{DRAWER.planPaysRow}</span>{" "}
-              <Figure cents={line.plan_cents} evidence="DOC" calc inputs={calcInputs(item, estimate, benefits)} calcLabel={null} className="fig-plan" stitches={lineStitches.slice(0, 1)} onSelectStitch={onSelectStitch} />
+              <Figure cents={line.plan_cents} evidence="DOC" calc inputs={calcInputs(item, estimate, benefits)} calcLabel={null} className="fig-plan" stitch={shareStitch} onSelectStitch={onSelectStitch} />
             </p>
           )}
         </div>

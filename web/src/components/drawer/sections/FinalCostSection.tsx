@@ -1,7 +1,7 @@
 import { CostPipeline } from "@/components/pipeline/CostPipeline";
 import { DRAWER } from "@/lib/copy/drawer";
 import { calcInputs } from "@/lib/drawer";
-import { stepContextFor, stitchesForLine } from "@/lib/stitches";
+import { stepContextFor, stitchesForLine, stitchForCite } from "@/lib/stitches";
 import type { Stitch } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Figure, Flag, Section, type SectionProps } from "./shared";
@@ -18,6 +18,7 @@ export function FinalCostSection(props: SectionProps & { estimateId?: string; fi
   const chips: Stitch[] = stitchesForLine(line, stitches, stepContextFor(line, rules));
   const unresolved = line.status === "unresolved";
   const inputs = calcInputs(item, estimate, benefits);
+  const shareStitch = stitchForCite(rule?.coverage_cite, stitches, plan.source_document.version_label) ?? chips[0];
   const otherFlags = line.flags.filter((f) => !/waiting|alternate/i.test(f));
   return (
     <Section k="finalCost" title={DRAWER.sFinalCost} className={cn(first && "dsec-first")}>
@@ -27,7 +28,7 @@ export function FinalCostSection(props: SectionProps & { estimateId?: string; fi
       </p>
       <p className="final-sub">
         <span>{DRAWER.estimatedPlanPayment}</span>{" "}
-        <Figure cents={line.plan_cents} evidence="DOC" calc inputs={inputs} calcLabel={null} stitch={chips[0]} onSelectStitch={onSelectStitch} className="fig-plan" />
+        <Figure cents={line.plan_cents} evidence="DOC" calc inputs={inputs} calcLabel={null} stitch={shareStitch} onSelectStitch={onSelectStitch} className="fig-plan" />
         {line.plan_is_upper_bound ? <span className="muted"> {DRAWER.upperBoundWord}</span> : null}
         {line.benefit_year ? <span className="muted"> · {DRAWER.benefitYear(line.benefit_year)}</span> : null}
       </p>
