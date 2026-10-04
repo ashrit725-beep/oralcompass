@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { UI } from "@/lib/copy";
 import { PASSAGE } from "@/lib/copy/passage";
 import { islandAmountText } from "@/lib/passage";
 import type { MapSelection, PassageVM } from "@/lib/types";
@@ -12,17 +14,7 @@ export interface IslandStripProps { vm: PassageVM; selected: MapSelection | null
 export function IslandStrip({ vm, selected, onSelect, mobile, page = 0 }: IslandStripProps) {
   const pageSize = 12;
   const items = vm.islands.slice(page * pageSize, (page + 1) * pageSize);
-  if (mobile) {
-    return (
-      <label className="island-strip-select">
-        <span className="sr-only">{PASSAGE.jumpTo}</span>
-        <select aria-label={PASSAGE.jumpTo} value={selected?.islandId ?? ""} onChange={(e) => { if (e.target.value) onSelect(e.target.value, e.currentTarget); }}>
-          <option value="">{PASSAGE.jumpTo}</option>
-          {vm.islands.map((i) => <option key={i.id} value={i.id}>{i.order}. {i.title}{i.subtitle ? ` (${i.subtitle})` : ""} · {islandAmountText(i)}</option>)}
-        </select>
-      </label>
-    );
-  }
+  if (mobile) return <IslandSelect vm={vm} selected={selected} onSelect={onSelect} />;
   return (
     <ul className="island-strip" aria-label={PASSAGE.jumpTo}>
       {items.map((i) => (
@@ -33,6 +25,23 @@ export function IslandStrip({ vm, selected, onSelect, mobile, page = 0 }: Island
         </li>
       ))}
     </ul>
+  );
+}
+
+/**
+ * Phone: picking an option only chooses it; the Show button opens the procedure (a11y-16, SC 3.2.2). Browsing the options with the
+ * arrow keys on a closed select no longer opens the modal sheet and steals focus mid-browse.
+ */
+function IslandSelect({ vm, selected, onSelect }: Pick<IslandStripProps, "vm" | "selected" | "onSelect">) {
+  const [chosen, setChosen] = useState(selected?.islandId ?? "");
+  return (
+    <form className="island-strip-select" onSubmit={(e) => { e.preventDefault(); if (chosen) onSelect(chosen, e.currentTarget.querySelector("select")); }}>
+      <select aria-label={PASSAGE.jumpTo} value={chosen} onChange={(e) => setChosen(e.target.value)}>
+        <option value="">{PASSAGE.jumpTo}</option>
+        {vm.islands.map((i) => <option key={i.id} value={i.id}>{i.order}. {i.title}{i.subtitle ? ` (${i.subtitle})` : ""} · {islandAmountText(i)}</option>)}
+      </select>
+      <button type="submit" className="secondary" disabled={!chosen}>{UI.showChosen}</button>
+    </form>
   );
 }
 

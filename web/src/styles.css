@@ -313,6 +313,13 @@ table.grid thead th { background: var(--paper-deep); position: sticky; top: 0; }
    "$45.00" run past the card edge, where the old .view clip cut it to "$45.0"; slop-5). "not covered" still wraps (journey.css). */
 .pv-mini:not(.pv-marginal) .pv-amt { max-width: none; }
 .ov-scroll { overflow-x: auto; max-width: 100%; }
+/* choose, then commit (a11y-16) */
+.add-journey-form, .island-strip-select { display: flex; gap: var(--s-2); align-items: stretch; min-width: 0; }
+.add-journey-form select, .island-strip-select select { flex: 1 1 auto; min-width: 0; width: auto; }
+.add-journey-form button, .island-strip-select button { flex: none; }
+.journey-pickers .add-journey-form { flex: 0 1 300px; }
+.journey-pickers .add-journey-form select.add-journey { flex: 1 1 auto; max-width: none; }
+@media (max-width: 760px) { .journey-pickers .add-journey-form { flex: none; width: 100%; } }
 /* a failed view or lazy surface keeps a labelled recovery message inside the shell (web-correctness-3) */
 .surface-error { margin: var(--s-4) 0; }
 
