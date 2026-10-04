@@ -53,3 +53,12 @@ def test_repeated_publish_without_changes_returns_the_same_version():
     assert [v["version_label"] for v in client.get(f"/me/plans/{up['id']}/versions", headers=h).json()["items"]] == ["UP1"]
     client.put(f"/me/documents/{up['id']}/review", json={"decisions": [{"field_path": "deductible_individual", "decision": "edited", "value": 7500, "source": "x"}]}, headers=h)
     assert client.post(f"/me/documents/{up['id']}/publish", headers=h).json()["version_label"] == "UP2"
+
+
+def test_push_endpoint_must_be_a_public_host():
+    keys = {"p256dh": "B" * 87, "auth": "a" * 22}
+    for url in ("https://localhost/x", "https://169.254.169.254/latest", "https://127.0.0.1/x", "https://[::1]/x", "https://10.0.0.5/x",
+                "https://metadata.google.internal/x", "https://router/x", "https://user:pw@fcm.googleapis.com/x", "https://fcm.googleapis.com:8443/x",
+                "https://printer.local/x"):
+        assert client.post("/me/push/subscriptions", json={"endpoint": url, "keys": keys}, headers=A).status_code == 422, url
+    assert client.post("/me/push/subscriptions", json={"endpoint": "https://fcm.googleapis.com/fcm/send/abc", "keys": keys}, headers=A).status_code == 201
