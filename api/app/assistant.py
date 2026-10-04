@@ -283,7 +283,7 @@ def get_benefits(ctx: Ctx, plan_ref: str) -> Optional[dict]:
     if code not in PLANS:
         return None
     b = next((x for x in repo.list_owned(ctx.user.sub, "benefits") if x["plan_code"] == code), None)
-    return derived_benefits(code, b) if b else None
+    return derived_benefits(PLANS[code], b, code) if b else None
 
 
 _WORD = re.compile(r"[a-z][a-z_\-]+")

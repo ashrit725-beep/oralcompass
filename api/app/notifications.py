@@ -124,7 +124,7 @@ def next_covered_date(last: date, n_months: int) -> date:
 
 def reminders_for_plan(code: str, b_raw: dict, as_of: date) -> list[dict]:
     plan = PLANS[code]
-    b = derived_benefits(code, b_raw)
+    b = derived_benefits(plan, b_raw, code)
     src = b.get("source") or {}
     src_words = f"plan document {PLAN_META[code]['source_document'].get('version_label', code)}" + (f"; benefit statement dated {src['date']}" if src.get("date") else "; your records")
     out: list[dict] = []
