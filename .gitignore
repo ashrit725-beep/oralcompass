@@ -8,3 +8,6 @@ web/public/fixtures/
 .aws-sam/
 .claude/worktrees/
 api/.data/
+
+# scratch screenshot walks (provers); only the curated docs/screenshots/ set is tracked
+docs/screenshots-run/
