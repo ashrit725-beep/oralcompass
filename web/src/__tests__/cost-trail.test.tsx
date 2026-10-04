@@ -37,9 +37,9 @@ describe("unresolved estimate range scope (numbers-6)", () => {
     movers: { range: [174000, 223000], movers: [{ unknown: "remaining deductible", impact_cents: null, zero_impact: false }, { unknown: "remaining annual maximum", impact_cents: null, zero_impact: false }], unresolved_reasons: [] },
     missing_inputs: [{ input: "remaining deductible", how: "Enter it." }] } as unknown as SavedEstimate;
   it("keeps the whole-estimate range out of one procedure's drawer and keeps it on the full trail", () => {
-    const one = renderToStaticMarkup(<CostTrail estimate={unresolved} stitches={[]} lineIndex={0} />);
+    const one = renderToStaticMarkup(<CostTrail estimate={unresolved} stitches={[]} onSelect={() => {}} lineIndex={0} />);
     expect(one).not.toContain("$1,740.00");
-    const all = renderToStaticMarkup(<CostTrail estimate={unresolved} stitches={[]} />);
+    const all = renderToStaticMarkup(<CostTrail estimate={unresolved} stitches={[]} onSelect={() => {}} />);
     expect(all).toContain("Between $1,740.00 and $2,230.00, because remaining deductible and remaining annual maximum were not provided.");
   });
 });
