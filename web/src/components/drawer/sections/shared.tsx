@@ -95,7 +95,8 @@ export function Figure({ cents, evidence, stitch, stitches, onSelectStitch, sign
     <span className={cn("fig", hero && "fig-hero", missing && "fig-missing", asCalc && "fig-calculated", className)} data-amount={missing ? undefined : text}>
       {roll && !missing && !asCalc ? <Money cents={cents} evidence={evidence} signed={isSigned} /> : (
         <>
-          <span className="amt font-sans tabular-nums text-ink">{missing ? <><span aria-hidden="true">{text}</span><span className="sr-only">{DRAWER.noAmount}</span></> : text}</span>
+          {/* slop-17: a missing figure that says "Waiting for information" shows that sentence once as its value, never a dash beside it */}
+          {missing && waiting ? null : <span className="amt font-sans tabular-nums text-ink">{missing ? <><span aria-hidden="true">{text}</span><span className="sr-only">{DRAWER.noAmount}</span></> : text}</span>}
           {asCalc ? <>{label ? <span className="fig-calc">{label}</span> : null}{inputBadges.map((e) => <EvidenceBadge key={e} status={e} />)}</> : <EvidenceBadge status={missing ? "UNKNOWN" : evidence} />}
         </>
       )}
