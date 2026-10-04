@@ -124,7 +124,8 @@
 .bs-h { margin: 0; font-size: 1rem; }
 .bs-note { margin: 0; font-size: .85rem; color: var(--ink-soft); }
 .bs-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-3); }
-.bs-grid label { min-width: 0; } .bs-grid input, .bs-grid select { min-height: 44px; width: 100%; }
+.bs-grid label, .bs-grid .bs-field { min-width: 0; } .bs-field { display: grid; gap: .25rem; align-content: start; }
+.bs-error-summary:empty { display: none; } .bs-grid input, .bs-grid select { min-height: 44px; width: 100%; }
 .bs-span { grid-column: 1 / -1; margin: 0; }
 .bs-error { color: var(--danger); font-size: .8rem; }
 .bs-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-3); }
