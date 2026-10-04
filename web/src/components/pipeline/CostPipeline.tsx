@@ -1,0 +1,120 @@
+import { createRef, useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { AnimatedBeam } from "@/components/magicui/animated-beam";
+import { EvidenceBadge } from "@/components/Primitives";
+import { UI } from "@/lib/copy";
+import { DRAWER } from "@/lib/copy/drawer";
+import { checkpointsForLine, itemFeeCents, missingForLine } from "@/lib/drawer";
+import { money } from "@/lib/stitches";
+import { stitchesForLine } from "@/lib/stitches";
+import { buildTrail } from "@/lib/trail";
+import type { CoverageRule, LedgerLine, MissingInput, PlanFixture, Stitch, TreatmentItem } from "@/lib/types";
+import { cn } from "@/lib/utils";
+import { PipelineNode } from "./PipelineNode";
+
+export interface CostPipelineProps {
+  line: LedgerLine;
+  item?: TreatmentItem;
+  rule?: CoverageRule;
+  plan: PlanFixture;
+  stitches: Stitch[];
+  /** The saved estimate id: a new id re-fires the beams once (source → target, pipeline order) and announces "Estimate updated". */
+  estimateId?: string;
+  missing?: MissingInput[];
+  mobile?: boolean;
+  onSelectStitch: (s: Stitch) => void;
+  /** Rendered under the reconciliation line (e.g. the upper-bound flag). */
+  className?: string;
+}
+
+/** The existing warn sentence (kept verbatim from the lighthouse cost trail; the em dash is pre-existing copy). */
+export const RECONCILE_WARN = "Amounts do not reconcile in this view — the engine ledger is authoritative; see the receipt below.";
+
+/**
+ * CostPipeline (spec §4.5, component plan N2-A): a horizontal flow of nodes for one ledger line, built from `buildTrail(line).steps` through
+ * `checkpointsForLine`. Connectors are Magic UI AnimatedBeam (ink path, sea → gold sweep, `repeat` 1, `delay = i × 0.12`, keyed on the
+ * estimate id so the sweep fires once per recompute in pipeline order; static path under reduced motion). The arrowhead on each node's
+ * in-port is the only arrow in the UI (it encodes flow direction). Phone: a 2-column grid without beams (arrows only). Unresolved line:
+ * the fee node and a fog node listing the missing inputs; no numbers invented. One `aria-live` region announces "Estimate updated".
+ * Reduced motion: NumberFlow snaps, beams render the static connection, nothing else moves.
+ */
+export function CostPipeline({ line, item, rule, plan, stitches, estimateId, missing = [], mobile = false, onSelectStitch, className }: CostPipelineProps) {
+  const trail = useMemo(() => buildTrail(line), [line]);
+  const lineMissing = useMemo(() => missingForLine(missing, line), [missing, line]);
+  const cps = useMemo(() => checkpointsForLine(line, item, rule, plan, stitches, lineMissing), [line, item, rule, plan, stitches, lineMissing]);
+  const lineStitches = useMemo(() => stitchesForLine(line, stitches), [line, stitches]);
+  const unresolved = line.status === "unresolved";
+  const nodeCount = cps.length + (unresolved && item ? 1 : 0);
+
+  const containerRef = useRef<HTMLDivElement>(null);
+  const nodeEls = useRef<(HTMLLIElement | null)[]>([]);
+  const outRefs = useMemo(() => Array.from({ length: nodeCount }, () => createRef<HTMLElement | null>() as RefObject<HTMLElement | null>), [nodeCount]);
+  const inRefs = useMemo(() => Array.from({ length: nodeCount }, () => createRef<HTMLElement | null>() as RefObject<HTMLElement | null>), [nodeCount]);
+  const [portsReady, setPortsReady] = useState(0);
+  useLayoutEffect(() => {
+    nodeEls.current.forEach((li, i) => {
+      if (!li) return;
+      (outRefs[i] as { current: HTMLElement | null }).current = li.querySelector<HTMLElement>(".pipe-port-out");
+      (inRefs[i] as { current: HTMLElement | null }).current = li.querySelector<HTMLElement>(".pipe-port-in");
+    });
+    setPortsReady((n) => n + 1);
+  }, [nodeCount, mobile, outRefs, inRefs]);
+
+  // one live region per surface: announce a recompute once (not on first mount)
+  const firstId = useRef(estimateId);
+  const [live, setLive] = useState("");
+  useEffect(() => { if (estimateId && estimateId !== firstId.current) { firstId.current = estimateId; setLive(DRAWER.estimateUpdated); } }, [estimateId]);
+
+  const label = unresolved
+    ? DRAWER.pipelineUnresolved(line.label)
+    : DRAWER.pipelineLabel(line.label, cps.length, money(trail.fee), money(trail.youPay));
+
+  let idx = 0;
+  const nodes: React.ReactNode[] = [];
+  if (unresolved && item) {
+    const i = idx++;
+    nodes.push(<PipelineNode key="fee" ref={(el) => { nodeEls.current[i] = el; }} rule="fee" term={DRAWER.dentistFee} amountOut={itemFeeCents(item)} owner="info" evidence="USER" onSelectStitch={onSelectStitch} />);
+  }
+  for (const cp of cps) {
+    const i = idx++;
+    const isTotal = cp.rule === "total";
+    nodes.push(
+      <PipelineNode key={cp.key} ref={(el) => { nodeEls.current[i] = el; }} rule={cp.rule} term={cp.term} amountOut={cp.amountOut} change={cp.rule === "fee" || isTotal ? undefined : cp.change}
+                    owner={cp.owner} split={cp.split} stitch={cp.stitch} stitches={isTotal ? lineStitches : undefined} evidence={cp.badge} onSelectStitch={onSelectStitch}
+                    showArrow={i > 0} isTotal={isTotal} isClosed={cp.rule === "X" || cp.rule === "W" || cp.rule === "F"}>
+        {cp.rule === "missing" && (
+          <ul className="node-missing">
+            {lineMissing.map((m, k) => <li key={k}><strong>{m.input}</strong> <span className="muted">{m.how}</span></li>)}
+            {lineMissing.length === 0 && cp.flags.map((f, k) => <li key={k}>{f}</li>)}
+          </ul>
+        )}
+        {(cp.rule === "X" || cp.rule === "W" || cp.rule === "F") && <p className="node-closed-why">{cp.explanation}</p>}
+      </PipelineNode>,
+    );
+  }
+
+  return (
+    <div className={cn("pipeline-wrap", className)}>
+      <div className="pipeline-scroll">
+        <div ref={containerRef} className={cn("pipeline-track", mobile && "pipeline-track-grid")}>
+          <ol className="pipeline" aria-label={label} data-nodes={nodeCount}>
+            {nodes}
+          </ol>
+          {!mobile && nodeCount > 1 && (
+            <div key={`${estimateId ?? "e"}-${portsReady}`} className="pipeline-beams" aria-hidden="true">
+              {Array.from({ length: nodeCount - 1 }, (_, i) => (
+                <AnimatedBeam key={i} containerRef={containerRef} fromRef={outRefs[i]} toRef={inRefs[i + 1]} delay={i * 0.12} repeat={1} duration={0.9} pathWidth={2} />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+      {!mobile && nodeCount > 3 && <p className="pipeline-hint muted small">{DRAWER.pipelineHint}</p>}
+      <p className="sr-only" aria-live="polite">{live}</p>
+      {trail.reconciles === true && <p className="reconcile ok">✓ {UI.reconciles}</p>}
+      {trail.reconciles === false && <p className="reconcile warn" role="alert">{RECONCILE_WARN}</p>}
+      {unresolved && <p className="pipeline-unresolved"><EvidenceBadge status="UNKNOWN" /> {UI.missingTitle}</p>}
+    </div>
+  );
+}
+
+export default CostPipeline;
