@@ -35,9 +35,23 @@ class InMemoryRepo:
     def put(self, sub: str, rtype: str, item: dict) -> dict:
         rid = item.get("id") or uuid.uuid4().hex
         item = {**item, "id": rid, "owner": sub}
-        self._items[(sub, rtype, rid)] = item
-        self._log(sub, "create", rtype, rid, "ok")
+        with self._lock:
+            self._items[(sub, rtype, rid)] = item
+            self._log(sub, "create", rtype, rid, "ok")
         return item
+
+    def patch_if_exists(self, sub: str, rtype: str, rid: str, fields: dict) -> Optional[dict]:
+        """Atomically merge `fields` into an existing owned record; None (and nothing written) when the record is gone. Background work
+        uses this instead of put, so a record deleted meanwhile ('Delete all my data') is never re-created, and fields another request
+        changed meanwhile are not overwritten by a stale copy."""
+        with self._lock:
+            cur = self._items.get((sub, rtype, rid))
+            if cur is None:
+                return None
+            item = {**cur, **fields, "id": rid, "owner": sub}
+            self._items[(sub, rtype, rid)] = item
+            self._log(sub, "update", rtype, rid, "ok")
+            return item
 
     def get_owned(self, sub: str, rtype: str, rid: str) -> dict:
         item = self._items.get((sub, rtype, rid))
@@ -64,10 +78,11 @@ class InMemoryRepo:
 
     def delete_all(self, sub: str) -> dict[str, int]:
         counts: dict[str, int] = {}
-        for key in [k for k in self._items if k[0] == sub]:
-            counts[key[1]] = counts.get(key[1], 0) + 1
-            del self._items[key]
-        self._log(sub, "delete_all", "*", "*", "ok")
+        with self._lock:
+            for key in [k for k in self._items if k[0] == sub]:
+                counts[key[1]] = counts.get(key[1], 0) + 1
+                del self._items[key]
+            self._log(sub, "delete_all", "*", "*", "ok")
         return counts
 
     def audit_for(self, sub: str) -> list[dict]:

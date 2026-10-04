@@ -194,6 +194,10 @@ async def upload_document(file: UploadFile = File(...), sha256: str = Form(...),
 @router.put("/me/documents/{doc_id}/redaction")
 def put_redaction(doc_id: str, body: RedactionIn, user: User = Depends(current_user)):
     doc = _owned_upload(user, doc_id)
+    current = (doc.get("extraction") or {}).get("status")
+    if current and current not in ("ready", "failed", "demo_no_model"):
+        # the running extraction already redacted with the earlier terms; changing them now would not match what was sent (api-correctness-8)
+        raise HTTPException(status_code=409, detail={"error": "extraction_in_progress", "status": current})
     terms = body.clean()
     page_texts, _ = read_text(doc_path(user.sub, doc_id))
     doc["extra_terms"] = terms
@@ -203,24 +207,36 @@ def put_redaction(doc_id: str, body: RedactionIn, user: User = Depends(current_u
 
 
 # ---------------------------------------------------------------- extraction
+class _DocumentGone(Exception):
+    """The document was deleted while its extraction ran ('Delete all my data' or a document delete): the task stops quietly."""
+
+
 def _run(sub: str, doc_id: str, mode: str, limit_reason: Optional[str] = None) -> None:
-    doc = repo.get_owned(sub, "document", doc_id)
+    doc = repo.find_owned(sub, "document", doc_id)
+    if doc is None:                             # deleted before the task started: nothing to do, nothing to re-create
+        return
 
     def set_status(st: dict) -> None:
-        doc["extraction"] = copy.deepcopy(st)
+        extraction = copy.deepcopy(st)
         if limit_reason:
-            doc["extraction"]["limit_reached"] = limit_reason
-        doc["extraction_status"] = st["status"]
-        repo.put(sub, "document", doc)
+            extraction["limit_reached"] = limit_reason
+        # merge only the extraction fields into the CURRENT record (never re-create a deleted one, never overwrite a newer redaction)
+        if repo.patch_if_exists(sub, "document", doc_id, {"extraction": extraction, "extraction_status": st["status"]}) is None:
+            raise _DocumentGone()
         log.info("extraction id=%s stage=%s", doc_id, st["status"])
 
     try:
         run_extraction(doc_path(sub, doc_id), doc["sha256"], doc.get("extra_terms") or [], set_status, mode=mode, fixtures=fixtures)
+    except _DocumentGone:
+        log.info("extraction id=%s stopped: document deleted", doc_id)
     except Exception as e:                      # never leak document content; the type name is enough for the operator
         log.warning("extraction id=%s failed type=%s", doc_id, type(e).__name__)
         st = new_status(mode)
         st.update({"status": "failed", "reason": EXTRACTION_FAILED_MODEL if mode == "live" else EXTRACTION_FAILED_UNREADABLE, "stage_index": len(st["stages"]) - 1})
-        set_status(st)
+        try:
+            set_status(st)
+        except _DocumentGone:
+            pass
 
 
 @router.post("/me/documents/{doc_id}/extract", status_code=202)

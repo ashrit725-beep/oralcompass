@@ -585,3 +585,40 @@ def test_edited_annual_max_wins_over_an_unlimited_extraction():
     confirmed = build_plan_dict(doc, {"fields": [{**row, "decision": {"kind": "confirmed"}}], "structure": {"annual_max_unlimited": True}},
                                 "UP1", "2026-10-01T00:00:00+00:00")["annual_max"]
     assert confirmed["value"] is None and confirmed["unlimited"] is True and confirmed["status"] == "DOC"
+
+
+def test_background_extraction_never_recreates_a_deleted_document_or_reverts_newer_fields(monkeypatch):
+    """api-correctness-7 / security-7 / api-correctness-8: the task merges only its extraction fields into the CURRENT record and stops
+    when the record is gone, so 'Delete all my data' mid-run stays deleted and a newer field is not overwritten by a stale copy."""
+    from app.store import repo
+    sub = "del-mid-run"
+    h = H(sub)
+    up = upload(h, make_pdf(["Deductible $50 per person", "Annual maximum $1,000"])).json()
+
+    def fake_run(path, sha, terms, set_status, mode=None, fixtures=None):
+        st = extraction.new_status("live")
+        st["status"] = "reading_text"
+        set_status(st)
+        repo.patch_if_exists(sub, "document", up["id"], {"label": "renamed meanwhile"})        # another request changes the record
+        assert repo.get_owned(sub, "document", up["id"])["label"] == "renamed meanwhile"
+        st2 = dict(st, status="identifying_fields")
+        set_status(st2)
+        assert repo.get_owned(sub, "document", up["id"])["label"] == "renamed meanwhile"          # not reverted by the task's stale copy
+        assert client.delete("/me", headers=h).status_code == 200
+        set_status(dict(st, status="ready", fields=[{"quote": "patient John Doe"}]))
+        raise AssertionError("the task must stop once the document is gone")
+
+    monkeypatch.setattr(uploads, "run_extraction", fake_run)
+    uploads._run(sub, up["id"], "live")
+    assert repo.find_owned(sub, "document", up["id"]) is None and repo.list_owned(sub, "document") == []
+    uploads._run(sub, up["id"], "live")                     # a task that starts after the delete ends quietly
+    assert repo.list_owned(sub, "document") == []
+
+
+def test_redaction_terms_cannot_change_while_an_extraction_runs():
+    from app.store import repo
+    h = H("redact-mid-run")
+    up = upload(h, make_pdf(["Deductible $50 per person"])).json()
+    repo.patch_if_exists("redact-mid-run", "document", up["id"], {"extraction": extraction.new_status("live"), "extraction_status": "queued"})
+    r = client.put(f"/me/documents/{up['id']}/redaction", json={"extra_terms": ["Harborview"]}, headers=h)
+    assert r.status_code == 409 and r.json()["detail"]["error"] == "extraction_in_progress"
