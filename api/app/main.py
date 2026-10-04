@@ -295,8 +295,10 @@ def my_audit(user: User = Depends(current_user)):
 def health():
     from .extraction import llm_mode, llm_model
     from .llm_guard import cap_reached
+    from .llm_providers import provider_names
     mode = llm_mode()
     return {"ok": True, "presets": sorted(PRESETS), "real_presets": sorted(c for c, m in PRESET_META.items() if not m.get("is_fictional")),
             "fictional_presets": sorted(c for c, m in PRESET_META.items() if m.get("is_fictional")),
             "llm_mode": mode, "llm_model": llm_model() if mode == "live" else None,      # the model id only; never the key
+            "llm_providers": provider_names(),                                                  # provider names in chain order; never a credential
             "llm_cap_reached": cap_reached()}                                                   # the global daily request/spend cap (llm_guard)

@@ -6,7 +6,11 @@ production-grade) is in `docs/DEPLOY.md` ("Security posture").
 
 ## What reaches a model
 
-A model is called only in live mode (`ORALCOMPASS_LLM_PROVIDER=openrouter` with a key, and the cost guard allows the call). In demo mode
+A model is called only in live mode (`ORALCOMPASS_LLM_PROVIDER` names `bedrock` and/or `openrouter` and that provider's key is set, and the
+cost guard allows the call). Provider secrets (`AWS_BEARER_TOKEN_BEDROCK`, `OPENROUTER_API_KEY`) live only in server environment variables
+(`api/.env` locally, gitignored; the host's secret store in production). `api/app/llm_providers.py` never logs request headers, keys,
+message or document text, or response bodies: a failed call logs the provider name, HTTP status and AWS error type only, and `/api/health`
+returns provider names, never a key. Short-term Bedrock API keys expire within 12 hours; long-term keys are revoked in the IAM console. In demo mode
 nothing leaves the server: answers come from templates and stored fictional fixtures. The API test suite forces demo mode for every test
 (`api/tests/conftest.py`); a test that needs a live call opts in with `@pytest.mark.live_llm` and is skipped by default.
 

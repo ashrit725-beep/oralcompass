@@ -71,6 +71,7 @@ UPLOAD_VERSION_NOTE = "Published versions are immutable. Publishing again create
 
 # ---------- grounded assistant (spec section 8) ----------
 ASSIST_RIBBON_DEMO = "Demo mode: template answers assembled from the engine's fields, not a live model."
+LIVE_AI_PROVIDER_LIMIT = "Live AI is unavailable right now (provider limit reached); showing fixed explanations."
 ASSIST_RIBBON_LIVE_FALLBACK = "The model did not answer in time; a template answer is shown."
 
 # ---------- live-AI cost guard (api/app/llm_guard.py): shown when a per-visitor or daily limit refuses a live call ----------
@@ -105,6 +106,7 @@ READER_RIBBON_DEMO = "Demo mode: this text matches a stored fictional estimate, 
 READER_DEMO_CANNOT_READ = ("Demo mode cannot read new documents. No model is configured here; only the two stored fictional estimates are recognized. "
                            "Lines can still be added one at a time below.")
 READER_LIMIT_NOTE = "The reading limit for this session or for today has been reached, so the model was not called."
+READER_PROVIDER_LIMIT = "Live AI is unavailable right now (provider limit reached), so the document was not read."
 READER_MODEL_FAILED = "The model did not answer in time, so the document was not read."
 READER_SCANNED_PDF = "This PDF has no text layer."
 READER_IMAGE_NOTICE = ("This image is sent to the model as is; names, member IDs and dates on it are not removed. Pasting the text instead lets "

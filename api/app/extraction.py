@@ -88,20 +88,18 @@ INJECTION_PATTERNS = [
 ]
 
 
-class ModelUnavailable(Exception):
-    pass
+from .llm_providers import ModelUnavailable  # noqa: E402,F401  (defined with the provider layer; .limited marks a provider limit)
+from . import llm_providers  # noqa: E402
 
 
 # ---------------------------------------------------------------- mode
 def llm_mode() -> str:
-    provider = (os.getenv("ORALCOMPASS_LLM_PROVIDER") or "").strip().lower()
-    if provider == "openrouter" and os.getenv("OPENROUTER_API_KEY"):
-        return "live"
-    return "demo"
+    """live when any provider in ORALCOMPASS_LLM_PROVIDER (bedrock, openrouter, or a chain such as "bedrock,openrouter") has credentials."""
+    return llm_providers.llm_mode()
 
 
 def llm_model() -> str:
-    return os.getenv("ORALCOMPASS_LLM_MODEL") or "anthropic/claude-haiku-4.5"
+    return llm_providers.llm_model()
 
 
 # ---------------------------------------------------------------- text
@@ -586,6 +584,7 @@ class OpenRouterExtractor:
         last: Exception | None = None
         grammar = not _GRAMMAR_REFUSED.get(schema_name, False)   # a schema the provider refused once is not sent as a grammar again
         attempts = 0
+        limited = False
         while attempts < 2:                                       # two real attempts (one retry); the grammar fallback does not use one
             if grammar:
                 body = {"model": self.model, "messages": messages, "max_tokens": max_tokens, "temperature": 0,
@@ -606,6 +605,7 @@ class OpenRouterExtractor:
                     last = ModelUnavailable("http 400 (schema grammar refused)")
                     continue
                 if r.status_code >= 400:
+                    limited = limited or r.status_code in llm_providers.LIMIT_STATUSES
                     raise ModelUnavailable(f"http {r.status_code}")
                 content = r.json()["choices"][0]["message"]["content"]
                 if isinstance(content, list):
@@ -622,7 +622,12 @@ class OpenRouterExtractor:
                 attempts += 1
                 if attempts < 2 and _RETRY_BACKOFF_S:
                     time.sleep(_RETRY_BACKOFF_S)
-        raise ModelUnavailable(str(type(last).__name__))
+        raise ModelUnavailable(str(type(last).__name__), limited=limited)
+
+    def _model_call(self, messages: list[dict], schema_name: str, schema: dict, max_tokens: int, timeout: float = LLM_TIMEOUT_S) -> dict:
+        """The configured provider chain (Bedrock and/or OpenRouter); this class's own `_call` is the OpenRouter member of the chain."""
+        return llm_providers.run_chain(messages, schema_name, schema, max_tokens, timeout, self.spend_kind,
+                                       openrouter=lambda: self._call(messages, schema_name, schema, max_tokens))
 
     def extract(self, redacted_pages: list[str]) -> dict:
         doc_block = "\n".join(f"<<<PAGE {i + 1}>>>\n{t}\n<<<END PAGE {i + 1}>>>" for i, t in enumerate(redacted_pages))
@@ -632,14 +637,14 @@ class OpenRouterExtractor:
                                              "For lists (fee schedule rows, exclusions, services in each class, frequency rules, premium categories) return every item, "
                                              "one finding per sentence or row, even when there are many.\n\n"
                                              "FIELDS:\n" + "\n".join(f"- {f}" for f in FIELD_LIST) + "\n\nDOCUMENT (quoted data):\n" + doc_block}]
-        findings = self._call(call1, "cited_sentences", CALL1_SCHEMA, 6000)
+        findings = self._model_call(call1, "cited_sentences", CALL1_SCHEMA, 6000)
         call2 = [{"role": "system", "content": SYSTEM_PROMPT},
                  {"role": "user", "content": "Structure the cited sentences below into the schema. Every value must come from a sentence; every quote must be one of the "
                                              "sentences copied verbatim with its page. Percentages are the share the PLAN pays. Money is in whole cents. "
                                              "List procedures, exclusions, fee-schedule rows and frequency rules using the document's own wording; do not translate "
                                              "them into codes or categories that are not printed. " + NOT_STATED_RULE + "\n\n"
                                              "CITED SENTENCES (quoted data):\n" + json.dumps(findings, ensure_ascii=False)}]
-        return self._call(call2, "plan_fields", CALL2_SCHEMA, 8000)
+        return self._model_call(call2, "plan_fields", CALL2_SCHEMA, 8000)
 
 
 def _names_match(wording: str, class_name: str) -> bool:

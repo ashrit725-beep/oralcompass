@@ -46,7 +46,7 @@ from .data import FIX, PROC_BY_KEY, PROCEDURE_CODES, SAMPLE_USERS
 from .extraction import (NOT_STATED_RULE, VOCAB, ModelUnavailable, _ANCHORS, _GENERIC, _obj, _tokens, looks_like_injection, match_rules, normalize)
 from .redaction import InvalidClientRedaction, parse_client_redaction, redact, redact_pages
 from .templates import (READER_CODE_NOT_LISTED, READER_CONFIRM_SOURCE, READER_DEMO_CANNOT_READ, READER_DESCRIPTION_DIFFERS, READER_LIMIT_NOTE,
-                        READER_MATCH_AMBIGUOUS, READER_MATCH_CODE, READER_MATCH_DESCRIPTOR, READER_MODEL_FAILED, READER_NO_LINES, READER_NOT_MATCHED,
+                        READER_MATCH_AMBIGUOUS, READER_MATCH_CODE, READER_MATCH_DESCRIPTOR, READER_MODEL_FAILED, READER_PROVIDER_LIMIT, READER_NO_LINES, READER_NOT_MATCHED,
                         READER_IMAGE_NOTICE, READER_RIBBON_DEMO, READER_RIBBON_LIVE, READER_RIBBON_LIVE_IMAGE, READER_SCANNED_PDF, READER_STAGE_LABELS)
 
 router = APIRouter()
@@ -479,6 +479,13 @@ def _finish(items: list[dict]) -> list[dict]:
 
 
 # ---------------------------------------------------------------- endpoints
+def _failure_note(reason: Optional[str]) -> Optional[str]:
+    """Why the live read did not happen: the model failed, every provider is at its limit, or the visitor/daily cap was reached."""
+    if not reason:
+        return None
+    return {"model_failed": READER_MODEL_FAILED, "provider_limit": READER_PROVIDER_LIMIT}.get(reason, READER_LIMIT_NOTE)
+
+
 @router.post("/me/treatment-plans/read")
 async def read_treatment_plan(request: Request, user: User = Depends(current_user)):
     ai_support.local_rate_limit(user.sub, KIND, RATE_N, RATE_WINDOW_S, request)
@@ -520,17 +527,16 @@ async def read_treatment_plan(request: Request, user: User = Depends(current_use
                 return resp
             except ModelUnavailable as e:
                 log.warning("treatment plan read live call failed (%s); demo path", str(e)[:40])
-                reason = "model_failed"
+                reason = "provider_limit" if getattr(e, "limited", False) else "model_failed"
     # demo path: the two stored fictional estimates only
     hit = match_fixture(redacted) if redacted else None
     if hit:
         est, quotes = hit
         items = [{**L, "fee_as_written": "$" + fee_strings(L["fee_cents"])[0], "quote": q, "quote_verified": True} for L, q in zip(est["lines"], quotes)]
         resp.update({"items": _finish(items), "fixture": est["id"], "ribbon": READER_RIBBON_DEMO, "stages": _stages("ready"),
-                     "note": READER_LIMIT_NOTE if reason and reason != "model_failed" else (READER_MODEL_FAILED if reason == "model_failed" else None)})
+                     "note": _failure_note(reason)})
     else:
-        resp["note"] = " ".join(x for x in (note, READER_LIMIT_NOTE if reason and reason != "model_failed" else (READER_MODEL_FAILED if reason == "model_failed" else None),
-                                            READER_DEMO_CANNOT_READ) if x)
+        resp["note"] = " ".join(x for x in (note, _failure_note(reason), READER_DEMO_CANNOT_READ) if x)
         resp["stages"] = _stages("reading" if images else "redacting", skipped)
     if reason:
         resp["limited"] = reason

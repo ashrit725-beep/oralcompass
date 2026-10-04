@@ -7,8 +7,8 @@
 * Spend: `call_model` runs `extraction.OpenRouterExtractor._call`, which records each completed call's provider-reported token usage with
   the guard under the same kind, so nothing here records spend a second time.
 * `local_rate_limit`: an in-process limiter per (visitor, feature) that applies in every mode (PDF parsing costs CPU even in demo mode).
-* `call_model`: one OpenRouter chat completion (json_schema first, json_object fallback, one retry; tests inject
-  `extraction._TRANSPORT_OVERRIDE`). The key stays in server env; nothing here logs a message, a quote or a body.
+* `call_model`: the provider chain (`llm_providers.run_chain`): Bedrock Converse with a forced tool, and/or one OpenRouter chat completion
+  (json_schema first, json_object fallback, one retry; tests inject `extraction._TRANSPORT_OVERRIDE` / `llm_providers._OPENER_OVERRIDE`). The key stays in server env; nothing here logs a message, a quote or a body.
 """
 from __future__ import annotations
 
@@ -102,5 +102,6 @@ def guard_allow(sub: str, kind: str) -> tuple[bool, Optional[str]]:
 
 
 def call_model(messages: list[dict], schema_name: str, schema: dict, max_tokens: int, timeout: float, kind: str) -> dict:
-    """Raises extraction.ModelUnavailable on any failure (HTTP, timeout, malformed JSON). Spend is recorded under the guard kind."""
-    return OpenRouterExtractor(timeout=timeout, spend_kind=guard_kind(kind))._call(messages, schema_name, schema, max_tokens)
+    """The configured provider chain (llm_providers: Bedrock and/or OpenRouter, in ORALCOMPASS_LLM_PROVIDER order). Raises
+    extraction.ModelUnavailable (with .limited when a provider limit was the cause) on any failure. Spend is recorded under the guard kind."""
+    return OpenRouterExtractor(timeout=timeout, spend_kind=guard_kind(kind))._model_call(messages, schema_name, schema, max_tokens, timeout)
