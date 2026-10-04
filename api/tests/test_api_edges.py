@@ -33,3 +33,23 @@ def test_unsafe_dev_user_ids_are_unauthenticated():
         r = client.get("/me/export", headers={"X-Dev-User": bad})
         assert r.status_code == 401 and r.json() == {"detail": {"error": "unauthenticated"}}, bad
     assert client.get("/me/export", headers={"X-Dev-User": "user.a_1-b"}).status_code == 200
+
+
+def test_repeated_publish_without_changes_returns_the_same_version():
+    from pathlib import Path
+    import hashlib
+    pdf = (Path(__file__).resolve().parents[2] / "fixtures" / "documents" / "harborview_certificate.pdf").read_bytes()
+    h = {"X-Dev-User": "edges-publish"}
+    up = client.post("/me/documents/upload", files={"file": ("plan.pdf", pdf, "application/pdf")},
+                     data={"sha256": hashlib.sha256(pdf).hexdigest(), "pages": "14"}, headers=h).json()
+    client.post(f"/me/documents/{up['id']}/extract", headers=h)
+    st = client.get(f"/me/documents/{up['id']}/extraction", headers=h).json()
+    dec = [{"field_path": f["field_path"], "decision": "confirmed" if f.get("candidates") and f.get("status") != "not_found" else "not_in_document"}
+           for f in st["fields"]]
+    assert client.put(f"/me/documents/{up['id']}/review", json={"decisions": dec}, headers=h).status_code == 200
+    first = client.post(f"/me/documents/{up['id']}/publish", headers=h).json()
+    again = client.post(f"/me/documents/{up['id']}/publish", headers=h).json()
+    assert first["version_label"] == again["version_label"] == "UP1"
+    assert [v["version_label"] for v in client.get(f"/me/plans/{up['id']}/versions", headers=h).json()["items"]] == ["UP1"]
+    client.put(f"/me/documents/{up['id']}/review", json={"decisions": [{"field_path": "deductible_individual", "decision": "edited", "value": 7500, "source": "x"}]}, headers=h)
+    assert client.post(f"/me/documents/{up['id']}/publish", headers=h).json()["version_label"] == "UP2"

@@ -542,6 +542,12 @@ def publish(doc_id: str, user: User = Depends(current_user)):
 def _publish_locked(user: User, doc_id: str) -> dict:
     doc = _owned_upload(user, doc_id)             # re-read inside the lock
     st = doc["extraction"]
+    last_id = doc.get("latest_version_id")
+    if last_id:                                   # a repeated publish with no review change since (double click, retry) is the same version
+        last = repo.find_owned(user.sub, "plan_version", last_id)
+        if last and last.get("fields_snapshot") == st["fields"] and last.get("sha256") == doc["sha256"]:
+            return {"plan_ref": f"upload:{doc_id}", "version_label": last["version_label"], "published_at": last["published_at"],
+                    "sha256": last["sha256"], "summary": upload_summary(last, doc)}
     n = len(repo.list_owned(user.sub, "plan_version")) + 1
     label = f"UP{n}"
     published_at = _now()
