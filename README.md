@@ -127,7 +127,7 @@ cd engine && python3 -m pytest -q
 cd api && ORALCOMPASS_DEV_AUTH=1 python3 -m pytest -q tests      # forced to demo mode by conftest; runs on memory and SQLite stores
 cd web && npm run build && npm test && npm run check:engines && npm run check:bundle
 python3 tools/ingest_sources.py --check                          # facts → presets, 0 validation errors
-python3 tools/advice_lint.py web/src/lib api/app/templates.py api/app/assistant_templates.py   # information-only copy
+python3 tools/advice_lint.py web/src/lib api/app/templates.py api/app/assistant_templates.py api/app/assistant_glossary.py   # information-only copy
 ```
 
 The API suite never makes a model call: `api/tests/conftest.py` sets `ORALCOMPASS_LLM_PROVIDER=none` and clears the key before the app

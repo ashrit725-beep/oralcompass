@@ -110,7 +110,7 @@ python3 -m uvicorn app.server:app --host 127.0.0.1 --port 8080 --no-access-log
   the service worker, "Delete all my data" (records, stored file and cookie), zero CSP violations and zero page errors. When Docker is
   available it then builds the image and runs the same walk against the container (`--no-docker` skips that). It stops every server it starts.
 - The usual checks: `cd api && python3 -m pytest -q tests` (the whole API suite runs on InMemoryRepo and again on SqliteRepo), engine tests,
-  `tools/ingest_sources.py --check`, `tools/advice_lint.py`, `npm run build && npm test && npm run check:engines && npm run check:bundle`,
+  `tools/ingest_sources.py --check`, `tools/advice_lint.py web/src/lib api/app/templates.py api/app/assistant_templates.py api/app/assistant_glossary.py`, `npm run build && npm test && npm run check:engines && npm run check:bundle`,
   `tools/screenshots.py` (dev mode).
 
 ## Security posture (what is implemented)

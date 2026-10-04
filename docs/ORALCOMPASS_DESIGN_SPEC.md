@@ -1042,7 +1042,7 @@ both devices unless marked:
 | mobile | `sheet is a dialog` | after opening an island, `[role=dialog][aria-modal=true]` exists; `Close details` button ≥ 44×44 |
 | trust | `every amount badged in drawer` | within `.drawer`, each `.amt, .num, .total` has a `.badge` or `.stitch` in its closest `li, dd, p, td, .node`; count of violations `== 0` |
 | anti-slop | `no forbidden motion keywords` | grep of `styles.css` and `src/**/*.tsx` for `bounce|pulse|confetti|particle|shimmer` returns none (run as a Python check in the same script) |
-| lint | `copy lints clean` | `python3 tools/advice_lint.py web/src/lib/copy.ts api/app/templates.py api/app/assistant_templates.py` exits 0 (run from the script). Note: the linter is for copy files, not this spec; run over this document it reports exactly five non-UI matches (spec prose "saved estimates", the three detector keywords listed in §8.4 item 3, and the test input `Should I get the crown?` in this table), which is the expected result. |
+| lint | `copy lints clean` | `python3 tools/advice_lint.py web/src/lib/copy.ts api/app/templates.py api/app/assistant_templates.py api/app/assistant_glossary.py` exits 0 (run from the script). Note: the linter is for copy files, not this spec; run over this document it reports exactly five non-UI matches (spec prose "saved estimates", the three detector keywords listed in §8.4 item 3, and the test input `Should I get the crown?` in this table), which is the expected result. |
 
 Screenshots added: `{device}-11-passage.png`, `-12-drawer.png`, `-13-pipeline.png`, `-14-thread.png`, `-15-upload-review.png`,
 `-16-assistant.png`, `-17-fog.png`, `-18-overview.png`.

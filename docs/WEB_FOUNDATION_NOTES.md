@@ -25,7 +25,7 @@ cd web && npm run build            # tsc --noEmit && vite build
 cd web && npm test                 # vitest run
 cd web && npm run check:engines    # one animation engine (motion); fails on framer-motion/gsap/react-spring/animejs imports or deps
 cd web && npm run check:bundle     # rebuilds; main chunk must stay <= 350 KB gzip and a pdfjs-* chunk must exist
-python3 tools/advice_lint.py web/src/lib api/app/templates.py api/app/assistant_templates.py   # 0 violation(s); lint the DIRECTORY web/src/lib (several copy files)
+python3 tools/advice_lint.py web/src/lib api/app/templates.py api/app/assistant_templates.py api/app/assistant_glossary.py   # 0 violation(s); lint the DIRECTORY web/src/lib (several copy files)
 
 # python checks
 cd api && ORALCOMPASS_DEV_AUTH=1 python3 -m pytest -q tests     # 35 passed

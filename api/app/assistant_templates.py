@@ -119,3 +119,33 @@ SUGGESTIONS = {
 }
 
 ADVICE_LABEL = "Information, not a choice"
+
+# ---------- plain words: the "simple" lead block (kind "simple") shown first in every answer ----------
+# Everyday words, short sentences, no bare amounts (every figure is a {{ref:n}} the client renders with its badge), information only.
+SIMPLE = {
+    "advice_request": ("OralCompass explains what your documents say; it does not choose for you. Here is what the documents say about this.",
+                       "OralCompass explains your documents; it does not choose for you."),
+    "out_of_scope": ("This is a question for your dentist; OralCompass only explains your plan and your costs.",
+                     "Please ask your dentist; OralCompass only explains your plan and your costs."),
+    "what_if_requested": ("OralCompass does not guess at other numbers. It only explains the figures on your estimate and in your documents.",
+                          "OralCompass only explains the figures you already have."),
+    "clarify": ("Your question could be about more than one treatment. The treatments it could mean are listed below.",
+                "This could be about more than one treatment."),
+    "no_estimate": ("There is no cost estimate for this plan yet. Your plan's own rules can still be read on the Documents tab.",
+                    "There is no cost estimate yet."),
+    "plan_value": "Your plan's {term} is {{ref:0}}.",
+    "total_one": "For the {name}, you pay {{ref:0}} and the plan pays {{ref:1}}.",
+    "total_many_you": "You pay {parts}.",
+    "total_many_plan": "The plan pays {parts}.",
+    "total_simpler_one": "You pay {{ref:0}} for the {name}.",
+    "total_simpler_many": "You pay {parts}.",
+    "remaining_max": "Your plan has {{ref:0}} of its yearly maximum (the most it pays in a year) left now.",
+    "remaining_max_after": "Your plan has {{ref:0}} of its yearly maximum (the most it pays in a year) left now, and {{ref:1}} after the planned work.",
+    "remaining_ded": "You have {{ref:0}} of your deductible (the part you pay before the plan pays) left to pay.",
+    "remaining_none": ("Your documents do not show how much is left yet. A benefit statement from your plan shows what has been used this year.",
+                       "Your documents do not show how much is left yet."),
+    "remaining_simpler": "Your plan has {{ref:0}} left to pay this year.",
+    "line": "For the {name}, you pay {{ref:0}} and the plan pays {{ref:1}}.",
+    "line_simpler": "You pay {{ref:0}} for the {name}.",
+    "lead": "In short: {text}",
+}
