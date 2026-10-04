@@ -78,7 +78,7 @@ export function CompareView({ plans, items, benefits, initial }: Props) {
         ))}
       </div>
       <p className="muted small">{PLAN.cmpProcedures(planned.length ? planned.map((i) => `${i.procedure_name ?? i.procedure_key}${i.tooth ? ` (tooth ${i.tooth})` : ""}`).join("; ") : PLAN.cmpNoneRecorded)} {PLAN.cmpUsageFor(benefits.map((b) => b.plan_code).join(", ") || PLAN.cmpNone)}</p>
-      {busy && <p className="muted" role="status">{UI.processing}</p>}
+      <p className="muted" role="status">{busy ? UI.processing : ""}</p>
       {err && <p className="error" role="alert">{err}</p>}
       {data && <ComparisonGrid data={data} plans={models} />}
       {!data && !busy && planned.length === 0 && <p><EvidenceBadge status="UNKNOWN" /> {PLAN.cmpNoPlanned}</p>}

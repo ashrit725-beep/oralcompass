@@ -119,7 +119,7 @@ export function BenefitStatementForm({ planRef, plan, benefits, onSaved, compact
         <Button type="submit" size="touch" disabled={busy}>{PLAN.bsSubmit}</Button>
         <span className="bs-user"><EvidenceBadge status="USER" /> <span className="muted small">{PLAN.bsEveryFigureUser}</span></span>
       </div>
-      {status && <p className="bs-status" role="status">{status}</p>}
+      <p className="bs-status" role="status">{status ?? ""}</p>
       {derived && (
         <dl className="bs-derivation">
           <dt>{PLAN.bsDerivationTitle}</dt>

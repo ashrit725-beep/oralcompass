@@ -184,7 +184,7 @@ export function DocumentsView({ planCode, plans, onPlan, evidence, stitches, sel
             {UI.deleteHold}
           </HoldButton>
         </div>
-        {msg && <p className="note" role="status">{msg}</p>}
+        <p className="note" role="status">{msg ?? ""}</p>
         {audit && <table className="audit"><caption>{UI.auditTitle}</caption><thead><tr><th>when</th><th>action</th><th>type</th><th>id</th><th>outcome</th></tr></thead><tbody>{audit.slice(-25).map((e, i) => <tr key={i}><td>{new Date(e.ts * 1000).toLocaleTimeString()}</td><td>{e.action}</td><td>{e.type}</td><td className="mono">{String(e.id).slice(0, 8)}</td><td>{e.outcome}</td></tr>)}</tbody></table>}
       </section>
     </div>

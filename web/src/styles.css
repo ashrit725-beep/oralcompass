@@ -339,6 +339,8 @@ select:not([multiple]):not([size]) {
 /* the loading banner is an overlay: inserting and removing an in-flow row above <main> shifted the page (mobile-18) */
 .processing { position: fixed; top: var(--s-3); right: var(--s-4); z-index: 30; margin: 0; max-width: min(420px, calc(100vw - 2rem)); padding: var(--s-2) var(--s-3); background: var(--paper-deep); border: 1px solid var(--rule); border-radius: var(--r-3); box-shadow: var(--shadow-2); pointer-events: none; }
 .start-pending { min-height: 60vh; }
+/* status lines are mounted before their message arrives (a11y-25: a region created already filled is often not announced); empty, they take no space */
+p[role="status"]:empty { margin: 0; padding: 0; border: 0; min-height: 0; }
 /* <main id="main"> takes focus only from the "Skip to content" link (tabindex -1); the link itself shows the ring (a11y-4) */
 #main:focus { outline: none; }
 /* a failed view or lazy surface keeps a labelled recovery message inside the shell (web-correctness-3) */

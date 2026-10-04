@@ -32,7 +32,7 @@ export function CostTrail({ estimate, stitches, selected, onSelect, prominentSco
     <section className={`trail ${one ? "trail-one" : ""}`} aria-labelledby={hid}>
       <h3 id={hid} className={one ? "sr-only" : undefined}>{UI.ledgerTitle}</h3>
       {!one && (
-        <p className="hero" aria-live="polite">
+        <p className="hero">
           <span className="total">{money(estimate.user_estimated_payment_cents)}</span>
           <span className="sub">{UI.planPays}: {money(estimate.insurer_estimated_payment_cents)}{estimate.plan_payment_is_upper_bound ? " (upper bound)" : ""}</span>
         </p>

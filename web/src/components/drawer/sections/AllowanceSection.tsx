@@ -62,7 +62,7 @@ export function AllowanceSection({ item, line, trail, rule, plan, estimate, stit
               <label>{DRAWER.allowedInputLabel}<input inputMode="decimal" value={dollars} onChange={(e) => setDollars(e.target.value)} placeholder="0.00" required /></label>
               <label>{DRAWER.allowedSourceLabel}<input value={source} onChange={(e) => setSource(e.target.value)} required /></label>
               <Button type="submit" size="touch" variant="outline" disabled={busy}>{DRAWER.allowedRecord}</Button>
-              {msg && <p className="note" role="status">{msg}</p>}
+              <p className="note" role="status">{msg ?? ""}</p>
             </form>
           )}
         </div>
