@@ -47,6 +47,10 @@ UPLOAD_VERSION_NOTE = "Published versions are immutable. Publishing again create
 # ---------- grounded assistant (spec section 8) ----------
 ASSIST_RIBBON_DEMO = "Demo mode: template answers assembled from the engine's fields, not a live model."
 ASSIST_RIBBON_LIVE_FALLBACK = "The model did not answer in time; a template answer is shown."
+
+# ---------- live-AI cost guard (api/app/llm_guard.py): shown when a per-visitor or daily limit refuses a live call ----------
+LLM_LIMIT_RIBBON = "The live model limit for today has been reached; a template answer is shown."
+LLM_LIMIT_EXTRACTION_RIBBON = "The live model limit for today has been reached. Fields from a known fixture document are shown; others can be entered by hand."
 ASSIST_GUARD_REMOVED = "{n} sentence(s) were removed by the information-only check."
 ASSIST_NOTHING_SURVIVED = "No sentence about this step passed the information-only check; the clause and step are listed instead."
 ASSIST_RATE_LIMITED = "Too many questions in a short time; the composer opens again in a moment."

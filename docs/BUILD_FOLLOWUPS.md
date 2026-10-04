@@ -56,6 +56,22 @@ statically; `vite.config.ts` splits react/radix/vaul into `ui-vendor` (main 121 
 19. OPEN — Web Push subscribe/unsubscribe and "Send a test push" unverified end to end (headless Chromium denies Notification permission).
 20. OPEN — Live-mode extraction of the 14-page fixture took ~5 min on one run; the screenshot walk runs the API in demo mode (`ORALCOMPASS_LLM_PROVIDER=demo`).
 
+## Production readiness (2026-10-03, addendum §D; not deployed — see `docs/DEPLOY.md`)
+21. NOTE for the AI-features branch — the treatment-plan reader and clause explainer must call the live-AI cost guard:
+   `from . import llm_guard`; `ok, reason = llm_guard.allow(user.sub, "reader" | "explainer")` before the provider call (on refusal use the demo
+   path and `templates.LLM_LIMIT_RIBBON`), then `llm_guard.record(kind, *llm_guard.usage_tokens(resp_json, fallback_in=..., fallback_out=max_tokens))`.
+   Tests get fresh counters per test (`api/tests/conftest.py`). A reader route that accepts a photo/PDF must end in `/upload` (35 MB body limit,
+   `api/app/security.py`) or be listed in `ORALCOMPASS_LARGE_BODY_PATHS`; every other route is capped at 1 MB.
+22. NOTE — The production bundle no longer sends `X-Dev-User` (only `import.meta.env.DEV` or `VITE_DEV_AUTH=1` builds do; `web/src/lib/auth.ts`).
+   `tools/screenshots.py` adds the header to `/api` requests itself, so the dev walk works against `npm run build` output unchanged. The walk can also
+   run against the single server instead of `vite preview` (CSP applied): `cd api && ORALCOMPASS_DEV_AUTH=1 ORALCOMPASS_LLM_PROVIDER=none
+   python3 -m uvicorn app.server:app --port <p>` then `ORALCOMPASS_WEB_BASE=http://127.0.0.1:<p> python3 tools/screenshots.py shots/` (134/134 there).
+23. OPEN — Docker was unavailable on the build machine: `docker build` and the container pass of `tools/prod_smoke.py` have not run. The local
+   production smoke (`python3 tools/prod_smoke.py`, same server and settings) passes 29/29.
+24. OPEN — Assistant: the existing per-user 429 rate limit (30 per 10 min, all requests) and the guard's live-call limit (30 per 10 min) are equal, so
+   the guard's assistant ribbon appears only after the global caps; lower `ORALCOMPASS_LLM_LIMIT_ASSISTANT` to make the per-visitor fallback reachable.
+25. OPEN — No expiry for abandoned sessions' records in SQLite (a periodic purge by `updated_at` would be the next step).
+
 ## Docs / presentation (filled by the polish pass)
 - README quick start must cover: `api/.env` from `api/.env.example`, demo mode vs live mode, `npm install` (Tailwind/shadcn stack), `web/THIRD_PARTY_NOTICES.md`,
   Tailwind v4 browser floor, the screenshot walk, the demo script (`docs/ORALCOMPASS_DESIGN_SPEC.md` §11) and the judging-criteria map (`docs/JUDGING_CRITERIA.md`).

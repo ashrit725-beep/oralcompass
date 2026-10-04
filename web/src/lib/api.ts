@@ -3,15 +3,32 @@ import type {
   PrivateDocument, Procedure, ReviewDecision, SavedEstimate, SourceItem, TreatmentItem, UploadResponse, UploadedPlanSummary,
 } from "./types";
 import { isUpload, uploadId } from "./types";
-
-const DEV_USER = "demo-user";   // dev auth only (ORALCOMPASS_DEV_AUTH=1 on the API); production sends the Cognito JWT.
+import { DEV_AUTH, withAuth } from "./auth";
 
 export class ApiError extends Error {
   constructor(public status: number, public path: string, public body?: unknown) { super(`${status} ${path}`); }
 }
 
+/**
+ * Every API request: same-origin credentials (the production session cookie) plus, in dev builds only, the X-Dev-User header (lib/auth.ts).
+ * In production the very first request runs alone, so the session cookie it receives is the one every later request carries (parallel
+ * first requests would each be issued a different session).
+ */
+let sessionReady: Promise<unknown> | null = null;
+export async function apiFetch(path: string, init: RequestInit = {}): Promise<Response> {
+  const go = () => fetch(`/api${path}`, withAuth(init));
+  if (DEV_AUTH) return go();
+  if (!sessionReady) {
+    const first = go();
+    sessionReady = first.catch(() => undefined);
+    return first;
+  }
+  await sessionReady;
+  return go();
+}
+
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
-  const r = await fetch(`/api${path}`, { ...init, headers: { "Content-Type": "application/json", "X-Dev-User": DEV_USER, ...(init?.headers || {}) } });
+  const r = await apiFetch(path, { ...init, headers: { "Content-Type": "application/json", ...((init?.headers as Record<string, string>) || {}) } });
   if (!r.ok) throw new ApiError(r.status, path, await r.json().catch(() => undefined));
   return r.json();
 }
@@ -23,7 +40,7 @@ const put = <T,>(path: string, body: unknown) => req<T>(path, { method: "PUT", b
 async function multipart<T>(path: string, fields: Record<string, string | number | Blob>): Promise<T> {
   const fd = new FormData();
   for (const [k, v] of Object.entries(fields)) fd.append(k, v instanceof Blob ? v : String(v));
-  const r = await fetch(`/api${path}`, { method: "POST", body: fd, headers: { "X-Dev-User": DEV_USER } });
+  const r = await apiFetch(path, { method: "POST", body: fd });
   if (!r.ok) throw new ApiError(r.status, path, await r.json().catch(() => undefined));
   return r.json();
 }
@@ -35,15 +52,15 @@ export interface BenefitsIn {
   network_default?: string | null; deductible_met_out_cents?: number | null; benefits_used_out_cents?: number | null; coverage_end?: string | null; last_updated?: string | null;
 }
 
-/** Binary GET with the auth header (an uploaded document's stored PDF). */
+/** Binary GET with the caller's credentials (an uploaded document's stored PDF). */
 async function blob(path: string): Promise<Blob> {
-  const r = await fetch(`/api${path}`, { headers: { "X-Dev-User": DEV_USER } });
+  const r = await apiFetch(path);
   if (!r.ok) throw new ApiError(r.status, path, await r.json().catch(() => undefined));
   return r.blob();
 }
 
 export const api = {
-  health: () => req<{ ok: boolean; presets: string[]; real_presets: string[]; fictional_presets: string[]; llm_mode: "demo" | "live"; llm_model?: string }>("/health"),
+  health: () => req<{ ok: boolean; presets: string[]; real_presets: string[]; fictional_presets: string[]; llm_mode: "demo" | "live"; llm_model?: string; llm_cap_reached?: boolean }>("/health"),
   // public catalogs
   plans: () => req<{ items: PlanSummary[]; banner: string }>("/plans"),
   plan: (code: string) => req<{ summary: PlanSummary; model: PlanFixture }>(`/plans/${code}`),

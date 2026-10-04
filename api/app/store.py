@@ -1,14 +1,20 @@
 """Owner-scoped repository. Every read goes through `get_owned`, which raises a constant 404 when the resource does not belong
 to the caller — the same response as a nonexistent id, so existence is never disclosed (spec §5.6).
 
-InMemoryRepo is used for tests and local demos. DynamoRepo is the production shape: partition key USER#<sub>, sort key
-<TYPE>#<id>; presets live under PRESET#<id>#v<n> and are read-only through the API.
+InMemoryRepo is the default (tests and local demos). SqliteRepo (store_sqlite.py) has exactly the same interface and is selected by
+ORALCOMPASS_STORE=sqlite + ORALCOMPASS_DB_PATH (the single-container deployment keeps the file on a persistent volume). The SAM skeleton's
+DynamoDB shape (partition key USER#<sub>, sort key <TYPE>#<id>) is described in infra/template.yaml and not built.
+
+Besides owner-scoped records, both repositories keep small integer counters (the live-AI cost guard, api/app/llm_guard.py): keys carry a
+hashed session id, a kind and a UTC day, never content.
 """
 from __future__ import annotations
 
+import os
+import threading
 import time
 import uuid
-from typing import Any
+from typing import Any, Optional
 
 from fastapi import HTTPException
 
@@ -19,6 +25,8 @@ class InMemoryRepo:
     def __init__(self) -> None:
         self._items: dict[tuple[str, str, str], dict] = {}
         self.audit: list[dict] = []
+        self._counters: dict[str, int] = {}
+        self._lock = threading.RLock()
 
     def _log(self, sub: str, action: str, rtype: str, rid: str, outcome: str) -> None:
         # audit events carry ids and outcomes only — never content, names or amounts
@@ -58,5 +66,43 @@ class InMemoryRepo:
         self._log(sub, "delete_all", "*", "*", "ok")
         return counts
 
+    def audit_for(self, sub: str) -> list[dict]:
+        """The caller's own audit events (ids and outcomes only), oldest first."""
+        return [e for e in self.audit if e["sub"] == sub]
 
-repo = InMemoryRepo()
+    # ---- counters (live-AI cost guard) ----
+    def counters_get(self, keys: list[str]) -> dict[str, int]:
+        with self._lock:
+            return {k: self._counters.get(k, 0) for k in keys}
+
+    def counters_check_add(self, adds: dict[str, int], limits: dict[str, int]) -> Optional[str]:
+        """Atomically: if any key in `limits` would exceed its limit after `adds`, change nothing and return that key; otherwise apply
+        every add and return None."""
+        with self._lock:
+            for k, lim in limits.items():
+                if self._counters.get(k, 0) + adds.get(k, 0) > lim:
+                    return k
+            for k, n in adds.items():
+                self._counters[k] = self._counters.get(k, 0) + n
+            return None
+
+    def counters_prune(self, keep_suffixes: tuple[str, ...]) -> int:
+        """Drop counters whose key does not end with one of `keep_suffixes` (yesterday's day keys, expired windows)."""
+        with self._lock:
+            old = [k for k in self._counters if not k.endswith(keep_suffixes)]
+            for k in old:
+                del self._counters[k]
+            return len(old)
+
+
+def make_repo():
+    """ORALCOMPASS_STORE=sqlite → SqliteRepo at ORALCOMPASS_DB_PATH (default api/.data/oralcompass.db); anything else → InMemoryRepo."""
+    if (os.getenv("ORALCOMPASS_STORE") or "memory").strip().lower() == "sqlite":
+        from pathlib import Path
+        from .store_sqlite import SqliteRepo
+        path = os.getenv("ORALCOMPASS_DB_PATH") or str(Path(__file__).resolve().parents[1] / ".data" / "oralcompass.db")
+        return SqliteRepo(path)
+    return InMemoryRepo()
+
+
+repo = make_repo()

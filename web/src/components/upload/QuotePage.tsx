@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { StageLoader } from "@/components/StageLoader";
 import { UPLOAD } from "@/lib/copy/upload";
-import { DEV_USER_HEADER } from "@/lib/upload";
+import { apiFetch } from "@/lib/api";
 
 /**
  * QuotePage (spec §7.3 step 4 "Open page"): renders ONE page of the uploaded PDF with the quote's text-layer rectangle outlined when the
@@ -26,7 +26,7 @@ export function QuotePage({ docId, page, quote, verified }: QuotePageProps) {
     let blobUrl: string | null = null;
     (async () => {
       try {
-        const r = await fetch(`/api/me/documents/${docId}/file`, { headers: { ...DEV_USER_HEADER } });
+        const r = await apiFetch(`/me/documents/${docId}/file`);
         if (!r.ok) throw new Error(String(r.status));
         const blob = await r.blob();
         blobUrl = URL.createObjectURL(blob);

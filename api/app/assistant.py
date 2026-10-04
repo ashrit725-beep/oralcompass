@@ -40,7 +40,8 @@ from .data import CODES_BY_KEY, PLAN_META, PLANS, PROC_BY_KEY, PROCEDURES, claus
 from .lint_runtime import guard
 from .records import derived_benefits
 from .store import NOT_FOUND, repo
-from .templates import ASSIST_RIBBON_DEMO, ASSIST_RIBBON_LIVE_FALLBACK, advice_question_response
+from .templates import ASSIST_RIBBON_DEMO, ASSIST_RIBBON_LIVE_FALLBACK, LLM_LIMIT_RIBBON, advice_question_response
+from . import llm_guard
 
 log = logging.getLogger("oralcompass.assistant")
 router = APIRouter()
@@ -822,7 +823,12 @@ def ask_live(ctx: Ctx, facts: dict, message: str, intent_hint: str) -> tuple[str
     with live_client() as client:
         r = client.post(OPENROUTER_URL, json=body, headers=headers, timeout=LIVE_TIMEOUT_S)
     r.raise_for_status()
-    content = r.json()["choices"][0]["message"]["content"]
+    payload = r.json()
+    try:                                                # estimated spend for the daily cap (provider-reported usage when present)
+        llm_guard.record("assistant", *llm_guard.usage_tokens(payload, fallback_in=len(json.dumps(body, default=str)) // 4, fallback_out=body["max_tokens"]))
+    except Exception:
+        pass
+    content = payload["choices"][0]["message"]["content"]
     if isinstance(content, list):
         content = "".join(part.get("text", "") for part in content if isinstance(part, dict))
     content = content.strip()
@@ -881,6 +887,10 @@ def ask(body: AssistIn, user: User = Depends(current_user)):
 
     mode = llm_mode()
     sentences: list[dict] = []
+    if mode == "live":
+        allowed, reason = llm_guard.allow(user.sub, "assistant")
+        if not allowed:                              # per-visitor or daily limit: the template answer, honestly labelled
+            mode = "demo"; resp["ribbon"] = LLM_LIMIT_RIBBON; resp["limit"] = reason
     if mode == "live":
         try:
             live_intent, sentences = ask_live(ctx, facts, message, intent)
