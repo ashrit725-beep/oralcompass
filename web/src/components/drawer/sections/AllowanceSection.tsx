@@ -4,8 +4,8 @@ import { EvidenceBadge } from "@/components/Primitives";
 import { api } from "@/lib/api";
 import { UI } from "@/lib/copy";
 import { DRAWER } from "@/lib/copy/drawer";
-import { itemFeeCents, missingForLine, networkWord, parseAllowedCents } from "@/lib/drawer";
-import { stitchForCite } from "@/lib/stitches";
+import { allowedFigure, itemFeeCents, missingForLine, networkWord, parseAllowedCents } from "@/lib/drawer";
+import { stitchForCite, stitchForStep } from "@/lib/stitches";
 import type { Evidence } from "@/lib/types";
 import { docOf, Fact, Figure, Row, Section, type SectionProps } from "./shared";
 
@@ -23,6 +23,10 @@ export function AllowanceSection({ item, line, trail, rule, plan, estimate, stit
   const netStatus: Evidence = estimate?.inputs.network_status ?? (item?.network ? "USER" : "UNKNOWN");
   const oon = stitchForCite(plan.oon_rule?.cite, stitches, doc);
   const allowedStep = trail?.steps.find((s) => s.key === "allowed");
+  // the engine may resolve the allowed amount from the plan's own allowance schedule (HB26 Appendix A): show that cited figure (numbers-4)
+  const shown = allowedFigure(item, line, allowedStep, allowedStatus);
+  const planAllowedStitch = shown.fromPlan && allowedStep?.stitch ? stitchForStep({ label: "", cents: 0, owner: "", rule: "N", stitch: allowedStep.stitch }, stitches) : undefined;
+  const resolved = allowedKnown || shown.fromPlan;
   const missing = missingForLine(estimate?.missing_inputs ?? [], line);
   // The drawer keys this section by item (ProcedureDrawer), so a figure typed for one island never carries over to the next (web-correctness-8).
   const [dollars, setDollars] = useState(""); const [source, setSource] = useState(""); const [msg, setMsg] = useState<string | null>(null); const [busy, setBusy] = useState(false);
@@ -53,7 +57,7 @@ export function AllowanceSection({ item, line, trail, rule, plan, estimate, stit
         <p className="dsec-pair-cell"><span className="dsec-k">{DRAWER.dentistFee}</span><Figure cents={itemFeeCents(item)} evidence="USER" /></p>
         <p className="dsec-pair-cell">
           <span className="dsec-k">{DRAWER.allowedAmount}</span>
-          <Figure cents={item?.allowed_cents ?? null} evidence={allowedStatus} stitch={allowedStep?.owner === "nobody" ? oon : null} onSelectStitch={onSelectStitch} />
+          <Figure cents={shown.cents} evidence={shown.evidence} stitch={shown.fromPlan ? planAllowedStitch ?? null : allowedStep?.owner === "nobody" ? oon : null} onSelectStitch={onSelectStitch} />
           {item?.allowed_source ? <span className="dsec-note">{item.allowed_source}</span> : rule?.allowed_amount?.note ? <span className="dsec-note">{rule.allowed_amount.note}</span> : null}
         </p>
       </div>
@@ -62,7 +66,7 @@ export function AllowanceSection({ item, line, trail, rule, plan, estimate, stit
           {networkWord(net) ? <Fact evidence={netStatus} stitch={oon} onSelectStitch={onSelectStitch}>{networkWord(net)}</Fact> : <Fact evidence="UNKNOWN"><span className="muted">{DRAWER.networkNotProvided}</span></Fact>}
         </Row>
       </dl>
-      {(!allowedKnown || line?.status === "unresolved") && item && (
+      {(!resolved || line?.status === "unresolved") && item && (
         <div className="missing compact" role="group" aria-labelledby={`allowed-missing-${item.id}`}>
           <p id={`allowed-missing-${item.id}`} className="dsec-k"><EvidenceBadge status="UNKNOWN" /> {DRAWER.allowedMissingTitle}</p>
           <ul>{missing.map((m, i) => <li key={i}><strong>{m.input}</strong> <span className="muted">{m.how}</span></li>)}</ul>
