@@ -1,15 +1,22 @@
-import { useEffect, useState } from "react";
+import { Suspense, lazy, useEffect, useState, type ReactNode } from "react";
 import { api } from "../lib/api";
 import { UI } from "../lib/copy";
 import { circled } from "../lib/stitches";
 import type { PlanEvidence, PlanSummary, PrivateDocument, SourceItem, Stitch } from "../lib/types";
-import { PageView } from "./PageView";
 import { EvidenceBadge } from "./Primitives";
+import { StageLoader } from "./StageLoader";
 
-interface Props { planCode: string; plans: PlanSummary[]; onPlan: (code: string) => void; evidence: PlanEvidence | null; stitches: Stitch[]; selected?: Stitch; onSelect: (s: Stitch) => void; onRetry: () => void }
+// pdf.js (≈107 KB gzip) loads only when a stored PDF is rendered — never in the main chunk (component plan §3.2).
+const PageView = lazy(() => import("./PageView").then((m) => ({ default: m.PageView })));
+
+interface Props {
+  planCode: string; plans: PlanSummary[]; onPlan: (code: string) => void; evidence: PlanEvidence | null; stitches: Stitch[]; selected?: Stitch; onSelect: (s: Stitch) => void; onRetry: () => void;
+  /** Hook point for the upload agent (spec §13.2): rendered inside "Your documents", above the stored-document list (the UploadWizard entry). */
+  uploadSlot?: ReactNode;
+}
 
 /** Documents: the plan documents behind the rules (PDF with stitches when stored; otherwise quotes + page references + official link), your private records, sources, privacy. */
-export function DocumentsView({ planCode, plans, onPlan, evidence, stitches, selected, onSelect, onRetry }: Props) {
+export function DocumentsView({ planCode, plans, onPlan, evidence, stitches, selected, onSelect, onRetry, uploadSlot }: Props) {
   const [mine, setMine] = useState<PrivateDocument[] | null>(null);
   const [sources, setSources] = useState<SourceItem[] | null>(null);
   const [audit, setAudit] = useState<any[] | null>(null);
@@ -49,7 +56,9 @@ export function DocumentsView({ planCode, plans, onPlan, evidence, stitches, sel
           </article>
         ))}
         {primary?.has_stored_pdf && primary.stored_path && (
-          <PageView url={`/${primary.stored_path.replace(/^fixtures\//, "fixtures/")}`} stitches={stitches.filter((s) => s.doc === primary.version_label)} selected={selected} onSelect={onSelect} />
+          <Suspense fallback={<StageLoader label={UI.renderingDocument} size="sm" />}>
+            <PageView url={`/${primary.stored_path.replace(/^fixtures\//, "fixtures/")}`} stitches={stitches.filter((s) => s.doc === primary.version_label)} selected={selected} onSelect={onSelect} />
+          </Suspense>
         )}
         <h3>{UI.evidenceTitle} ({clauses.length})</h3>
         <label className="filter">Filter clauses <input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="deductible, crown, page…" /></label>
@@ -75,6 +84,7 @@ export function DocumentsView({ planCode, plans, onPlan, evidence, stitches, sel
 
       <section className="doc-mine" aria-labelledby="mine-h">
         <h2 id="mine-h">Your documents</h2>
+        {uploadSlot}
         {mine === null ? <p className="muted">{UI.processing}</p> : mine.length === 0 ? <p className="muted">No private documents are stored. Plan documents you add, typed estimates and benefit statements appear here with their extraction status.</p> : (
           <ul className="plain-list">{mine.map((d) => <li key={d.id}><strong>{d.label ?? d.filename}</strong> <span className="muted">· {d.type ?? "upload"} · {d.extraction_status ?? "—"}</span>
             {(d.fields_needing_confirmation?.length ?? 0) > 0 && <ul className="small">{d.fields_needing_confirmation!.map((f) => <li key={f}><EvidenceBadge status="AMBIGUOUS" /> needs your confirmation: {f}</li>)}</ul>}

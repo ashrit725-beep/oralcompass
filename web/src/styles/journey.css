@@ -1,0 +1,2 @@
+/* OralCompass journey view styles (passage map, drawer sections, pipeline, care rail). Owner: web foundation + map agent (spec §13.1).
+   Imported by src/styles.css inside @layer components; colours come from the :root tokens in styles.css only (no hex here). */

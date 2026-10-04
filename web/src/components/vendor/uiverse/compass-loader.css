@@ -1,0 +1,25 @@
+/* From Uiverse.io by Nawsome — MIT (https://uiverse.io/Nawsome/ancient-yak-42, archive loaders/Nawsome_ancient-yak-42.html).
+   Recoloured to the OralCompass tokens and rewritten as CSS custom properties (component plan §2 N7), 2026-10-03:
+   ring var(--water) over a var(--sand) track, ticks var(--ink), north needle var(--terracotta), south var(--paper).
+   The 2 s ring sweep runs ONLY while the loader is indeterminate (`data-indeterminate`); a determinate needle is driven by CompassLoader.tsx.
+   Reduced motion: every loop below is switched off; the compass points north with the ring fully drawn. The label carries the meaning. */
+.oc-compass { --oc-size: 3.5em; width: var(--oc-size); height: var(--oc-size); display: inline-block; vertical-align: middle; }
+.oc-compass svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.oc-compass .pl__track { stroke: var(--sand); }
+.oc-compass .pl__ring-stroke { stroke: var(--water); stroke-dasharray: 150 250; stroke-dashoffset: 0; transform-origin: 50% 50%; }
+.oc-compass[data-indeterminate] .pl__ring-rotate { animation: oc-ring-rotate 2s linear infinite; transform-origin: 50% 50%; }
+.oc-compass[data-indeterminate] .pl__ring-stroke { animation: oc-ring-stroke 2s ease-in-out infinite; }
+.oc-compass .pl__tick { stroke: var(--ink); }
+.oc-compass .pl__north { fill: var(--terracotta); }
+.oc-compass .pl__south { fill: var(--paper); stroke: var(--ink); stroke-width: .6; }
+.oc-compass .pl__needle { transform-origin: 50% 50%; transition: transform var(--dur-standard, 240ms) var(--ease-land, ease-out); }
+.oc-compass .pl__arrows { transform-origin: 50% 50%; }
+.oc-compass[data-indeterminate] .pl__arrows { animation: oc-arrows 2s ease-in-out infinite; }
+@keyframes oc-ring-rotate { to { transform: rotate(360deg); } }
+@keyframes oc-ring-stroke { 0% { stroke-dasharray: 20 380; } 50% { stroke-dasharray: 200 200; } 100% { stroke-dasharray: 20 380; stroke-dashoffset: -400; } }
+@keyframes oc-arrows { 0%, 100% { transform: rotate(-8deg); } 50% { transform: rotate(8deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .oc-compass .pl__arrows, .oc-compass .pl__ring-rotate, .oc-compass .pl__ring-stroke, .oc-compass .pl__tick { animation: none !important; }
+  .oc-compass .pl__ring-stroke { stroke-dasharray: 400 0; }
+  .oc-compass .pl__needle { transition: none; }
+}

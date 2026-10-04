@@ -3,8 +3,12 @@
   "short_name": "OralCompass",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#faf8f3",
-  "theme_color": "#1f2a37",
-  "description": "Your plan's fine print, stitched to your estimate. Information only.",
-  "icons": []
+  "background_color": "#f6f0e3",
+  "theme_color": "#23303d",
+  "description": "Your care journey. Your coverage. Clearly mapped. Information only.",
+  "icons": [
+    { "src": "/art/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/art/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/art/icons/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
 }

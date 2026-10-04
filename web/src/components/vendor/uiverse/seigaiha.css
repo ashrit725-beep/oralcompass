@@ -1,0 +1,25 @@
+/* From Uiverse.io by marcelodolza — MIT (https://uiverse.io/marcelodolza/kind-panther-75). Overlapping-arc "seigaiha" wave pattern,
+   CSS only, rewritten with custom properties for OralCompass (component plan §2 N13), 2026-10-03:
+   --c1 (arc colour, default var(--water)), --c2 (ground, default var(--paper)), --s (tile size, default 160px).
+   The original #0008 shadow stop is rgba(35,48,61,.06). Used as a ::before layer on the water mask at opacity .07 with
+   mix-blend-mode: multiply, drifting with the existing 40 s `translateX` keyframe (class `motion-drift`, zeroed under reduced motion). */
+.oc-seigaiha {
+  --c1: var(--water);
+  --c2: var(--paper);
+  --s: 160px;
+  --_g: radial-gradient(50% 50% at 50% 50%, var(--c1) 48%, rgba(35, 48, 61, .06) 50%, transparent 52%),
+        radial-gradient(50% 50% at 50% 50%, var(--c2) 36%, transparent 38%),
+        radial-gradient(50% 50% at 50% 50%, var(--c1) 24%, transparent 26%),
+        radial-gradient(50% 50% at 50% 50%, var(--c2) 12%, transparent 14%);
+  background:
+    var(--_g) 0 0 / var(--s) var(--s),
+    var(--_g) calc(var(--s) / 2) calc(var(--s) / 2) / var(--s) var(--s),
+    var(--_g) 0 calc(var(--s) / 2) / var(--s) var(--s),
+    var(--_g) calc(var(--s) / 2) 0 / var(--s) var(--s),
+    var(--c2);
+  background-repeat: repeat;
+}
+.oc-seigaiha-layer { opacity: .07; mix-blend-mode: multiply; pointer-events: none; }
+.oc-seigaiha-layer.motion-drift { animation: oc-seigaiha-drift 40s linear infinite; }
+@keyframes oc-seigaiha-drift { to { transform: translateX(calc(-1 * var(--s))); } }
+@media (prefers-reduced-motion: reduce) { .oc-seigaiha-layer.motion-drift { animation: none !important; } }
