@@ -526,6 +526,19 @@ def build_http_client(timeout: float = LLM_TIMEOUT_S) -> httpx.Client:
     return httpx.Client(timeout=timeout, transport=_TRANSPORT_OVERRIDE) if _TRANSPORT_OVERRIDE else httpx.Client(timeout=timeout)
 
 
+def _record_spend(r: httpx.Response, body: dict) -> None:
+    """Estimated spend of one completed call for the live-AI daily cap (llm_guard). Never raises."""
+    try:
+        from . import llm_guard
+        try:
+            payload = r.json()
+        except ValueError:
+            payload = {}
+        llm_guard.record("extraction", *llm_guard.usage_tokens(payload, fallback_in=len(json.dumps(body["messages"])) // 4, fallback_out=body.get("max_tokens", 0)))
+    except Exception:
+        pass
+
+
 class OpenRouterExtractor:
     """Two chat/completions calls with structured output. Returns the raw typed schema (document wording, pages, quotes); mapping
     to procedure keys happens afterwards in `match_rules`, never in the model."""
@@ -551,6 +564,8 @@ class OpenRouterExtractor:
                         "max_tokens": max_tokens, "temperature": 0, "response_format": {"type": "json_object"}}
             try:
                 r = self.client.post(OPENROUTER_URL, headers=headers, json=body)
+                if r.status_code < 400:
+                    _record_spend(r, body)
                 if r.status_code == 400 and grammar:
                     grammar = False
                     last = ModelUnavailable("http 400 (schema grammar refused)")

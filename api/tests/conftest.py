@@ -16,3 +16,14 @@ if os.environ["ORALCOMPASS_STORE"] == "sqlite" and not os.environ.get("ORALCOMPA
 os.environ.setdefault("ORALCOMPASS_DATA_DIR", tempfile.mkdtemp(prefix="oralcompass-test-data-"))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "engine"))
+
+import pytest  # noqa: E402
+
+
+@pytest.fixture(autouse=True)
+def _fresh_llm_guard():
+    """Live-AI cost guard counters start empty for every test (production keeps them in the store for the UTC day)."""
+    from app import llm_guard
+    llm_guard.guard.reset()
+    yield

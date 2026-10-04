@@ -34,8 +34,9 @@ from oralcompass_engine.rules import coverage_rules  # noqa: E402
 from .extraction import (REQUIRED_PATHS, FixtureExtractor, llm_mode, llm_model, new_status, normalize, page_count, read_text, run_extraction, verify_quote)
 from .redaction import redact
 from .store import NOT_FOUND, repo
+from . import llm_guard
 from .templates import (DEMO_EXTRACTION_RIBBON, DEMO_NO_MODEL_NOTE, EXTRACTION_FAILED_MODEL, EXTRACTION_FAILED_UNREADABLE, IGNORED_WORDING_NOTE,
-                        LIVE_EXTRACTION_RIBBON, PARAPHRASE_NOTE, PUBLISH_NOTE, REDACTION_NOTE, UNMATCHED_WORDING_NOTE, UPLOAD_PLAN_BANNER, UPLOAD_VERSION_NOTE)
+                        LIVE_EXTRACTION_RIBBON, LLM_LIMIT_EXTRACTION_RIBBON, PARAPHRASE_NOTE, PUBLISH_NOTE, REDACTION_NOTE, UNMATCHED_WORDING_NOTE, UPLOAD_PLAN_BANNER, UPLOAD_VERSION_NOTE)
 
 router = APIRouter()
 log = logging.getLogger("oralcompass.uploads")
@@ -100,6 +101,8 @@ def _status_view(doc: dict) -> dict:
     if not st:
         raise HTTPException(status_code=409, detail={"error": "not_extracted"})
     ribbon = DEMO_EXTRACTION_RIBBON if (st["mode"] == "demo" and st.get("demo_fixture_match")) else (DEMO_NO_MODEL_NOTE if st["mode"] == "demo" else LIVE_EXTRACTION_RIBBON)
+    if st.get("limit_reached"):                 # the live-AI cost guard refused the call; the demo path ran instead
+        ribbon = LLM_LIMIT_EXTRACTION_RIBBON
     return {**st, "ribbon": ribbon, "notes_for_review": {"paraphrase": PARAPHRASE_NOTE, "publish": PUBLISH_NOTE, "ignored_wording": IGNORED_WORDING_NOTE,
                                                          "unmatched_wording": UNMATCHED_WORDING_NOTE},
             "undecided_required": undecided_required(st.get("fields") or [])}
@@ -200,11 +203,13 @@ def put_redaction(doc_id: str, body: RedactionIn, user: User = Depends(current_u
 
 
 # ---------------------------------------------------------------- extraction
-def _run(sub: str, doc_id: str, mode: str) -> None:
+def _run(sub: str, doc_id: str, mode: str, limit_reason: Optional[str] = None) -> None:
     doc = repo.get_owned(sub, "document", doc_id)
 
     def set_status(st: dict) -> None:
         doc["extraction"] = copy.deepcopy(st)
+        if limit_reason:
+            doc["extraction"]["limit_reached"] = limit_reason
         doc["extraction_status"] = st["status"]
         repo.put(sub, "document", doc)
         log.info("extraction id=%s stage=%s", doc_id, st["status"])
@@ -225,11 +230,16 @@ def start_extraction(doc_id: str, background: BackgroundTasks, user: User = Depe
     if current and current not in ("ready", "failed", "demo_no_model"):
         raise HTTPException(status_code=409, detail={"error": "extraction_in_progress", "status": current})
     mode = llm_mode()
+    limit_reason = None
+    if mode == "live":
+        allowed, limit_reason = llm_guard.allow(user.sub, "extraction")
+        if not allowed:                         # per-visitor or daily limit: the demo path, with an honest ribbon
+            mode = "demo"
     st = new_status(mode)
     doc["extraction"], doc["extraction_status"] = st, "queued"
     repo.put(user.sub, "document", doc)
     if mode == "demo":                          # the fixture path (and the demo_no_model path) complete synchronously: no network
-        _run(user.sub, doc_id, mode)
+        _run(user.sub, doc_id, mode, limit_reason)
         return {"status": repo.get_owned(user.sub, "document", doc_id)["extraction"]["status"], "mode": mode}
     background.add_task(_run, user.sub, doc_id, mode)
     return {"status": "queued", "mode": mode, "model": llm_model()}

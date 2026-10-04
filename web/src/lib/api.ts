@@ -60,7 +60,7 @@ async function blob(path: string): Promise<Blob> {
 }
 
 export const api = {
-  health: () => req<{ ok: boolean; presets: string[]; real_presets: string[]; fictional_presets: string[]; llm_mode: "demo" | "live"; llm_model?: string }>("/health"),
+  health: () => req<{ ok: boolean; presets: string[]; real_presets: string[]; fictional_presets: string[]; llm_mode: "demo" | "live"; llm_model?: string; llm_cap_reached?: boolean }>("/health"),
   // public catalogs
   plans: () => req<{ items: PlanSummary[]; banner: string }>("/plans"),
   plan: (code: string) => req<{ summary: PlanSummary; model: PlanFixture }>(`/plans/${code}`),
