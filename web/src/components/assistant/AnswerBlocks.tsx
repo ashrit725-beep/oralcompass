@@ -1,3 +1,5 @@
+import { motion } from "motion/react";
+import { EASE } from "@/lib/motion";
 import { Suspense, lazy, type ReactNode } from "react";
 import { Money } from "@/components/Money";
 import { EvidenceBadge, StitchChip } from "@/components/Primitives";
@@ -44,6 +46,14 @@ function Chip({ r, data, scope, onOpenStitch, onOpenStep }: { r: AssistRef; data
   return <span className="as-chip"><span className="as-chip-label">{res.label}</span> <Inline r={res} onOpenStitch={onOpenStitch} /></span>;
 }
 
+/** Answer reveal (motionsites technique 2, adapted): each block rises 4 px and fades in over 500 ms on the soft-landing ease, in reading
+ *  order 80 ms apart (capped at four steps), and the citation chips land 120 ms after their sentence. Mount-only; the end state is the
+ *  plain layout, and MotionConfig reducedMotion="user" drops the rise. */
+const reveal = (i: number, extra = 0) => ({
+  initial: { opacity: 0, y: 4 }, animate: { opacity: 1, y: 0 },
+  transition: { duration: 0.5, ease: EASE.land, delay: Math.min(i, 4) * 0.08 + extra },
+});
+
 export function AnswerBlocks({ blocks, data, scope, onOpenStitch, onOpenStep, onClarify }: AnswerBlocksProps) {
   let marked = false;
   return (
@@ -53,7 +63,7 @@ export function AnswerBlocks({ blocks, data, scope, onOpenStitch, onOpenStep, on
           const segs = splitPlaceholders(b.text, b.refs);
           const trailing = trailingRefs(b.text, b.refs);
           return (
-            <div key={i} className="as-sentence">
+            <motion.div key={i} className="as-sentence" {...reveal(i)}>
               <p className="as-text">
                 {segs.map((s, j) => {
                   if (s.type === "text") return <span key={j}>{s.text}</span>;
@@ -68,29 +78,29 @@ export function AnswerBlocks({ blocks, data, scope, onOpenStitch, onOpenStep, on
                 })}
               </p>
               {trailing.length > 0 && (
-                <ul className="as-chips" aria-label={ASSIST.toolsUsed}>
+                <motion.ul className="as-chips" aria-label={ASSIST.toolsUsed} {...reveal(i, 0.12)}>
                   {trailing.map((r, k) => <li key={k}><Chip r={r} data={data} scope={scope} onOpenStitch={onOpenStitch} onOpenStep={onOpenStep} /></li>)}
-                </ul>
+                </motion.ul>
               )}
-            </div>
+            </motion.div>
           );
         }
         if (b.type === "clarify") {
           return (
-            <div key={i} className="as-template" data-key="clarify">
+            <motion.div key={i} className="as-template" data-key="clarify" {...reveal(i)}>
               <span className="as-label">{ASSIST.clarifyLabel}</span>
               {b.text && <p className="as-text">{b.text}</p>}
               <ul className="as-options">
                 {b.options.map((o, k) => <li key={k}><Button type="button" variant="outline" size="touch" onClick={() => onClarify?.(o.scope_patch)}>{o.label}</Button></li>)}
               </ul>
-            </div>
+            </motion.div>
           );
         }
         return (
-          <div key={i} className="as-template" data-key={b.key}>
+          <motion.div key={i} className="as-template" data-key={b.key} {...reveal(i)}>
             <span className="as-label">{templateLabel(b)}</span>
             <p className="as-text">{b.text}</p>
-          </div>
+          </motion.div>
         );
       })}
     </div>

@@ -24,6 +24,8 @@ export interface MoneyProps {
   /** Render a signed delta (−$12.00 / +$3.00). */
   signed?: boolean;
   id?: string;
+  /** Milliseconds before the roll starts: the pipeline staggers its stages left to right, ~80 ms apart (motionsites technique 7). */
+  rollDelay?: number;
 }
 
 /** Screen-reader words for a hidden badge: the same plain words the visible badge shows ("From the plan document"), never the code (a11y-23). */
@@ -33,16 +35,18 @@ export const NO_AMOUNT = "no amount";
 const FORMAT: Format = { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 };
 // spec §5.5 `sounding-roll`: 400 ms on --ease-standard (cubic-bezier(.2,.7,.2,1)), not NumberFlow's 900 ms spring default (motion-8).
 // NumberFlow still honours prefers-reduced-motion itself (respectMotionPreference defaults to true): the value snaps.
-const ROLL = { duration: 400, easing: "cubic-bezier(.2,.7,.2,1)" } as const;
+// Re-measure (motionsites technique 7, adapted): 500 ms on the soft-landing ease (--ease-land), inside the spec's 400–600 ms band.
+const ROLL = { duration: 500, easing: "cubic-bezier(.16,1,.3,1)" } as const;
 const ROLL_FADE = { duration: 240, easing: "ease-out" } as const;
 
-export function Money({ cents, evidence, className, badge = true, calc = false, signed = false, id }: MoneyProps) {
+export function Money({ cents, evidence, className, badge = true, calc = false, signed = false, id, rollDelay = 0 }: MoneyProps) {
+  const roll = rollDelay ? { ...ROLL, delay: rollDelay } : ROLL;
   const has = typeof cents === "number" && Number.isFinite(cents);
   return (
     <span id={id} className={cn("inline-flex items-baseline gap-1.5 align-baseline", className)}>
       <span className="amt font-sans tabular-nums text-ink" style={{ "--number-flow-mask-height": "0.15em" } as React.CSSProperties}>
         {has ? (
-          <NumberFlow value={(signed ? Math.abs(cents) : cents) / 100} locales="en-US" format={FORMAT} transformTiming={ROLL} spinTiming={ROLL} opacityTiming={ROLL_FADE} prefix={signed ? (cents < 0 ? "−" : cents > 0 ? "+" : "") : undefined} />
+          <NumberFlow value={(signed ? Math.abs(cents) : cents) / 100} locales="en-US" format={FORMAT} transformTiming={roll} spinTiming={roll} opacityTiming={ROLL_FADE} prefix={signed ? (cents < 0 ? "−" : cents > 0 ? "+" : "") : undefined} />
         ) : (
           <><span aria-hidden="true">—</span><span className="sr-only">{NO_AMOUNT}</span></>
         )}
