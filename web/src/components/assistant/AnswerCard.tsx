@@ -40,11 +40,11 @@ export function CostHero({ refs, planChoice }: { refs: Partial<Record<QuickRef["
       <dl className="as-hero-grid">
         <div className="as-hero-cell as-hero-you">
           <dt>{ASSIST.heroYouPay}</dt>
-          <dd><Money cents={centsOf(refs.patient)} evidence={evidenceOf(refs.patient, "DOC")} calc={centsOf(refs.patient) !== null} className="as-hero-amt" /></dd>
+          <dd className="as-hero-amt"><Money cents={centsOf(refs.patient)} evidence={evidenceOf(refs.patient, "DOC")} badge={centsOf(refs.patient) === null} />{centsOf(refs.patient) !== null && <span className="fig-calc">{ASSIST.heroMath}</span>}</dd>
         </div>
         <div className="as-hero-cell as-hero-plan-pays">
           <dt>{ASSIST.heroPlanPays}</dt>
-          <dd><Money cents={centsOf(refs.plan)} evidence={evidenceOf(refs.plan, "DOC")} calc={centsOf(refs.plan) !== null} className="as-hero-amt" /></dd>
+          <dd className="as-hero-amt"><Money cents={centsOf(refs.plan)} evidence={evidenceOf(refs.plan, "DOC")} badge={centsOf(refs.plan) === null} />{centsOf(refs.plan) !== null && <span className="fig-calc">{ASSIST.heroMath}</span>}</dd>
         </div>
       </dl>
       {fee && (

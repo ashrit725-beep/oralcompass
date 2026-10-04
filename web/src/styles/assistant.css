@@ -119,7 +119,8 @@ body:has(.ask-sheet[data-state="open"]) :is(.dock, .ask-scrim) { pointer-events:
 .as-hero-cell { padding: var(--s-2) var(--s-3); border: 1px solid var(--rule); border-radius: var(--r-2); background: var(--paper-deep); min-width: 0; }
 .as-hero-cell dt { font-size: 15px; line-height: 20px; font-weight: 600; color: var(--ink); }
 .as-hero-cell dd { margin: 4px 0 0; }
-.as-hero-amt { display: flex !important; flex-direction: column; align-items: flex-start !important; gap: 4px !important; }
+.as-hero-amt { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; margin: 4px 0 0; }
+.as-hero-amt .fig-calc { font-size: 13px; line-height: 18px; }
 .as-hero-amt .amt { font-size: 30px; line-height: 36px; font-weight: 800; letter-spacing: -0.01em; }
 .as-hero-you { border-color: var(--ink); }
 .as-hero-fee { margin: var(--s-2) 0 0; font-size: 15px; line-height: 22px; color: var(--ink); display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; }

@@ -143,6 +143,7 @@ export const ASSIST = {
   heroPlanPays: "Insurance pays",
   heroPrice: "The dentist's price",
   heroPriceGuess: "Our guess of the price",
+  heroMath: "We did the math from your plan",
   heroFor: (plan: string) => `With ${plan}`,
   chipWhyMore: (higher: string, lower: string) => `Why does ${higher} cost more than ${lower}?`,
   chipWhatFor: (name: string) => `What do I pay for ${name}?`,
