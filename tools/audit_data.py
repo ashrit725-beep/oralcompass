@@ -119,8 +119,10 @@ def main() -> int:
             add("info", "fee_benchmarks", k, "no published benchmark row maps to this procedure")
 
     # ---- documents ----
+    extraction_fixtures = [jload(p) for p in sorted((FIX / "extractions").glob("*.json"))] if (FIX / "extractions").is_dir() else []
     for path in sorted((FIX / "documents").glob("*.pdf")):
         owner = [c for c, (_, j) in plans.items() if (j.get("source_document", {}).get("path") or "").endswith(path.name)]
+        owner += [j["source_document"]["path"] for j in extraction_fixtures if (j.get("source_document", {}).get("path") or "").endswith(path.name)]
         if not owner:
             add("medium", "documents", path.name, "stored PDF not referenced by any plan")
     # ---- users / journeys relationships ----

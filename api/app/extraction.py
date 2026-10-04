@@ -10,8 +10,8 @@ Pipeline stages, in order, each reported to the caller through `set_status`:
   identifiers removed, by category, masked values only) before any model call, so the progress view can show the count.
 * `identify_fields`:
     - DEMO mode (no OpenRouter key, or ORALCOMPASS_LLM_PROVIDER=none): `FixtureExtractor.extract(sha256)` returns the stored
-      fixture model when the checksum matches fixtures/documents/*.pdf (HB26, SM26, NW26, TW26); otherwise every field is
-      not_found and the status is `demo_no_model`.
+      fixture model when the checksum matches fixtures/documents/*.pdf (HB26, SM26, NW26, TW26, and the fictional sample
+      statement through fixtures/extractions/*.json); otherwise every field is not_found and the status is `demo_no_model`.
     - LIVE mode: `OpenRouterExtractor`, two chat/completions calls with `response_format: json_schema`, temperature 0, 60 s
       timeout, one retry, then failed ("model unavailable"). Call 1 returns the verbatim sentences that state each FIELD_LIST
       item with page numbers; call 2 structures those sentences into a typed schema that admits only values, pages and quotes.
@@ -47,6 +47,7 @@ from .templates import EXTRACTION_FAILED_MODEL, EXTRACTION_FAILED_SCANNED, EXTRA
 ROOT = Path(__file__).resolve().parents[2]
 FIXTURE_DIR = ROOT / "fixtures" / "plans"
 FIXTURE_DOCS = ROOT / "fixtures" / "documents"
+EXTRACTION_FIXTURE_DIR = ROOT / "fixtures" / "extractions"      # demo extractions for documents that are not plan presets
 
 SCANNED_PAGE_CHARS = 20
 SIMILARITY_THRESHOLD = 0.92
@@ -170,6 +171,13 @@ class FixtureExtractor:
             sha = j.get("source_document", {}).get("sha256")
             if sha:
                 self.by_sha[sha] = j
+        # extraction-only fixtures (the fictional sample statement, tools/make_sample_statement.py): matched by checksum like a
+        # preset's certificate, never listed as a preset (not in by_code); quote verification still runs on the uploaded text layer
+        for p in sorted(EXTRACTION_FIXTURE_DIR.glob("*.json")) if EXTRACTION_FIXTURE_DIR.is_dir() else []:
+            j = json.loads(p.read_text())
+            sha = j.get("source_document", {}).get("sha256")
+            if sha and sha not in self.by_sha:
+                self.by_sha[sha] = {k: v for k, v in j.items() if not k.startswith("_")}
 
     def extract(self, sha256: str) -> dict | None:
         return self.by_sha.get(sha256)
