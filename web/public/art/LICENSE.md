@@ -7,13 +7,13 @@ redistributed as part of OralCompass under the repository's license.
 
 | File | Role | Format |
 |---|---|---|
-| journey-backdrop.webp | primary painted map backdrop (opaque, 1672×941) | WebP |
-| island-generic.webp | ordinary-procedure island plate (transparent, 1422×1106) | WebP + alpha |
-| island-major.webp | major-procedure / mountain island plate (transparent) | WebP + alpha |
-| island-lighthouse.webp | destination / recovery lighthouse island (transparent) | WebP + alpha |
-| benefits-chest.webp | benefits chest / navigational case (transparent, 1254×1254) | WebP + alpha |
+| journey-backdrop.webp | primary painted map backdrop (opaque, 2400×1350, repainted 2026-10-03) | WebP |
+| island-generic.webp | ordinary-procedure island plate (transparent, 1422×1106, repainted 2026-10-03) | WebP + alpha |
+| island-major.webp | major-procedure / mountain island plate with a golden path (transparent, repainted 2026-10-03) | WebP + alpha |
+| island-lighthouse.webp | destination / recovery lighthouse island at golden hour (transparent, repainted 2026-10-03) | WebP + alpha |
+| benefits-chest.webp | navigator's walnut chest (transparent, 1254×1254, repainted 2026-10-03) | WebP + alpha |
 | emblem.png · icons/* · favicon.ico | OralCompass mark, PWA icons derived from it | PNG / ICO |
 | fog-layer-1.webp · fog-layer-2.webp | translucent mist layers for depth/parallax (2000×667) | WebP + alpha |
-| paper-texture.webp | parchment grain tile (1254×1254) | WebP |
+| paper-texture.webp | ivory parchment brushwork tile (1254×1254, repainted 2026-10-03) | WebP |
 
 The SVG scenes in `web/src/components/atlas/` remain the fallback whenever a file here is missing or fails to load.
