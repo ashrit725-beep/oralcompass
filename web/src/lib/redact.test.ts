@@ -197,7 +197,8 @@ const POSITIVE: [string, [IdentifierCategory, string][]][] = [
   ["Date of Birth: July 19, 1986", [["dob", "July 19, 1986"]]],
   ["Birth date: 1986-07-19", [["dob", "1986-07-19"]]],
   ["D.O.B. 19 Jul 1986", [["dob", "19 Jul 1986"]]],
-  ["Born 7/19/86", [["dob", "7/19/86"]]],
+  ["Born: 7/19/86", [["dob", "7/19/86"]]],
+  ["Birthday: 7/19/86", [["dob", "7/19/86"]]],
   ["Date of birth (MM/DD/YYYY): 07/19/1986", [["dob", "07/19/1986"]]],
   ["Date of birth:\n07/19/1986", [["dob", "07/19/1986"]]],
   ["Birthdate: Sept. 3rd, 1990", [["dob", "Sept. 3rd, 1990"]]],
@@ -273,6 +274,9 @@ const NEGATIVE: string[] = [
   "Subscriber: Same as Patient",
   "Dependent: N/A",
   "Claim 2026-118842 was paid.",
+  "Children born 01/01/2020 or later are covered to age 26.",
+  "Dear May,\nYour plan year starts May 1, 2026.",
+  "Dear Friday,",
   "Tax ID: 56-1234567",
   "NPI 1234567893",
   "Form PPO-ENT-MS-E-R23, version 2.1.3",
@@ -340,6 +344,10 @@ describe("distinct identifiers and occurrences", () => {
   it("never removes a dollar amount or a percentage that happens to share an identifier's digits", () => {
     const r = removeAll(["Account #: 1500250", "The plan paid $1500250 last year; 1500250% is not a number either; account 1500250 closed."]);
     expect(r.pages[1]).toBe("The plan paid $1500250 last year; 1500250% is not a number either; account [account number removed] closed.");
+  });
+  it("never matches inside a grouped amount", () => {
+    const r = removeAll(["Account #: 50000", "Paid $1,500.00 and 2,500.00; 50000.5 units; account 50000 closed."]);
+    expect(r.pages[1]).toBe("Paid $1,500.00 and 2,500.00; 50000.5 units; account [account number removed] closed.");
   });
   it("keeps the opening parenthesis and the country code with a phone number", () => {
     const r = removeAll(["Phone: (910) 555-0142", "Call +1 (910) 555-0142 or 1-910-555-0142."]);

@@ -233,6 +233,11 @@ const ORG_WORDS = new Set([
 
 const SUFFIX_WORDS = new Set(["jr", "sr", "ii", "iii", "iv"]);
 
+/** A one-word name ("Dear May,") that is also a calendar word would remove dates the AI needs ("May 1, 2026"); such a name is not taken. */
+const CALENDAR_WORDS = new Set([
+  ...MONTHS_LONG, ...MONTHS_SHORT, "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday",
+].map((w) => w.toLowerCase()));
+
 function nameCheck(minWords: number) {
   return (value: string, page: string, start: number): Checked | null => {
     const re = /[^\s,]+/gu;
@@ -260,6 +265,7 @@ function nameCheck(minWords: number) {
       if (kept === 5 || sentenceEnd) break;
     }
     if (kept < minWords) return null;
+    if (kept === 1 && CALENDAR_WORDS.has(value.slice(0, end - start).replace(/[.'’]+$/u, "").toLowerCase())) return null;
     // A trailing honorific-like single letter without a period is not part of a name ("Avery Rowan A" in a table).
     return { start, end };
   };
@@ -332,7 +338,7 @@ const RULES: Rule[] = [
   { category: "ssn", re: rx(`(?<![\\p{L}\\p{N}\\-$.,/])((?!000|666)[0-9]{3}-(?!00)[0-9]{2}-(?!0000)[0-9]{4})(?![0-9\\-])`) },
   {
     category: "dob",
-    re: rx(`${WS}(?:${v("DOB")}|D\\.O\\.B\\.?|${v("Date")}${SP}{1,3}${v("of")}${SP}{1,3}${v("Birth")}|${v("Birth")}${SP}{0,3}${v("Date")}|${v("Birthdate")}|${v("Birthday")}|${v("Born")}(?:${SP}{1,3}${v("on")})?)(?:${SP}{0,3}\\((?:MM|mm)[/\\-](?:DD|dd)[/\\-](?:YYYY|yyyy|YY|yy)\\))?${SEP}(${DATE})`),
+    re: rx(`${WS}(?:${v("DOB")}|D\\.O\\.B\\.?|${v("Date")}${SP}{1,3}${v("of")}${SP}{1,3}${v("Birth")}|${v("Birth")}${SP}{0,3}${v("Date")}|${v("Birthdate")}|(?:${v("Birthday")}|${v("Born")}(?:${SP}{1,3}${v("on")})?)(?=${SP}{0,3}:))(?:${SP}{0,3}\\((?:MM|mm)[/\\-](?:DD|dd)[/\\-](?:YYYY|yyyy|YY|yy)\\))?${SEP}(${DATE})`),
     check: dobCheck,
   },
   { category: "phone", re: rx(`${PHONE_LABEL}(${PHONE_LABELED})(?![0-9])`), check: phoneCheck },
@@ -496,6 +502,23 @@ function numGapOk(page: string, from: number, to: number): boolean {
   return true;
 }
 
+const isDigitAt = (page: string, i: number) => {
+  const c = page.charCodeAt(i);
+  return c >= 48 && c <= 57;
+};
+/** A number-like match never starts inside an amount: not after "$", and not after the "," or "." of a grouped number ("1,500.00"). */
+function numberStartOk(page: string, s: number): boolean {
+  const p = page.charCodeAt(s - 1);
+  if (p === 36) return false;
+  return !((p === 44 || p === 46) && isDigitAt(page, s - 2));
+}
+/** ...and never ends before "%" or before the "," or "." of a longer number. */
+function numberEndOk(page: string, e: number): boolean {
+  const c = page.charCodeAt(e);
+  if (c === 37) return false;
+  return !((c === 44 || c === 46) && isDigitAt(page, e + 1));
+}
+
 class Matcher {
   private trie = newNode();
   private compact = new Map<string, number>();
@@ -550,7 +573,7 @@ class Matcher {
         if (bestEntry >= 0) found.push({ start: start[i], end: bestEnd, entry: bestEntry });
       }
       // number-like identifiers, punctuation-insensitive; never a dollar amount or a percentage
-      if (hasNumbers && page.charCodeAt(start[i] - 1) !== 36) {
+      if (hasNumbers && numberStartOk(page, start[i])) {
         let acc = "";
         let bestEnd = -1;
         let bestEntry = -1;
@@ -559,7 +582,7 @@ class Matcher {
           acc += lower[j];
           if (acc.length > this.maxCompact) break;
           const hit = this.compact.get(acc);
-          if (hit !== undefined && page.charCodeAt(end[j]) !== 37) {
+          if (hit !== undefined && numberEndOk(page, end[j])) {
             bestEnd = end[j];
             bestEntry = hit;
           }
